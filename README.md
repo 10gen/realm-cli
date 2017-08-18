@@ -27,7 +27,6 @@ $ stitch me
 name: lucas morales
 email: lucas.morales@mongodb.com
 api_key: <TOKEN>
-roles:
 
 $ stitch groups
 rw	group-1

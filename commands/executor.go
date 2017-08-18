@@ -3,27 +3,32 @@ package commands
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	flag "github.com/ogier/pflag"
 )
 
 // Executor handles the logic of utilizing a Command.
 type Executor struct {
-	Command
+	*Command
 }
 
-func (e Executor) Execute() {
-	args := os.Args[1:]
-	f := flag.NewFlagSet(e.Name(), flag.ExitOnError)
-	err := e.Parse(f, args)
+func (e Executor) Execute(args []string) {
+	if len(args) > 0 {
+		if subcmd, ok := e.Subcommands[args[0]]; ok {
+			Executor{subcmd}.Execute(args[1:])
+			return
+		}
+	}
+	err := e.Parse(args)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s\n", err)
-		e.Usage(f)
+		// Parse already printed the error
+		e.Usage()
 		return
 	}
-	err = e.Run()
-	if err == ErrShowHelp {
-		e.Usage(f)
+	err = e.Command.Execute()
+	if err == flag.ErrHelp {
+		e.Usage()
 		return
 	}
 	if err != nil {
@@ -32,13 +37,18 @@ func (e Executor) Execute() {
 	return
 }
 
-func (e Executor) Usage(f *flag.FlagSet) {
-	name := e.Name()
-	if name == "" {
-		fmt.Fprintf(os.Stderr, "Usage:\n")
-	} else {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", e.Name())
+func (e Executor) Usage() {
+	var lines []string
+	for _, line := range strings.Split(e.ShortUsage, "\n") {
+		if line != "" {
+			lines = append(lines, line)
+		}
 	}
-	f.PrintDefaults()
-	fmt.Fprintf(os.Stderr, e.Help())
+	fmt.Fprintf(os.Stderr, "%s\n", strings.Join(lines, "\n"))
+	if !flagGlobalHelp {
+		return
+	}
+	if e.LongUsage != "" {
+		fmt.Fprintf(os.Stderr, "\n%s\n", e.LongUsage)
+	}
 }

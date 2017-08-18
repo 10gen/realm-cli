@@ -1,51 +1,57 @@
 package commands
 
 import (
-	"errors"
-
 	"github.com/10gen/stitch-cli/config"
 	flag "github.com/ogier/pflag"
 )
 
+var login = &Command{
+	Run:  loginRun,
+	Name: "login",
+	ShortUsage: `
+Usage: stitch login [--help] --api-key <TOKEN>
+`,
+	LongUsage: `Authenticate as an administrator.
+
+Options
+    --api-key <TOKEN>
+	    The API key for a MongoDB Cloud account.
+`,
+}
+
 var (
-	login Command = new(loginCommand)
+	loginFlagSet *flag.FlagSet
 
-	loginHelp = ""
-
-	ErrApiKeyRequired = errors.New("An API key must be supplied to log in.")
-	ErrInvalidApiKey  = errors.New("Invalid API key.")
+	flagLoginApiKey string
 )
 
-type loginCommand struct {
-	apiKey string
+var (
+	ErrApiKeyRequired = Errorf("an API key must be supplied to log in.")
+	ErrInvalidApiKey  = Errorf("invalid API key.")
+)
+
+func init() {
+	loginFlagSet = login.InitFlags()
+	loginFlagSet.StringVar(&flagLoginApiKey, "api-key", "", "TOKEN")
 }
 
-func (lc *loginCommand) Name() string {
-	return ""
-}
+func loginRun() error {
+	if len(loginFlagSet.Args()) > 0 {
+		return ErrorUnknownArg(loginFlagSet.Arg(0))
+	}
 
-func (lc *loginCommand) Parse(f *flag.FlagSet, args []string) error {
-	f.StringVar(&lc.apiKey, "api-key", "", "api key for a MongoDB Cloud account")
-
-	f.Parse(args)
-	if lc.apiKey == "" {
+	apiKey := flagLoginApiKey
+	if apiKey == "" {
 		return ErrApiKeyRequired
 	}
-	if !loginValidApiKey(lc.apiKey) {
+	if !loginValidApiKey(apiKey) {
 		return ErrInvalidApiKey
 	}
-	return nil
-}
 
-func (lc *loginCommand) Help() string {
-	return loginHelp
-}
-
-func (lc *loginCommand) Run() error {
 	if config.LoggedIn() {
 		return config.ErrAlreadyLoggedIn
 	}
-	token, err := loginWithApiKey(lc.apiKey)
+	token, err := loginWithApiKey(apiKey)
 	if err != nil {
 		return err
 	}
