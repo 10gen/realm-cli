@@ -9,13 +9,14 @@ var login = &Command{
 	Run:  loginRun,
 	Name: "login",
 	ShortUsage: `
-Usage: stitch login [--help] --api-key <TOKEN>
+USAGE:
+    stitch login [--help] --api-key <TOKEN>
 `,
 	LongUsage: `Authenticate as an administrator.
 
-Options
+OPTIONS:
     --api-key <TOKEN>
-	    The API key for a MongoDB Cloud account.
+	        The API key for a MongoDB Cloud account.
 `,
 }
 
@@ -26,18 +27,18 @@ var (
 )
 
 var (
-	ErrApiKeyRequired = Errorf("an API key must be supplied to log in.")
-	ErrInvalidApiKey  = Errorf("invalid API key.")
+	ErrApiKeyRequired = errorf("an API key must be supplied to log in.")
+	ErrInvalidApiKey  = errorf("invalid API key.")
 )
 
 func init() {
 	loginFlagSet = login.InitFlags()
-	loginFlagSet.StringVar(&flagLoginApiKey, "api-key", "", "TOKEN")
+	loginFlagSet.StringVar(&flagLoginApiKey, "api-key", "", "")
 }
 
 func loginRun() error {
 	if len(loginFlagSet.Args()) > 0 {
-		return ErrorUnknownArg(loginFlagSet.Arg(0))
+		return errorUnknownArg(loginFlagSet.Arg(0))
 	}
 
 	apiKey := flagLoginApiKey

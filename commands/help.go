@@ -10,14 +10,15 @@ var help = &Command{
 	Run:  helpRun,
 	Name: "help",
 	ShortUsage: `
-Usage: stitch help [--help] <COMMAND>
-       stitch help -g|--guide
+USAGE:
+    stitch help [--help] <COMMAND>
+    stitch help -g|--guide
 `,
 	LongUsage: `Get help for usage of this CLI.
 	
-Options
+OPTIONS:
     -g, --guide
-	    Shows a guide to using this CLI.
+            Shows a guide to using this CLI.
 `,
 }
 
@@ -89,7 +90,7 @@ func helpRun() error {
 			}
 		}
 		if !ok {
-			return ErrorUnknownArg(args[0])
+			return errorUnknownArg(args[0])
 		}
 		Executor{cmd}.Usage()
 		return nil
@@ -98,5 +99,6 @@ func helpRun() error {
 		fmt.Println(helpGuide)
 		return nil
 	}
-	return flag.ErrHelp
+	Executor{indexPtr}.Usage()
+	return nil
 }

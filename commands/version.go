@@ -12,7 +12,8 @@ var version = &Command{
 	Run:  versionRun,
 	Name: "version",
 	ShortUsage: `
-Usage: stitch version [--help]
+USAGE:
+    stitch version [--help]
 `,
 	LongUsage: `Get the version of this CLI.`,
 }
@@ -27,7 +28,7 @@ func init() {
 
 func versionRun() error {
 	if len(versionFlagSet.Args()) > 0 {
-		return ErrorUnknownArg(versionFlagSet.Arg(0))
+		return errorUnknownArg(versionFlagSet.Arg(0))
 	}
 	fmt.Println(Version)
 	return nil

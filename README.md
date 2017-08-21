@@ -1,4 +1,10 @@
-# MongoDB Stitch CLI
+# MongoDB Stitch CLI (not yet ready for use)
+
+TODO:
+- finish implementing command logic (see [`commands/index.go`](./commands/index.go))
+- docstrings
+- replace mock admin data with use of admin SDK
+- integration tests
 
 ### UI Draft
 
@@ -26,7 +32,7 @@ $ stitch login --api-key <TOKEN>
 $ stitch me
 name: lucas morales
 email: lucas.morales@mongodb.com
-api_key: <TOKEN>
+api-key: <TOKEN>
 
 $ stitch groups
 rw	group-1
@@ -48,12 +54,11 @@ rw	platespace-st-asdfu
 
 # stitch info takes
 # --app (appID or client app ID), else checks in pwd for local stitch project unless
-# --remote is set.
 # also --json is an option.
 $ stitch info
 local:    	yes
 group:    	group-1
-app:      	platespace-prod
+name:      	platespace-prod
 id:       	598dca3bede4017c35942841
 client_id:	platespace-prod-txplq
 clusters:	
@@ -76,7 +81,7 @@ authentication:
         api-keys
 
 
-$ stitch info client_id # great for npm build
+$ stitch info client-id # great for npm build
 platespace-prod-txplq
 
 

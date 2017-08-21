@@ -13,28 +13,27 @@ type Executor struct {
 	*Command
 }
 
-func (e Executor) Execute(args []string) {
+func (e Executor) Execute(args []string) error {
 	if len(args) > 0 {
 		if subcmd, ok := e.Subcommands[args[0]]; ok {
-			Executor{subcmd}.Execute(args[1:])
-			return
+			return Executor{subcmd}.Execute(args[1:])
 		}
 	}
 	err := e.Parse(args)
 	if err != nil {
 		// Parse already printed the error
 		e.Usage()
-		return
+		return err
 	}
 	err = e.Command.Execute()
 	if err == flag.ErrHelp {
 		e.Usage()
-		return
+		return nil
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
 	}
-	return
+	return err
 }
 
 func (e Executor) Usage() {
