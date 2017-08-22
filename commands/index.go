@@ -23,22 +23,22 @@ USAGE:
             your environment.
 
 SUBCOMMANDS:
-for your account:
+--- for your account:
+   apps       Show what apps you can administrate
+   clusters   Show what Atlas clusters you can access
+   groups     Show what groups you are a member of
    login      Authenticate as an administrator
    logout     Deauthenticate
    me         Show your user admin info
-   groups     Show what groups you are a member of
-   apps       Show what apps you can administrate
-   clusters   Show what Atlas clusters you can access
-to manage your stitch applications:
-   info       Show info about a particular app
+--- to manage your stitch applications:
    clone      Export a stitch app
    create     Create a new stitch app
-   sync       Push changes made locally to a stitch app configuration
    diff       See the difference between the local app configuration and its remote version
-   validate   Validate the local app configuration
+   info       Show info about a particular app
    migrate    Migrate to a new version of the configuration spec
-other subcommands:
+   sync       Push changes made locally to a stitch app configuration
+   validate   Validate the local app configuration
+--- other subcommands:
    help       Show help for a command
    version    Show the version of this CLI
 `,

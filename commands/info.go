@@ -28,45 +28,45 @@ ARGS:
    <INNER-SPEC>
             An inner specifier, according to whatever keys are made availables
             for the particular top level specifier:
-            clusters: list of clusters
-                - name of a cluster: MongoDB URI
-            services: list of services
-                - name of a service. Within a specified services:
-                    - type: type of service
-                    - name: name of the service
-                    - webhooks: list of webhooks
-                        - name of a webhook. Within a specified webhook:
-                            - id: identifer of the webhook
-                            - name: name of the webhook
-                            - output: output type of the webhook
-                            - pipeline: JSON of the webhook's pipeline
-                    - rules: list of rules
-                        - name of a rule. Within a specified webhook:
-                            - name: name of the rule
-                            - id: identifer of the rule
-                            - rule: JSON of the complete rule
-            pipelines: list of named pipelines
-                - name of a pipeline. Within a specified pipeline:
-                    - name: name of the pipeline
-                    - id: identifer of the pipeline
-                    - output: output type of the pipeline
-                    - private: whether the pipeline is private
-                    - skip-rules: whether the pipeline skips rules
-                    - parameters: list of parameters to the pipeline
-                    - can-evaluate: JSON of the evaluation condition on the pipeline
-                    - pipeline: JSON of the pipeline
-            - values: list of value names
-                - name of value: assigned value
-            - authentication/auth: list of configure authentication providers
-                - name of auth provider. Within a specified auth provider:
-				    - type: type of auth provider
-					- name: name of the auth provider
-					- id: identifier of the auth provider
-					- enabled: whether the auth provider is enabled
-					- metadata: list of user metadata fields given by the auth provider
-					- domain-restrictions: set of domains that users can authenticate with
-					- redirect-URIs: the URIs that users are redirected to after successful authentication
-					- config: JSON of other configuration options
+            - clusters:   list of clusters
+                - <cluster-name>:   MongoDB URI
+            - services:   list of services
+              - <service-name>:   overview of service
+                - type:       type of service
+                - name:       name of the service
+                - webhooks:   list of webhooks
+                  - <webhook-name>:   overview of webhook
+                    - id:         identifer of the webhook
+                    - name:       name of the webhook
+                    - output:     output type of the webhook
+                    - pipeline:   JSON of the webhook's pipeline
+                - rules:       list of rules
+                  - <rule-name>:   overview of rule
+                    - name:   name of the rule
+                    - id:     identifer of the rule
+                    - rule:   JSON of the complete rule
+            - pipelines:   list of named pipelines
+                - <pipeline-name>:   overview of pipeline
+                    - name:           name of the pipeline
+                    - id:             identifer of the pipeline
+                    - output:         output type of the pipeline
+                    - private:        whether the pipeline is private
+                    - skip-rules:     whether the pipeline skips rules
+                    - parameters:     list of parameters to the pipeline
+                    - can-evaluate:   JSON of the pipeline's evaluation condition
+                    - pipeline:       JSON of the pipeline
+            - values:    list of value names
+                - <value-name>:    assigned value
+            - authentication/auth:    list of configured authentication providers
+                - <auth-provider-name>:    overview of auth provider
+                    - type:      type of auth provider
+                    - name:      name of the auth provider
+                    - id:        identifier of the auth provider
+                    - enabled:   whether the auth provider is enabled
+                    - config:    JSON of other configuration options
+                    - metadata:  list of user metadata fields given by the auth provider
+                    - domain-restrictions:  set of domains that users can authenticate with
+                    - redirect-URIs:  the URIs that users are redirected to after successful authentication
 
 OPTIONS:
     --app <APP-ID>

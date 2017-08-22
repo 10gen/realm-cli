@@ -27,6 +27,7 @@ func GetApp() (a app.App, ok bool) {
 	}
 	a, err = app.Import(payload)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "stitch: failed to parse config: %s", err)
 		return
 	}
 	ok = true
