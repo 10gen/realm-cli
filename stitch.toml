@@ -1,0 +1,133 @@
+Group = "group-1"
+Name = "platespace-prod"
+ID = "598dca3bede4017c35942841"
+ClientID = "platespace-prod-txplq"
+
+[[Clusters]]
+  Name = "mongodb-atlas"
+  URI = "mongodb://localhost:27017/"
+
+[[Services]]
+  Type = "GitHub"
+  Name = "my-github-service"
+
+  [[Services.Webhooks]]
+    Name = "my-github-webhook-1"
+    ID = "5678asdf7890zxcv"
+    Output = "object"
+    Pipeline = """ [{"service": "my-slack-service", "action": "post"}] """
+
+  [[Services.Webhooks]]
+    Name = "my-github-webhook-2"
+    ID = ""
+    Output = ""
+    Pipeline = ""
+
+  [[Services.Rules]]
+    Name = "my-github-rule"
+    ID = "1234tyui5678ghjk"
+    Rule = """ {"%%true": true} """
+
+[[Services]]
+  Type = "HTTP"
+  Name = "my-http-service"
+
+  [[Services.Webhooks]]
+    Name = "my-http-webhook"
+    ID = ""
+    Output = ""
+    Pipeline = ""
+
+[[Services]]
+  Type = "Slack"
+  Name = "my-slack-service"
+
+[[Services]]
+  Type = "Slack"
+  Name = "my-other-slack-service"
+
+[[Pipelines]]
+  Name = "my-pipe1"
+  ID = "3456erty8765kjhg"
+  Output = "array"
+  Private = true
+  SkipRules = false
+  CanEvaluate = """ {"%%true": true} """
+  Pipeline = """ [{
+    "service": "my-slack-service",
+    "action": "post",
+    "args": {
+      "channel": { "%cond": {
+        "if": {"%neq": ["%%args.channel", ""]},
+        "then": "%%args.channel",
+        "else": "general"
+      }},
+      "username": "dummybot",
+      "text": "%%args.message"
+    }
+  }]
+  """
+
+  [[Pipelines.Parameters]]
+    Name = "message"
+    Required = true
+
+  [[Pipelines.Parameters]]
+    Name = "channel"
+    Required = false
+
+[[Pipelines]]
+  Name = "my-pipe2"
+  ID = ""
+  Output = ""
+  Private = false
+  SkipRules = false
+  CanEvaluate = ""
+  Pipeline = ""
+
+[[Values]]
+  Name = "s3bucket"
+  Value = "my-s3-bucket"
+
+[[Values]]
+  Name = "admin-phone-number"
+  Value = "1234567890"
+
+[[Values]]
+  Name = "config"
+  [Values.Value]
+    bar = "no"
+    foo = "yes"
+
+[[AuthProviders]]
+  Type = "anon"
+  Name = "anonymous"
+  ID = "0987fdsa7654gfsd"
+  Enabled = true
+  Config = ""
+
+[[AuthProviders]]
+  Type = "email"
+  Name = "email"
+  ID = "1289fhdj0921yuio"
+  Enabled = true
+  Metadata = ["email"]
+  DomainRestrictions = ["example.com"]
+  Config = ""
+
+[[AuthProviders]]
+  Type = "oauth"
+  Name = "facebook"
+  ID = "0987fdsa7654gfsd"
+  Enabled = false
+  Metadata = ["name", "picture", "email"]
+  DomainRestrictions = ["facebook.com"]
+  RedirectURIs = ["domain.com/endpoint"]
+  Config = """ {"clientId": "1234zxcv", "clientSecret": "qwer5678"} """
+
+[[AuthProviders]]
+  Type = "apikey"
+  Name = "api-keys"
+  ID = ""
+  Enabled = false
+  Config = ""

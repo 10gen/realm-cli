@@ -7,8 +7,6 @@ var (
 	ErrNotLoggedIn     = errors.New("stitch: you are not logged in.")
 )
 
-var Chdir string
-
 // LoggedIn checks whether the local config has a logged in user.
 func LoggedIn() bool {
 	return true // TODO

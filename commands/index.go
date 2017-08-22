@@ -15,9 +15,9 @@ USAGE:
     stitch [--version] [--help] [-C <PATH>] <COMMAND> [<ARGS>]
 `,
 	LongUsage: `OPTIONS:
-    -C <PATH>
-            Run as if stitch was started in PATH instead of the current
-            working directory.
+    -C <CONFIG>
+            Set the stitch config file. Defaults to looking for stitch.toml
+            recursively up from the current working directory.
     --color true|false
             Enable/disabled colored output. Defaults to coloring based on
             your environment.

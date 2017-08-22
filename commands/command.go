@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"github.com/10gen/stitch-cli/config"
+	"github.com/10gen/stitch-cli/local"
 	"github.com/10gen/stitch-cli/ui"
 	flag "github.com/ogier/pflag"
 )
@@ -28,7 +28,7 @@ func (c *Command) InitFlags() *flag.FlagSet {
 	f.Usage = func() {}
 	f.BoolVar(&flagGlobalHelp, "help", false, "")
 	f.BoolVar(&ui.ColorEnabled, "color", ui.ColorEnabled, "")
-	f.StringVarP(&config.Chdir, "", "C", "", "")
+	f.StringVarP(&local.Config, "", "C", "", "")
 	c.FlagSet = f
 	return f
 }

@@ -57,7 +57,7 @@ ARGS:
                     - pipeline: JSON of the pipeline
             - values: list of value names
                 - name of value: assigned value
-            - authentication: list of configure authentication providers
+            - authentication/auth: list of configure authentication providers
                 - name of auth provider. Within a specified auth provider:
 				    - type: type of auth provider
 					- name: name of the auth provider
@@ -105,7 +105,7 @@ func infoRun() error {
 		return infoPipelines(args[1:])
 	case "values":
 		return infoValues(args[1:])
-	case "authentication":
+	case "authentication", "auth":
 		return infoAuthentication(args[1:])
 	default:
 		if len(args) > 1 {
