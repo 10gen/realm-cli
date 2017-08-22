@@ -2,11 +2,11 @@
 
 TODO:
 - finish implementing command logic (see [`commands/index.go`](./commands/index.go))
-- shell completion
-- support --json in more commands (currently just `info` command)
-- docstrings
-- integration tests
+- vendor in dependencies
 - fix `login` bug where `--api-key 12345678` fails but `--api-key=12345678` works
+- support --json in more commands (currently just `info` command)
+- shell completion
+- integration tests
 
 ### UI Draft
 
