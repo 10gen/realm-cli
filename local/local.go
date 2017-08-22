@@ -1,3 +1,4 @@
+// Package local provides functions for dealing with local app configurations.
 package local
 
 import (
@@ -10,12 +11,21 @@ import (
 	"github.com/10gen/stitch-cli/app"
 )
 
+// Config is the path to a stitch.json app configuration file. If left unset, a
+// config is found by traveling up the directory hierarchy looking for a file
+// called "stitch.json".
 var Config string
 
 const stitchConfig = "stitch.json"
 
-var ErrConfigNotFound = errors.New("stitch config not found.")
+// Errors related to local app configurations:
+var (
+	ErrConfigNotFound = errors.New("stitch config not found")
+)
 
+// GetApp retrieves an app locally, if possible, using either the specified
+// Config variable or by traveling up the directory hierarchy looking for
+// "stitch.json".
 func GetApp() (a app.App, ok bool) {
 	path, err := findStitchConfig()
 	if err != nil {
@@ -37,7 +47,7 @@ func GetApp() (a app.App, ok bool) {
 func findStitchConfig() (path string, err error) {
 	if Config != "" {
 		if _, err = os.Stat(Config); err != nil {
-			err = errors.New("stitch: specified local config does not exist.")
+			err = errors.New("stitch: specified local config does not exist")
 			fmt.Fprintf(os.Stderr, "%s", err)
 			return
 		}
