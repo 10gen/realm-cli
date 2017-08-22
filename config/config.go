@@ -11,15 +11,16 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Errors related to user authentication and configuration.
 var (
-	ErrAlreadyLoggedIn = errors.New("stitch: you are already logged in.")
-	ErrNotLoggedIn     = errors.New("stitch: you are not logged in.")
-	ErrInvalidAPIKey   = errors.New("stitch: invalid API key.")
+	ErrNotLoggedIn   = errors.New("stitch: you are not logged in")
+	ErrInvalidAPIKey = errors.New("stitch: invalid API key")
 )
 
-var userConfig config
+var userConfig Config
 
-var Yes bool // set by -y/--yes in commands/command.go
+// Yes disables "are you sure?"-style prompts.
+var Yes bool
 
 func init() {
 	home, _ := homedir.Dir()
@@ -40,20 +41,29 @@ func init() {
 	}
 }
 
-type config struct {
-	ApiKey       string `yaml:"api_key"`
+// Config stores the user's login credentials and some metadata.
+type Config struct {
+	Name         string `yaml:"name"`
+	Email        string `yaml:"email"`
+	APIKey       string `yaml:"api_key"`
 	RefreshToken string `yaml:"refresh_token"`
 
 	path string
 }
 
-func (c *config) loggedIn() bool {
-	return ValidApiKey(c.ApiKey)
+func (c *Config) loggedIn() bool {
+	return ValidAPIKey(c.APIKey)
 }
 
-func (c *config) changeAndWrite(other config) error {
-	if other.ApiKey != "" {
-		c.ApiKey = other.ApiKey
+func (c *Config) changeAndWrite(other Config) error {
+	if other.Name != "" {
+		c.Name = other.Name
+	}
+	if other.Email != "" {
+		c.Email = other.Email
+	}
+	if other.APIKey != "" {
+		c.APIKey = other.APIKey
 	}
 	if other.RefreshToken != "" {
 		c.RefreshToken = other.RefreshToken
@@ -63,11 +73,17 @@ func (c *config) changeAndWrite(other config) error {
 	return err
 }
 
-func (c *config) logout() error {
-	*c = config{path: c.path} // zero out fields
+func (c *Config) logout() error {
+	c.APIKey = ""
+	c.RefreshToken = ""
 	raw, _ := yaml.Marshal(c)
 	err := ioutil.WriteFile(c.path, raw, 0600)
 	return err
+}
+
+// User gets the user's configured login information.
+func User() Config {
+	return userConfig
 }
 
 // LoggedIn checks whether the local config has a logged in user.
@@ -78,7 +94,7 @@ func LoggedIn() bool {
 // LogIn logs in using the given api key. This will delete the previously
 // used api key and update the user's config.
 func LogIn(apiKey string) error {
-	if !ValidApiKey(apiKey) {
+	if !ValidAPIKey(apiKey) {
 		return ErrInvalidAPIKey
 	}
 	if LoggedIn() && !Yes {
@@ -99,8 +115,8 @@ func LogIn(apiKey string) error {
 	}
 	refreshToken := "1234qwer0987poiu"
 	// TODO: actually get a new refresh token, error if bad credentials
-	err := userConfig.changeAndWrite(config{
-		ApiKey:       apiKey,
+	err := userConfig.changeAndWrite(Config{
+		APIKey:       apiKey,
 		RefreshToken: refreshToken,
 	})
 	return err
@@ -114,6 +130,15 @@ func LogOut() error {
 	return userConfig.logout()
 }
 
-func ValidApiKey(apiKey string) bool {
+// Fetch pull user data from stitch's services and updates the local config
+// accordingly.
+// This may log the user out if their login credentials are not valid.
+func Fetch() error {
+	// TODO
+	return nil
+}
+
+// ValidAPIKey locally checks if the given API key is valid.
+func ValidAPIKey(apiKey string) bool {
 	return len(apiKey) == 8 // TODO
 }

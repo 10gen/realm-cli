@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/10gen/stitch-cli/config"
 	flag "github.com/ogier/pflag"
 )
@@ -10,34 +12,36 @@ var me = &Command{
 	Name: "me",
 	ShortUsage: `
 USAGE:
-    stitch me [--help] [<SPECIFIER>]
+    stitch me [--help] [--fetch] [<SPECIFIER>]
 `,
 	LongUsage: `Show your user info.
 
 ARGS:
     <SPECIFIER>
             One of "name", "email", or "api-key" to get that particular field of information.
+
+OPTIONS:
+    --fetch
+            Retrieve and update user info according to stitch servers.
 `,
 }
 
 var (
 	meFlagSet *flag.FlagSet
+
+	flagMeFetch bool
 )
 
 func init() {
 	meFlagSet = me.InitFlags()
+	meFlagSet.BoolVar(&flagMeFetch, "fetch", false, "")
 }
 
 func meRun() error {
 	args := clustersFlagSet.Args()
 	var specifier string
 	if len(args) > 0 {
-		switch args[0] {
-		case "name", "email", "api-key":
-			specifier = args[0]
-		default:
-			return errorf("invalid permissions %q.", args[0])
-		}
+		specifier = args[0]
 		args = args[1:]
 	}
 	if len(args) > 0 {
@@ -47,25 +51,32 @@ func meRun() error {
 	if !config.LoggedIn() {
 		return config.ErrNotLoggedIn
 	}
-	items := meInfo()
-	if specifier != "" {
-		for _, item := range items {
-			if item.key == specifier {
-				printSingleKV(item)
-				break
-			}
+	if flagMeFetch {
+		err := config.Fetch()
+		if err != nil {
+			return err
 		}
-	} else {
+	}
+
+	user := config.User()
+	if specifier == "" {
+		items := []kv{
+			{key: "name", value: user.Name},
+			{key: "email", value: user.Email},
+			{key: "api-key", value: user.APIKey},
+		}
 		printKV(items)
+		return nil
+	}
+	switch specifier {
+	case "name":
+		fmt.Println(user.Name)
+	case "email":
+		fmt.Println(user.Email)
+	case "api-key":
+		fmt.Println(user.APIKey)
+	default:
+		return errUnknownArg(specifier)
 	}
 	return nil
-}
-
-func meInfo() []kv {
-	// TODO
-	return []kv{
-		{key: "name", value: "Charlie Programmer"},
-		{key: "email", value: "charlie.programmer@example.com"},
-		{key: "api-key", value: "ONETWOTHREEFOUR"},
-	}
 }

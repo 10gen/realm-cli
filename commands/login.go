@@ -28,7 +28,6 @@ var (
 
 var (
 	ErrApiKeyRequired = errorf("an API key (--api-key=<TOKEN>) must be supplied to log in.")
-	ErrInvalidApiKey  = errorf("invalid API key.")
 )
 
 func init() {
@@ -44,13 +43,6 @@ func loginRun() error {
 	apiKey := flagLoginApiKey
 	if apiKey == "" {
 		return ErrApiKeyRequired
-	}
-	if !config.ValidApiKey(apiKey) {
-		return ErrInvalidApiKey
-	}
-
-	if config.LoggedIn() {
-		return config.ErrAlreadyLoggedIn
 	}
 	return config.LogIn(apiKey)
 }

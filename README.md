@@ -2,9 +2,11 @@
 
 TODO:
 - finish implementing command logic (see [`commands/index.go`](./commands/index.go))
+- shell completion
+- support --json in more commands (currently just `info` command)
 - docstrings
-- replace mock admin data with use of admin SDK
 - integration tests
+- fix `login` bug where `--api-key 12345678` fails but `--api-key=12345678` works
 
 ### UI Draft
 
@@ -27,7 +29,7 @@ Commands:
 
 ```sh
 # expandable for future login methods (which would just create token for you)
-$ stitch login --api-key <TOKEN>
+$ stitch login --api-key=<TOKEN>
 
 $ stitch me
 name: lucas morales
