@@ -46,7 +46,7 @@ type PipelineParameter struct {
 
 type Value struct {
 	Name  string
-	Value interface{} // something json.Unmarshal would create
+	Value json.RawMessage
 }
 
 type AuthProvider struct {

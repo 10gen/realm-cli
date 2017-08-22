@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -463,7 +464,9 @@ func infoServicesParticularWebhooks(service app.Service, args []string) error {
 	case "output":
 		output = webhook.Output
 	case "pipeline":
-		fmt.Println(webhook.Pipeline) // always JSON
+		buf := new(bytes.Buffer)
+		json.Compact(buf, webhook.Pipeline)
+		fmt.Printf("%s\n", buf.Bytes()) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -539,7 +542,9 @@ func infoServicesParticularRules(service app.Service, args []string) error {
 	case "id":
 		output = rule.ID
 	case "rule":
-		fmt.Println(rule.Rule) // always JSON
+		buf := new(bytes.Buffer)
+		json.Compact(buf, rule.Rule)
+		fmt.Printf("%s\n", buf.Bytes()) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -700,10 +705,14 @@ func infoPipelinesParticular(name string, args []string) error {
 		}
 		return nil
 	case "can-evaluate":
-		fmt.Println(pipeline.CanEvaluate) // always JSON
+		buf := new(bytes.Buffer)
+		json.Compact(buf, pipeline.CanEvaluate)
+		fmt.Printf("%s\n", buf.Bytes()) // always JSON
 		return nil
 	case "pipeline":
-		fmt.Println(pipeline.Pipeline) // always JSON
+		buf := new(bytes.Buffer)
+		json.Compact(buf, pipeline.Pipeline)
+		fmt.Printf("%s\n", buf.Bytes()) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -759,13 +768,18 @@ func infoValues(args []string) error {
 		return errorf("value %q not found.", valueName)
 	}
 	if !flagInfoJSON {
-		if s, ok := value.Value.(string); ok {
+		// We'll print a pulled-out string, if possible.
+		// Otherwise, just print JSON.
+		var v interface{}
+		json.Unmarshal(value.Value, &v)
+		if s, ok := v.(string); ok {
 			fmt.Println(s)
 			return nil
 		}
 	}
-	raw, _ := json.Marshal(value.Value)
-	fmt.Printf("%s\n", raw)
+	buf := new(bytes.Buffer)
+	json.Compact(buf, value.Value)
+	fmt.Printf("%s\n", buf.Bytes()) // always JSON
 	return nil
 }
 
