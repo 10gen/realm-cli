@@ -29,7 +29,7 @@ var (
 )
 
 func init() {
-	helpFlagSet = help.InitFlags()
+	helpFlagSet = help.initFlags()
 	helpFlagSet.BoolVarP(&flagHelpGuide, "guide", "g", false, "")
 }
 

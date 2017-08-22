@@ -30,7 +30,7 @@ var (
 )
 
 func init() {
-	clustersFlagSet = clusters.InitFlags()
+	clustersFlagSet = clusters.initFlags()
 }
 
 func clustersRun() error {

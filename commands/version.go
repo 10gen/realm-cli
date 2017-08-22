@@ -6,6 +6,7 @@ import (
 	flag "github.com/ogier/pflag"
 )
 
+// Version is the version associated with this source code.
 const Version = "0.0.1"
 
 var version = &Command{
@@ -23,7 +24,7 @@ var (
 )
 
 func init() {
-	versionFlagSet = version.InitFlags()
+	versionFlagSet = version.initFlags()
 }
 
 func versionRun() error {

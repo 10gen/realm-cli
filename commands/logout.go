@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	logoutFlagSet = logout.InitFlags()
+	logoutFlagSet = logout.initFlags()
 }
 
 func logoutRun() error {

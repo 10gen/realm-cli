@@ -65,7 +65,7 @@ var (
 func init() {
 	indexPtr = Index
 
-	indexFlagSet = Index.InitFlags()
+	indexFlagSet = Index.initFlags()
 	indexFlagSet.BoolVar(&flagIndexVersion, "version", false, "")
 }
 

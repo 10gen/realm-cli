@@ -33,13 +33,13 @@ var (
 )
 
 func init() {
-	groupsFlagSet = groups.InitFlags()
+	groupsFlagSet = groups.initFlags()
 	groupsFlagSet.BoolVar(&flagGroupsHidePerms, "hide-perms", false, "")
 }
 
 func groupsRun() error {
 	args := groupsFlagSet.Args()
-	var perms permissions = permissionsAny
+	perms := permissionsAny
 	if len(args) > 0 {
 		switch args[0] {
 		case permissionsRW, permissionsR:

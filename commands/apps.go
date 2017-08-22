@@ -32,7 +32,7 @@ var (
 )
 
 func init() {
-	appsFlagSet = apps.InitFlags()
+	appsFlagSet = apps.initFlags()
 	appsFlagSet.BoolVar(&flagAppsHidePerms, "hide-perms", false, "")
 }
 

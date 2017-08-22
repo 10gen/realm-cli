@@ -13,6 +13,7 @@ type Executor struct {
 	*Command
 }
 
+// Execute is the root entry point for a Command.
 func (e Executor) Execute(args []string) error {
 	if len(args) > 0 {
 		if subcmd, ok := e.Subcommands[args[0]]; ok {
@@ -25,7 +26,7 @@ func (e Executor) Execute(args []string) error {
 		e.Usage()
 		return err
 	}
-	err = e.Command.Execute()
+	err = e.Command.execute()
 	if err == flag.ErrHelp {
 		e.Usage()
 		return nil
@@ -36,6 +37,8 @@ func (e Executor) Execute(args []string) error {
 	return err
 }
 
+// Usage prints the usage associated with the command with varying brevity
+// corresponding to whether help was requested.
 func (e Executor) Usage() {
 	var lines []string
 	for _, line := range strings.Split(e.ShortUsage, "\n") {

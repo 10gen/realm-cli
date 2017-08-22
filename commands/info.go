@@ -87,7 +87,7 @@ var (
 )
 
 func init() {
-	infoFlagSet = info.InitFlags()
+	infoFlagSet = info.initFlags()
 	infoFlagSet.StringVar(&flagInfoApp, "app", "", "")
 	infoFlagSet.BoolVar(&flagInfoJSON, "json", false, "")
 }

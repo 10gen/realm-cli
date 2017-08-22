@@ -23,16 +23,16 @@ OPTIONS:
 var (
 	loginFlagSet *flag.FlagSet
 
-	flagLoginApiKey string
+	flagLoginAPIKey string
 )
 
 var (
-	ErrApiKeyRequired = errorf("an API key (--api-key=<TOKEN>) must be supplied to log in.")
+	errAPIKeyRequired = errorf("an API key (--api-key=<TOKEN>) must be supplied to log in.")
 )
 
 func init() {
-	loginFlagSet = login.InitFlags()
-	loginFlagSet.StringVar(&flagLoginApiKey, "api-key", "", "")
+	loginFlagSet = login.initFlags()
+	loginFlagSet.StringVar(&flagLoginAPIKey, "api-key", "", "")
 }
 
 func loginRun() error {
@@ -40,9 +40,9 @@ func loginRun() error {
 		return errUnknownArg(loginFlagSet.Arg(0))
 	}
 
-	apiKey := flagLoginApiKey
+	apiKey := flagLoginAPIKey
 	if apiKey == "" {
-		return ErrApiKeyRequired
+		return errAPIKeyRequired
 	}
 	return config.LogIn(apiKey)
 }

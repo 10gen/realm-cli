@@ -33,7 +33,7 @@ var (
 )
 
 func init() {
-	meFlagSet = me.InitFlags()
+	meFlagSet = me.initFlags()
 	meFlagSet.BoolVar(&flagMeFetch, "fetch", false, "")
 }
 
