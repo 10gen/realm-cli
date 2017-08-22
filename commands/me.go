@@ -41,7 +41,7 @@ func meRun() error {
 		args = args[1:]
 	}
 	if len(args) > 0 {
-		return errorUnknownArg(args[0])
+		return errUnknownArg(args[0])
 	}
 
 	if !config.LoggedIn() {

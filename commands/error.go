@@ -6,7 +6,7 @@ func errorf(format string, a ...interface{}) error {
 	return fmt.Errorf("stitch: "+format, a...)
 }
 
-func errorUnknownArg(arg string) error {
+func errUnknownArg(arg string) error {
 	return errorf("unknown argument %q.", arg)
 }
 

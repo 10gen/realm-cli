@@ -16,10 +16,30 @@ type Cluster struct {
 
 type Service struct {
 	Type, Name string
+	Webhooks   []Webhook
+	Rules      []ServiceRule
+}
+
+type Webhook struct {
+	Name, ID, Output string
+	Pipeline         string // JSON
+}
+
+type ServiceRule struct {
+	Name, ID string
+	Rule     string // JSON
 }
 
 type Pipeline struct {
-	Name string
+	Name, ID, Output      string
+	Private, SkipRules    bool
+	Parameters            []PipelineParameter
+	CanEvaluate, Pipeline string // JSON
+}
+
+type PipelineParameter struct {
+	Name     string
+	Required bool
 }
 
 type Value struct {
@@ -28,5 +48,8 @@ type Value struct {
 }
 
 type AuthProvider struct {
-	Name string
+	Type, Name, ID                             string
+	Enabled                                    bool
+	Metadata, DomainRestrictions, RedirectURIs []string
+	Config                                     string // JSON
 }

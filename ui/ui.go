@@ -20,6 +20,9 @@ func init() {
 var esc = escaper.Default()
 
 const (
+	colorBooleanStart = "%F{red}"
+	colorBooleanEnd   = "%f"
+
 	colorGroupStart = "%F{green}"
 	colorGroupEnd   = "%f"
 
@@ -31,16 +34,25 @@ const (
 
 	colorServiceTypeStart = "%F{magenta}"
 	colorServiceTypeEnd   = "%f"
+
+	colorParameterNameStart = "%B%F{yellow}"
+	colorParameterNameEnd   = "%f%b"
+
+	colorAuthProviderTypeStart = "%B%F{yellow}"
+	colorAuthProviderTypeEnd   = "%f%b"
 )
 
 type Variant int
 
 const (
 	None Variant = iota
+	Boolean
 	Group
 	AppClientID
 	Permissions
 	ServiceType
+	ParameterName
+	AuthProviderType
 )
 
 func Color(v Variant, s string) string {
@@ -48,6 +60,8 @@ func Color(v Variant, s string) string {
 		return s
 	}
 	switch v {
+	case Boolean:
+		return boolean(s)
 	case Group:
 		return group(s)
 	case AppClientID:
@@ -56,9 +70,18 @@ func Color(v Variant, s string) string {
 		return permissions(s)
 	case ServiceType:
 		return serviceType(s)
+	case ParameterName:
+		return parameterName(s)
+	case AuthProviderType:
+		return authProviderType(s)
 	default:
 		return s
 	}
+}
+
+func boolean(s string) string {
+	s = strings.Replace(s, "%", "%%", -1)
+	return esc.Expand(colorBooleanStart + s + colorBooleanEnd)
 }
 
 func group(s string) string {
@@ -79,4 +102,14 @@ func permissions(s string) string {
 func serviceType(s string) string {
 	s = strings.Replace(s, "%", "%%", -1)
 	return esc.Expand(colorServiceTypeStart + s + colorServiceTypeEnd)
+}
+
+func parameterName(s string) string {
+	s = strings.Replace(s, "%", "%%", -1)
+	return esc.Expand(colorParameterNameStart + s + colorParameterNameEnd)
+}
+
+func authProviderType(s string) string {
+	s = strings.Replace(s, "%", "%%", -1)
+	return esc.Expand(colorAuthProviderTypeStart + s + colorAuthProviderTypeEnd)
 }

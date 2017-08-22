@@ -90,7 +90,7 @@ func helpRun() error {
 			}
 		}
 		if !ok {
-			return errorUnknownArg(args[0])
+			return errUnknownArg(args[0])
 		}
 		Executor{cmd}.Usage()
 		return nil

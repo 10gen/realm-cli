@@ -28,7 +28,7 @@ func init() {
 
 func versionRun() error {
 	if len(versionFlagSet.Args()) > 0 {
-		return errorUnknownArg(versionFlagSet.Arg(0))
+		return errUnknownArg(versionFlagSet.Arg(0))
 	}
 	fmt.Println(Version)
 	return nil

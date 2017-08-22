@@ -39,7 +39,7 @@ func init() {
 func appsRun() error {
 	args := appsFlagSet.Args()
 	if len(args) > 1 {
-		return errorUnknownArg(args[0])
+		return errUnknownArg(args[0])
 	}
 	if !config.LoggedIn() {
 		return config.ErrNotLoggedIn

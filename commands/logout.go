@@ -26,7 +26,7 @@ func init() {
 
 func logoutRun() error {
 	if len(logoutFlagSet.Args()) > 0 {
-		return errorUnknownArg(logoutFlagSet.Arg(0))
+		return errUnknownArg(logoutFlagSet.Arg(0))
 	}
 	if !config.LoggedIn() {
 		return config.ErrNotLoggedIn
