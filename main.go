@@ -1,3 +1,4 @@
+// Stitch is a tool for command-line administration of MongoDB Stitch applications.
 package main
 
 import (

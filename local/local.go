@@ -18,9 +18,8 @@ var Config string
 
 const stitchConfig = "stitch.json"
 
-// Errors related to local app configurations:
 var (
-	ErrConfigNotFound = errors.New("stitch config not found")
+	errConfigNotFound = errors.New("stitch config not found")
 )
 
 // GetApp retrieves an app locally, if possible, using either the specified
@@ -73,5 +72,5 @@ func findStitchConfig() (path string, err error) {
 		wd = filepath.Clean(filepath.Join(wd, ".."))
 	}
 
-	return "", ErrConfigNotFound
+	return "", errConfigNotFound
 }
