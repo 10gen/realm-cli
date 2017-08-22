@@ -1,5 +1,7 @@
 package app
 
+import "encoding/json"
+
 type App struct {
 	Group, Name, ID, ClientID string
 
@@ -22,19 +24,19 @@ type Service struct {
 
 type Webhook struct {
 	Name, ID, Output string
-	Pipeline         string // JSON
+	Pipeline         json.RawMessage
 }
 
 type ServiceRule struct {
 	Name, ID string
-	Rule     string // JSON
+	Rule     json.RawMessage
 }
 
 type Pipeline struct {
 	Name, ID, Output      string
 	Private, SkipRules    bool
 	Parameters            []PipelineParameter
-	CanEvaluate, Pipeline string // JSON
+	CanEvaluate, Pipeline json.RawMessage
 }
 
 type PipelineParameter struct {
@@ -51,5 +53,5 @@ type AuthProvider struct {
 	Type, Name, ID                             string
 	Enabled                                    bool
 	Metadata, DomainRestrictions, RedirectURIs []string
-	Config                                     string // JSON
+	Config                                     json.RawMessage
 }

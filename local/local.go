@@ -12,7 +12,7 @@ import (
 
 var Config string
 
-const stitchConfig = "stitch.toml"
+const stitchConfig = "stitch.json"
 
 var ErrConfigNotFound = errors.New("stitch config not found.")
 

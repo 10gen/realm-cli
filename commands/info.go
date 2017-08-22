@@ -202,13 +202,16 @@ func infoAll() error {
 }
 
 func infoItem(item string) error {
-	app, _, err := infoGetApp()
+	app, isLocal, err := infoGetApp()
 	if err != nil {
 		return err
 	}
 	var output string
 	var v ui.Variant = ui.None
 	switch item {
+	case "local":
+		output = strconv.FormatBool(isLocal)
+		v = ui.Boolean
 	case "group":
 		output = app.Group
 		v = ui.Group
@@ -460,8 +463,7 @@ func infoServicesParticularWebhooks(service app.Service, args []string) error {
 	case "output":
 		output = webhook.Output
 	case "pipeline":
-		output = webhook.Pipeline
-		fmt.Println(output) // output is always JSON
+		fmt.Println(webhook.Pipeline) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -537,8 +539,7 @@ func infoServicesParticularRules(service app.Service, args []string) error {
 	case "id":
 		output = rule.ID
 	case "rule":
-		output = rule.Rule
-		fmt.Println(output) // output is always JSON
+		fmt.Println(rule.Rule) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -699,12 +700,10 @@ func infoPipelinesParticular(name string, args []string) error {
 		}
 		return nil
 	case "can-evaluate":
-		output = pipeline.CanEvaluate
-		fmt.Println(output) // output is always JSON
+		fmt.Println(pipeline.CanEvaluate) // always JSON
 		return nil
 	case "pipeline":
-		output = pipeline.Pipeline
-		fmt.Println(output) // output is always JSON
+		fmt.Println(pipeline.Pipeline) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
@@ -920,8 +919,7 @@ func infoAuthentication(args []string) error {
 		}
 		return nil
 	case "config":
-		output = authProvider.Config
-		fmt.Println(output) // output is always JSON
+		fmt.Println(authProvider.Config) // always JSON
 		return nil
 	default:
 		return errUnknownArg(subcmd)
