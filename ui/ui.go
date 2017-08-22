@@ -1,3 +1,4 @@
+// Package ui provides types and functions for conditionally coloring output.
 package ui
 
 import (
@@ -8,6 +9,9 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// ColorEnabled determines whether or not any coloring (or other ANSI
+// formatting) is done.
+// By default, it gets set according to whether stdout is a TTY.
 var ColorEnabled bool
 
 func init() {
@@ -42,8 +46,10 @@ const (
 	colorAuthProviderTypeEnd   = "%f%b"
 )
 
+// Variant is a class of items for which colorings are defined.
 type Variant int
 
+// Variants that have been defined:
 const (
 	None Variant = iota
 	Boolean
@@ -55,6 +61,8 @@ const (
 	AuthProviderType
 )
 
+// Color applies a coloring corresponding to the supplied variant to the given
+// string, provided that ColorEnabled is true.
 func Color(v Variant, s string) string {
 	if !ColorEnabled {
 		return s
