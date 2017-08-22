@@ -1,3 +1,6 @@
+// Package config provides functionality for interacting with stitch user
+// authentication and configuration. Configuration data is stored as YAML in
+// "~/.config/stitch".
 package config
 
 import (
