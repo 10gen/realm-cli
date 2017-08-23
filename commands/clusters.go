@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 
+	"github.com/10gen/stitch-cli/atlas"
 	"github.com/10gen/stitch-cli/config"
 	"github.com/10gen/stitch-cli/ui"
 	flag "github.com/ogier/pflag"
@@ -74,7 +75,7 @@ func clustersRun() error {
 		printSingleKV(cs)
 		return nil
 	}
-	uri, err := clusterURI(group, cluster)
+	uri, err := atlas.GetClusterURI(group, cluster)
 	if err != nil {
 		return err
 	}
@@ -82,22 +83,26 @@ func clustersRun() error {
 	return nil
 }
 
-func clustersAll() ([]kv, error) {
-	// TODO
-	// should all use {key, values}
-	return []kv{
-		{key: "group-1", values: []string{"cluster0", "cluster1"}},
-		{key: "group-2", values: []string{"clustera", "clusterb"}},
-	}, nil
+func clustersAll() (items []kv, err error) {
+	clusters, err := atlas.GetAllClusters()
+	if err != nil {
+		return
+	}
+	for group, cs := range clusters {
+		items = append(items, kv{key: group, values: cs})
+	}
+	return
 }
 
-func clustersForGroup(group string) (kv, error) {
-	// TODO
-	switch group {
-	case "group-1":
-		return kv{key: group, values: []string{"cluster0", "cluster1"}}, nil
-	case "group-2":
-		return kv{key: group, values: []string{"clustera", "clusterb"}}, nil
+func clustersForGroup(group string) (item kv, err error) {
+	clusters, err := atlas.GetClusters(group)
+	if err != nil {
+		return
 	}
-	return kv{}, errorNotInGroup(group)
+	clusterNames := make([]string, len(clusters))
+	for i, cluster := range clusters {
+		clusterNames[i] = cluster[0]
+	}
+	item = kv{key: group, values: clusterNames}
+	return
 }

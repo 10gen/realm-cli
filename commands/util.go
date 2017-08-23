@@ -134,24 +134,3 @@ func printSingleKV(item kv) {
 func validGroup(group string) bool {
 	return len(group) > 2 // TODO
 }
-
-func clusterURI(group, cluster string) (string, error) {
-	// TODO
-	switch group {
-	case "group-1":
-		switch cluster {
-		case "cluster0", "cluster1":
-			return "mongodb://localhost:27017/test?ssl=false", nil
-		}
-		return "", errorClusterNotExistsForGroup(group, cluster)
-	case "group-2":
-		switch cluster {
-		case "clustera", "clusterb":
-			return "mongodb://localhost:27017/test?ssl=false", nil
-		}
-		return "", errorClusterNotExistsForGroup(group, cluster)
-	case "group-3":
-		return "", errorClusterNotExistsForGroup(group, cluster)
-	}
-	return "", errorNotInGroup(group)
-}

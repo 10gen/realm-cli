@@ -36,8 +36,9 @@ func init() {
 }
 
 func loginRun() error {
-	if len(loginFlagSet.Args()) > 0 {
-		return errUnknownArg(loginFlagSet.Arg(0))
+	args := loginFlagSet.Args()
+	if len(args) > 0 {
+		return errUnknownArg(args[0])
 	}
 
 	apiKey := flagLoginAPIKey

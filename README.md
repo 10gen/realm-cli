@@ -1,5 +1,8 @@
 # MongoDB Stitch CLI (not yet ready for use)
 
+Use the `mock` build tag to prevent actual calls to the atlas API, using
+mock data instead.
+
 TODO:
 - finish implementing command logic (see [`commands/index.go`](./commands/index.go))
 - vendor in dependencies
@@ -60,12 +63,13 @@ rw	platespace-st-asdfu
 $ stitch info
 local:    	yes
 group:    	group-1
-name:      	platespace-prod
+name:     	platespace-prod
 id:       	598dca3bede4017c35942841
 client_id:	platespace-prod-txplq
-clusters:	
+clusters:
 	mongodb-atlas
 services:
+	MongoDB	mongodb-atlas
 	GitHub	my-github-service
 	HTTP	my-http-service
 	Slack	my-slack-service
@@ -75,12 +79,12 @@ pipelines:
 	my-pipe2
 values:
 	s3bucket
-        admin-phone-number
+	admin-phone-number
 authentication:
 	anonymous
 	email
-        facebook
-        api-keys
+	facebook
+	api-keys
 
 
 $ stitch info client-id # great for npm build

@@ -82,7 +82,7 @@ func groupsRun() error {
 }
 
 func groupsAll() []permissionedItem {
-	// TODO
+	// TODO: use stitch admin SDK for permissioned roles assignments
 	return []permissionedItem{
 		{permissionsRW, "group-1"},
 		{permissionsRW, "group-2"},

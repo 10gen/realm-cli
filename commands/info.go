@@ -33,6 +33,7 @@ ARGS:
                 - <cluster-name>:   MongoDB URI
             - services:   list of services
               - <service-name>:   overview of service
+                - id:         identifier of the service
                 - type:       type of service
                 - name:       name of the service
                 - webhooks:   list of webhooks
@@ -43,13 +44,13 @@ ARGS:
                     - pipeline:   JSON of the webhook's pipeline
                 - rules:       list of rules
                   - <rule-name>:   overview of rule
-                    - name:   name of the rule
                     - id:     identifer of the rule
+                    - name:   name of the rule
                     - rule:   JSON of the complete rule
             - pipelines:   list of named pipelines
                 - <pipeline-name>:   overview of pipeline
-                    - name:           name of the pipeline
                     - id:             identifer of the pipeline
+                    - name:           name of the pipeline
                     - output:         output type of the pipeline
                     - private:        whether the pipeline is private
                     - skip-rules:     whether the pipeline skips rules
@@ -135,11 +136,19 @@ func infoAll() error {
 		return err
 	}
 
-	var clusters, pipelines, values, authentication []string
+	var clusters []string // names of mongodb services
+	var pipelines, values, authentication []string
 	var services [][2]string
 
-	for _, cluster := range app.Clusters {
-		clusters = append(clusters, cluster.Name)
+	for _, service := range app.Services {
+		if service.Type == "MongoDB" {
+			var config map[string]interface{}
+			json.Unmarshal(service.Config, &config)
+			_, ok := config["uri"]
+			if ok {
+				clusters = append(clusters, service.Name)
+			}
+		}
 	}
 	for _, pipeline := range app.Pipelines {
 		pipelines = append(pipelines, pipeline.Name)
@@ -163,9 +172,9 @@ func infoAll() error {
 			}
 		}
 		obj := map[string]interface{}{
+			"id":             app.ID,
 			"group":          app.Group,
 			"name":           app.Name,
-			"id":             app.ID,
 			"clientId":       app.ClientID,
 			"clusters":       clusters,
 			"services":       servicesJSON,
@@ -187,9 +196,9 @@ func infoAll() error {
 			services[i][0] = ui.Color(ui.ServiceType, services[i][0])
 		}
 		items = append(items,
+			kv{key: "id", value: app.ID},
 			kv{key: "group", value: ui.Color(ui.Group, app.Group)},
 			kv{key: "name", value: app.Name},
-			kv{key: "id", value: app.ID},
 			kv{key: "client-id", value: ui.Color(ui.AppClientID, app.ClientID)},
 			kv{key: "clusters", values: clusters},
 			kv{key: "services", valuePairs: services},
@@ -251,9 +260,16 @@ func infoClusters(args []string) error {
 	}
 
 	if clusterName == "" {
-		clusters := make([]string, len(userApp.Clusters))
-		for i, cluster := range userApp.Clusters {
-			clusters[i] = cluster.Name
+		var clusters []string
+		for _, service := range userApp.Services {
+			if service.Type == "MongoDB" {
+				var config map[string]interface{}
+				json.Unmarshal(service.Config, &config)
+				_, ok := config["uri"]
+				if ok {
+					clusters = append(clusters, service.Name)
+				}
+			}
 		}
 		if flagInfoJSON {
 			raw, _ := json.Marshal(clusters)
@@ -266,20 +282,23 @@ func infoClusters(args []string) error {
 		return nil
 	}
 
-	var cluster app.Cluster
-	for _, cluster = range userApp.Clusters {
-		if cluster.Name == clusterName {
+	var service app.Service
+	for _, service = range userApp.Services {
+		if service.Type == "MongoDB" && service.Name == clusterName {
 			break
 		}
 	}
-	if cluster.Name != clusterName {
+	if service.Name != clusterName {
 		return errorf("cluster %q not found.", clusterName)
 	}
+	var config map[string]interface{}
+	json.Unmarshal(service.Config, &config)
+	uri := config["uri"]
 	if flagInfoJSON {
-		raw, _ := json.Marshal(cluster.URI)
+		raw, _ := json.Marshal(uri)
 		fmt.Printf("%s\n", raw)
 	} else {
-		fmt.Println(cluster.URI)
+		fmt.Println(uri)
 	}
 	return nil
 }
@@ -343,19 +362,23 @@ func infoServicesParticular(name string, args []string) error {
 		}
 		if flagInfoJSON {
 			obj := map[string]interface{}{
+				"id":       service.ID,
 				"type":     service.Type,
 				"name":     service.Name,
 				"webhooks": webhooks,
 				"rules":    rules,
+				"config":   service.Config,
 			}
 			raw, _ := json.Marshal(obj)
 			fmt.Printf("%s\n", raw)
 		} else {
 			items := []kv{
+				{key: "id", value: service.ID},
 				{key: "type", value: ui.Color(ui.ServiceType, service.Type)},
 				{key: "name", value: service.Name},
 				{key: "webhooks", values: webhooks},
 				{key: "rules", values: rules},
+				{key: "config", value: "# add 'config' subcommand to get this JSON document"},
 			}
 			printKV(items)
 		}
@@ -365,6 +388,18 @@ func infoServicesParticular(name string, args []string) error {
 	subcmd := args[0]
 	args = args[1:]
 	switch subcmd {
+	case "id":
+		if len(args) > 0 {
+			return errUnknownArg(args[0])
+		}
+		output := service.ID
+		if flagInfoJSON {
+			raw, _ := json.Marshal(output)
+			fmt.Printf("%s\n", raw)
+		} else {
+			fmt.Println(output)
+		}
+		return nil
 	case "type":
 		if len(args) > 0 {
 			return errUnknownArg(args[0])
@@ -394,6 +429,11 @@ func infoServicesParticular(name string, args []string) error {
 		return infoServicesParticularWebhooks(service, args)
 	case "rules":
 		return infoServicesParticularRules(service, args)
+	case "config":
+		buf := new(bytes.Buffer)
+		json.Compact(buf, service.Config)
+		fmt.Printf("%s\n", buf.Bytes()) // always JSON
+		return nil
 	default:
 		return errUnknownArg(subcmd)
 	}

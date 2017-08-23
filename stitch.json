@@ -57,12 +57,6 @@
         }
     ],
     "ClientID": "platespace-prod-txplq",
-    "Clusters": [
-        {
-            "Name": "mongodb-atlas",
-            "URI": "mongodb://localhost:27017/"
-        }
-    ],
     "Group": "group-1",
     "ID": "598dca3bede4017c35942841",
     "Name": "platespace-prod",
@@ -121,6 +115,27 @@
         }
     ],
     "Services": [
+        {
+            "Name": "mongodb-atlas",
+            "Rules": [
+                {
+                    "ID": "1234tyui5678ghjk",
+                    "Name": "my-atlas-rule",
+                    "Rule": {
+                        "fields": {
+                            "owner_id": {
+                                "valid": "%%user.id"
+                            }
+                        },
+                        "namespace": "todo.items"
+                    }
+                }
+            ],
+            "Type": "MongoDB",
+            "Config": {
+                "uri": "mongodb://localhost:27017/"
+            }
+        },
         {
             "Name": "my-github-service",
             "Rules": [

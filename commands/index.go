@@ -12,11 +12,11 @@ var Index = &Command{
 	Run:  indexRun,
 	ShortUsage: `
 USAGE:
-    stitch [--version] [--help] [-C <PATH>] <COMMAND> [<ARGS>]
+    stitch [--version] [-h|--help] [-C <CONFIG>] <COMMAND> [<ARGS>]
 `,
 	LongUsage: `OPTIONS:
-    -C <CONFIG>
-            Set the stitch config file. Defaults to looking for stitch.toml
+    -C, --local-config <CONFIG>
+            Set the stitch config file. Defaults to looking for stitch.json
             recursively up from the current working directory.
     --color true|false
             Enable/disabled colored output. Defaults to coloring based on
@@ -43,15 +43,20 @@ SUBCOMMANDS:
    version    Show the version of this CLI
 `,
 	Subcommands: map[string]*Command{
+		// account-related
+		"apps":     apps,
+		"clusters": clusters,
+		"groups":   groups,
 		"login":    login,
 		"logout":   logout,
 		"me":       me,
-		"groups":   groups,
-		"apps":     apps,
-		"clusters": clusters,
-		"info":     info,
-		"help":     help,
-		"version":  version,
+		// app-related
+		"info":   info,
+		"clone":  clone,
+		"create": create,
+		// other
+		"help":    help,
+		"version": version,
 	},
 }
 

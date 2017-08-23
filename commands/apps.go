@@ -98,7 +98,7 @@ func appsForGroup(group string) ([]permissionedItem, error) {
 			{permissionsR, "blog-qwertt"},
 		}, nil
 	}
-	return nil, errorNotInGroup(group)
+	return nil, errNotInGroup(group)
 }
 
 func appsAll() map[string][]permissionedItem {

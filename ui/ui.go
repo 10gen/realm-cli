@@ -1,4 +1,5 @@
-// Package ui provides types and functions for conditionally coloring output.
+// Package ui provides types and functions for conditionally coloring output,
+// as well as for asking the command-line user questions.
 package ui
 
 import (

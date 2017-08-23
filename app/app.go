@@ -9,25 +9,19 @@ import "encoding/json"
 type App struct {
 	Group, Name, ID, ClientID string
 
-	Clusters      []Cluster
 	Services      []Service
 	Pipelines     []Pipeline
 	Values        []Value
 	AuthProviders []AuthProvider
 }
 
-// Cluster contains data relevant to the configuration of a MongoDB cluster
-// associated with an App.
-type Cluster struct {
-	Name, URI string
-}
-
 // Service contains data relevant to the configuration of any particular
 // service associated with an App.
 type Service struct {
-	Type, Name string
-	Webhooks   []Webhook
-	Rules      []ServiceRule
+	Type, Name, ID string
+	Webhooks       []Webhook
+	Rules          []ServiceRule
+	Config         json.RawMessage
 }
 
 // Webhook contains data relevant to the configuration of any particular

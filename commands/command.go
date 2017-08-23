@@ -3,7 +3,6 @@
 package commands
 
 import (
-	"github.com/10gen/stitch-cli/config"
 	"github.com/10gen/stitch-cli/local"
 	"github.com/10gen/stitch-cli/ui"
 	flag "github.com/ogier/pflag"
@@ -31,10 +30,10 @@ func (c *Command) initFlags() *flag.FlagSet {
 	f := flag.NewFlagSet(c.Name, flag.ContinueOnError)
 	f.SetInterspersed(true)
 	f.Usage = func() {}
-	f.BoolVar(&flagGlobalHelp, "help", false, "")
+	f.BoolVarP(&flagGlobalHelp, "help", "h", false, "")
 	f.BoolVar(&ui.ColorEnabled, "color", ui.ColorEnabled, "")
-	f.BoolVarP(&config.Yes, "yes", "y", false, "")
-	f.StringVarP(&local.Config, "", "C", "", "")
+	f.BoolVarP(&ui.Yes, "yes", "y", false, "")
+	f.StringVarP(&local.Config, "local-config", "C", "", "")
 	c.FlagSet = f
 	return f
 }
