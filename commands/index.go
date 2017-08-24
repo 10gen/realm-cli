@@ -51,9 +51,10 @@ SUBCOMMANDS:
 		"logout":   logout,
 		"me":       me,
 		// app-related
-		"info":   info,
 		"clone":  clone,
 		"create": create,
+		"diff":   diff,
+		"info":   info,
 		// other
 		"help":    help,
 		"version": version,

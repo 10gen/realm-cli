@@ -117,6 +117,7 @@
     "Services": [
         {
             "Name": "mongodb-atlas",
+            "ID": "599ed87bcdd3c3a7e8db3e35",
             "Rules": [
                 {
                     "ID": "1234tyui5678ghjk",
@@ -138,6 +139,7 @@
         },
         {
             "Name": "my-github-service",
+            "ID": "599ed86d897766e286b6795e",
             "Rules": [
                 {
                     "ID": "1234tyui5678ghjk",
@@ -170,6 +172,7 @@
         },
         {
             "Name": "my-http-service",
+            "ID": "599ed863d22465cd3611cc1b",
             "Rules": null,
             "Type": "HTTP",
             "Webhooks": [
@@ -183,12 +186,14 @@
         },
         {
             "Name": "my-slack-service",
+            "ID": "599ed88704930645d3b1d985",
             "Rules": null,
             "Type": "Slack",
             "Webhooks": null
         },
         {
             "Name": "my-other-slack-service",
+            "ID": "599ed88e4ecde47a4aceb8fc",
             "Rules": null,
             "Type": "Slack",
             "Webhooks": null

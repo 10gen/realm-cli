@@ -25,6 +25,12 @@ func init() {
 var esc = escaper.Default()
 
 const (
+	colorDiffOldStart = "%F{red}"
+	colorDiffOldEnd   = "%f"
+
+	colorDiffNewStart = "%F{green}"
+	colorDiffNewEnd   = "%f"
+
 	colorBooleanStart = "%F{red}"
 	colorBooleanEnd   = "%f"
 
@@ -53,6 +59,8 @@ type Variant int
 // Variants that have been defined:
 const (
 	None Variant = iota
+	DiffOld
+	DiffNew
 	Boolean
 	Group
 	AppClientID
@@ -69,6 +77,10 @@ func Color(v Variant, s string) string {
 		return s
 	}
 	switch v {
+	case DiffOld:
+		return diffOld(s)
+	case DiffNew:
+		return diffNew(s)
 	case Boolean:
 		return boolean(s)
 	case Group:
@@ -86,6 +98,16 @@ func Color(v Variant, s string) string {
 	default:
 		return s
 	}
+}
+
+func diffOld(s string) string {
+	s = strings.Replace(s, "%", "%%", -1)
+	return esc.Expand(colorDiffOldStart + s + colorDiffOldEnd)
+}
+
+func diffNew(s string) string {
+	s = strings.Replace(s, "%", "%%", -1)
+	return esc.Expand(colorDiffNewStart + s + colorDiffNewEnd)
 }
 
 func boolean(s string) string {

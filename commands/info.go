@@ -36,6 +36,7 @@ ARGS:
                 - id:         identifier of the service
                 - type:       type of service
                 - name:       name of the service
+                - config:     configuration for the service
                 - webhooks:   list of webhooks
                   - <webhook-name>:   overview of webhook
                     - id:         identifer of the webhook
@@ -125,7 +126,7 @@ func infoGetApp() (a app.App, isLocal bool, err error) {
 		}
 		return
 	}
-	// TODO: export based on flagInfoApp to create app.App
+	// TODO: use admin SDK to export based on flagInfoApp to create app.App
 	err = errorf("could not find app %q", flagInfoApp)
 	return
 }
@@ -376,9 +377,9 @@ func infoServicesParticular(name string, args []string) error {
 				{key: "id", value: service.ID},
 				{key: "type", value: ui.Color(ui.ServiceType, service.Type)},
 				{key: "name", value: service.Name},
+				{key: "config", value: "# add 'config' subcommand to get this JSON document"},
 				{key: "webhooks", values: webhooks},
 				{key: "rules", values: rules},
-				{key: "config", value: "# add 'config' subcommand to get this JSON document"},
 			}
 			printKV(items)
 		}
@@ -425,15 +426,15 @@ func infoServicesParticular(name string, args []string) error {
 			fmt.Println(output)
 		}
 		return nil
-	case "webhooks":
-		return infoServicesParticularWebhooks(service, args)
-	case "rules":
-		return infoServicesParticularRules(service, args)
 	case "config":
 		buf := new(bytes.Buffer)
 		json.Compact(buf, service.Config)
 		fmt.Printf("%s\n", buf.Bytes()) // always JSON
 		return nil
+	case "webhooks":
+		return infoServicesParticularWebhooks(service, args)
+	case "rules":
+		return infoServicesParticularRules(service, args)
 	default:
 		return errUnknownArg(subcmd)
 	}

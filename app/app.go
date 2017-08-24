@@ -19,9 +19,9 @@ type App struct {
 // service associated with an App.
 type Service struct {
 	Type, Name, ID string
+	Config         json.RawMessage
 	Webhooks       []Webhook
 	Rules          []ServiceRule
-	Config         json.RawMessage
 }
 
 // Webhook contains data relevant to the configuration of any particular
