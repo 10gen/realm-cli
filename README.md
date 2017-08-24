@@ -4,149 +4,162 @@ Use the `mock` build tag to prevent actual calls to the atlas API, using
 mock data instead.
 
 TODO:
-- finish implementing command logic (see [`commands/index.go`](./commands/index.go))
+- finish implementing command logic (see TODO comments)
 - vendor in dependencies
 - fix `login` bug where `--api-key 12345678` fails but `--api-key=12345678` works
 - support --json in more commands (currently just `info` command)
 - shell completion
 - integration tests
 
-### UI Draft
+### Basic Usage
 
-Commands:
-- `login`
-- `logout`
-- `me`
-- `groups`
-- `apps`
-- `info`
-- `clusters`
-- `clone`
-- `create`
-- `sync`
-- `migrate`
-- `diff`
-- `validate`
+via `stitch help`:
 
-#### Usage
+```
+USAGE:
+    stitch [--version] [-h|--help] [-C <CONFIG>] <COMMAND> [<ARGS>]
 
-```sh
-# expandable for future login methods (which would just create token for you)
-$ stitch login --api-key=<TOKEN>
+OPTIONS:
+    -C, --local-config <CONFIG>
+            Set the stitch config file. Defaults to looking for stitch.json
+            recursively up from the current working directory.
+    --color true|false
+            Enable/disabled colored output. Defaults to coloring based on
+            your environment.
 
-$ stitch me
-name: lucas morales
-email: lucas.morales@mongodb.com
-api-key: <TOKEN>
+SUBCOMMANDS:
+--- for your account:
+   apps       Show what apps you can administrate
+   clusters   Show what Atlas clusters you can access
+   groups     Show what groups you are a member of
+   login      Authenticate as an administrator
+   logout     Deauthenticate
+   me         Show your user admin info
+--- to manage your stitch applications:
+   clone      Export a stitch app
+   create     Create a new stitch app
+   diff       See the difference between the local app configuration and its remote version
+   info       Show info about a particular app
+   migrate    Migrate to a new version of the configuration spec
+   sync       Push changes made locally to a stitch app configuration
+   validate   Validate the local app configuration
+--- other subcommands:
+   help       Show help for a command
+   version    Show the version of this CLI
+```
 
-$ stitch groups
-rw	group-1
-rw	group-2
-r	group-3
+### Guide
 
-$ stitch apps
-group-1:
-	rw	platespace-prod-ffxys
-	rw	platespace-stg-asdfu
-group-2:
-	rw	todoapp-fooba
-group-3:
-	r	blog-qwertt
+via `stitch help --guide`:
 
-$ stitch apps group-1
-rw	platespace-prod-ffxys
-rw	platespace-st-asdfu
+```
+stitch: the CLI for MongoDB Stitch.
 
-# stitch info takes
-# --app (appID or client app ID), else checks in pwd for local stitch project unless
-# also --json is an option.
-$ stitch info
-local:    	yes
-group:    	group-1
-name:     	platespace-prod
-id:       	598dca3bede4017c35942841
-client_id:	platespace-prod-txplq
-clusters:
-	mongodb-atlas
-services:
-	MongoDB	mongodb-atlas
-	GitHub	my-github-service
-	HTTP	my-http-service
-	Slack	my-slack-service
-	Slack	my-other-slack-service
-pipelines:
-	my-pipe1
-	my-pipe2
-values:
-	s3bucket
-	admin-phone-number
-authentication:
-	anonymous
-	email
-	facebook
-	api-keys
+Using the stitch CLI starts with logging in. Aquire your login token from the
+web UI and log in on the CLI:
 
+    $ stitch login --api-key=TOKEN
 
-$ stitch info client-id # great for npm build
-platespace-prod-txplq
+Once you've logged in, you can get some basic information about yourself:
 
+    $ stitch me
+    name: Charlie Programmer
+    email: charlie.programmer@example.com
 
-$ stitch info clusters mongodb-atlas # great for shelling into cluster
-mongodb://host:port/db?ssl=true
+You can see which groups you are a part of and what permissions you have for
+each group:
+
+    $ stitch groups
+    rw   group-1
+    rw   group-2
+    r    group-3
+
+And you can see your apps, categorized by group:
+
+    $ stitch apps
+    group-1:
+        rw   platespace-prod-ffxys
+        rw   platespace-stg-asdfu
+    group-2:
+        rw   todoapp-fooba
+    group-3:
+        r    blog-qwertt
+
+Or just the apps within a particular group:
+
+    $ stitch apps group-1
+    rw   platespace-prod-ffxys
+    rw   platespace-stg-asdfu
 
 
-$ stitch info services
-GitHub	my-github-service
-HTTP  	my-http-service
-Slack 	my-slack-service
-Slack 	my-other-slack-service
+The 'info' command is useful for getting information on a particular app. It
+will check locally for a stitch.json app configuration, otherwise it uses the
+supplied '--app' option. Additionally, any info subcommand can take the
+'--json' flag and output JSON.
 
+    $ stitch info --app platespace-prod-ffxys
+    group:    	group-1
+    name:     	platespace-prod
+    id:       	598dca3bede4017c35942841
+    client_id:	platespace-prod-ffxys
+    clusters:
+    	mongodb-atlas
+    services:
+    	MongoDB	mongodb-atlas
+    	GitHub 	my-github-service
+    	HTTP   	my-http-service
+    	Slack  	my-slack-service
+    	Slack  	my-other-slack-service
+    pipelines:
+    	my-pipe1
+    	my-pipe2
+    values:
+    	s3bucket
+    	admin-phone-number
+    authentication:
+    	anonymous
+    	email
+    	facebook
+    	api-keys
 
-$ stitch info services my-http-service
-type:	HTTP
-name:	my-http-service
-webhooks:
-	http-webhook-1
-	http-webhook-2
-rules:
-	my-rule-1
-	my-rule-2
+Some subcommands of info can be very useful for building scripts:
 
+    $ stitch info client-id
+    platespace-prod-ffxys
 
-$ stitch create # --group group-1 --cluster my-cluster --name my-app
-# two cases:
-# - we're in a stitch working directory (we can find directory .stitch)
-#   -> modify config to use newly generated group, appId, appName, cluster
-#   -> push config
-# - otherwise, we create an app (with defaults) and clone it
+    $ stitch info clusters mongodb-atlas
+    mongodb://199.7.91.13:27017/?ssl=true
 
+A new stitch app is created using the 'create' command, in whicn two cases may
+occur:
+  1. a local config ("stitch.json" or supplied by -i/--input) is found
+  2. otherwise, we create an app with defaults and clone it.
 
-$ stitch diff # only works if in stitch working directory
+    $ stitch create --input platespace_config.json
+    successfully created app platespace-demo.
+    write updated config to "platespace_config.json"? [y/n]
 
+To export configurations for local management, use the 'clone' command with an
+app's client id:
 
-$ stitch sync # --strategy=[replace|merge], default is merge
+    $ stitch clone -o blog_config.json blog-qwertt
 
+To validate your local configuration, use the 'validate' command. This does
+simple validation of the structure of the configuration, and does not guarantee
+the config will successfully import.
 
-$ stitch clusters # atlas clusters which can be used to create new app
-group-1:
-	cluster0
-	cluster1
-group-2:
-	clustera
-	clusterb
+    $ stitch validate
 
+When you've made changes to a local config, you can compare with what exists on
+stitch's servers using the 'diff' command:
 
-$ stitch clusters group-1
-cluster0
-cluster1
+    $ stitch diff
+    * modified value admin-fav-num from "12" to "721"
+    * created service "my-github-service"
+    * deleted pipeline "my-old-pipeline"
 
+To push changes to stitch's servers, use the 'sync' command. This can be used
+with one of two strategies, 'replace' or 'merge'.
 
-$ stitch migrate # for new admin spec, convert local config to reflect new format
-
-
-##############################
-### use with other tooling ###
-##############################
-$ mongo "$(stitch info clusters cluster0)" -u foo -p pass
-$ mongoimport "$(stitch info clusters cluster0)" -u foo -p pass my-data.json
+    $ stitch sync --strategy=replace
 ```

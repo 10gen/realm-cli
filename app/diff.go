@@ -129,12 +129,12 @@ func diffServices(old, new []Service) (d []string) {
 	}
 	deletedSvcs := make(map[string]bool)
 	createdSvcs := make(map[string]bool)
-	for id, _ := range oldM {
+	for id := range oldM {
 		if _, ok := newM[id]; !ok {
 			deletedSvcs[id] = true
 		}
 	}
-	for id, _ := range newM {
+	for id := range newM {
 		if _, ok := oldM[id]; !ok {
 			createdSvcs[id] = true
 		}
@@ -299,12 +299,12 @@ func diffPipelines(old, new []Pipeline) (d []string) {
 	}
 	deleted := make(map[string]bool)
 	created := make(map[string]bool)
-	for id, _ := range oldM {
+	for id := range oldM {
 		if _, ok := newM[id]; !ok {
 			deleted[id] = true
 		}
 	}
-	for id, _ := range newM {
+	for id := range newM {
 		if _, ok := oldM[id]; !ok {
 			created[id] = true
 		}
@@ -443,12 +443,12 @@ func diffAuthProviders(old, new []AuthProvider) (d []string) {
 	}
 	deleted := make(map[string]bool)
 	created := make(map[string]bool)
-	for id, _ := range oldM {
+	for id := range oldM {
 		if _, ok := newM[id]; !ok {
 			deleted[id] = true
 		}
 	}
-	for id, _ := range newM {
+	for id := range newM {
 		if _, ok := oldM[id]; !ok {
 			created[id] = true
 		}

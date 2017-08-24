@@ -131,6 +131,7 @@ func createRun() error {
 
 	// TODO: create an app using call to stitch admin SDK
 	userApp.ID, userApp.ClientID = "fakeAppID", "fakeAppClientID-qwert"
+	fmt.Fprintf(os.Stderr, "successfully created app %s.\n", name)
 
 	if !ui.Ask(fmt.Sprintf("write new/updated config to %q?", flagCreateConfig)) {
 		return nil

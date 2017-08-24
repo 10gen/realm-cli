@@ -16,9 +16,14 @@ var diff = &Command{
 	Name: "diff",
 	ShortUsage: `
 USAGE:
-    stitch diff [--help]
+    stitch diff [-C <CONFIG>] [--help]
 `,
 	LongUsage: `See the difference between the local app configuration and its remote version.
+
+OPTIONS:
+    -C, --local-config <CONFIG>
+            Set the stitch config file. Defaults to looking for stitch.json
+            recursively up from the current working directory.
 `,
 }
 
