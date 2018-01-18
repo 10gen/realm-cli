@@ -40,3 +40,11 @@
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
+
+[[constraint]]
+  name = "github.com/smartystreets/goconvey"
+  version = "1.6.3"
+
+[[constraint]]
+  name = "github.com/dgrijalva/jwt-go"
+  version = "3.1.0"
