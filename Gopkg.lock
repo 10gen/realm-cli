@@ -3,15 +3,33 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/10gen/escaper"
+  name = "github.com/armon/go-radix"
   packages = ["."]
-  revision = "17fe61c658dcbdcbf246c783f4f7dc97efde3a8b"
+  revision = "1fca145dffbcaa8fe914309b1ec0cfc67500fe61"
+
+[[projects]]
+  name = "github.com/bgentry/speakeasy"
+  packages = ["."]
+  revision = "4aabc24848ce5fd31929f7d1e4ea74d3709c14cd"
+  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/gopherjs/gopherjs"
   packages = ["js"]
   revision = "178c176a91fe05e3e6c58fa5c989bad19e6cdcb3"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  revision = "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  revision = "b7773ae218740a7be65057fc60b366a49b538a44"
 
 [[projects]]
   name = "github.com/jtolds/gls"
@@ -27,6 +45,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mitchellh/cli"
+  packages = ["."]
+  revision = "518dc677a1e1222682f4e7db06721942cb8e9e4c"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
@@ -36,6 +60,12 @@
   packages = ["."]
   revision = "32a05c62658bd1d7c7e75cbc8195de5d585fde0f"
   version = "v0.0.1"
+
+[[projects]]
+  name = "github.com/posener/complete"
+  packages = [".","cmd","cmd/install","match"]
+  revision = "dc2bc5a81accba8782bebea28628224643a8286a"
+  version = "v1.1"
 
 [[projects]]
   name = "github.com/smartystreets/assertions"
@@ -57,12 +87,6 @@
 
 [[projects]]
   branch = "v2"
-  name = "gopkg.in/mgo.v2"
-  packages = ["bson","internal/json"]
-  revision = "3f83fa5005286a7fe593b055f0d7771a7dce4655"
-
-[[projects]]
-  branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "c95af922eae69f190717a0b7148960af8c55a072"
@@ -70,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3587abe18defe2a360a2641702f2fec920860a0176128f8ad12d9d7f91df9a88"
+  inputs-digest = "2ad4258e4f3be20cac3ecc6e187d629d325e6776270e349af151609b5e1109ea"
   solver-name = "gps-cdcl"
   solver-version = 1
