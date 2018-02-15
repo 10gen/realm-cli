@@ -1,0 +1,30 @@
+functions:
+  "setup_project":
+    - command: shell.exec
+      params:
+        script: |
+          mkdir -p src/github.com/10gen
+    - command: git.get_project
+      params:
+        directory: src/github.com/10gen/stitch-cli
+
+tasks:
+  - name: gometalinter
+    commands:
+      - func: "setup_project"
+      - command: shell.exec
+        params:
+          script: |
+            export GOPATH=`pwd`
+            go get -u github.com/alecthomas/gometalinter
+            $GOPATH/bin/gometalinter --install
+            cd src/github.com/10gen/stitch-cli
+            $GOPATH/bin/gometalinter --exclude-vendor --vendor --config=.linter.config ./...
+
+buildvariants:
+- name: linux-64
+  display_name: Linux-64
+  run_on:
+  - baas-linux
+  tasks:
+  - name: gometalinter
