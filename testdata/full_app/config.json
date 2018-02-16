@@ -1,0 +1,11 @@
+{
+  "config_version": 1,
+  "schema_version": 3,
+  "name": "full-app",
+  "security": {
+    "allowed_request_origins": [
+      "http://www.somewhere.com",
+      "http://www.somewhere-else.com"
+    ]
+  }
+}
