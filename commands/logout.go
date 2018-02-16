@@ -28,7 +28,10 @@ func (lc *LogoutCommand) Synopsis() string {
 
 // Help returns long-form help information for this command
 func (lc *LogoutCommand) Help() string {
-	return lc.Synopsis()
+	return lc.Synopsis() + `
+
+OPTIONS:` +
+		lc.BaseCommand.Help()
 }
 
 // Run executes the command
