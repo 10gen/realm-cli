@@ -2,15 +2,18 @@ package testutils
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/auth"
+	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/storage"
 	"github.com/10gen/stitch-cli/user"
 
@@ -160,4 +163,58 @@ func NewMemoryStrategy(data []byte) *MemoryStrategy {
 	return &MemoryStrategy{
 		data: data,
 	}
+}
+
+// GenerateValidAccessToken generates and returns a valid access token *from the future*
+func GenerateValidAccessToken() string {
+	token := auth.JWT{
+		Exp: time.Now().Add(time.Hour).Unix(),
+	}
+
+	tokenBytes, err := json.Marshal(token)
+	if err != nil {
+		panic(err)
+	}
+
+	tokenString := base64.StdEncoding.EncodeToString(tokenBytes)
+
+	return fmt.Sprintf("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.%s.RuF0KMEBAalfnsdMeozpQLQ_2hK27l9omxtTp8eF1yI", tokenString)
+}
+
+// MockStitchClient satisfies an api.StitchClient
+type MockStitchClient struct {
+	FetchAppByClientAppIDFn func(clientAppID string) (*models.App, error)
+	ExportFn                func(groupID, appID string) (string, io.ReadCloser, error)
+	ImportFn                func(groupID, appID string) error
+}
+
+// Authenticate will authenticate a user given an api key and username
+func (msc *MockStitchClient) Authenticate(apiKey, username string) (*auth.Response, error) {
+	return nil, nil
+}
+
+// Export will download a Stitch app as a .zip
+func (msc *MockStitchClient) Export(groupID, appID string) (string, io.ReadCloser, error) {
+	if msc.ExportFn != nil {
+		return msc.ExportFn(groupID, appID)
+	}
+
+	return "", nil, nil
+}
+
+// Import will push a local Stitch app to the server
+func (msc *MockStitchClient) Import(groupID, appID string, appData []byte) error {
+	if msc.ImportFn != nil {
+		return msc.ImportFn(groupID, appID)
+	}
+	return nil
+}
+
+// FetchAppByClientAppID fetches a Stitch app given a clientAppID
+func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
+	if msc.FetchAppByClientAppIDFn != nil {
+		return msc.FetchAppByClientAppIDFn(clientAppID)
+	}
+
+	return nil, nil
 }

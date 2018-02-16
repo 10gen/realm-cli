@@ -11,10 +11,11 @@ import (
 )
 
 // DefaultBaseURL is the default cloud prod base url for Stitch apps
-const DefaultBaseURL = "https://stitch.mongodb.com/api/admin/v3.0"
+const DefaultBaseURL = "https://stitch.mongodb.com"
 
 const (
-	authSessionRoute = "/auth/session"
+	adminBaseURL     = "/api/admin/v3.0"
+	authSessionRoute = adminBaseURL + "/auth/session"
 )
 
 // Client represents something that is capable of making HTTP requests
@@ -28,11 +29,13 @@ type RequestOptions struct {
 	Header http.Header
 }
 
-type basicAPIClient struct{}
+type basicAPIClient struct {
+	baseURL string
+}
 
 // ExecuteRequest makes an HTTP request to the provided path
 func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options RequestOptions) (*http.Response, error) {
-	req, err := http.NewRequest(method, path, options.Body)
+	req, err := http.NewRequest(method, apiClient.baseURL+path, options.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -45,29 +48,29 @@ func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options Req
 }
 
 // NewClient returns a new Client
-func NewClient() Client {
-	return &basicAPIClient{}
+func NewClient(baseURL string) Client {
+	return &basicAPIClient{
+		baseURL: baseURL,
+	}
 }
 
 // NewAuthClient returns a new *AuthClient
-func NewAuthClient(baseURL string, client Client, user *user.User) *AuthClient {
+func NewAuthClient(client Client, user *user.User) *AuthClient {
 	return &AuthClient{
-		baseURL: baseURL,
-		Client:  client,
-		user:    user,
+		Client: client,
+		user:   user,
 	}
 }
 
 // AuthClient is a Client that is aware of a User's auth credentials
 type AuthClient struct {
 	Client
-	baseURL string
-	user    *user.User
+	user *user.User
 }
 
 // RefreshAuth makes a call to the session endpoint using the user's refresh token in order to obtain a new access token
 func (ac *AuthClient) RefreshAuth() (auth.Response, error) {
-	res, err := ac.Client.ExecuteRequest(http.MethodPost, ac.baseURL+authSessionRoute, RequestOptions{
+	res, err := ac.Client.ExecuteRequest(http.MethodPost, authSessionRoute, RequestOptions{
 		Header: http.Header{
 			"Authorization": []string{"Bearer " + ac.user.RefreshToken},
 		},
@@ -93,11 +96,13 @@ func (ac *AuthClient) RefreshAuth() (auth.Response, error) {
 
 // ExecuteRequest makes a call to the provided path, supplying the user's access token
 func (ac *AuthClient) ExecuteRequest(method, path string, options RequestOptions) (*http.Response, error) {
-	res, err := ac.Client.ExecuteRequest(method, path, RequestOptions{
-		Header: http.Header{
-			"Authorization": []string{"Bearer " + ac.user.AccessToken},
-		},
-	})
+	if options.Header == nil {
+		options.Header = http.Header{}
+	}
+
+	options.Header.Add("Authorization", "Bearer "+ac.user.AccessToken)
+
+	res, err := ac.Client.ExecuteRequest(method, path, options)
 	if err != nil {
 		return nil, err
 	}

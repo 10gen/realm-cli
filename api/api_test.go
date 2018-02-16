@@ -23,7 +23,7 @@ func TestAuthClientRefreshAuth(t *testing.T) {
 			},
 		})
 
-		authClient := api.NewAuthClient("", client, &user.User{AccessToken: "old.access.token", RefreshToken: "my.refresh.token"})
+		authClient := api.NewAuthClient(client, &user.User{AccessToken: "old.access.token", RefreshToken: "my.refresh.token"})
 
 		authResponse, err := authClient.RefreshAuth()
 		u.So(t, err, gc.ShouldBeNil)
@@ -51,7 +51,7 @@ func TestAuthClientExecuteRequest(t *testing.T) {
 			},
 		})
 
-		authClient := api.NewAuthClient("", client, &user.User{AccessToken: "old.access.token", RefreshToken: "my.refresh.token"})
+		authClient := api.NewAuthClient(client, &user.User{AccessToken: "old.access.token", RefreshToken: "my.refresh.token"})
 
 		_, err := authClient.ExecuteRequest(http.MethodGet, "/somewhere", api.RequestOptions{})
 		u.So(t, err, gc.ShouldBeNil)
