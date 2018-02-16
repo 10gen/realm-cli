@@ -32,9 +32,10 @@ type BaseCommand struct {
 
 	UI cli.Ui
 
-	client  api.Client
-	user    *user.User
-	storage *storage.Storage
+	client       api.Client
+	stitchClient api.StitchClient
+	user         *user.User
+	storage      *storage.Storage
 
 	flagConfigPath   string
 	flagColorEnabled bool
@@ -103,6 +104,22 @@ func (c *BaseCommand) AuthClient() (api.Client, error) {
 	}
 
 	return authClient, nil
+}
+
+// StitchClient returns an api.StitchClient for use in calling the API
+func (c *BaseCommand) StitchClient() (api.StitchClient, error) {
+	if c.stitchClient != nil {
+		return c.stitchClient, nil
+	}
+
+	authClient, err := c.AuthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	c.stitchClient = api.NewStitchClient(authClient)
+
+	return c.stitchClient, nil
 }
 
 // User returns the current user. It loads the user from storage if it is not available in memory
@@ -195,8 +212,8 @@ func (c *BaseCommand) Help() string {
   --color [boolean]
 	Use colors or not. Set to false if you do not want color
 
-  --yes [boolean]
-	Bypass prompts. Set to 'y' if you do not want to be prompted for input.`
+  -y, --yes 
+	Bypass prompts. Provide this parameter if you do not want to be prompted for input.`
 }
 
 func yay(s string) bool {

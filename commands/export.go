@@ -4,7 +4,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/10gen/stitch-cli/api"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
 
@@ -29,7 +28,6 @@ type ExportCommand struct {
 	*BaseCommand
 
 	exportToDirectory func(dest string, zipData io.Reader) error
-	stitchClient      api.StitchClient
 
 	flagAppID  string
 	flagOutput string
@@ -72,22 +70,6 @@ func (ec *ExportCommand) Run(args []string) int {
 	}
 
 	return 0
-}
-
-// StitchClient returns an api.StitchClient for use in calling the API
-func (ec *ExportCommand) StitchClient() (api.StitchClient, error) {
-	if ec.stitchClient != nil {
-		return ec.stitchClient, nil
-	}
-
-	authClient, err := ec.AuthClient()
-	if err != nil {
-		return nil, err
-	}
-
-	ec.stitchClient = api.NewStitchClient(authClient)
-
-	return ec.stitchClient, nil
 }
 
 func (ec *ExportCommand) run() error {

@@ -32,6 +32,7 @@ func main() {
 		"login":  commands.NewLoginCommandFactory(ui),
 		"logout": commands.NewLogoutCommandFactory(ui),
 		"export": commands.NewExportCommandFactory(ui),
+		"import": commands.NewImportCommandFactory(ui),
 	}
 
 	exitStatus, err := c.Run()

@@ -25,19 +25,40 @@ var (
 	errExportMissingFilename = errors.New("the app export response did not specify a filename")
 )
 
-// StitchResponse represents a response from a Stitch API call
-type StitchResponse struct {
+// ErrStitchResponse represents a response from a Stitch API call
+type ErrStitchResponse struct {
+	data errStitchResponseData
+}
+
+// Error returns a stringified error message
+func (esr ErrStitchResponse) Error() string {
+	return fmt.Sprintf("error: %s", esr.data.Error)
+}
+
+// UnmarshalJSON unmarshals JSON data into an ErrStitchResponse
+func (esr *ErrStitchResponse) UnmarshalJSON(data []byte) error {
+	return json.Unmarshal(data, &esr.data)
+}
+
+type errStitchResponseData struct {
 	Error string `json:"error"`
 }
 
-func unmarshalStitchResponse(r io.Reader) error {
-	var stitchResponse StitchResponse
-
-	if err := json.NewDecoder(r).Decode(&stitchResponse); err != nil {
+// UnmarshalReader unmarshals an io.Reader into an ErrStitchResponse
+func UnmarshalReader(r io.Reader) error {
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(r); err != nil {
 		return err
 	}
 
-	return fmt.Errorf("error: %s", stitchResponse.Error)
+	str := buf.String()
+
+	var stitchResponse ErrStitchResponse
+	if err := json.NewDecoder(&buf).Decode(&stitchResponse); err != nil {
+		stitchResponse.data.Error = str
+	}
+
+	return stitchResponse
 }
 
 // StitchClient represents a Client that can be used to call the Stitch Admin API
@@ -81,7 +102,7 @@ func (sc *basicStitchClient) Authenticate(apiKey, username string) (*auth.Respon
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, unmarshalStitchResponse(res.Body))
+		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, UnmarshalReader(res.Body))
 	}
 
 	decoder := json.NewDecoder(res.Body)
@@ -103,7 +124,7 @@ func (sc *basicStitchClient) Export(groupID, appID string) (string, io.ReadClose
 
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		return "", nil, fmt.Errorf("error: %s", unmarshalStitchResponse(res.Body))
+		return "", nil, UnmarshalReader(res.Body)
 	}
 
 	_, params, err := mime.ParseMediaType(res.Header.Get("Content-Disposition"))
@@ -133,7 +154,7 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte) error
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusNoContent {
-		return unmarshalStitchResponse(res.Body)
+		return UnmarshalReader(res.Body)
 	}
 
 	return nil
@@ -148,7 +169,7 @@ func (sc *basicStitchClient) fetchAppsByGroupID(groupID string) ([]*models.App, 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, unmarshalStitchResponse(res.Body)
+		return nil, UnmarshalReader(res.Body)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -170,7 +191,7 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, unmarshalStitchResponse(res.Body)
+		return nil, UnmarshalReader(res.Body)
 	}
 
 	dec := json.NewDecoder(res.Body)
