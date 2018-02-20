@@ -1,4 +1,5 @@
 {
+  "app_id": "my-app-abcdef",
   "config_version": 1,
   "schema_version": 3,
   "name": "simple-app",

@@ -16,6 +16,7 @@ const (
 	jsonExt              string = ".json"
 	jsExt                       = ".js"
 	authProvidersName           = "auth_providers"
+	appConfigName               = "stitch"
 	configName                  = "config"
 	functionsName               = "functions"
 	incomingWebhooksName        = "incoming_webhooks"
@@ -48,10 +49,15 @@ func ReadAndUnmarshalInto(marshalFn func(in []byte, out interface{}) error, path
 	return nil
 }
 
-// GetRootAppDirectory searches upwards for a valid Stitch app directory
-func GetRootAppDirectory(wd string) (string, error) {
+// GetDirectoryContainingFile searches upwards for a valid Stitch app directory
+func GetDirectoryContainingFile(wd, filename string) (string, error) {
+	wd, err := filepath.Abs(wd)
+	if err != nil {
+		return "", err
+	}
+
 	for {
-		path := filepath.Join(wd, ".stitch")
+		path := filepath.Join(wd, filename)
 		if _, err := os.Stat(path); err == nil {
 			return filepath.Dir(path), nil
 		}
@@ -124,7 +130,7 @@ func processFile(path string, zipFile *zip.File) error {
 func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 	app := map[string]interface{}{}
 
-	if err := readAndUnmarshalJSONInto(filepath.Join(path, configName+jsonExt), &app); err != nil {
+	if err := readAndUnmarshalJSONInto(filepath.Join(path, appConfigName+jsonExt), &app); err != nil {
 		return app, err
 	}
 
