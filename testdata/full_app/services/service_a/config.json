@@ -1,0 +1,8 @@
+{
+  "_id" : "5a030e3b4810c524eabef974",
+  "name" : "service a",
+  "type" : "twilio",
+  "config" : {
+    "sid" : "abcdefgh"
+  }
+}

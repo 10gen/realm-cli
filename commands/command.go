@@ -3,6 +3,7 @@
 package commands
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -15,6 +16,14 @@ import (
 	flag "github.com/ogier/pflag"
 )
 
+const (
+	flagAppIDName = "app-id"
+)
+
+var (
+	errAppIDRequired = fmt.Errorf("an App ID (--%s=[string]) must be supplied to export an app", flagAppIDName)
+)
+
 // BaseCommand handles the parsing and execution of a command.
 type BaseCommand struct {
 	*flag.FlagSet
@@ -23,9 +32,10 @@ type BaseCommand struct {
 
 	UI cli.Ui
 
-	client  api.Client
-	user    *user.User
-	storage *storage.Storage
+	client       api.Client
+	stitchClient api.StitchClient
+	user         *user.User
+	storage      *storage.Storage
 
 	flagConfigPath   string
 	flagColorEnabled bool
@@ -55,7 +65,7 @@ func (c *BaseCommand) Client() (api.Client, error) {
 		return c.client, nil
 	}
 
-	c.client = api.NewClient()
+	c.client = api.NewClient(c.flagBaseURL)
 
 	return c.client, nil
 }
@@ -73,7 +83,7 @@ func (c *BaseCommand) AuthClient() (api.Client, error) {
 		return nil, err
 	}
 
-	authClient := api.NewAuthClient(c.flagBaseURL, client, user)
+	authClient := api.NewAuthClient(client, user)
 
 	tokenIsExpired, err := user.TokenIsExpired()
 	if err != nil {
@@ -94,6 +104,22 @@ func (c *BaseCommand) AuthClient() (api.Client, error) {
 	}
 
 	return authClient, nil
+}
+
+// StitchClient returns an api.StitchClient for use in calling the API
+func (c *BaseCommand) StitchClient() (api.StitchClient, error) {
+	if c.stitchClient != nil {
+		return c.stitchClient, nil
+	}
+
+	authClient, err := c.AuthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	c.stitchClient = api.NewStitchClient(authClient)
+
+	return c.stitchClient, nil
 }
 
 // User returns the current user. It loads the user from storage if it is not available in memory
@@ -174,6 +200,20 @@ func (c *BaseCommand) Ask(query string) (bool, error) {
 
 		res, _ = c.UI.Ask("Could not understand response, try again [y/n]: ")
 	}
+}
+
+// Help defines help documentation for parameters that apply to all commands
+func (c *BaseCommand) Help() string {
+	return `
+
+  --config-path [string]
+	Location to write user configuration data to (defaults to ~/.config/stitch/stitch)
+
+  --color [boolean]
+	Use colors or not. Set to false if you do not want color
+
+  -y, --yes 
+	Bypass prompts. Provide this parameter if you do not want to be prompted for input.`
 }
 
 func yay(s string) bool {

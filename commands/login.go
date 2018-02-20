@@ -15,8 +15,8 @@ const (
 )
 
 var (
-	errAPIKeyRequired   = fmt.Errorf("an API key (--%s=<TOKEN>) must be supplied to log in", flagLoginAPIKeyName)
-	errUsernameRequired = fmt.Errorf("a username (--%s=<USERNAME>) must be supplied to log in", flagLoginUsernameName)
+	errAPIKeyRequired   = fmt.Errorf("an API key (--%s=[string]) must be supplied to log in", flagLoginAPIKeyName)
+	errUsernameRequired = fmt.Errorf("a username (--%s=[string]) must be supplied to log in", flagLoginUsernameName)
 )
 
 // NewLoginCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -48,10 +48,15 @@ func (lc *LoginCommand) Synopsis() string {
 func (lc *LoginCommand) Help() string {
 	return `Authenticate as an administrator.
 
-OPTIONS:
-  --api-key <TOKEN>
+REQUIRED:
+  --api-key [string]
 	The API key for a MongoDB Cloud account.
-`
+
+  --username [string]
+	The username for a MongoDB Cloud account.
+
+OPTIONS:` +
+		lc.BaseCommand.Help()
 }
 
 // Run executes the command
@@ -108,7 +113,7 @@ func (lc *LoginCommand) logIn() error {
 		return err
 	}
 
-	authResponse, err := api.NewStitchClient(lc.flagBaseURL, client).Authenticate(lc.flagAPIKey, lc.flagUsername)
+	authResponse, err := api.NewStitchClient(client).Authenticate(lc.flagAPIKey, lc.flagUsername)
 	if err != nil {
 		return err
 	}

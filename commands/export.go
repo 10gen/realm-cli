@@ -1,29 +1,13 @@
 package commands
 
 import (
-	"errors"
-	"fmt"
 	"io"
-	"mime"
-	"net/http"
 	"strings"
 
-	"github.com/10gen/stitch-cli/api"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
-)
-
-const (
-	flagExportAppIDName   = "app-id"
-	flagExportGroupIDName = "group-id"
-)
-
-var (
-	errExportMissingFilename = errors.New("the app export response did not specify a filename")
-	errAppIDRequired         = fmt.Errorf("an App ID (--%s=<APP_ID>) must be supplied to export an app", flagExportAppIDName)
-	errGroupIDRequired       = fmt.Errorf("a Group ID (--%s=<GROUP_ID>) must be supplied to export an app", flagExportGroupIDName)
 )
 
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -45,9 +29,8 @@ type ExportCommand struct {
 
 	exportToDirectory func(dest string, zipData io.Reader) error
 
-	flagAppID   string
-	flagGroupID string
-	flagOutput  string
+	flagAppID  string
+	flagOutput string
 }
 
 // Help returns long-form help information for this command
@@ -55,11 +38,13 @@ func (ec *ExportCommand) Help() string {
 	return `Export a stitch application to a local directory.
 
 REQUIRED:
-  --app-id <STRING>
+  --app-id [string]
+	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja")
 
 OPTIONS:
-  -o, --output <DIRECTORY>
-	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"`
+  -o, --output [string]
+	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"` +
+		ec.BaseCommand.Help()
 }
 
 // Synopsis returns a one-liner description for this command
@@ -71,8 +56,7 @@ func (ec *ExportCommand) Synopsis() string {
 func (ec *ExportCommand) Run(args []string) int {
 	set := ec.NewFlagSet()
 
-	set.StringVar(&ec.flagAppID, flagExportAppIDName, "", "")
-	set.StringVar(&ec.flagGroupID, flagExportGroupIDName, "", "")
+	set.StringVar(&ec.flagAppID, flagAppIDName, "", "")
 	set.StringVarP(&ec.flagOutput, "output", "o", "", "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
@@ -80,7 +64,7 @@ func (ec *ExportCommand) Run(args []string) int {
 		return 1
 	}
 
-	if err := ec.export(); err != nil {
+	if err := ec.run(); err != nil {
 		ec.UI.Error(err.Error())
 		return 1
 	}
@@ -88,13 +72,9 @@ func (ec *ExportCommand) Run(args []string) int {
 	return 0
 }
 
-func (ec *ExportCommand) export() error {
+func (ec *ExportCommand) run() error {
 	if ec.flagAppID == "" {
 		return errAppIDRequired
-	}
-
-	if ec.flagGroupID == "" {
-		return errGroupIDRequired
 	}
 
 	user, err := ec.User()
@@ -106,34 +86,26 @@ func (ec *ExportCommand) export() error {
 		return u.ErrNotLoggedIn
 	}
 
-	authClient, err := ec.AuthClient()
+	stitchClient, err := ec.StitchClient()
 	if err != nil {
 		return err
 	}
 
-	res, err := api.NewStitchClient(ec.flagBaseURL, authClient).Export(ec.flagGroupID, ec.flagAppID)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("expected API status to be %d, received %d instead: %s", http.StatusOK, res.StatusCode, res.Status)
-	}
-
-	_, params, err := mime.ParseMediaType(res.Header.Get("Content-Disposition"))
+	app, err := stitchClient.FetchAppByClientAppID(ec.flagAppID)
 	if err != nil {
 		return err
 	}
 
-	filename := params["filename"]
-	if len(filename) == 0 {
-		return errExportMissingFilename
+	filename, body, err := stitchClient.Export(app.GroupID, app.ID)
+	if err != nil {
+		return err
 	}
+
+	defer body.Close()
 
 	if ec.flagOutput != "" {
 		filename = ec.flagOutput
 	}
 
-	return ec.exportToDirectory(strings.Replace(filename, ".zip", "", 1), res.Body)
+	return ec.exportToDirectory(strings.Replace(filename, ".zip", "", 1), body)
 }
