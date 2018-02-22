@@ -33,7 +33,7 @@ func TestLoginCommand(t *testing.T) {
 			exitCode := loginCommand.Run([]string{})
 			u.So(t, exitCode, gc.ShouldEqual, 1)
 
-			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, errAPIKeyRequired.Error())
+			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidAPIKey.Error())
 		})
 
 		t.Run("should require a username", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestLoginCommand(t *testing.T) {
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`})
 			u.So(t, exitCode, gc.ShouldEqual, 1)
 
-			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, errUsernameRequired.Error())
+			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidUsername.Error())
 		})
 	})
 
@@ -118,7 +118,8 @@ func TestLoginCommand(t *testing.T) {
 
 			loginCommand.client = mockClient
 			loginCommand.user = &user.User{
-				APIKey: "my-existing-api-key",
+				AccessToken: "my-existing-token",
+				APIKey:      "my-existing-api-key",
 			}
 			loginCommand.storage = u.NewEmptyStorage()
 

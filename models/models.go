@@ -1,23 +1,23 @@
 package models
 
 import (
+	"encoding/json"
 	"path/filepath"
 
 	"github.com/10gen/stitch-cli/utils"
-
-	"gopkg.in/yaml.v2"
 )
 
-const appInstanceDataFileName string = ".stitch"
+// AppConfigFileName is the name of top-level config file describing the app
+const AppConfigFileName string = "stitch.json"
 
 // AppInstanceData defines data pertaining to a specific deployment of a Stitch application
 type AppInstanceData struct {
-	AppID string `yaml:"app_id"`
+	AppID string `json:"app_id"`
 }
 
-// UnmarshalFile unmarshals data from a local .stitch project file into an AppInstanceData
+// UnmarshalFile unmarshals data from a local config file into an AppInstanceData
 func (aic *AppInstanceData) UnmarshalFile(path string) error {
-	return utils.ReadAndUnmarshalInto(yaml.Unmarshal, filepath.Join(path, appInstanceDataFileName), &aic)
+	return utils.ReadAndUnmarshalInto(json.Unmarshal, filepath.Join(path, AppConfigFileName), &aic)
 }
 
 // UserProfile holds basic metadata for a given user

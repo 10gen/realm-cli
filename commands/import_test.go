@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -147,7 +148,7 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
-				Description:      "it succeeds if it can grab instance data from the .stitch file at the provided path",
+				Description:      "it succeeds if it can grab instance data from the app config file at the provided path",
 				Args:             []string{"--path=../testdata/simple_app_with_instance_data"},
 				ExpectedExitCode: 0,
 				StitchClient: u.MockStitchClient{
@@ -166,7 +167,7 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
-				Description:      "it succeeds if it can grab instance data from the .stitch file in the current directory",
+				Description:      "it succeeds if it can grab instance data from the app config file in the current directory",
 				Args:             []string{},
 				ExpectedExitCode: 0,
 				WorkingDirectory: "../testdata/simple_app_with_instance_data",
@@ -212,13 +213,13 @@ func TestImportCommand(t *testing.T) {
 						Description:       "it writes data to the provided directory",
 						Args:              append([]string{"--path=../testdata/simple_app"}, validArgs...),
 						WorkingDirectory:  "",
-						ExpectedDirectory: "../testdata/simple_app",
+						ExpectedDirectory: abs("../testdata/simple_app"),
 					},
 					{
-						Description:       "it writes data to the working directory when using a .stitch.file",
+						Description:       "it writes data to the working directory when using app config file data",
 						Args:              []string{},
 						WorkingDirectory:  "../testdata/simple_app_with_instance_data",
-						ExpectedDirectory: "../testdata/simple_app_with_instance_data",
+						ExpectedDirectory: abs("../testdata/simple_app_with_instance_data"),
 					},
 				} {
 					t.Run(tc.Description, func(t *testing.T) {
@@ -256,11 +257,19 @@ func TestImportCommand(t *testing.T) {
 						exitCode := importCommand.Run(tc.Args)
 						u.So(t, exitCode, gc.ShouldEqual, 0)
 						u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
-						u.So(t, destinationDirectory, gc.ShouldEqual, tc.ExpectedDirectory)
+						u.So(t, abs(destinationDirectory), gc.ShouldEqual, tc.ExpectedDirectory)
 						u.So(t, writeContent, gc.ShouldEqual, "export response")
 					})
 				}
 			})
 		})
 	})
+}
+
+func abs(path string) string {
+	p, err := filepath.Abs(path)
+	if err != nil {
+		panic(err)
+	}
+	return p
 }

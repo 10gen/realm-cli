@@ -188,8 +188,8 @@ type MockStitchClient struct {
 	ImportFn                func(groupID, appID string) error
 }
 
-// Authenticate will authenticate a user given an api key and username
-func (msc *MockStitchClient) Authenticate(apiKey, username string) (*auth.Response, error) {
+// Authenticate will authenticate a user given an auth.AuthenticationProvider
+func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
 	return nil, nil
 }
 

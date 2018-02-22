@@ -157,7 +157,7 @@ func (ic *ImportCommand) resolveAppDirectory() (string, error) {
 		return path, nil
 	}
 
-	return utils.GetRootAppDirectory(ic.workingDirectory)
+	return utils.GetDirectoryContainingFile(ic.workingDirectory, models.AppConfigFileName)
 }
 
 // resolveAppInstanceData loads data for an app from a .stitch file located in the provided directory path
