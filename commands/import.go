@@ -125,6 +125,27 @@ func (ic *ImportCommand) importApp() error {
 		return err
 	}
 
+	// Diff changes unless -y flag has been provided
+	if !ic.flagYes {
+		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData)
+		if err != nil {
+			return err
+		}
+
+		for _, diff := range diffs {
+			ic.UI.Info(diff)
+		}
+
+		confirm, err := ic.Ask("Please confirm the changes shown above:")
+		if err != nil {
+			return err
+		}
+
+		if !confirm {
+			return nil
+		}
+	}
+
 	if err := stitchClient.Import(app.GroupID, app.ID, appData); err != nil {
 		return err
 	}

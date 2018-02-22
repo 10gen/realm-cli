@@ -186,6 +186,7 @@ type MockStitchClient struct {
 	FetchAppByClientAppIDFn func(clientAppID string) (*models.App, error)
 	ExportFn                func(groupID, appID string) (string, io.ReadCloser, error)
 	ImportFn                func(groupID, appID string) error
+	ImportFnCalls           [][]string
 }
 
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
@@ -202,9 +203,15 @@ func (msc *MockStitchClient) Export(groupID, appID string) (string, io.ReadClose
 	return "", nil, nil
 }
 
+// Diff will execute a dry-run of an import, returning a diff of proposed changes
+func (msc *MockStitchClient) Diff(groupID, appID string, appData []byte) ([]string, error) {
+	return []string{}, nil
+}
+
 // Import will push a local Stitch app to the server
 func (msc *MockStitchClient) Import(groupID, appID string, appData []byte) error {
 	if msc.ImportFn != nil {
+		msc.ImportFnCalls = append(msc.ImportFnCalls, []string{groupID, appID})
 		return msc.ImportFn(groupID, appID)
 	}
 	return nil
