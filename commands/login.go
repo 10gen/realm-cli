@@ -14,11 +14,6 @@ const (
 	flagLoginUsernameName = "username"
 )
 
-var (
-	errAPIKeyRequired   = fmt.Errorf("an API key (--%s=[string]) must be supplied to log in", flagLoginAPIKeyName)
-	errUsernameRequired = fmt.Errorf("a username (--%s=[string]) must be supplied to log in", flagLoginUsernameName)
-)
-
 // NewLoginCommandFactory returns a new cli.CommandFactory given a cli.Ui
 func NewLoginCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
@@ -35,8 +30,10 @@ func NewLoginCommandFactory(ui cli.Ui) cli.CommandFactory {
 type LoginCommand struct {
 	*BaseCommand
 
-	flagAPIKey   string
-	flagUsername string
+	flagAPIKey       string
+	flagUsername     string
+	flagAuthProvider string
+	flagPassword     string
 }
 
 // Synopsis returns a one-liner description for this command
@@ -64,6 +61,8 @@ func (lc *LoginCommand) Run(args []string) int {
 	set := lc.NewFlagSet()
 
 	set.StringVar(&lc.flagAPIKey, flagLoginAPIKeyName, "", "")
+	set.StringVar(&lc.flagAuthProvider, "auth-provider", string(auth.ProviderTypeAPIKey), "")
+	set.StringVar(&lc.flagPassword, "password", "", "")
 	set.StringVar(&lc.flagUsername, flagLoginUsernameName, "", "")
 
 	if err := lc.BaseCommand.run(args); err != nil {
@@ -79,17 +78,37 @@ func (lc *LoginCommand) Run(args []string) int {
 	return 0
 }
 
+func (lc *LoginCommand) validateAuthCredentials() (auth.AuthenticationProvider, error) {
+	var provider auth.AuthenticationProvider
+
+	switch auth.ProviderType(lc.flagAuthProvider) {
+	case auth.ProviderTypeAPIKey:
+		provider = auth.NewAPIKeyProvider(lc.flagUsername, lc.flagAPIKey)
+	case auth.ProviderTypeUsernamePassword:
+		if lc.flagPassword == "" {
+			password, err := lc.UI.AskSecret("Password:")
+			if err != nil {
+				return nil, err
+			}
+
+			lc.flagPassword = password
+		}
+		provider = auth.NewUsernamePasswordProvider(lc.flagUsername, lc.flagPassword)
+	default:
+		return nil, fmt.Errorf("invalid authentication provider")
+	}
+
+	if err := provider.Validate(); err != nil {
+		return nil, err
+	}
+
+	return provider, nil
+}
+
 func (lc *LoginCommand) logIn() error {
-	if lc.flagAPIKey == "" {
-		return errAPIKeyRequired
-	}
-
-	if lc.flagUsername == "" {
-		return errUsernameRequired
-	}
-
-	if !auth.ValidAPIKey(lc.flagAPIKey) {
-		return auth.ErrInvalidAPIKey
+	authProvider, err := lc.validateAuthCredentials()
+	if err != nil {
+		return err
 	}
 
 	user, err := lc.User()
@@ -113,7 +132,7 @@ func (lc *LoginCommand) logIn() error {
 		return err
 	}
 
-	authResponse, err := api.NewStitchClient(client).Authenticate(lc.flagAPIKey, lc.flagUsername)
+	authResponse, err := api.NewStitchClient(client).Authenticate(authProvider)
 	if err != nil {
 		return err
 	}

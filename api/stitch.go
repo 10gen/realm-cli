@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	authProviderCloudLoginRoute = adminBaseURL + "/auth/providers/mongodb-cloud/login"
-	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export"
-	appImportRoute              = adminBaseURL + "/groups/%s/apps/%s/import"
-	appsByGroupIDRoute          = adminBaseURL + "/groups/%s/apps"
-	userProfileRoute            = "/api/client/v2.0/auth/profile"
+	authProviderLoginRoute = adminBaseURL + "/auth/providers/%s/login"
+	appExportRoute         = adminBaseURL + "/groups/%s/apps/%s/export"
+	appImportRoute         = adminBaseURL + "/groups/%s/apps/%s/import"
+	appsByGroupIDRoute     = adminBaseURL + "/groups/%s/apps"
+	userProfileRoute       = "/api/client/v2.0/auth/profile"
 )
 
 var (
@@ -63,7 +63,7 @@ func UnmarshalReader(r io.Reader) error {
 
 // StitchClient represents a Client that can be used to call the Stitch Admin API
 type StitchClient interface {
-	Authenticate(apiKey, username string) (*auth.Response, error)
+	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
 	Export(groupID, appID string) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData []byte) error
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
@@ -81,16 +81,13 @@ type basicStitchClient struct {
 }
 
 // Authenticate will authenticate a user given an api key and username
-func (sc *basicStitchClient) Authenticate(apiKey, username string) (*auth.Response, error) {
-	body, err := json.Marshal(map[string]string{
-		"apiKey":   apiKey,
-		"username": username,
-	})
+func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
+	body, err := json.Marshal(authProvider.Payload())
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := sc.Client.ExecuteRequest(http.MethodPost, authProviderCloudLoginRoute, RequestOptions{
+	res, err := sc.Client.ExecuteRequest(http.MethodPost, fmt.Sprintf(authProviderLoginRoute, authProvider.Type()), RequestOptions{
 		Body: bytes.NewReader(body),
 		Header: http.Header{
 			"Content-Type": []string{"application/json"},

@@ -21,7 +21,7 @@ type User struct {
 
 // LoggedIn returns a boolean representing whether the user is logged in or not
 func (u *User) LoggedIn() bool {
-	return auth.ValidAPIKey(u.APIKey)
+	return auth.ValidAccessToken(u.AccessToken)
 }
 
 // TokenIsExpired returns a boolean representing whether or not the token is expired
