@@ -71,14 +71,51 @@ func TestImportCommand(t *testing.T) {
 			return importCommand, mockUI
 		}
 
-		for _, tc := range []struct {
+		type testCase struct {
 			Description      string
 			Args             []string
 			ExpectedExitCode int
 			ExpectedError    string
 			WorkingDirectory string
 			StitchClient     u.MockStitchClient
-		}{
+		}
+
+		for _, tc := range []testCase{
+			{
+				Description:      "it does not import if the user does not confirm the diff",
+				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ImportFn: func(groupID, appID string) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
+		} {
+			t.Run(tc.Description, func(t *testing.T) {
+				importCommand, mockUI := setup()
+
+				// Mock a "no" response when we prompt the user to confirm the diff
+				mockUI.InputReader = strings.NewReader("n\n")
+				importCommand.stitchClient = &tc.StitchClient
+
+				exitCode := importCommand.Run(tc.Args)
+
+				mockClient := importCommand.stitchClient.(*u.MockStitchClient)
+
+				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
+				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
+				u.So(t, len(mockClient.ImportFnCalls), gc.ShouldEqual, 0)
+			})
+		}
+
+		for _, tc := range []testCase{
 			{
 				Description:      "it fails if an app-id is not provided",
 				Args:             []string{"--path=../testdata/simple_app"},
@@ -114,7 +151,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "reports an error if it fails to fetch the app by clientID",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,
-				ExpectedError:    "failed to sync app",
+				ExpectedError:    "oh no failed to fetch app",
 				StitchClient: u.MockStitchClient{
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
@@ -123,10 +160,7 @@ func TestImportCommand(t *testing.T) {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
-						return &models.App{
-							GroupID: "group-id",
-							ID:      "app-id",
-						}, nil
+						return nil, fmt.Errorf("oh no failed to fetch app")
 					},
 				},
 			},
@@ -186,9 +220,32 @@ func TestImportCommand(t *testing.T) {
 					},
 				},
 			},
+			{
+				Description:      "reports an error if it fails to export the app",
+				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
+				ExpectedExitCode: 1,
+				ExpectedError:    "failed to sync app",
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+						return "", nil, fmt.Errorf("oh no")
+					},
+					ImportFn: func(groupID, appID string) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
 		} {
 			t.Run(tc.Description, func(t *testing.T) {
 				importCommand, mockUI := setup()
+
+				// Mock a "yes" response when we prompt the user to confirm the diff
+				mockUI.InputReader = strings.NewReader("y\n")
 				importCommand.stitchClient = &tc.StitchClient
 				importCommand.workingDirectory = tc.WorkingDirectory
 
@@ -224,6 +281,7 @@ func TestImportCommand(t *testing.T) {
 				} {
 					t.Run(tc.Description, func(t *testing.T) {
 						importCommand, mockUI := setup()
+						mockUI.InputReader = strings.NewReader("y\n")
 						importCommand.workingDirectory = tc.WorkingDirectory
 						mockStitchClient := &u.MockStitchClient{
 							ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {

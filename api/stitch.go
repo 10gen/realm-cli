@@ -66,6 +66,7 @@ type StitchClient interface {
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
 	Export(groupID, appID string) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData []byte) error
+	Diff(groupID, appID string, appData []byte) ([]string, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 }
 
@@ -139,11 +140,30 @@ func (sc *basicStitchClient) Export(groupID, appID string) (string, io.ReadClose
 	return filename, res.Body, nil
 }
 
+// Diff will execute a dry-run of an import, returning a diff of proposed changes
+func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte) ([]string, error) {
+	res, err := sc.invokeImportRoute(groupID, appID, appData, true)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, UnmarshalReader(res.Body)
+	}
+
+	var diffs []string
+	if err := json.NewDecoder(res.Body).Decode(&diffs); err != nil {
+		return nil, err
+	}
+
+	return diffs, nil
+}
+
 // Import will push a local Stitch app to the server
 func (sc *basicStitchClient) Import(groupID, appID string, appData []byte) error {
-	res, err := sc.ExecuteRequest(http.MethodPost, fmt.Sprintf(appImportRoute, groupID, appID), RequestOptions{
-		Body: bytes.NewReader(appData),
-	})
+	res, err := sc.invokeImportRoute(groupID, appID, appData, false)
 	if err != nil {
 		return err
 	}
@@ -155,6 +175,16 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte) error
 	}
 
 	return nil
+}
+
+func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []byte, diff bool) (*http.Response, error) {
+	url := fmt.Sprintf(appImportRoute, groupID, appID)
+
+	if diff {
+		url += "?diff=true"
+	}
+
+	return sc.ExecuteRequest(http.MethodPost, url, RequestOptions{Body: bytes.NewReader(appData)})
 }
 
 func (sc *basicStitchClient) fetchAppsByGroupID(groupID string) ([]*models.App, error) {
