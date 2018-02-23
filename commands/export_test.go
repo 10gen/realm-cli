@@ -53,6 +53,7 @@ func TestExportCommand(t *testing.T) {
 			}
 
 			exportCommand := cmd.(*ExportCommand)
+			exportCommand.storage = u.NewEmptyStorage()
 
 			return exportCommand, mockUI
 		}
@@ -149,6 +150,10 @@ func TestExportCommand(t *testing.T) {
 			}
 
 			exportCommand.stitchClient = &mockStitchClient
+			exportCommand.user = &user.User{
+				APIKey:      "my-api-key",
+				AccessToken: u.GenerateValidAccessToken(),
+			}
 
 			exitCode := exportCommand.Run([]string{`--app-id=my-cool-app`})
 			u.So(t, exitCode, gc.ShouldEqual, 1)
