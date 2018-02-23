@@ -33,7 +33,7 @@ tasks:
             set -e
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
-            go test -v $(go list github.com/10gen/stitch-cli/...)
+            go test -v $(go list github.com/10gen/stitch-cli/...) > $GOPATH/stitch-cli.suite
 
   - name: gometalinter
     commands:
@@ -84,6 +84,11 @@ tasks:
             fi
             echo $state > commit_state
       - func: "set_github_build_status"
+
+post:
+  - command: gotest.parse_files
+    params:
+      files: ["*.suite"]
 
 buildvariants:
 - name: linux-64
