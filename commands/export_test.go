@@ -53,6 +53,7 @@ func TestExportCommand(t *testing.T) {
 			}
 
 			exportCommand := cmd.(*ExportCommand)
+			exportCommand.storage = u.NewEmptyStorage()
 
 			return exportCommand, mockUI
 		}
