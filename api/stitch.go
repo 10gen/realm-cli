@@ -196,6 +196,10 @@ func (sc *basicStitchClient) fetchAppsByGroupID(groupID string) ([]*models.App, 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
+		if res.StatusCode == http.StatusNotFound {
+			// irrelevant group
+			return nil, nil
+		}
 		return nil, UnmarshalReader(res.Body)
 	}
 
