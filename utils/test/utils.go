@@ -176,7 +176,7 @@ func GenerateValidAccessToken() string {
 		panic(err)
 	}
 
-	tokenString := base64.StdEncoding.EncodeToString(tokenBytes)
+	tokenString := base64.RawStdEncoding.EncodeToString(tokenBytes)
 
 	return fmt.Sprintf("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.%s.RuF0KMEBAalfnsdMeozpQLQ_2hK27l9omxtTp8eF1yI", tokenString)
 }

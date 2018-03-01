@@ -34,7 +34,7 @@ func (jwt *JWT) Expired() bool {
 }
 
 func parse(s string) (*JWT, error) {
-	b, err := base64.StdEncoding.DecodeString(strings.Split(s, ".")[1])
+	b, err := base64.RawStdEncoding.DecodeString(strings.Split(s, ".")[1])
 	if err != nil {
 		return nil, ErrInvalidToken
 	}
