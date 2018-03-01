@@ -3,6 +3,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/10gen/stitch-cli/commands"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func main() {
-	c := cli.NewCLI("stitch", "0.0.1")
+	c := cli.NewCLI(filepath.Base(os.Args[0]), "0.0.1")
 	c.Args = os.Args[1:]
 
 	var ui cli.Ui = &cli.BasicUi{
