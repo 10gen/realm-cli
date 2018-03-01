@@ -47,6 +47,59 @@ tasks:
             cd src/github.com/10gen/stitch-cli
             $GOPATH/bin/gometalinter --exclude=vendor --vendor --config=.linter.config ./...
 
+  - name: build_publish_clis
+    depends_on:
+      - name: test_unit
+      - name: gometalinter
+    patchable: false
+    commands:
+      - func: "setup_project"
+      - command: shell.exec
+        params:
+          script: |
+            set -v
+            set -e
+            export GOPATH=`pwd`
+            export PATH="`pwd`:$PATH"
+            cd src/github.com/10gen/stitch-cli
+            export GOARCH=amd64
+            export GOOS=linux
+            echo "Building stitch-cli for $GOOS on $GOARCH"
+            go build -o stitch-cli-linux-amd64 main.go
+            export GOOS=darwin
+            echo "Building stitch-cli for $GOOS on $GOARCH"
+            go build -o stitch-cli-macos-amd64 main.go
+            export GOOS=windows
+            echo "Building stitch-cli for $GOOS on $GOARCH"
+            go build -o stitch-cli-windows-amd64 main.go
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: src/github.com/10gen/stitch-cli/stitch-cli-linux-amd64
+          remote_file: ${build_id}/linux-amd64/stitch-cli
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: src/github.com/10gen/stitch-cli/stitch-cli-macos-amd64
+          remote_file: ${build_id}/macos-amd64/stitch-cli
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: src/github.com/10gen/stitch-cli/stitch-cli-windows-amd64
+          remote_file: ${build_id}/windows-amd64/stitch-cli.exe
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+
   - name: github_pull_request_start
     priority: 100
     commands:
@@ -93,5 +146,6 @@ buildvariants:
   tasks:
   - name: github_pull_request_start
   - name: test_unit
-  - name: github_pull_request_end
   - name: gometalinter
+  - name: build_publish_clis
+  - name: github_pull_request_end
