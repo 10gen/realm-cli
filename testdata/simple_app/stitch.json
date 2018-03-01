@@ -1,6 +1,5 @@
 {
-  "config_version": 1,
-  "schema_version": 3,
+  "config_version": 20180301,
   "name": "simple-app",
   "security": {
     "allowed_request_origins": []
