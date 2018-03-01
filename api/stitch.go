@@ -18,7 +18,7 @@ const (
 	appExportRoute         = adminBaseURL + "/groups/%s/apps/%s/export"
 	appImportRoute         = adminBaseURL + "/groups/%s/apps/%s/import"
 	appsByGroupIDRoute     = adminBaseURL + "/groups/%s/apps"
-	userProfileRoute       = "/api/client/v2.0/auth/profile"
+	userProfileRoute       = adminBaseURL + "/auth/profile"
 )
 
 var (
