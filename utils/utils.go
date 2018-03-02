@@ -49,6 +49,8 @@ func ReadAndUnmarshalInto(marshalFn func(in []byte, out interface{}) error, path
 	return nil
 }
 
+const maxDirectoryContainSearchDepth = 8
+
 // GetDirectoryContainingFile searches upwards for a valid Stitch app directory
 func GetDirectoryContainingFile(wd, filename string) (string, error) {
 	wd, err := filepath.Abs(wd)
@@ -56,7 +58,7 @@ func GetDirectoryContainingFile(wd, filename string) (string, error) {
 		return "", err
 	}
 
-	for {
+	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
 		path := filepath.Join(wd, filename)
 		if _, err := os.Stat(path); err == nil {
 			return filepath.Dir(path), nil
