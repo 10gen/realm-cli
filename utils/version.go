@@ -33,6 +33,7 @@ func CheckForNewCLIVersion() string {
 	}
 	var manifest versionManifest
 	dec := json.NewDecoder(resp.Body)
+	defer resp.Body.Close()
 	dec.UseNumber()
 	if err := dec.Decode(&manifest); err != nil {
 		return ""

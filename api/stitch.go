@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strings"
 
 	"github.com/10gen/stitch-cli/auth"
 	"github.com/10gen/stitch-cli/models"
@@ -23,7 +24,17 @@ const (
 
 var (
 	errExportMissingFilename = errors.New("the app export response did not specify a filename")
+	errGroupNotFound         = errors.New("group could not be found")
 )
+
+// ErrAppNotFound is used when an app cannot be found by client app ID
+type ErrAppNotFound struct {
+	ClientAppID string
+}
+
+func (eanf ErrAppNotFound) Error() string {
+	return fmt.Sprintf("Unable to find app with ID: %q", eanf.ClientAppID)
+}
 
 // ErrStitchResponse represents a response from a Stitch API call
 type ErrStitchResponse struct {
@@ -68,6 +79,8 @@ type StitchClient interface {
 	Import(groupID, appID string, appData []byte, strategy string) error
 	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
+	FetchAppsByGroupID(groupID string) ([]*models.App, error)
+	CreateEmptyApp(groupID, appName string) (*models.App, error)
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -188,7 +201,7 @@ func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []
 	return sc.ExecuteRequest(http.MethodPost, url, RequestOptions{Body: bytes.NewReader(appData)})
 }
 
-func (sc *basicStitchClient) fetchAppsByGroupID(groupID string) ([]*models.App, error) {
+func (sc *basicStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(appsByGroupIDRoute, groupID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -198,8 +211,7 @@ func (sc *basicStitchClient) fetchAppsByGroupID(groupID string) ([]*models.App, 
 
 	if res.StatusCode != http.StatusOK {
 		if res.StatusCode == http.StatusNotFound {
-			// irrelevant group
-			return nil, nil
+			return nil, errGroupNotFound
 		}
 		return nil, UnmarshalReader(res.Body)
 	}
@@ -233,8 +245,8 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 	}
 
 	for _, groupID := range profileData.AllGroupIDs() {
-		apps, err := sc.fetchAppsByGroupID(groupID)
-		if err != nil {
+		apps, err := sc.FetchAppsByGroupID(groupID)
+		if err != nil && err != errGroupNotFound {
 			return nil, err
 		}
 
@@ -243,7 +255,32 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 		}
 	}
 
-	return nil, fmt.Errorf("unable to find app with ID: %q", clientAppID)
+	return nil, ErrAppNotFound{clientAppID}
+}
+
+func (sc *basicStitchClient) CreateEmptyApp(groupID, appName string) (*models.App, error) {
+	res, err := sc.ExecuteRequest(
+		http.MethodPost,
+		fmt.Sprintf(appsByGroupIDRoute, groupID),
+		RequestOptions{Body: strings.NewReader(fmt.Sprintf(`{"name":"%s"}`, appName))},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		return nil, UnmarshalReader(res.Body)
+	}
+
+	dec := json.NewDecoder(res.Body)
+	var app models.App
+	if err := dec.Decode(&app); err != nil {
+		return nil, err
+	}
+
+	return &app, nil
 }
 
 func findAppByClientAppID(apps []*models.App, clientAppID string) *models.App {

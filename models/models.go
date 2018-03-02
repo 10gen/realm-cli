@@ -12,7 +12,8 @@ const AppConfigFileName string = "stitch.json"
 
 // AppInstanceData defines data pertaining to a specific deployment of a Stitch application
 type AppInstanceData struct {
-	AppID string `json:"app_id"`
+	AppID   string `json:"app_id"`
+	AppName string `json:"name"`
 }
 
 // UnmarshalFile unmarshals data from a local config file into an AppInstanceData
@@ -47,4 +48,5 @@ type App struct {
 	ID          string `json:"_id"`
 	GroupID     string `json:"group_id"`
 	ClientAppID string `json:"client_app_id"`
+	Name        string `json:"name"`
 }

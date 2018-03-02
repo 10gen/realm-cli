@@ -206,7 +206,7 @@ func TestBaseCommandAsk(t *testing.T) {
 
 			mockUI.InputReader = strings.NewReader(tc.input + "\n")
 
-			result, err := baseCommand.Ask("lemme ask you a question [y/n]: ")
+			result, err := baseCommand.AskYesNo("lemme ask you a question [y/n]: ")
 			u.So(t, err, gc.ShouldEqual, tc.expectedErr)
 			u.So(t, result, gc.ShouldEqual, tc.expectedResult)
 		}
@@ -230,7 +230,7 @@ func TestBaseCommandAsk(t *testing.T) {
 			}
 
 			mockUI.InputReader = strings.NewReader(tc.input + "\n no\n")
-			_, err := baseCommand.Ask("lemme ask you a question [y/n]: ")
+			_, err := baseCommand.AskYesNo("lemme ask you a question [y/n]: ")
 			u.So(t, err, gc.ShouldBeNil)
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Could not understand response")

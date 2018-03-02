@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -208,6 +209,16 @@ func (msc *MockStitchClient) Diff(groupID, appID string, appData []byte, strateg
 	return []string{}, nil
 }
 
+// FetchAppsByGroupID does nothing
+func (msc *MockStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
+	return nil, errors.New("someone should test me")
+}
+
+// CreateEmptyApp does nothing
+func (msc *MockStitchClient) CreateEmptyApp(groupID, appName string) (*models.App, error) {
+	return nil, errors.New("someone should test me")
+}
+
 // Import will push a local Stitch app to the server
 func (msc *MockStitchClient) Import(groupID, appID string, appData []byte, strategy string) error {
 	if msc.ImportFn != nil {
@@ -223,5 +234,5 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 		return msc.FetchAppByClientAppIDFn(clientAppID)
 	}
 
-	return nil, nil
+	return nil, api.ErrAppNotFound{clientAppID}
 }

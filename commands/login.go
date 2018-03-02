@@ -117,7 +117,7 @@ func (lc *LoginCommand) logIn() error {
 	}
 
 	if user.LoggedIn() {
-		shouldContinue, err := lc.Ask("you are already logged in, this action will deauthenticate the existing user.\ncontinue?")
+		shouldContinue, err := lc.AskYesNo("you are already logged in, this action will deauthenticate the existing user.\ncontinue?")
 		if err != nil {
 			return err
 		}

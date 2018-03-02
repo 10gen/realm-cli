@@ -177,13 +177,14 @@ func (c *BaseCommand) run(args []string) error {
 	return nil
 }
 
-// Ask is used to prompt the user for input
-func (c *BaseCommand) Ask(query string) (bool, error) {
+// AskYesNo is used to prompt the user for yes/no input
+func (c *BaseCommand) AskYesNo(query string) (bool, error) {
 	if c.flagYes {
+		c.UI.Info(fmt.Sprintf("%s [y/n]: y", query))
 		return true, nil
 	}
 
-	res, err := c.UI.Ask(query + " [y/n] ")
+	res, err := c.UI.Ask(query + " [y/n]:")
 	if err != nil {
 		return false, err
 	}
@@ -203,7 +204,42 @@ func (c *BaseCommand) Ask(query string) (bool, error) {
 			return true, nil
 		}
 
-		res, _ = c.UI.Ask("Could not understand response, try again [y/n]: ")
+		res, _ = c.UI.Ask("Could not understand response, try again [y/n]:")
+	}
+}
+
+// Ask is used to prompt the user for input
+func (c *BaseCommand) Ask(query string, defaultVal string) (string, error) {
+	if c.flagYes && defaultVal != "" {
+		c.UI.Info(fmt.Sprintf("%s [%s]: %s", query, defaultVal, defaultVal))
+		return defaultVal, nil
+	}
+
+	var defaultClause string
+	if defaultVal != "" {
+		defaultClause = fmt.Sprintf(" [%s]", defaultVal)
+	}
+	res, err := c.UI.Ask(fmt.Sprintf("%s%s:", query, defaultClause))
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		var answer string
+
+		if len(res) > 0 {
+			answer = strings.TrimSpace(strings.ToLower(res))
+		}
+
+		if answer == "" && defaultVal != "" {
+			return defaultVal, nil
+		}
+
+		if len(answer) != 0 {
+			return answer, nil
+		}
+
+		res, _ = c.UI.Ask(fmt.Sprintf("Could not understand response, try again%s:", defaultClause))
 	}
 }
 

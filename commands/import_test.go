@@ -117,12 +117,6 @@ func TestImportCommand(t *testing.T) {
 
 		for _, tc := range []testCase{
 			{
-				Description:      "it fails if an app-id is not provided",
-				Args:             []string{"--path=../testdata/simple_app"},
-				ExpectedExitCode: 1,
-				ExpectedError:    errAppIDRequired.Error(),
-			},
-			{
 				Description:      "it fails if given an invalid flagAppPath",
 				Args:             append([]string{"--path=/somewhere/bogus"}, validArgs...),
 				ExpectedExitCode: 1,

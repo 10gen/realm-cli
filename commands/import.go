@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/models"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -18,6 +19,8 @@ import (
 const (
 	importFlagPath        = "path"
 	importFlagStrategy    = "strategy"
+	importFlagAppName     = "app-name"
+	importFlagGroupID     = "group-id"
 	importStrategyMerge   = "merge"
 	importStrategyReplace = "replace"
 )
@@ -50,6 +53,8 @@ type ImportCommand struct {
 
 	flagAppID    string
 	flagAppPath  string
+	flagAppName  string
+	flagGroupID  string
 	flagStrategy string
 }
 
@@ -59,11 +64,17 @@ func (ic *ImportCommand) Help() string {
 
 REQUIRED:
   --app-id [string]
-	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja")
+	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
+
+  --app-name [string]
+	The name of your app to be used if app is to be created new.
 
 OPTIONS:
   --path [string]
-	A path to the local directory containing your app
+	A path to the local directory containing your app.
+
+  --group-id [string]
+	The Atlas Group ID.
 
   --strategy [merge|replace] (default: merge)
 	How your app should be imported.
@@ -85,6 +96,8 @@ func (ic *ImportCommand) Run(args []string) int {
 
 	set.StringVar(&ic.flagAppID, flagAppIDName, "", "")
 	set.StringVar(&ic.flagAppPath, importFlagPath, "", "")
+	set.StringVar(&ic.flagGroupID, importFlagGroupID, "", "")
+	set.StringVar(&ic.flagAppName, importFlagAppName, "", "")
 	set.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 
 	if err := ic.BaseCommand.run(args); err != nil {
@@ -141,12 +154,37 @@ func (ic *ImportCommand) importApp() error {
 	}
 
 	app, err := stitchClient.FetchAppByClientAppID(appInstanceData.AppID)
+	var appNotFound bool
 	if err != nil {
-		return err
+		switch err.(type) {
+		case api.ErrAppNotFound:
+			appNotFound = true
+			if appInstanceData.AppID == "" {
+				err = errors.New("this app does not exist yet")
+			}
+		default:
+			return err
+		}
+	}
+
+	var skipDiff bool
+
+	if appNotFound {
+		skipDiff = true
+		ic.flagStrategy = importStrategyReplace
+
+		var wantedNewApp bool
+		app, wantedNewApp, err = ic.askCreateEmptyApp(err.Error(), appInstanceData.AppName, stitchClient)
+		if err != nil {
+			return err
+		}
+		if !wantedNewApp {
+			return nil
+		}
 	}
 
 	// Diff changes unless -y flag has been provided
-	if !ic.flagYes {
+	if !ic.flagYes && !skipDiff {
 		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
 		if err != nil {
 			return err
@@ -156,7 +194,7 @@ func (ic *ImportCommand) importApp() error {
 			ic.UI.Info(diff)
 		}
 
-		confirm, err := ic.Ask("Please confirm the changes shown above:")
+		confirm, err := ic.AskYesNo("Please confirm the changes shown above:")
 		if err != nil {
 			return err
 		}
@@ -183,6 +221,49 @@ func (ic *ImportCommand) importApp() error {
 	}
 
 	return nil
+}
+
+func (ic *ImportCommand) askCreateEmptyApp(query string, defaultAppName string, stitchClient api.StitchClient) (*models.App, bool, error) {
+	if ic.flagAppName != "" {
+		defaultAppName = ic.flagAppName
+	}
+
+	confirm, err := ic.AskYesNo(fmt.Sprintf("%s: would you like to create a new app?", query))
+	if err != nil {
+		return nil, false, err
+	}
+
+	if !confirm {
+		return nil, false, nil
+	}
+	groupID, err := ic.Ask("Atlas Group ID", ic.flagGroupID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	appName, err := ic.Ask("App name", defaultAppName)
+	if err != nil {
+		return nil, false, err
+	}
+
+	apps, err := stitchClient.FetchAppsByGroupID(groupID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	for _, app := range apps {
+		if app.Name == appName {
+			return nil, false, fmt.Errorf("app already exists with name %q", appName)
+		}
+	}
+
+	app, err := stitchClient.CreateEmptyApp(groupID, appName)
+	if err != nil {
+		return nil, false, err
+	}
+
+	ic.UI.Info(fmt.Sprintf("New app created and imported: %s", app.ClientAppID))
+	return app, true, nil
 }
 
 func (ic *ImportCommand) resolveAppDirectory() (string, error) {
@@ -213,10 +294,6 @@ func (ic *ImportCommand) resolveAppInstanceData(path string) (*models.AppInstanc
 		}
 	}
 
-	if appInstanceData.AppID == "" {
-		return nil, errAppIDRequired
-	}
-
 	return appInstanceData, nil
 }
 
@@ -234,6 +311,7 @@ func mergeAppInstanceDataFromPath(appInstanceData *models.AppInstanceData, path 
 
 	if appInstanceData.AppID == "" {
 		appInstanceData.AppID = appInstanceDataFromDotfile.AppID
+		appInstanceData.AppName = appInstanceDataFromDotfile.AppName
 	}
 
 	return nil
