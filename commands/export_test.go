@@ -65,14 +65,14 @@ func TestExportCommand(t *testing.T) {
 				Args                []string
 			}
 
-			dest := "my_app_123456"
+			zipFileName := "my_app_123456.zip"
 			zipData := "myZipData"
-			appID := "my-cool-app"
+			appID := "my-cool-app-123456"
 
 			for _, tc := range []testCase{
 				{
 					Description:         "it writes response data to the default directory",
-					ExpectedDestination: dest,
+					ExpectedDestination: "my_app",
 					Args:                []string{`--app-id=` + appID},
 				},
 				{
@@ -101,7 +101,7 @@ func TestExportCommand(t *testing.T) {
 							u.So(t, groupID, gc.ShouldEqual, responseGroupID)
 							u.So(t, appID, gc.ShouldEqual, responseAppID)
 
-							return dest, u.NewResponseBody(strings.NewReader(zipData)), nil
+							return zipFileName, u.NewResponseBody(strings.NewReader(zipData)), nil
 						},
 					}
 
@@ -114,7 +114,7 @@ func TestExportCommand(t *testing.T) {
 					destination := ""
 					var zipData string
 
-					exportCommand.exportToDirectory = func(dest string, r io.Reader) error {
+					exportCommand.exportToDirectory = func(dest string, r io.Reader, overwrite bool) error {
 						destination = dest
 						b, err := ioutil.ReadAll(r)
 						if err != nil {

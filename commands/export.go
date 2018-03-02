@@ -37,7 +37,7 @@ type ExportCommand struct {
 	*BaseCommand
 
 	workingDirectory  string
-	exportToDirectory func(dest string, zipData io.Reader) error
+	exportToDirectory func(dest string, zipData io.Reader, overwrite bool) error
 
 	flagAppID  string
 	flagOutput string
@@ -119,9 +119,9 @@ func (ec *ExportCommand) run() error {
 
 	if ec.flagOutput != "" {
 		filename = ec.flagOutput
-	} else {
-		filename = filename[:strings.LastIndex(filename, "_")]
+	} else if lastUnderscoreIdx := strings.LastIndex(filename, "_"); lastUnderscoreIdx != -1 {
+		filename = filename[:lastUnderscoreIdx]
 	}
 
-	return ec.exportToDirectory(filename, body)
+	return ec.exportToDirectory(filename, body, false)
 }

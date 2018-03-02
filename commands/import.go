@@ -38,7 +38,7 @@ func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
 type ImportCommand struct {
 	*BaseCommand
 
-	writeToDirectory func(dest string, zipData io.Reader) error
+	writeToDirectory func(dest string, zipData io.Reader, overwrite bool) error
 	workingDirectory string
 
 	flagAppID   string
@@ -158,7 +158,7 @@ func (ic *ImportCommand) importApp() error {
 
 	defer body.Close()
 
-	if err := ic.writeToDirectory(appPath, body); err != nil {
+	if err := ic.writeToDirectory(appPath, body, true); err != nil {
 		return fmt.Errorf("failed to sync app with local directory after import: %s", err)
 	}
 

@@ -27,7 +27,7 @@ func TestImportCommand(t *testing.T) {
 
 		importCommand := cmd.(*ImportCommand)
 		importCommand.storage = u.NewEmptyStorage()
-		importCommand.writeToDirectory = func(dest string, r io.Reader) error {
+		importCommand.writeToDirectory = func(dest string, r io.Reader, overwrite bool) error {
 			return nil
 		}
 
@@ -302,7 +302,7 @@ func TestImportCommand(t *testing.T) {
 						destinationDirectory := ""
 						writeContent := ""
 
-						importCommand.writeToDirectory = func(dest string, zipData io.Reader) error {
+						importCommand.writeToDirectory = func(dest string, zipData io.Reader, overwrite bool) error {
 							b, err := ioutil.ReadAll(zipData)
 							if err != nil {
 								return err

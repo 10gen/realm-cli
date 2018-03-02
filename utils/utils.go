@@ -75,8 +75,8 @@ func GetDirectoryContainingFile(wd, filename string) (string, error) {
 }
 
 // WriteZipToDir takes a destination and an io.Reader containing zip data and unpacks it
-func WriteZipToDir(dest string, zipData io.Reader) error {
-	if _, err := os.Open(dest); err == nil {
+func WriteZipToDir(dest string, zipData io.Reader, overwrite bool) error {
+	if _, err := os.Open(dest); !overwrite && err == nil {
 		return fmt.Errorf("failed to create directory %q: directory already exists", dest)
 	}
 
