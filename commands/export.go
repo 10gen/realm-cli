@@ -119,8 +119,9 @@ func (ec *ExportCommand) run() error {
 
 	if ec.flagOutput != "" {
 		filename = ec.flagOutput
+	} else {
+		filename = filename[:strings.LastIndex(filename, "_")]
 	}
 
-	dirToExportTo := filename[:strings.LastIndex(filename, "_")]
-	return ec.exportToDirectory(dirToExportTo, body)
+	return ec.exportToDirectory(filename, body)
 }
