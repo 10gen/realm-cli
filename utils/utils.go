@@ -74,6 +74,10 @@ func GetDirectoryContainingFile(wd, filename string) (string, error) {
 
 // WriteZipToDir takes a destination and an io.Reader containing zip data and unpacks it
 func WriteZipToDir(dest string, zipData io.Reader) error {
+	if _, err := os.Open(dest); err == nil {
+		return fmt.Errorf("failed to create directory %q: directory already exists", dest)
+	}
+
 	b, err := ioutil.ReadAll(zipData)
 	if err != nil {
 		return err
@@ -86,7 +90,7 @@ func WriteZipToDir(dest string, zipData io.Reader) error {
 
 	err = os.MkdirAll(dest, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to create directory %s: %s", dest, err)
+		return fmt.Errorf("failed to create directory %q: %s", dest, err)
 	}
 
 	for _, zipFile := range r.File {
@@ -101,25 +105,25 @@ func WriteZipToDir(dest string, zipData io.Reader) error {
 func processFile(path string, zipFile *zip.File) error {
 	fileData, err := zipFile.Open()
 	if err != nil {
-		return fmt.Errorf("failed to extract file %s: %s", path, err)
+		return fmt.Errorf("failed to extract file %q: %s", path, err)
 	}
 	defer fileData.Close()
 
 	if zipFile.FileInfo().IsDir() {
 		err = os.MkdirAll(path, os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("failed to create sub-directory %s: %s", path, err)
+			return fmt.Errorf("failed to create sub-directory %q: %s", path, err)
 		}
 	} else {
 		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, zipFile.Mode())
 		if err != nil {
-			return fmt.Errorf("failed to create file %s: %s", path, err)
+			return fmt.Errorf("failed to create file %q: %s", path, err)
 		}
 		defer f.Close()
 
 		_, err = io.Copy(f, fileData)
 		if err != nil {
-			return fmt.Errorf("failed to extract file %s: %s", path, err)
+			return fmt.Errorf("failed to extract file %q: %s", path, err)
 		}
 	}
 

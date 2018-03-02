@@ -242,7 +242,7 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 		}
 	}
 
-	return nil, fmt.Errorf("unable to find app with ID: %s", clientAppID)
+	return nil, fmt.Errorf("unable to find app with ID: %q", clientAppID)
 }
 
 func findAppByClientAppID(apps []*models.App, clientAppID string) *models.App {

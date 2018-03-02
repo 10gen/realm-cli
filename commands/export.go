@@ -1,9 +1,12 @@
 package commands
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"strings"
 
+	"github.com/10gen/stitch-cli/models"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
 
@@ -13,7 +16,13 @@ import (
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
 func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+
 		return &ExportCommand{
+			workingDirectory:  workingDirectory,
 			exportToDirectory: utils.WriteZipToDir,
 			BaseCommand: &BaseCommand{
 				Name: "export",
@@ -27,6 +36,7 @@ func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 type ExportCommand struct {
 	*BaseCommand
 
+	workingDirectory  string
 	exportToDirectory func(dest string, zipData io.Reader) error
 
 	flagAppID  string
@@ -86,6 +96,10 @@ func (ec *ExportCommand) run() error {
 		return u.ErrNotLoggedIn
 	}
 
+	if dir, err := utils.GetDirectoryContainingFile(ec.workingDirectory, models.AppConfigFileName); err == nil {
+		return fmt.Errorf("cannot export within config directory %q", dir)
+	}
+
 	stitchClient, err := ec.StitchClient()
 	if err != nil {
 		return err
@@ -107,5 +121,6 @@ func (ec *ExportCommand) run() error {
 		filename = ec.flagOutput
 	}
 
-	return ec.exportToDirectory(strings.Replace(filename, ".zip", "", 1), body)
+	dirToExportTo := filename[:strings.LastIndex(filename, "_")]
+	return ec.exportToDirectory(dirToExportTo, body)
 }
