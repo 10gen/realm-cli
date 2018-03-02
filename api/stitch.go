@@ -65,8 +65,8 @@ func UnmarshalReader(r io.Reader) error {
 type StitchClient interface {
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
 	Export(groupID, appID string) (string, io.ReadCloser, error)
-	Import(groupID, appID string, appData []byte) error
-	Diff(groupID, appID string, appData []byte) ([]string, error)
+	Import(groupID, appID string, appData []byte, strategy string) error
+	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 }
 
@@ -141,8 +141,8 @@ func (sc *basicStitchClient) Export(groupID, appID string) (string, io.ReadClose
 }
 
 // Diff will execute a dry-run of an import, returning a diff of proposed changes
-func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte) ([]string, error) {
-	res, err := sc.invokeImportRoute(groupID, appID, appData, true)
+func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+	res, err := sc.invokeImportRoute(groupID, appID, appData, strategy, true)
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +162,8 @@ func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte) ([]stri
 }
 
 // Import will push a local Stitch app to the server
-func (sc *basicStitchClient) Import(groupID, appID string, appData []byte) error {
-	res, err := sc.invokeImportRoute(groupID, appID, appData, false)
+func (sc *basicStitchClient) Import(groupID, appID string, appData []byte, strategy string) error {
+	res, err := sc.invokeImportRoute(groupID, appID, appData, strategy, false)
 	if err != nil {
 		return err
 	}
@@ -177,11 +177,12 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte) error
 	return nil
 }
 
-func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []byte, diff bool) (*http.Response, error) {
+func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []byte, strategy string, diff bool) (*http.Response, error) {
 	url := fmt.Sprintf(appImportRoute, groupID, appID)
 
+	url += fmt.Sprintf("?strategy=%s", strategy)
 	if diff {
-		url += "?diff=true"
+		url += "&diff=true"
 	}
 
 	return sc.ExecuteRequest(http.MethodPost, url, RequestOptions{Body: bytes.NewReader(appData)})

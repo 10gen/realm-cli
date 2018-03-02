@@ -15,6 +15,13 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
+const (
+	importFlagPath        = "path"
+	importFlagStrategy    = "strategy"
+	importStrategyMerge   = "merge"
+	importStrategyReplace = "replace"
+)
+
 // NewImportCommandFactory returns a new cli.CommandFactory given a cli.Ui
 func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
@@ -41,8 +48,9 @@ type ImportCommand struct {
 	writeToDirectory func(dest string, zipData io.Reader, overwrite bool) error
 	workingDirectory string
 
-	flagAppID   string
-	flagAppPath string
+	flagAppID    string
+	flagAppPath  string
+	flagStrategy string
 }
 
 // Help returns long-form help information for this command
@@ -56,6 +64,12 @@ REQUIRED:
 OPTIONS:
   --path [string]
 	A path to the local directory containing your app
+
+  --strategy [merge|replace] (default: merge)
+	How your app should be imported.
+
+	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
+	replace - like merge but does not preserve entities missing from the local directory's app configuration.
 	` +
 		ic.BaseCommand.Help()
 }
@@ -70,10 +84,16 @@ func (ic *ImportCommand) Run(args []string) int {
 	set := ic.NewFlagSet()
 
 	set.StringVar(&ic.flagAppID, flagAppIDName, "", "")
-	set.StringVar(&ic.flagAppPath, "path", "", "")
+	set.StringVar(&ic.flagAppPath, importFlagPath, "", "")
+	set.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
+		return 1
+	}
+
+	if ic.flagStrategy != importStrategyMerge && ic.flagStrategy != importStrategyReplace {
+		ic.UI.Error(fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace))
 		return 1
 	}
 
@@ -127,7 +147,7 @@ func (ic *ImportCommand) importApp() error {
 
 	// Diff changes unless -y flag has been provided
 	if !ic.flagYes {
-		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData)
+		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
 		if err != nil {
 			return err
 		}
@@ -146,7 +166,7 @@ func (ic *ImportCommand) importApp() error {
 		}
 	}
 
-	if err := stitchClient.Import(app.GroupID, app.ID, appData); err != nil {
+	if err := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); err != nil {
 		return err
 	}
 

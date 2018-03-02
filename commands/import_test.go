@@ -35,7 +35,7 @@ func TestImportCommand(t *testing.T) {
 			ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 				return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 			},
-			ImportFn: func(groupID, appID string) error {
+			ImportFn: func(groupID, appID, strategy string) error {
 				return nil
 			},
 			FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -86,7 +86,7 @@ func TestImportCommand(t *testing.T) {
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 0,
 				StitchClient: u.MockStitchClient{
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -136,7 +136,7 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -156,7 +156,7 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -170,7 +170,7 @@ func TestImportCommand(t *testing.T) {
 				ExpectedExitCode: 1,
 				ExpectedError:    "oh noes",
 				StitchClient: u.MockStitchClient{
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return fmt.Errorf("oh noes")
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -189,7 +189,7 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -209,7 +209,7 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -229,7 +229,7 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
-					ImportFn: func(groupID, appID string) error {
+					ImportFn: func(groupID, appID, strategy string) error {
 						return nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
@@ -287,7 +287,7 @@ func TestImportCommand(t *testing.T) {
 							ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 								return "", u.NewResponseBody(strings.NewReader("export response")), nil
 							},
-							ImportFn: func(groupID, appID string) error {
+							ImportFn: func(groupID, appID, strategy string) error {
 								return nil
 							},
 							FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
