@@ -10,6 +10,7 @@ import (
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/storage"
 	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
@@ -145,6 +146,10 @@ func (c *BaseCommand) run(args []string) error {
 
 	if err := c.Parse(args); err != nil {
 		return err
+	}
+
+	if url := utils.CheckForNewCLIVersion(); url != "" {
+		c.UI.Info(url)
 	}
 
 	if c.storage == nil {
