@@ -62,7 +62,7 @@ tasks:
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
             cd src/github.com/10gen/stitch-cli
-            export VERSION=20180301
+            export VERSION=20180302
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
