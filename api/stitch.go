@@ -55,14 +55,22 @@ type errStitchResponseData struct {
 	Error string `json:"error"`
 }
 
-// UnmarshalReader unmarshals an io.Reader into an ErrStitchResponse
-func UnmarshalReader(r io.Reader) error {
+// UnmarshalStitchError unmarshals an *http.Response into an ErrStitchResponse. If the Body does not
+// contain content it uses the provided Status
+func UnmarshalStitchError(res *http.Response) error {
 	var buf bytes.Buffer
-	if _, err := buf.ReadFrom(r); err != nil {
+	if _, err := buf.ReadFrom(res.Body); err != nil {
 		return err
 	}
 
 	str := buf.String()
+	if str == "" {
+		return ErrStitchResponse{
+			data: errStitchResponseData{
+				Error: res.Status,
+			},
+		}
+	}
 
 	var stitchResponse ErrStitchResponse
 	if err := json.NewDecoder(&buf).Decode(&stitchResponse); err != nil {
@@ -113,7 +121,7 @@ func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, UnmarshalReader(res.Body))
+		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, UnmarshalStitchError(res))
 	}
 
 	decoder := json.NewDecoder(res.Body)
@@ -135,7 +143,7 @@ func (sc *basicStitchClient) Export(groupID, appID string) (string, io.ReadClose
 
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		return "", nil, UnmarshalReader(res.Body)
+		return "", nil, UnmarshalStitchError(res)
 	}
 
 	_, params, err := mime.ParseMediaType(res.Header.Get("Content-Disposition"))
@@ -163,7 +171,7 @@ func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte, strateg
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalReader(res.Body)
+		return nil, UnmarshalStitchError(res)
 	}
 
 	var diffs []string
@@ -184,7 +192,7 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte, strat
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusNoContent {
-		return UnmarshalReader(res.Body)
+		return UnmarshalStitchError(res)
 	}
 
 	return nil
@@ -213,7 +221,7 @@ func (sc *basicStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, 
 		if res.StatusCode == http.StatusNotFound {
 			return nil, errGroupNotFound
 		}
-		return nil, UnmarshalReader(res.Body)
+		return nil, UnmarshalStitchError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -235,7 +243,7 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalReader(res.Body)
+		return nil, UnmarshalStitchError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -271,7 +279,7 @@ func (sc *basicStitchClient) CreateEmptyApp(groupID, appName string) (*models.Ap
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		return nil, UnmarshalReader(res.Body)
+		return nil, UnmarshalStitchError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
