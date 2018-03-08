@@ -184,10 +184,17 @@ func GenerateValidAccessToken() string {
 
 // MockStitchClient satisfies an api.StitchClient
 type MockStitchClient struct {
+	CreateEmptyAppFn        func(groupID, appName string) (*models.App, error)
 	FetchAppByClientAppIDFn func(clientAppID string) (*models.App, error)
-	ExportFn                func(groupID, appID string) (string, io.ReadCloser, error)
-	ImportFn                func(groupID, appID, strategy string) error
-	ImportFnCalls           [][]string
+	FetchAppsByGroupIDFn    func(groupID string) ([]*models.App, error)
+
+	ExportFn      func(groupID, appID string) (string, io.ReadCloser, error)
+	ExportFnCalls [][]string
+
+	ImportFn      func(groupID, appID string, appData []byte, strategy string) error
+	ImportFnCalls [][]string
+
+	DiffFn func(groupID, appID string, appData []byte, strategy string) ([]string, error)
 }
 
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
@@ -198,6 +205,7 @@ func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 // Export will download a Stitch app as a .zip
 func (msc *MockStitchClient) Export(groupID, appID string) (string, io.ReadCloser, error) {
 	if msc.ExportFn != nil {
+		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID})
 		return msc.ExportFn(groupID, appID)
 	}
 
@@ -206,16 +214,28 @@ func (msc *MockStitchClient) Export(groupID, appID string) (string, io.ReadClose
 
 // Diff will execute a dry-run of an import, returning a diff of proposed changes
 func (msc *MockStitchClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+	if msc.DiffFn != nil {
+		return msc.DiffFn(groupID, appID, appData, strategy)
+	}
+
 	return []string{}, nil
 }
 
 // FetchAppsByGroupID does nothing
 func (msc *MockStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
+	if msc.FetchAppsByGroupIDFn != nil {
+		return msc.FetchAppsByGroupIDFn(groupID)
+	}
+
 	return nil, errors.New("someone should test me")
 }
 
 // CreateEmptyApp does nothing
 func (msc *MockStitchClient) CreateEmptyApp(groupID, appName string) (*models.App, error) {
+	if msc.CreateEmptyAppFn != nil {
+		return msc.CreateEmptyAppFn(groupID, appName)
+	}
+
 	return nil, errors.New("someone should test me")
 }
 
@@ -223,7 +243,7 @@ func (msc *MockStitchClient) CreateEmptyApp(groupID, appName string) (*models.Ap
 func (msc *MockStitchClient) Import(groupID, appID string, appData []byte, strategy string) error {
 	if msc.ImportFn != nil {
 		msc.ImportFnCalls = append(msc.ImportFnCalls, []string{groupID, appID})
-		return msc.ImportFn(groupID, appID, strategy)
+		return msc.ImportFn(groupID, appID, appData, strategy)
 	}
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
 	u "github.com/10gen/stitch-cli/utils/test"
@@ -17,38 +18,125 @@ import (
 	"github.com/mitchellh/cli"
 )
 
-func TestImportCommand(t *testing.T) {
-	setUpBasicCommand := func() (*ImportCommand, *cli.MockUi) {
-		mockUI := cli.NewMockUi()
-		cmd, err := NewImportCommandFactory(mockUI)()
-		if err != nil {
-			panic(err)
-		}
-
-		importCommand := cmd.(*ImportCommand)
-		importCommand.storage = u.NewEmptyStorage()
-		importCommand.writeToDirectory = func(dest string, r io.Reader, overwrite bool) error {
-			return nil
-		}
-
-		mockStitchClient := &u.MockStitchClient{
-			ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
-				return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
-			},
-			ImportFn: func(groupID, appID, strategy string) error {
-				return nil
-			},
-			FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
-				return &models.App{
-					GroupID: "group-id",
-					ID:      "app-id",
-				}, nil
-			},
-		}
-		importCommand.stitchClient = mockStitchClient
-		return importCommand, mockUI
+func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
+	mockUI := cli.NewMockUi()
+	cmd, err := NewImportCommandFactory(mockUI)()
+	if err != nil {
+		panic(err)
 	}
 
+	importCommand := cmd.(*ImportCommand)
+	importCommand.storage = u.NewEmptyStorage()
+	importCommand.writeToDirectory = func(dest string, r io.Reader, overwrite bool) error {
+		return nil
+	}
+	importCommand.writeAppConfigToFile = func(dest string, app models.AppInstanceData) error {
+		return nil
+	}
+
+	mockStitchClient := &u.MockStitchClient{
+		ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+			return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+		},
+		DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+			return []string{"sample-diff-contents"}, nil
+		},
+		ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+			return nil
+		},
+		FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+			return &models.App{
+				GroupID: "group-id",
+				ID:      "app-id",
+			}, nil
+		},
+	}
+	importCommand.stitchClient = mockStitchClient
+	return importCommand, mockUI
+}
+
+func TestImportNewApp(t *testing.T) {
+
+	t.Run("when the user is logged in", func(t *testing.T) {
+		setup := func() (*ImportCommand, *cli.MockUi) {
+			importCommand, mockUI := setUpBasicCommand()
+
+			importCommand.user = &user.User{
+				APIKey:      "my-api-key",
+				AccessToken: u.GenerateValidAccessToken(),
+			}
+
+			return importCommand, mockUI
+		}
+
+		type testCase struct {
+			Description      string
+			Args             []string
+			ExpectedExitCode int
+			StitchClient     u.MockStitchClient
+		}
+
+		for _, tc := range []testCase{
+			{
+				Description:      "supports creating and importing a new app",
+				Args:             []string{"--path=../testdata/new_app"},
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					CreateEmptyAppFn: func(groupID, appName string) (*models.App, error) {
+						return &models.App{Name: "my-test-app", ClientAppID: "my-test-app-abcdef"}, nil
+					},
+					FetchAppsByGroupIDFn: func(groupID string) ([]*models.App, error) {
+						return []*models.App{}, nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return nil, api.ErrAppNotFound{ClientAppID: clientAppID}
+					},
+				},
+			},
+		} {
+			t.Run(tc.Description, func(t *testing.T) {
+				importCommand, mockUI := setup()
+
+				// Mock responses for prompts
+				confirmCreateApp := "y\n"
+				enterGroupID := "59dbcb07127ab4131c54e810\n"
+				enterAppName := "my-test-app\n"
+				mockUI.InputReader = strings.NewReader(confirmCreateApp + enterGroupID + enterAppName)
+				importCommand.stitchClient = &tc.StitchClient
+
+				writeToDirectoryCallCount := 0
+				importCommand.writeToDirectory = func(dest string, zipData io.Reader, overwrite bool) error {
+					writeToDirectoryCallCount++
+					return nil
+				}
+
+				writeAppConfigCallCount := 0
+				importCommand.writeAppConfigToFile = func(dest string, app models.AppInstanceData) error {
+					writeAppConfigCallCount++
+					return nil
+				}
+
+				exitCode := importCommand.Run(tc.Args)
+				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
+
+				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
+				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "New app created: my-test-app-abcdef")
+				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Successfully imported 'my-test-app-abcdef'")
+
+				mockClient := importCommand.stitchClient.(*u.MockStitchClient)
+				u.So(t, mockClient.ExportFnCalls, gc.ShouldHaveLength, 1)
+
+				u.So(t, writeToDirectoryCallCount, gc.ShouldEqual, 1)
+				u.So(t, writeAppConfigCallCount, gc.ShouldEqual, 1)
+			})
+		}
+	})
+}
+
+func TestImportCommand(t *testing.T) {
 	validArgs := []string{"--app-id=my-app-abcdef"}
 
 	t.Run("should require the user to be logged in", func(t *testing.T) {
@@ -86,8 +174,11 @@ func TestImportCommand(t *testing.T) {
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 0,
 				StitchClient: u.MockStitchClient{
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -130,8 +221,11 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -150,8 +244,11 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return nil, fmt.Errorf("oh no failed to fetch app")
@@ -164,8 +261,11 @@ func TestImportCommand(t *testing.T) {
 				ExpectedExitCode: 1,
 				ExpectedError:    "oh noes",
 				StitchClient: u.MockStitchClient{
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return fmt.Errorf("oh noes")
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -183,8 +283,11 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -203,8 +306,11 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -223,8 +329,11 @@ func TestImportCommand(t *testing.T) {
 					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
-					ImportFn: func(groupID, appID, strategy string) error {
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
 					},
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
@@ -281,8 +390,11 @@ func TestImportCommand(t *testing.T) {
 							ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
 								return "", u.NewResponseBody(strings.NewReader("export response")), nil
 							},
-							ImportFn: func(groupID, appID, strategy string) error {
+							ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 								return nil
+							},
+							DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+								return []string{"sample-diff-contents"}, nil
 							},
 							FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 								return &models.App{
