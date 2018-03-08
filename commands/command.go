@@ -248,7 +248,7 @@ func (c *BaseCommand) Help() string {
 	return `
 
   --config-path [string]
-	Location to write user configuration data to (defaults to ~/.config/stitch/stitch)
+	File to write user configuration data to (defaults to ~/.config/stitch/stitch)
 
   --color [boolean]
 	Use colors or not. Set to false if you do not want color
