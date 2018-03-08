@@ -13,6 +13,7 @@ import (
 	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
+	"github.com/mitchellh/go-homedir"
 )
 
 func TestExportCommand(t *testing.T) {
@@ -69,6 +70,9 @@ func TestExportCommand(t *testing.T) {
 			zipData := "myZipData"
 			appID := "my-cool-app-123456"
 
+			homeDir, err := homedir.Dir()
+			u.So(t, err, gc.ShouldBeNil)
+
 			for _, tc := range []testCase{
 				{
 					Description:         "it writes response data to the default directory",
@@ -79,6 +83,11 @@ func TestExportCommand(t *testing.T) {
 					Description:         "it writes response data to the provided destination directory",
 					ExpectedDestination: "some/other/directory/my_app",
 					Args:                []string{`--app-id=` + appID, `--output=some/other/directory/my_app`},
+				},
+				{
+					Description:         "it writes response data to an expanded home directory output path",
+					ExpectedDestination: homeDir + "/my_app",
+					Args:                []string{`--app-id=` + appID, `--output=~/my_app`},
 				},
 			} {
 				t.Run(tc.Description, func(t *testing.T) {

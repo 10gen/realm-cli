@@ -11,6 +11,7 @@ import (
 	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
+	"github.com/mitchellh/go-homedir"
 )
 
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -118,7 +119,10 @@ func (ec *ExportCommand) run() error {
 	defer body.Close()
 
 	if ec.flagOutput != "" {
-		filename = ec.flagOutput
+		filename, err = homedir.Expand(ec.flagOutput)
+		if err != nil {
+			return err
+		}
 	} else if lastUnderscoreIdx := strings.LastIndex(filename, "_"); lastUnderscoreIdx != -1 {
 		filename = filename[:lastUnderscoreIdx]
 	}
