@@ -228,7 +228,7 @@ func (c *BaseCommand) Ask(query string, defaultVal string) (string, error) {
 		var answer string
 
 		if len(res) > 0 {
-			answer = strings.TrimSpace(strings.ToLower(res))
+			answer = strings.TrimSpace(res)
 		}
 
 		if answer == "" && defaultVal != "" {

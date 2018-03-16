@@ -86,7 +86,7 @@ func TestImportNewApp(t *testing.T) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
 					CreateEmptyAppFn: func(groupID, appName string) (*models.App, error) {
-						return &models.App{Name: "my-test-app", ClientAppID: "my-test-app-abcdef"}, nil
+						return &models.App{Name: appName, ClientAppID: appName + "-abcdef"}, nil
 					},
 					FetchAppsByGroupIDFn: func(groupID string) ([]*models.App, error) {
 						return []*models.App{}, nil
@@ -103,7 +103,7 @@ func TestImportNewApp(t *testing.T) {
 				// Mock responses for prompts
 				confirmCreateApp := "y\n"
 				enterGroupID := "59dbcb07127ab4131c54e810\n"
-				enterAppName := "my-test-app\n"
+				enterAppName := "My-Test-app\n"
 				mockUI.InputReader = strings.NewReader(confirmCreateApp + enterGroupID + enterAppName)
 				importCommand.stitchClient = &tc.StitchClient
 
@@ -123,8 +123,8 @@ func TestImportNewApp(t *testing.T) {
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
 
 				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
-				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "New app created: my-test-app-abcdef")
-				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Successfully imported 'my-test-app-abcdef'")
+				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "New app created: My-Test-app-abcdef")
+				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Successfully imported 'My-Test-app-abcdef'")
 
 				mockClient := importCommand.stitchClient.(*u.MockStitchClient)
 				u.So(t, mockClient.ExportFnCalls, gc.ShouldHaveLength, 1)
