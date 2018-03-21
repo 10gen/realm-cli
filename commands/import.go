@@ -20,7 +20,7 @@ const (
 	importFlagPath        = "path"
 	importFlagStrategy    = "strategy"
 	importFlagAppName     = "app-name"
-	importFlagGroupID     = "group-id"
+	importFlagGroupID     = "project-id"
 	importStrategyMerge   = "merge"
 	importStrategyReplace = "replace"
 )
@@ -85,8 +85,8 @@ OPTIONS:
   --path [string]
 	A path to the local directory containing your app.
 
-  --group-id [string]
-	The Atlas Group ID.
+  --project-id [string]
+	The Atlas Project ID.
 
   --strategy [merge|replace] (default: merge)
 	How your app should be imported.
@@ -262,7 +262,7 @@ func (ic *ImportCommand) askCreateEmptyApp(query string, defaultAppName string, 
 	if !confirm {
 		return nil, false, nil
 	}
-	groupID, err := ic.Ask("Atlas Group ID", ic.flagGroupID)
+	groupID, err := ic.Ask("Atlas Project ID", ic.flagGroupID)
 	if err != nil {
 		return nil, false, err
 	}
