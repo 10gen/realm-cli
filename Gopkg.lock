@@ -56,12 +56,6 @@
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
-  name = "github.com/ogier/pflag"
-  packages = ["."]
-  revision = "32a05c62658bd1d7c7e75cbc8195de5d585fde0f"
-  version = "v0.0.1"
-
-[[projects]]
   name = "github.com/posener/complete"
   packages = [".","cmd","cmd/install","match"]
   revision = "dc2bc5a81accba8782bebea28628224643a8286a"
@@ -94,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "2ad4258e4f3be20cac3ecc6e187d629d325e6776270e349af151609b5e1109ea"
+  inputs-digest = "09b41897cd5e9636e2f52420030ac0ef77e67390a7a9975cf2a9268f9af339b5"
   solver-name = "gps-cdcl"
   solver-version = 1

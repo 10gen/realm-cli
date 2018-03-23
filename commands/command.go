@@ -3,7 +3,9 @@
 package commands
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -12,9 +14,9 @@ import (
 	"github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
 
+	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
-	flag "github.com/ogier/pflag"
 )
 
 const (
@@ -38,20 +40,20 @@ type BaseCommand struct {
 	user         *user.User
 	storage      *storage.Storage
 
-	flagConfigPath   string
-	flagColorEnabled bool
-	flagBaseURL      string
-	flagYes          bool
+	flagConfigPath    string
+	flagColorDisabled bool
+	flagBaseURL       string
+	flagYes           bool
 }
 
 // NewFlagSet builds and returns the default set of flags for all commands
 func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
-	set := flag.NewFlagSet(c.Name, flag.ContinueOnError)
-	set.SetInterspersed(true)
+	set := flag.NewFlagSet(c.Name, flag.ExitOnError)
 	set.Usage = func() {}
 
-	set.BoolVar(&c.flagColorEnabled, "color", true, "")
-	set.BoolVarP(&c.flagYes, "yes", "y", false, "")
+	set.BoolVar(&c.flagColorDisabled, "disable-color", false, "")
+	set.BoolVar(&c.flagYes, "yes", false, "")
+	set.BoolVar(&c.flagYes, "y", false, "")
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
 
@@ -144,8 +146,16 @@ func (c *BaseCommand) run(args []string) error {
 		c.NewFlagSet()
 	}
 
-	if err := c.Parse(args); err != nil {
-		return err
+	// FlagSet uses flag.ExitOnError, so we let it handle flag-related errors
+	// to avoid duplicate error output
+	c.Parse(args)
+
+	if !c.flagColorDisabled && isatty.IsTerminal(os.Stdout.Fd()) {
+		c.UI = &cli.ColoredUi{
+			ErrorColor: cli.UiColorRed,
+			WarnColor:  cli.UiColorYellow,
+			Ui:         c.UI,
+		}
 	}
 
 	if url := utils.CheckForNewCLIVersion(); url != "" {
@@ -250,8 +260,8 @@ func (c *BaseCommand) Help() string {
   --config-path [string]
 	File to write user configuration data to (defaults to ~/.config/stitch/stitch)
 
-  --color [boolean]
-	Use colors or not. Set to false if you do not want color
+  --disable-color
+	Disable the use of colors in terminal output.
 
   -y, --yes 
 	Bypass prompts. Provide this parameter if you do not want to be prompted for input.`

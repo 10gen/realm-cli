@@ -7,7 +7,6 @@ import (
 
 	"github.com/10gen/stitch-cli/commands"
 
-	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/cli"
 )
 
@@ -19,14 +18,6 @@ func main() {
 		Reader:      os.Stdin,
 		Writer:      os.Stdout,
 		ErrorWriter: os.Stderr,
-	}
-
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		ui = &cli.ColoredUi{
-			ErrorColor: cli.UiColorRed,
-			WarnColor:  cli.UiColorYellow,
-			Ui:         ui,
-		}
 	}
 
 	c.Commands = map[string]cli.CommandFactory{

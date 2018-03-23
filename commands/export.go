@@ -53,7 +53,7 @@ REQUIRED:
 	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja")
 
 OPTIONS:
-  -o, --output [string]
+  -o [string], --output [string]
 	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"` +
 		ec.BaseCommand.Help()
 }
@@ -68,7 +68,8 @@ func (ec *ExportCommand) Run(args []string) int {
 	set := ec.NewFlagSet()
 
 	set.StringVar(&ec.flagAppID, flagAppIDName, "", "")
-	set.StringVarP(&ec.flagOutput, "output", "o", "", "")
+	set.StringVar(&ec.flagOutput, "output", "", "")
+	set.StringVar(&ec.flagOutput, "o", "", "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
 		ec.UI.Error(err.Error())

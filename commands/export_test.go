@@ -80,14 +80,24 @@ func TestExportCommand(t *testing.T) {
 					Args:                []string{`--app-id=` + appID},
 				},
 				{
-					Description:         "it writes response data to the provided destination directory",
+					Description:         "it writes response data to the provided destination directory using the '--output' flag",
 					ExpectedDestination: "some/other/directory/my_app",
 					Args:                []string{`--app-id=` + appID, `--output=some/other/directory/my_app`},
 				},
 				{
-					Description:         "it writes response data to an expanded home directory output path",
+					Description:         "it writes response data to an expanded home directory output path using the '--output' flag",
 					ExpectedDestination: homeDir + "/my_app",
 					Args:                []string{`--app-id=` + appID, `--output=~/my_app`},
+				},
+				{
+					Description:         "it writes response data to the provided destination directory using the '-o' flag",
+					ExpectedDestination: "some/other/directory/my_app",
+					Args:                []string{`--app-id=` + appID, `-o`, `some/other/directory/my_app`},
+				},
+				{
+					Description:         "it writes response data to an expanded home directory output path using the '-o' flag",
+					ExpectedDestination: homeDir + "/my_app",
+					Args:                []string{`--app-id=` + appID, `-o`, `~/my_app`},
 				},
 			} {
 				t.Run(tc.Description, func(t *testing.T) {
