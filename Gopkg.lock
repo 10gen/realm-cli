@@ -57,19 +57,32 @@
 
 [[projects]]
   name = "github.com/posener/complete"
-  packages = [".","cmd","cmd/install","match"]
+  packages = [
+    ".",
+    "cmd",
+    "cmd/install",
+    "match"
+  ]
   revision = "dc2bc5a81accba8782bebea28628224643a8286a"
   version = "v1.1"
 
 [[projects]]
   name = "github.com/smartystreets/assertions"
-  packages = [".","internal/go-render/render","internal/oglematchers"]
+  packages = [
+    ".",
+    "internal/go-render/render",
+    "internal/oglematchers"
+  ]
   revision = "0b37b35ec7434b77e77a4bb29b79677cced992ea"
   version = "1.8.1"
 
 [[projects]]
   name = "github.com/smartystreets/goconvey"
-  packages = ["convey","convey/gotest","convey/reporting"]
+  packages = [
+    "convey",
+    "convey/gotest",
+    "convey/reporting"
+  ]
   revision = "9e8dc3f972df6c8fcc0375ef492c24d0bb204857"
   version = "1.6.3"
 

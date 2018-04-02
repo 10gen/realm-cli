@@ -52,3 +52,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/mitchellh/cli"
+
+[[constraint]]
+  branch = "v2"
+  name = "gopkg.in/mgo.v2"

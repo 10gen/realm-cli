@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -20,6 +21,11 @@ import (
 
 	"github.com/smartystreets/goconvey/convey/gotest"
 	"gopkg.in/yaml.v2"
+)
+
+const (
+	defaultMongoDBCloudPrivateAPIBaseURL = "http://localhost:9090"
+	defaultStitchServerBaseURL           = "http://localhost:9090"
 )
 
 // Assertion is a func that checks some condition for use in a test
@@ -256,3 +262,51 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 
 	return nil, api.ErrAppNotFound{clientAppID}
 }
+
+// MongoDBCloudPrivateAPIBaseURL returns the base URL to use for testing
+// the MongoDB Cloud Private API
+func MongoDBCloudPrivateAPIBaseURL() string {
+	if url := os.Getenv("STITCH_MONGODB_CLOUD_PRIVATE_API_BASE_URL"); url != "" {
+		return url
+	}
+	return defaultMongoDBCloudPrivateAPIBaseURL
+}
+
+// StitchServerBaseURL returns the base URL to use for testing with the Stitch Server
+func StitchServerBaseURL() string {
+	if url := os.Getenv("STITCH_SERVER_BASE_URL"); url != "" {
+		return url
+	}
+	return defaultStitchServerBaseURL
+}
+
+var mongoDBCloudNotRunning = false
+
+// MustSkipf skips a test suite, but panics if STITCH_NO_SKIP_TEST is set, indicating
+// that skipping is not permitted.
+func MustSkipf(t *testing.T, format string, args ...interface{}) {
+	if len(os.Getenv("STITCH_NO_SKIP_TEST")) > 0 {
+		panic("test was skipped, but STITCH_NO_SKIP_TEST is set.")
+	}
+	t.Skipf(format, args...)
+}
+
+// SkipUnlessMongoDBCloudRunning skips tests if there is no cloud instance running at
+// the chosen base URL
+var SkipUnlessMongoDBCloudRunning = func() func(t *testing.T) {
+	return func(t *testing.T) {
+		if mongoDBCloudNotRunning {
+			MustSkipf(t, "MongoDB Cloud not running at %s", MongoDBCloudPrivateAPIBaseURL())
+			return
+		}
+		req, err := http.NewRequest(http.MethodGet, MongoDBCloudPrivateAPIBaseURL(), nil)
+		if err != nil {
+			panic(err)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil || resp.StatusCode != http.StatusOK {
+			MustSkipf(t, "MongoDB Cloud not running at %s", MongoDBCloudPrivateAPIBaseURL())
+			return
+		}
+	}
+}()

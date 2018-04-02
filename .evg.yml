@@ -1,3 +1,5 @@
+cloud_dependent_pkg: &cloud_dependent_pkg "commands"
+
 functions:
   "setup_project":
     - command: shell.exec
@@ -7,6 +9,77 @@ functions:
     - command: git.get_project
       params:
         directory: src/github.com/10gen/stitch-cli
+
+  "setup_mongod":
+      - command: shell.exec
+        params:
+          script: |
+            set -v
+            curl --silent ${mongodb_url} | tar xvz
+      - command: shell.exec
+        params:
+          background: true
+          script: |
+            set -v
+            cd mongodb-*
+            echo "starting mongod..."
+            mkdir db_files
+            ./bin/mongod --dbpath ./db_files --port 26000 &
+            echo "waiting for mongod to start up"
+      - command: shell.exec
+        params:
+          script: |
+            set -e
+            cd mongodb-*
+            echo "waiting for mongod to start up"
+            ./bin/mongo --nodb --eval 'assert.soon(function(x){try{var d = new Mongo("localhost:26000"); return true}catch(e){return false}}, "timed out connecting")'
+            echo "mongod is up."
+
+  "setup_stitch_server":
+    - command: shell.exec
+      params:
+        script: |
+          wget --quiet "${libmongo_url}"
+          chmod +x libmongo.so
+    - command: shell.exec
+      params:
+        script: |
+          mkdir -p src/github.com/10gen
+    - command: shell.exec
+      params:
+        script: |
+          mkdir -p server/src/github.com/10gen
+            git clone git@github.com:10gen/stitch.git server/src/github.com/10gen/stitch
+    - command: shell.exec
+      params:
+        script: |
+          set -e
+          cd server/src/github.com/10gen/stitch/etc/transpiler
+          yarn install && yarn run build -t ${transpiler_target}
+  "start_server":
+    - command: shell.exec
+      params:
+        background: true
+        script: |
+          export PATH="`pwd`:$PATH"
+          cd server
+          export GOPATH=`pwd`
+          cd $GOPATH/src/github.com/10gen/stitch
+          export PATH="$GOPATH/src/github.com/10gen/stitch/etc/transpiler/bin:$PATH"
+          which transpiler
+          go run cmd/server/main.go --configFile $GOPATH/../src/github.com/10gen/stitch-cli/testdata/configs/stitch_server_test_config.json
+    - command: shell.exec
+      params:
+        script: |
+          counter=0
+          until $(curl --output /dev/null --silent --head --fail ${stitchServerURL}); do
+            echo "checking for API server to be up..."
+            sleep 1
+            let counter++
+            if [ $counter -gt 100 ]; then
+              exit 1
+            fi
+          done
 
   "set_github_build_status":
     - command: shell.exec
@@ -34,6 +107,24 @@ tasks:
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
             go test -v $(go list github.com/10gen/stitch-cli/...) > $GOPATH/stitch-cli.suite
+
+  - name: tests-with-cloud
+    exec_timeout_secs: 3600
+    commands:
+      - func: "setup_project"
+      - func: "setup_mongod"
+      - func: "setup_stitch_server"
+      - func: "start_server"
+      - command: shell.exec
+        params:
+          script: |
+            set -v
+            set -e
+            export GOPATH=`pwd`
+            export PATH="`pwd`:$PATH"
+            export STITCH_MONGODB_CLOUD_PRIVATE_API_BASE_URL="${mongoDBCloudURL}"
+            export STITCH_SERVER_BASE_URL="${stitchServerURL}"
+            go test -v $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -run TestCloud > $GOPATH/stitch-cli.suite
 
   - name: gometalinter
     commands:
@@ -155,9 +246,16 @@ buildvariants:
   display_name: Linux-64
   run_on:
   - baas-linux
+  expansions:
+    transpiler_target: node8-linux
+    mongodb_url: https://downloads.mongodb.com/linux/mongodb-linux-x86_64-enterprise-rhel70-3.4.6.tgz
+    libmongo_url: https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_1f02b06ec6fd48bad0b725b77bc194c84f839f53_5ab7216fc9ec44724e08f194_18_03_25_04_11_28/libmongo.so
+    mongoDBCloudURL: https://cloud-dev.mongodb.com
+    stitchServerURL: http://localhost:9090
   tasks:
   - name: github_pull_request_start
   - name: test_unit
+  - name: tests-with-cloud
   - name: gometalinter
   - name: build_publish_clis
   - name: github_pull_request_end
