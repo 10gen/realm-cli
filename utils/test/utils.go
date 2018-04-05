@@ -26,6 +26,8 @@ import (
 const (
 	defaultMongoDBCloudPrivateAPIBaseURL = "http://localhost:9090"
 	defaultStitchServerBaseURL           = "http://localhost:9090"
+	defaultMongoDBCloudPublicAPIBaseURL  = "http://localhost:9090/api/public/v1.0"
+	defaultMongoDBCloudAtlasAPIBaseURL   = "http://localhost:9090/api/atlas/v1.0"
 )
 
 // Assertion is a func that checks some condition for use in a test
@@ -270,6 +272,24 @@ func MongoDBCloudPrivateAPIBaseURL() string {
 		return url
 	}
 	return defaultMongoDBCloudPrivateAPIBaseURL
+}
+
+// MongoDBCloudPublicAPIBaseURL returns the base URL to use for testing
+// the MongoDB Cloud Admin API
+func MongoDBCloudPublicAPIBaseURL() string {
+	if url := os.Getenv("STITCH_MONGODB_CLOUD_PUBLIC_API_BASE_URL"); url != "" {
+		return url
+	}
+	return defaultMongoDBCloudPublicAPIBaseURL
+}
+
+// MongoDBCloudAtlasAPIBaseURL returns the base URL to use for testing
+// the MongoDB Cloud Atlas API
+func MongoDBCloudAtlasAPIBaseURL() string {
+	if url := os.Getenv("STITCH_MONGODB_CLOUD_ATLAS_API_BASE_URL"); url != "" {
+		return url
+	}
+	return defaultMongoDBCloudAtlasAPIBaseURL
 }
 
 // StitchServerBaseURL returns the base URL to use for testing with the Stitch Server

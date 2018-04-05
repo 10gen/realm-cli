@@ -1,0 +1,7 @@
+{
+  "config_version": 20180301,
+  "name": "simple-app",
+  "security": {
+    "allowed_request_origins": []
+  }
+}

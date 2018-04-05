@@ -300,3 +300,17 @@ func readAndUnmarshalJSONInto(path string, out interface{}) error {
 
 	return nil
 }
+
+// MediaType defines the type of HTTP media in a request/response
+type MediaType string
+
+// The set of known MediaTypes
+const (
+	MediaTypeTextPlain         = MediaType("text/plain; charset=utf-8")
+	MediaTypeOctetStream       = MediaType("application/octet-stream")
+	MediaTypeHTML              = MediaType("text/html")
+	MediaTypeJSON              = MediaType("application/json")
+	MediaTypeMultipartFormData = MediaType("multipart/form-data")
+	MediaTypeFormURLEncoded    = MediaType("application/x-www-form-urlencoded")
+	MediaTypeZip               = MediaType("application/zip")
+)
