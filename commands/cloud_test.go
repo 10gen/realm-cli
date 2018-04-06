@@ -65,9 +65,10 @@ func TestCloudCommands(t *testing.T) {
 	defer atlasClient.DeleteAtlasCluster(groupID, "testCluster")
 
 	t.Logf("Waiting for cluster to deploy")
+	var cluster *mdbcloud.AtlasCluster
 	time.Sleep(5 * time.Minute)
-	for i := 0; i < 17; i++ {
-		cluster, err := atlasClient.AtlasCluster(groupID, "testCluster")
+	for i := 0; i < 30; i++ {
+		cluster, err = atlasClient.AtlasCluster(groupID, "testCluster")
 		u.So(t, err, gc.ShouldBeNil)
 
 		t.Logf("Cluster status: %s", cluster.StateName)
@@ -76,6 +77,10 @@ func TestCloudCommands(t *testing.T) {
 		}
 		time.Sleep(30 * time.Second)
 	}
+	if cluster.StateName == "CREATING" {
+		t.Fatal("atlas cluster did not deploy in time")
+	}
+
 	t.Logf("Cluster finished deploying")
 
 	// test import

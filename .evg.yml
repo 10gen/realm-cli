@@ -126,7 +126,7 @@ tasks:
             export STITCH_MONGODB_CLOUD_PUBLIC_API_BASE_URL="${mongoDBCloudURL}/api/public/v1.0"
             export STITCH_MONGODB_CLOUD_ATLAS_API_BASE_URL="${mongoDBCloudURL}/api/atlas/v1.0"
             export STITCH_SERVER_BASE_URL="${stitchServerURL}"
-            go test -v $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -run TestCloud > $GOPATH/stitch-cli.suite
+            go test -v $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $GOPATH/stitch-cli.suite
 
   - name: gometalinter
     commands:
