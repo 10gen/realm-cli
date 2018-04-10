@@ -122,6 +122,9 @@ tasks:
             set -e
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
+            export STITCH_MONGODB_CLOUD_GROUP_ID="${stitch_mongodb_cloud_group_id}"
+            export STITCH_MONGODB_CLOUD_USERNAME="${stitch_mongodb_cloud_username}"
+            export STITCH_MONGODB_CLOUD_API_KEY="${stitch_mongodb_cloud_api_key}"
             export STITCH_MONGODB_CLOUD_PRIVATE_API_BASE_URL="${mongoDBCloudURL}"
             export STITCH_MONGODB_CLOUD_PUBLIC_API_BASE_URL="${mongoDBCloudURL}/api/public/v1.0"
             export STITCH_MONGODB_CLOUD_ATLAS_API_BASE_URL="${mongoDBCloudURL}/api/atlas/v1.0"
@@ -219,6 +222,9 @@ tasks:
         status: "*"
         variant: "linux-64"
       - name: gometalinter
+        status: "*"
+        variant: "linux-64"
+      - name: tests-with-cloud
         status: "*"
         variant: "linux-64"
     commands:

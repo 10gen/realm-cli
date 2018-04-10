@@ -4,27 +4,15 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 
 	u "github.com/10gen/stitch-cli/utils/test"
-	"github.com/10gen/stitch-cli/utils/test/harness"
 	"github.com/10gen/stitch-cli/utils/test/mdbcloud"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func TestCloudCommands(t *testing.T) {
 	u.SkipUnlessMongoDBCloudRunning(t)
-	serverBaseURL := u.StitchServerBaseURL()
-
-	// setup cloud
-	cloudClient := harness.NewCloudPrivateAPIClient(t)
-	err := cloudClient.RegisterUser()
-	u.So(t, err, gc.ShouldBeNil)
-	err = cloudClient.CreateGroup(harness.PlanTypeNDS)
-	u.So(t, err, gc.ShouldBeNil)
-	_, apiKey, err := cloudClient.CreateAPIKey()
-	u.So(t, err, gc.ShouldBeNil)
-	groupID := cloudClient.GroupID()
+	cloudEnv := u.ENV()
 
 	// test login
 	loginArgs := []string{
@@ -34,54 +22,17 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		serverBaseURL,
+		cloudEnv.StitchServerBaseURL,
 		"--username",
-		cloudClient.Username(),
+		cloudEnv.Username,
 		"--api-key",
-		apiKey,
+		cloudEnv.APIKey,
 	}
 
-	err = exec.Command("go", loginArgs...).Run()
+	err := exec.Command("go", loginArgs...).Run()
 	u.So(t, err, gc.ShouldBeNil)
 	err = exec.Command("ls", "../cli_conf").Run()
 	u.So(t, err, gc.ShouldBeNil)
-
-	// setup atlas cluster
-	atlasClient := mdbcloud.NewClient(u.MongoDBCloudPublicAPIBaseURL(), u.MongoDBCloudAtlasAPIBaseURL()).
-		WithAuth(cloudClient.Username(), apiKey)
-	testCluster := mdbcloud.CreateAtlasCluster{
-		BackupEnabled: "false",
-		AtlasCluster: mdbcloud.AtlasCluster{
-			Name: "testCluster",
-			ProviderSettings: mdbcloud.ProviderSettings{
-				ProviderName: "AWS",
-				RegionName:   "US_EAST_1",
-				InstanceSize: "M10",
-			},
-		},
-	}
-	err = atlasClient.CreateAtlasCluster(groupID, testCluster)
-	u.So(t, err, gc.ShouldBeNil)
-	defer atlasClient.DeleteAtlasCluster(groupID, "testCluster")
-
-	t.Logf("Waiting for cluster to deploy")
-	var cluster *mdbcloud.AtlasCluster
-	time.Sleep(5 * time.Minute)
-	for i := 0; i < 30; i++ {
-		cluster, err = atlasClient.AtlasCluster(groupID, "testCluster")
-		u.So(t, err, gc.ShouldBeNil)
-
-		t.Logf("Cluster status: %s", cluster.StateName)
-		if cluster.StateName != "CREATING" {
-			break
-		}
-		time.Sleep(30 * time.Second)
-	}
-	if cluster.StateName == "CREATING" {
-		t.Fatal("atlas cluster did not deploy in time")
-	}
-
-	t.Logf("Cluster finished deploying")
 
 	// test import
 	importArgs := []string{
@@ -91,30 +42,25 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		serverBaseURL,
+		cloudEnv.StitchServerBaseURL,
 		"--path",
 		"../testdata/simple_app_with_cluster",
 		"--project-id",
-		groupID,
+		cloudEnv.GroupID,
 		"--yes",
 	}
 	out, err := exec.Command("go", importArgs...).Output()
 	u.So(t, err, gc.ShouldBeNil)
 
-	// check Atlas whitelist for Stitch entry
-	whitelistResponse, err := atlasClient.AtlasIPWhitelistEntries(groupID)
-	u.So(t, err, gc.ShouldBeNil)
-	hasStitchIP := false
-	for _, whitelistEntry := range whitelistResponse.Results {
-		if strings.Contains(whitelistEntry.Comment, "For MongoDB Stitch; do not delete") {
-			hasStitchIP = true
-		}
-	}
-	u.So(t, hasStitchIP, gc.ShouldBeTrue)
-
-	// test export
 	importOut := string(out)
 	appID := importOut[strings.Index(importOut, "'simple-app-")+1 : len(importOut)-2]
+
+	atlasClient := mdbcloud.NewClient(cloudEnv.AtlasAPIBaseURL).
+		WithAuth(cloudEnv.Username, cloudEnv.APIKey)
+
+	defer atlasClient.DeleteDatabaseUser(cloudEnv.GroupID, "mongodb-stitch-"+appID)
+
+	// test export
 	exportArgs := []string{
 		"run",
 		"../main.go",
@@ -122,7 +68,7 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		serverBaseURL,
+		cloudEnv.StitchServerBaseURL,
 		"--app-id",
 		appID,
 		"-o",
