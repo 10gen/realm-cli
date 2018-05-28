@@ -1,0 +1,9 @@
+{
+    "name": "authEventSubscription",
+    "type": "AUTHENTICATION",
+    "config": {
+        "action_type": "LOGIN"
+    },
+    "function_name": "function_a",
+    "disabled": false
+}

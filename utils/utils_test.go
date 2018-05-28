@@ -16,8 +16,8 @@ func TestAppLoadFromDirectory(t *testing.T) {
 		u.So(t, app["name"], gc.ShouldEqual, "full-app")
 		u.So(t, app["secrets"], gc.ShouldNotBeEmpty)
 		u.So(t, app["values"], gc.ShouldHaveLength, 2)
-		for _, svc := range app["values"].([]interface{}) {
-			u.So(t, svc.(map[string]interface{}), gc.ShouldNotBeEmpty)
+		for _, value := range app["values"].([]interface{}) {
+			u.So(t, value.(map[string]interface{}), gc.ShouldNotBeEmpty)
 		}
 
 		u.So(t, app["auth_providers"], gc.ShouldHaveLength, 2)
@@ -30,6 +30,11 @@ func TestAppLoadFromDirectory(t *testing.T) {
 			fnMap := fn.(map[string]interface{})
 			u.So(t, fnMap["config"], gc.ShouldNotBeEmpty)
 			u.So(t, fnMap["source"], gc.ShouldNotBeEmpty)
+		}
+
+		u.So(t, app["event_subscriptions"], gc.ShouldHaveLength, 2)
+		for _, es := range app["event_subscriptions"].([]interface{}) {
+			u.So(t, es.(map[string]interface{}), gc.ShouldNotBeEmpty)
 		}
 
 		u.So(t, app["services"], gc.ShouldHaveLength, 3)

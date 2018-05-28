@@ -13,18 +13,19 @@ import (
 )
 
 const (
-	jsonExt              string = ".json"
-	jsExt                       = ".js"
-	authProvidersName           = "auth_providers"
-	appConfigName               = "stitch"
-	configName                  = "config"
-	functionsName               = "functions"
-	incomingWebhooksName        = "incoming_webhooks"
-	rulesName                   = "rules"
-	secretsName                 = "secrets"
-	servicesName                = "services"
-	sourceName                  = "source"
-	valuesName                  = "values"
+	jsonExt                string = ".json"
+	jsExt                         = ".js"
+	authProvidersName             = "auth_providers"
+	appConfigName                 = "stitch"
+	configName                    = "config"
+	functionsName                 = "functions"
+	eventSubscriptionsName        = "event_subscriptions"
+	incomingWebhooksName          = "incoming_webhooks"
+	rulesName                     = "rules"
+	secretsName                   = "secrets"
+	servicesName                  = "services"
+	sourceName                    = "source"
+	valuesName                    = "values"
 )
 
 var (
@@ -174,6 +175,15 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 
 	if len(functions) != 0 {
 		app[functionsName] = functions
+	}
+
+	eventSubscriptions, err := unmarshalJSONFiles(filepath.Join(path, eventSubscriptionsName))
+	if err != nil {
+		return app, err
+	}
+
+	if len(eventSubscriptions) != 0 {
+		app[eventSubscriptionsName] = eventSubscriptions
 	}
 
 	services, err := unmarshalServiceDirectories(filepath.Join(path, servicesName))
