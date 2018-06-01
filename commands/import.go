@@ -311,7 +311,7 @@ func (ic *ImportCommand) resolveAppDirectory() (string, error) {
 // resolveAppInstanceData loads data for an app from a stitch.json file located in the provided directory path,
 // merging in any overridden parameters from command line flags
 func (ic *ImportCommand) resolveAppInstanceData(path string) (models.AppInstanceData, error) {
-	var appInstanceDataFromFile models.AppInstanceData
+	appInstanceDataFromFile := models.AppInstanceData{}
 	err := appInstanceDataFromFile.UnmarshalFile(path)
 
 	if os.IsNotExist(err) {

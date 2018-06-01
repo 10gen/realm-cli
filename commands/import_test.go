@@ -256,6 +256,28 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
+				Description:      "successfully imports even if the stitch.json file is empty",
+				Args:             append([]string{"--path=../testdata/simple_app_empty_stitch_json"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(strings.NewReader("export response")), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
+			{
 				Description:      "it fails with an error if the response to the import request is invalid",
 				Args:             append([]string{"--path=../testdata/simple_app"}, validArgs...),
 				ExpectedExitCode: 1,
