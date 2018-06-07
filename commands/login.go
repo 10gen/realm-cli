@@ -75,6 +75,7 @@ func (lc *LoginCommand) Run(args []string) int {
 		return 1
 	}
 
+	lc.UI.Info(fmt.Sprintf("you have successfully logged in as %s", lc.flagUsername))
 	return 0
 }
 
@@ -117,7 +118,12 @@ func (lc *LoginCommand) logIn() error {
 	}
 
 	if user.LoggedIn() {
-		shouldContinue, err := lc.AskYesNo("you are already logged in, this action will deauthenticate the existing user.\ncontinue?")
+		shouldContinue, err := lc.AskYesNo(fmt.Sprintf(
+			"you are already logged in as %s, this action will deauthenticate the existing user [apiKey: %s].\ncontinue?",
+			user.Username,
+			user.RedactedAPIKey(),
+		))
+
 		if err != nil {
 			return err
 		}

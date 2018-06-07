@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/10gen/stitch-cli/auth"
 )
@@ -33,4 +34,19 @@ func (u *User) TokenIsExpired() (bool, error) {
 	}
 
 	return token.Expired(), nil
+}
+
+// RedactedAPIKey returns a string representing the user's API key
+// with everything but the last portion of the key displayed as "*"
+func (u *User) RedactedAPIKey() string {
+	apiKeyParts := strings.Split(u.APIKey, "-")
+	redactedParts := make([]string, len(apiKeyParts))
+
+	lastIndex := len(apiKeyParts) - 1
+	for i := 0; i < lastIndex; i++ {
+		redactedParts[i] = strings.Repeat("*", len(apiKeyParts[i]))
+	}
+	redactedParts[lastIndex] = apiKeyParts[lastIndex]
+
+	return strings.Join(redactedParts, "-")
 }

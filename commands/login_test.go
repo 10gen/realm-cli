@@ -46,7 +46,7 @@ func TestLoginCommand(t *testing.T) {
 	})
 
 	t.Run("when the user is not logged in", func(t *testing.T) {
-		setup := func() *LoginCommand {
+		setup := func() (*LoginCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
 			cmd, err := NewLoginCommandFactory(mockUI)()
 			if err != nil {
@@ -70,11 +70,11 @@ func TestLoginCommand(t *testing.T) {
 			loginCommand.client = mockClient
 			loginCommand.storage = u.NewEmptyStorage()
 
-			return loginCommand
+			return loginCommand, mockUI
 		}
 
 		t.Run("logs the user in and updates auth data", func(t *testing.T) {
-			loginCommand := setup()
+			loginCommand, mockUI := setup()
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
@@ -91,6 +91,8 @@ func TestLoginCommand(t *testing.T) {
 			u.So(t, err, gc.ShouldBeNil)
 
 			u.So(t, storedUser, gc.ShouldResemble, validUser)
+
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you have successfully logged in as my.username")
 		})
 	})
 
@@ -118,6 +120,7 @@ func TestLoginCommand(t *testing.T) {
 
 			loginCommand.client = mockClient
 			loginCommand.user = &user.User{
+				Username:    "my.username",
 				AccessToken: "my-existing-token",
 				APIKey:      "my-existing-api-key",
 			}
@@ -153,7 +156,7 @@ func TestLoginCommand(t *testing.T) {
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in, this action will deauthenticate the existing user")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as my.username, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
 			u.So(t, loginCommand.user.APIKey, gc.ShouldEqual, "my-existing-api-key")
 		})
 
@@ -164,7 +167,7 @@ func TestLoginCommand(t *testing.T) {
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in, this action will deauthenticate the existing user")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as my.username, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
 
 			validUser := &user.User{
 				APIKey:       "my-api-key",

@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"strings"
 )
 
 // Errors related to auth
@@ -41,7 +42,7 @@ type Response struct {
 
 // ValidAPIKey locally checks if the given API key is valid
 func ValidAPIKey(apiKey string) bool {
-	return len(apiKey) > 0
+	return len(apiKey) > 0 && strings.Contains(apiKey, "-")
 }
 
 // ValidAccessToken locally checks if the given access token is valid
