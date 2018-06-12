@@ -116,7 +116,7 @@ func TestExportCommand(t *testing.T) {
 								ID:          responseAppID,
 							}, nil
 						},
-						ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+						ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
 							u.So(t, groupID, gc.ShouldEqual, responseGroupID)
 							u.So(t, appID, gc.ShouldEqual, responseAppID)
 
@@ -163,7 +163,7 @@ func TestExportCommand(t *testing.T) {
 						ID:          "app-id",
 					}, nil
 				},
-				ExportFn: func(groupID, appID string) (string, io.ReadCloser, error) {
+				ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
 					return "", nil, fmt.Errorf("oh noes")
 				},
 			}

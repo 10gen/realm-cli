@@ -40,8 +40,9 @@ type ExportCommand struct {
 	workingDirectory  string
 	exportToDirectory func(dest string, zipData io.Reader, overwrite bool) error
 
-	flagAppID  string
-	flagOutput string
+	flagAppID      string
+	flagOutput     string
+	flagAsTemplate bool
 }
 
 // Help returns long-form help information for this command
@@ -54,7 +55,10 @@ REQUIRED:
 
 OPTIONS:
   -o [string], --output [string]
-	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"` +
+	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"
+
+  --as-template
+	Indicate that the application should be exported as a template.` +
 		ec.BaseCommand.Help()
 }
 
@@ -70,6 +74,7 @@ func (ec *ExportCommand) Run(args []string) int {
 	set.StringVar(&ec.flagAppID, flagAppIDName, "", "")
 	set.StringVar(&ec.flagOutput, "output", "", "")
 	set.StringVar(&ec.flagOutput, "o", "", "")
+	set.BoolVar(&ec.flagAsTemplate, "as-template", false, "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
 		ec.UI.Error(err.Error())
@@ -112,7 +117,7 @@ func (ec *ExportCommand) run() error {
 		return err
 	}
 
-	filename, body, err := stitchClient.Export(app.GroupID, app.ID)
+	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate)
 	if err != nil {
 		return err
 	}

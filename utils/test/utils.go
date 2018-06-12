@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -190,7 +191,7 @@ type MockStitchClient struct {
 	FetchAppByClientAppIDFn func(clientAppID string) (*models.App, error)
 	FetchAppsByGroupIDFn    func(groupID string) ([]*models.App, error)
 
-	ExportFn      func(groupID, appID string) (string, io.ReadCloser, error)
+	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
 	ExportFnCalls [][]string
 
 	ImportFn      func(groupID, appID string, appData []byte, strategy string) error
@@ -205,10 +206,10 @@ func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 }
 
 // Export will download a Stitch app as a .zip
-func (msc *MockStitchClient) Export(groupID, appID string) (string, io.ReadCloser, error) {
+func (msc *MockStitchClient) Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
 	if msc.ExportFn != nil {
-		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID})
-		return msc.ExportFn(groupID, appID)
+		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID, strconv.FormatBool(isTemplated)})
+		return msc.ExportFn(groupID, appID, isTemplated)
 	}
 
 	return "", nil, nil
