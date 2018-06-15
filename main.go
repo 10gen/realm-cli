@@ -21,6 +21,7 @@ func main() {
 	}
 
 	c.Commands = map[string]cli.CommandFactory{
+		"whoami": commands.NewWhoamiCommandFactory(ui),
 		"login":  commands.NewLoginCommandFactory(ui),
 		"logout": commands.NewLogoutCommandFactory(ui),
 		"export": commands.NewExportCommandFactory(ui),
