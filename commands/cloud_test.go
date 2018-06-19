@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/stitch-cli/api/mdbcloud"
 	u "github.com/10gen/stitch-cli/utils/test"
-	"github.com/10gen/stitch-cli/utils/test/mdbcloud"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
@@ -55,7 +55,7 @@ func TestCloudCommands(t *testing.T) {
 	importOut := string(out)
 	appID := importOut[strings.Index(importOut, "'simple-app-")+1 : len(importOut)-2]
 
-	atlasClient := mdbcloud.NewClient(cloudEnv.AtlasAPIBaseURL).
+	atlasClient := mdbcloud.NewClient(cloudEnv.CloudAPIBaseURL).
 		WithAuth(cloudEnv.Username, cloudEnv.APIKey)
 
 	defer atlasClient.DeleteDatabaseUser(cloudEnv.GroupID, "mongodb-stitch-"+appID)

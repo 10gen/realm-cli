@@ -86,7 +86,7 @@ OPTIONS:
 	A path to the local directory containing your app.
 
   --project-id [string]
-	The Atlas Project ID.
+  The Atlas Project ID.
 
   --strategy [merge|replace] (default: merge)
 	How your app should be imported.
@@ -249,6 +249,64 @@ func (ic *ImportCommand) importApp() error {
 	return nil
 }
 
+func (ic *ImportCommand) resolveGroupID() (string, error) {
+	if ic.flagGroupID != "" {
+		return ic.flagGroupID, nil
+	}
+
+	atlasClient, err := ic.AtlasClient()
+	if err != nil {
+		return "", fmt.Errorf("failed to find Project ID: %s", err)
+	}
+
+	groups, err := atlasClient.Groups()
+	if err != nil {
+		return "", fmt.Errorf("failed to find Project ID: %s", err)
+	}
+
+	groupsByName := map[string]string{}
+	for _, group := range groups {
+		groupsByName[group.Name] = group.ID
+	}
+
+	if len(groupsByName) == 0 {
+		return "", errors.New("no available Project IDs")
+	}
+
+	ic.UI.Info("Available Project IDs:")
+
+	for name, id := range groupsByName {
+		ic.UI.Info(fmt.Sprintf("%s - %s", name, id))
+	}
+
+	var groupID string
+	for {
+		groupName, err := ic.Ask("Atlas Project ID", groups[0].Name)
+		if err != nil {
+			return "", err
+		}
+
+		groupID = groupsByName[groupName]
+		if groupID != "" {
+			break
+		}
+
+		groupFromName, err := atlasClient.GroupByName(groupName)
+		if err != nil {
+			return "", err
+		}
+
+		groupID = groupFromName.ID
+		if groupID != "" {
+			break
+		}
+
+		ic.UI.Info("Could not understand response, please try again")
+	}
+
+	return groupID, nil
+}
+
 func (ic *ImportCommand) askCreateEmptyApp(query string, defaultAppName string, stitchClient api.StitchClient) (*models.App, bool, error) {
 	if ic.flagAppName != "" {
 		defaultAppName = ic.flagAppName
@@ -262,12 +320,13 @@ func (ic *ImportCommand) askCreateEmptyApp(query string, defaultAppName string, 
 	if !confirm {
 		return nil, false, nil
 	}
-	groupID, err := ic.Ask("Atlas Project ID", ic.flagGroupID)
+
+	appName, err := ic.Ask("App name", defaultAppName)
 	if err != nil {
 		return nil, false, err
 	}
 
-	appName, err := ic.Ask("App name", defaultAppName)
+	groupID, err := ic.resolveGroupID()
 	if err != nil {
 		return nil, false, err
 	}

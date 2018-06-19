@@ -10,8 +10,11 @@ import (
 	"github.com/10gen/stitch-cli/user"
 )
 
-// DefaultBaseURL is the default cloud prod base url for Stitch apps
+// DefaultBaseURL is the default prod base url for Stitch apps
 const DefaultBaseURL = "https://stitch.mongodb.com"
+
+// DefaultAtlasBaseURL is the default atlas prod base url
+const DefaultAtlasBaseURL = "https://cloud.mongodb.com"
 
 const (
 	adminBaseURL     = "/api/admin/v3.0"

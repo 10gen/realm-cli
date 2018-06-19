@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/10gen/stitch-cli/api"
+	"github.com/10gen/stitch-cli/api/mdbcloud"
 	"github.com/10gen/stitch-cli/storage"
 	"github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -36,6 +37,7 @@ type BaseCommand struct {
 	UI cli.Ui
 
 	client       api.Client
+	atlasClient  mdbcloud.Client
 	stitchClient api.StitchClient
 	user         *user.User
 	storage      *storage.Storage
@@ -43,6 +45,7 @@ type BaseCommand struct {
 	flagConfigPath    string
 	flagColorDisabled bool
 	flagBaseURL       string
+	flagAtlasBaseURL  string
 	flagYes           bool
 }
 
@@ -55,6 +58,7 @@ func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
 	set.BoolVar(&c.flagYes, "yes", false, "")
 	set.BoolVar(&c.flagYes, "y", false, "")
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
+	set.StringVar(&c.flagAtlasBaseURL, "atlas-base-url", api.DefaultAtlasBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
 
 	c.FlagSet = set
@@ -71,6 +75,24 @@ func (c *BaseCommand) Client() (api.Client, error) {
 	c.client = api.NewClient(c.flagBaseURL)
 
 	return c.client, nil
+}
+
+// AtlasClient returns a mdbcloud.Client for use with MDB Cloud Manager APIs
+func (c *BaseCommand) AtlasClient() (mdbcloud.Client, error) {
+	if c.atlasClient != nil {
+		return c.atlasClient, nil
+	}
+
+	user, err := c.User()
+	if err != nil {
+		return nil, err
+	}
+
+	atlasClient := mdbcloud.NewClient(c.flagAtlasBaseURL).WithAuth(user.Username, user.APIKey)
+
+	c.atlasClient = atlasClient
+
+	return c.atlasClient, nil
 }
 
 // AuthClient returns an api.Client that is aware of the current user's auth credentials. It also handles retrying
@@ -263,7 +285,7 @@ func (c *BaseCommand) Help() string {
   --disable-color
 	Disable the use of colors in terminal output.
 
-  -y, --yes 
+  -y, --yes
 	Bypass prompts. Provide this parameter if you do not want to be prompted for input.`
 }
 
