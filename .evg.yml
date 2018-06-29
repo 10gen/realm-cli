@@ -95,7 +95,9 @@ functions:
           export GOPATH=`pwd`
           export PATH="`pwd`:$PATH"
           source ./creds
-          go get github.com/mattn/goveralls
+          go get github.com/edaniels/goveralls
+          export COVERALLS_PARALLEL=true
+          export BUILD_NUMBER="${build_id}"
           if [ -z "${github_pr_number}" ]
           then
             if [ "${is_patch}" = "true" ]; then
@@ -218,6 +220,20 @@ tasks:
           content_type: application/octet-stream
           permissions: public-read
 
+  - name: finalize_coverage
+    depends_on:
+      - name: tests-with-cloud
+      - name: tests-without-cloud
+    commands:
+      - func: "setup_environment"
+      - command: shell.exec
+        params:
+          silent: true
+          script: |
+            set -e
+            source ./creds
+            curl -k -X POST "https://coveralls.io/webhook?repo_token=$COVERALLS_TOKEN" -H "Content-Type: application/json" -d "{\"payload\": {\"build_num\": \"${build_id}\", \"status\": \"done\"}}"
+
 post:
   - command: gotest.parse_files
     params:
@@ -239,3 +255,4 @@ buildvariants:
   - name: tests-with-cloud
   - name: gometalinter
   - name: build_publish_clis
+  - name: finalize_coverage
