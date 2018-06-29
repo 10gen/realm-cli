@@ -96,7 +96,6 @@ functions:
           export PATH="`pwd`:$PATH"
           source ./creds
           go get github.com/mattn/goveralls
-          export BUILD_NUMBER="${build_id}"
           if [ -z "${github_pr_number}" ]
           then
             if [ "${is_patch}" = "true" ]; then
