@@ -224,8 +224,8 @@ tasks:
 
   - name: finalize_coverage
     depends_on:
+      - name: test_unit
       - name: tests-with-cloud
-      - name: tests-without-cloud
     commands:
       - func: "setup_environment"
       - command: shell.exec
