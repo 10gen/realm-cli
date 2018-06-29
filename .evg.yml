@@ -111,7 +111,8 @@ functions:
             export CI_BRANCH=$BRANCH
             export CI_PULL_REQUEST=${github_pr_number}
           fi
-          $GOPATH/bin/goveralls -coverprofile=cover.out
+          cd src/github.com/10gen/stitch-cli
+          $GOPATH/bin/goveralls -coverprofile=$GOPATH/cover.out
 
 tasks:
   - name: test_unit
