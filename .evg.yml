@@ -89,6 +89,7 @@ functions:
           echo export COVERALLS_TOKEN=${coveralls_repo_token} >> creds
     - command: shell.exec
       params:
+        silent: true
         script: |
           set -e
           export GOPATH=`pwd`
@@ -101,7 +102,7 @@ functions:
               exit 0
             fi
           else
-            PR_INFO=`curl https://api.github.com/repos/${github_org}/${github_repo}/pulls/${github_pr_number}`
+            PR_INFO=`curl  -H "Authorization: bearer ${github_api_token}" https://api.github.com/repos/${github_org}/${github_repo}/pulls/${github_pr_number}`
             BRANCH=`echo $PR_INFO | python -c "import sys, json; print json.load(sys.stdin)['head']['ref']"`
             export CI_BRANCH=$BRANCH
             export CI_PULL_REQUEST=${github_pr_number}
