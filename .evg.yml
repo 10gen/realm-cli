@@ -112,7 +112,7 @@ functions:
             export CI_PULL_REQUEST=${github_pr_number}
           fi
           cd src/github.com/10gen/stitch-cli
-          $GOPATH/bin/goveralls -coverprofile=$GOPATH/cover.out
+          $GOPATH/bin/goveralls -service evergreen -coverprofile=$GOPATH/cover.out
 
 tasks:
   - name: test_unit
