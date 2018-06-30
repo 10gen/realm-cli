@@ -226,7 +226,9 @@ tasks:
   - name: finalize_coverage
     depends_on:
       - name: test_unit
+        status: '*'
       - name: tests-with-cloud
+        status: '*'
     commands:
       - command: shell.exec
         params:
