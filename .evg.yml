@@ -98,7 +98,7 @@ functions:
           go get github.com/edaniels/goveralls
           export COVERALLS_PARALLEL=true
           export COVERALLS_GIT_COMMIT=${revision}
-          export BUILD_NUMBER="${build_id}"
+          export BUILD_NUMBER="${version_id}"
           if [ -z "${github_pr_number}" ]
           then
             if [ "${is_patch}" = "true" ]; then
@@ -242,7 +242,7 @@ tasks:
           script: |
             set -e
             source ./creds
-            curl -k -X POST "https://coveralls.io/webhook?repo_token=$COVERALLS_TOKEN" -H "Content-Type: application/json" -d "{\"payload\": {\"build_num\": \"${build_id}\", \"status\": \"done\"}}"
+            curl -k -X POST "https://coveralls.io/webhook?repo_token=$COVERALLS_TOKEN" -H "Content-Type: application/json" -d "{\"payload\": {\"build_num\": \"${version_id}\", \"status\": \"done\"}}"
 
 post:
   - command: gotest.parse_files
