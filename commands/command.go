@@ -5,6 +5,7 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -180,7 +181,7 @@ func (c *BaseCommand) run(args []string) error {
 		}
 	}
 
-	if url := utils.CheckForNewCLIVersion(); url != "" {
+	if url := utils.CheckForNewCLIVersion(http.DefaultClient); url != "" {
 		c.UI.Info(url)
 	}
 
