@@ -1,5 +1,12 @@
 # MongoDB Stitch CLI
 
+## Installation
+
+```
+npm install mongodb-stitch-cli
+npm install -g mongodb-stitch-cli
+```
+
 ## Documentation
 
 https://docs.mongodb.com/stitch/import-export/stitch-cli-reference/
