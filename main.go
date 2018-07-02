@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/10gen/stitch-cli/commands"
+	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
 )
 
 func main() {
-	c := cli.NewCLI(filepath.Base(os.Args[0]), "1.0.0")
+	c := cli.NewCLI(filepath.Base(os.Args[0]), utils.CLIVersion)
 	c.Args = os.Args[1:]
 
 	var ui cli.Ui = &cli.BasicUi{

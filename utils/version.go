@@ -8,9 +8,10 @@ import (
 )
 
 var (
+	// CLIVersion represents the current version of the CLI. This version is dynamically replaced at build-time
+	CLIVersion               = "20180301"
 	versionManifestURLFormat = "https://s3.amazonaws.com/stitch-clis/versions/%s/CURRENT"
 	cliBuildEnv              = "cloud-prod"
-	cliVersion               = "20180301"
 	cliOSArch                string
 )
 
@@ -39,7 +40,7 @@ func CheckForNewCLIVersion() string {
 		return ""
 	}
 
-	currVersion, err := strconv.ParseInt(cliVersion, 10, 64)
+	currVersion, err := strconv.ParseInt(CLIVersion, 10, 64)
 	if err != nil {
 		return ""
 	}

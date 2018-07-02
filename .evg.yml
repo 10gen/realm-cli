@@ -183,16 +183,16 @@ tasks:
             export GOOS=linux
             export OSARCH=linux-amd64
             echo "Building stitch-cli for $GOOS on $GOARCH"
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.cliVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
             eval go build $REPLACE_VARS -o stitch-cli-linux-amd64 main.go
             export GOOS=darwin
             export OSARCH=macos-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.cliVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
             echo "Building stitch-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o stitch-cli-macos-amd64 main.go
             export GOOS=windows
             export OSARCH=windows-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.cliVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
             echo "Building stitch-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o stitch-cli-windows-amd64 main.go
       - command: s3.put
