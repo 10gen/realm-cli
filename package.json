@@ -1,5 +1,5 @@
 {
-  "name": "stitch-cli",
+  "name": "mongodb-stitch-cli",
   "version": "1.0.0",
   "description": "The MongoDB Stitch Command Line Interface",
   "repository": {
