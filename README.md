@@ -1,5 +1,9 @@
 # MongoDB Stitch CLI
 
+## Documentation
+
+https://docs.mongodb.com/stitch/import-export/stitch-cli-reference/
+
 ## Linting
 
 provided by gometalinter
