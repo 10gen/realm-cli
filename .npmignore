@@ -1,0 +1,11 @@
+*/
+
+.eslint.rc
+.evg.yml
+.gitignore
+.linter.config
+.prettierrc
+.Gopkg*
+main.go
+
+stitch-cli*
