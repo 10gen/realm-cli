@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	c := cli.NewCLI(filepath.Base(os.Args[0]), "0.0.1")
+	c := cli.NewCLI(filepath.Base(os.Args[0]), "1.0.0")
 	c.Args = os.Args[1:]
 
 	var ui cli.Ui = &cli.BasicUi{
