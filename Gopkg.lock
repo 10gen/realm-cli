@@ -2,12 +2,6 @@
 
 
 [[projects]]
-  name = "github.com/abbot/go-http-auth"
-  packages = ["."]
-  revision = "0ddd408d5d60ea76e320503cc7dd091992dee608"
-  version = "v0.4.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/armon/go-radix"
   packages = ["."]
@@ -18,6 +12,12 @@
   packages = ["."]
   revision = "4aabc24848ce5fd31929f7d1e4ea74d3709c14cd"
   version = "v0.1.0"
+
+[[projects]]
+  name = "github.com/blang/semver"
+  packages = ["."]
+  revision = "2ee87856327ba09384cabd113bc6b5d174e9ec0f"
+  version = "v3.5.1"
 
 [[projects]]
   branch = "master"
@@ -69,60 +69,21 @@
 
 [[projects]]
   name = "github.com/posener/complete"
-  packages = [
-    ".",
-    "cmd",
-    "cmd/install",
-    "match"
-  ]
+  packages = [".","cmd","cmd/install","match"]
   revision = "dc2bc5a81accba8782bebea28628224643a8286a"
   version = "v1.1"
 
 [[projects]]
   name = "github.com/smartystreets/assertions"
-  packages = [
-    ".",
-    "internal/go-render/render",
-    "internal/oglematchers"
-  ]
+  packages = [".","internal/go-render/render","internal/oglematchers"]
   revision = "0b37b35ec7434b77e77a4bb29b79677cced992ea"
   version = "1.8.1"
 
 [[projects]]
   name = "github.com/smartystreets/goconvey"
-  packages = [
-    "convey",
-    "convey/gotest",
-    "convey/reporting"
-  ]
+  packages = ["convey","convey/gotest","convey/reporting"]
   revision = "9e8dc3f972df6c8fcc0375ef492c24d0bb204857"
   version = "1.6.3"
-
-[[projects]]
-  name = "goji.io"
-  packages = [
-    ".",
-    "internal",
-    "pat",
-    "pattern"
-  ]
-  revision = "0d89ff54b2c18c9c4ba530e32496aef902d3c6cd"
-  version = "v2.0"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-  packages = [
-    "bcrypt",
-    "blowfish"
-  ]
-  revision = "12892e8c234f4fe6f6803f052061de9057903bb2"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/net"
-  packages = ["context"]
-  revision = "b68f30494add4df6bd8ef5e82803f308e7f7c59c"
 
 [[projects]]
   branch = "master"
@@ -139,6 +100,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b2403e858c314263bedc1fe3c3e2fd473815fc487fb9f1d3d86d8075dc156bb3"
+  inputs-digest = "931ff13d0a7ab577edbc3398d33962025e816db1b6f7ff110f9fd73168c0a36d"
   solver-name = "gps-cdcl"
   solver-version = 1
