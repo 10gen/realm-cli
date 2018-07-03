@@ -86,6 +86,7 @@ type StitchClient interface {
 	Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData []byte, strategy string) error
 	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
+	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 	FetchAppsByGroupID(groupID string) ([]*models.App, error)
 	CreateEmptyApp(groupID, appName string) (*models.App, error)
@@ -233,6 +234,11 @@ func (sc *basicStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, 
 	return apps, nil
 }
 
+// FetchAppByGroupIDAndClientAppID fetches a Stitch app given a groupID and clientAppID
+func (sc *basicStitchClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
+	return sc.findProjectAppByClientAppID([]string{groupID}, clientAppID)
+}
+
 // FetchAppByClientAppID fetches a Stitch app given a clientAppID
 func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, userProfileRoute, RequestOptions{})
@@ -252,7 +258,11 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 		return nil, err
 	}
 
-	for _, groupID := range profileData.AllGroupIDs() {
+	return sc.findProjectAppByClientAppID(profileData.AllGroupIDs(), clientAppID)
+}
+
+func (sc *basicStitchClient) findProjectAppByClientAppID(groupIDs []string, clientAppID string) (*models.App, error) {
+	for _, groupID := range groupIDs {
 		apps, err := sc.FetchAppsByGroupID(groupID)
 		if err != nil && err != errGroupNotFound {
 			return nil, err

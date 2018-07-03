@@ -187,9 +187,10 @@ func GenerateValidAccessToken() string {
 
 // MockStitchClient satisfies an api.StitchClient
 type MockStitchClient struct {
-	CreateEmptyAppFn        func(groupID, appName string) (*models.App, error)
-	FetchAppByClientAppIDFn func(clientAppID string) (*models.App, error)
-	FetchAppsByGroupIDFn    func(groupID string) ([]*models.App, error)
+	CreateEmptyAppFn                  func(groupID, appName string) (*models.App, error)
+	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
+	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
+	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
 
 	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
 	ExportFnCalls [][]string
@@ -249,6 +250,15 @@ func (msc *MockStitchClient) Import(groupID, appID string, appData []byte, strat
 		return msc.ImportFn(groupID, appID, appData, strategy)
 	}
 	return nil
+}
+
+// FetchAppByGroupIDAndClientAppID fetches a Stitch app given a groupID and clientAppID
+func (msc *MockStitchClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
+	if msc.FetchAppByGroupIDAndClientAppIDFn != nil {
+		return msc.FetchAppByGroupIDAndClientAppIDFn(groupID, clientAppID)
+	}
+
+	return nil, api.ErrAppNotFound{clientAppID}
 }
 
 // FetchAppByClientAppID fetches a Stitch app given a clientAppID

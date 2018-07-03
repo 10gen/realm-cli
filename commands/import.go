@@ -20,7 +20,6 @@ const (
 	importFlagPath        = "path"
 	importFlagStrategy    = "strategy"
 	importFlagAppName     = "app-name"
-	importFlagGroupID     = "project-id"
 	importStrategyMerge   = "merge"
 	importStrategyReplace = "replace"
 )
@@ -108,7 +107,7 @@ func (ic *ImportCommand) Run(args []string) int {
 
 	set.StringVar(&ic.flagAppID, flagAppIDName, "", "")
 	set.StringVar(&ic.flagAppPath, importFlagPath, "", "")
-	set.StringVar(&ic.flagGroupID, importFlagGroupID, "", "")
+	set.StringVar(&ic.flagGroupID, flagProjectIDName, "", "")
 	set.StringVar(&ic.flagAppName, importFlagAppName, "", "")
 	set.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 

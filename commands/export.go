@@ -40,6 +40,7 @@ type ExportCommand struct {
 	workingDirectory  string
 	exportToDirectory func(dest string, zipData io.Reader, overwrite bool) error
 
+	flagProjectID  string
 	flagAppID      string
 	flagOutput     string
 	flagAsTemplate bool
@@ -54,6 +55,9 @@ REQUIRED:
 	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja")
 
 OPTIONS:
+  --project-id [string]
+	Lookup apps associated with this project id, as opposed to ids associated with the current user profile.
+
   -o [string], --output [string]
 	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"
 
@@ -71,6 +75,7 @@ func (ec *ExportCommand) Synopsis() string {
 func (ec *ExportCommand) Run(args []string) int {
 	set := ec.NewFlagSet()
 
+	set.StringVar(&ec.flagProjectID, flagProjectIDName, "", "")
 	set.StringVar(&ec.flagAppID, flagAppIDName, "", "")
 	set.StringVar(&ec.flagOutput, "output", "", "")
 	set.StringVar(&ec.flagOutput, "o", "", "")
@@ -112,9 +117,17 @@ func (ec *ExportCommand) run() error {
 		return err
 	}
 
-	app, err := stitchClient.FetchAppByClientAppID(ec.flagAppID)
-	if err != nil {
-		return err
+	var app *models.App
+	if ec.flagProjectID == "" {
+		app, err = stitchClient.FetchAppByClientAppID(ec.flagAppID)
+		if err != nil {
+			return err
+		}
+	} else {
+		app, err = stitchClient.FetchAppByGroupIDAndClientAppID(ec.flagProjectID, ec.flagAppID)
+		if err != nil {
+			return err
+		}
 	}
 
 	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate)

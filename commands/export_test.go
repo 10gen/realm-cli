@@ -64,6 +64,10 @@ func TestExportCommand(t *testing.T) {
 				Description         string
 				ExpectedDestination string
 				Args                []string
+
+				ExpectedGroupID                         string
+				FetchAppByClientIDInvocations           int
+				FetchAppByGroupIDAndClientIDInvocations int
 			}
 
 			zipFileName := "my_app_123456.zip"
@@ -78,46 +82,83 @@ func TestExportCommand(t *testing.T) {
 					Description:         "it writes response data to the default directory",
 					ExpectedDestination: "my_app",
 					Args:                []string{`--app-id=` + appID},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
+				},
+				{
+					Description:         "it overrides the project ID and writes response data to the default directory",
+					ExpectedDestination: "my_app",
+					Args:                []string{`--app-id=` + appID, `--project-id=project-id`},
+
+					ExpectedGroupID:                         "project-id",
+					FetchAppByGroupIDAndClientIDInvocations: 1,
 				},
 				{
 					Description:         "it writes response data to the provided destination directory using the '--output' flag",
 					ExpectedDestination: "some/other/directory/my_app",
 					Args:                []string{`--app-id=` + appID, `--output=some/other/directory/my_app`},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
 				},
 				{
 					Description:         "it writes response data to an expanded home directory output path using the '--output' flag",
 					ExpectedDestination: homeDir + "/my_app",
 					Args:                []string{`--app-id=` + appID, `--output=~/my_app`},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
 				},
 				{
 					Description:         "it writes response data to the provided destination directory using the '-o' flag",
 					ExpectedDestination: "some/other/directory/my_app",
 					Args:                []string{`--app-id=` + appID, `-o`, `some/other/directory/my_app`},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
 				},
 				{
 					Description:         "it writes response data to an expanded home directory output path using the '-o' flag",
 					ExpectedDestination: homeDir + "/my_app",
 					Args:                []string{`--app-id=` + appID, `-o`, `~/my_app`},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
 				},
 			} {
 				t.Run(tc.Description, func(t *testing.T) {
 					exportCommand, mockUI := setup()
 
-					responseGroupID := "group-id"
 					responseAppID := "app-id"
 
+					var fetchAppByClientAppID, fetchAppByGroupIDAndClientAppID int
+
 					mockStitchClient := u.MockStitchClient{
-						FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						FetchAppByGroupIDAndClientAppIDFn: func(groupID, clientAppID string) (*models.App, error) {
+							fetchAppByGroupIDAndClientAppID++
+
 							u.So(t, clientAppID, gc.ShouldEqual, appID)
 
 							return &models.App{
 								ClientAppID: clientAppID,
-								GroupID:     responseGroupID,
+								GroupID:     groupID,
+								ID:          responseAppID,
+							}, nil
+						},
+						FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+							fetchAppByClientAppID++
+
+							u.So(t, clientAppID, gc.ShouldEqual, appID)
+
+							return &models.App{
+								ClientAppID: clientAppID,
+								GroupID:     "group-id",
 								ID:          responseAppID,
 							}, nil
 						},
 						ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
-							u.So(t, groupID, gc.ShouldEqual, responseGroupID)
+							u.So(t, groupID, gc.ShouldEqual, tc.ExpectedGroupID)
 							u.So(t, appID, gc.ShouldEqual, responseAppID)
 
 							return zipFileName, u.NewResponseBody(strings.NewReader(zipData)), nil
@@ -148,6 +189,9 @@ func TestExportCommand(t *testing.T) {
 					u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
 					u.So(t, destination, gc.ShouldEqual, tc.ExpectedDestination)
 					u.So(t, zipData, gc.ShouldEqual, zipData)
+
+					u.So(t, fetchAppByClientAppID, gc.ShouldEqual, tc.FetchAppByClientIDInvocations)
+					u.So(t, fetchAppByGroupIDAndClientAppID, gc.ShouldEqual, tc.FetchAppByGroupIDAndClientIDInvocations)
 				})
 			}
 		})
