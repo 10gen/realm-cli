@@ -57,7 +57,6 @@ func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
 }
 
 func TestImportNewApp(t *testing.T) {
-
 	t.Run("when the user is logged in", func(t *testing.T) {
 		setup := func() (*ImportCommand, *cli.MockUi) {
 			importCommand, mockUI := setUpBasicCommand()
@@ -76,7 +75,7 @@ func TestImportNewApp(t *testing.T) {
 			ExpectedExitCode int
 			StitchClient     u.MockStitchClient
 			AtlasClient      u.MockMDBClient
-			ProjectNameInput string
+			ProjectInput     string
 		}
 
 		for _, tc := range []testCase{
@@ -135,9 +134,10 @@ func TestImportNewApp(t *testing.T) {
 				u.So(t, writeAppConfigCallCount, gc.ShouldEqual, 1)
 			})
 		}
+
 		for _, tc := range []testCase{
 			{
-				Description:      "supports creating new app when project name is returned in list",
+				Description:      "supports creating new app when providing a project name that is returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
 				StitchClient: u.MockStitchClient{
@@ -159,10 +159,35 @@ func TestImportNewApp(t *testing.T) {
 						return []mdbcloud.Group{{ID: "59dbcb07127ab4131c54e810", Name: "My-Group"}}, nil
 					},
 				},
-				ProjectNameInput: "My-Group\n",
+				ProjectInput: "My-Group\n",
 			},
 			{
-				Description:      "supports creating new app when project name is not returned in list",
+				Description:      "supports creating new app when providing a project id that is returned in list",
+				Args:             []string{"--path=../testdata/new_app"},
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					CreateEmptyAppFn: func(groupID, appName string) (*models.App, error) {
+						return &models.App{Name: appName, ClientAppID: appName + "-abcdef"}, nil
+					},
+					FetchAppsByGroupIDFn: func(groupID string) ([]*models.App, error) {
+						return []*models.App{}, nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return nil, api.ErrAppNotFound{ClientAppID: clientAppID}
+					},
+				},
+				AtlasClient: u.MockMDBClient{
+					GroupsFn: func() ([]mdbcloud.Group, error) {
+						return []mdbcloud.Group{{ID: "59dbcb07127ab4131c54e810", Name: "My-Group"}}, nil
+					},
+				},
+				ProjectInput: "59dbcb07127ab4131c54e810\n",
+			},
+			{
+				Description:      "supports creating new app when provided project name is not returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
 				StitchClient: u.MockStitchClient{
@@ -184,10 +209,35 @@ func TestImportNewApp(t *testing.T) {
 						return []mdbcloud.Group{{ID: "59dbcb07127ab4131c54e810", Name: "My-Group"}}, nil
 					},
 					GroupByNameFn: func(groupName string) (*mdbcloud.Group, error) {
-						return &mdbcloud.Group{ID: "59dbcb07127ab4131c54e810", Name: "Other-Group"}, nil
+						return &mdbcloud.Group{ID: "87aabc17127ab4229c54e742", Name: "Other-Group"}, nil
 					},
 				},
-				ProjectNameInput: "Other-Group\n",
+				ProjectInput: "Other-Group\n",
+			},
+			{
+				Description:      "supports creating new app when provided project id is not returned in list",
+				Args:             []string{"--path=../testdata/new_app"},
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					CreateEmptyAppFn: func(groupID, appName string) (*models.App, error) {
+						return &models.App{Name: appName, ClientAppID: appName + "-abcdef"}, nil
+					},
+					FetchAppsByGroupIDFn: func(groupID string) ([]*models.App, error) {
+						return []*models.App{}, nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return nil, api.ErrAppNotFound{ClientAppID: clientAppID}
+					},
+				},
+				AtlasClient: u.MockMDBClient{
+					GroupsFn: func() ([]mdbcloud.Group, error) {
+						return []mdbcloud.Group{{ID: "59dbcb07127ab4131c54e810", Name: "My-Group"}}, nil
+					},
+				},
+				ProjectInput: "87aabc17127ab4229c54e742\n",
 			},
 		} {
 			t.Run(tc.Description, func(t *testing.T) {
@@ -196,7 +246,7 @@ func TestImportNewApp(t *testing.T) {
 				// Mock responses for prompts
 				confirmCreateApp := "y\n"
 				enterAppName := "My-Test-app\n"
-				enterProjectName := tc.ProjectNameInput
+				enterProjectName := tc.ProjectInput
 				mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterProjectName)
 				importCommand.stitchClient = &tc.StitchClient
 				importCommand.atlasClient = &tc.AtlasClient
@@ -227,6 +277,7 @@ func TestImportNewApp(t *testing.T) {
 				u.So(t, writeAppConfigCallCount, gc.ShouldEqual, 1)
 			})
 		}
+
 		for _, tc := range []testCase{
 			{
 				Description:      "returns an error when an invalid project name is entered",

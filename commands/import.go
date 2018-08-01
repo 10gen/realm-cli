@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -255,12 +256,12 @@ func (ic *ImportCommand) resolveGroupID() (string, error) {
 
 	atlasClient, err := ic.AtlasClient()
 	if err != nil {
-		return "", fmt.Errorf("failed to find Project ID: %s", err)
+		return "", fmt.Errorf("failed to find Project: %s", err)
 	}
 
 	groups, err := atlasClient.Groups()
 	if err != nil {
-		return "", fmt.Errorf("failed to find Project ID: %s", err)
+		return "", fmt.Errorf("failed to find Project: %s", err)
 	}
 
 	groupsByName := map[string]string{}
@@ -269,10 +270,10 @@ func (ic *ImportCommand) resolveGroupID() (string, error) {
 	}
 
 	if len(groupsByName) == 0 {
-		return "", errors.New("no available Project IDs")
+		return "", errors.New("no available Projects")
 	}
 
-	ic.UI.Info("Available Project IDs:")
+	ic.UI.Info("Available Projects:")
 
 	for name, id := range groupsByName {
 		ic.UI.Info(fmt.Sprintf("%s - %s", name, id))
@@ -280,17 +281,22 @@ func (ic *ImportCommand) resolveGroupID() (string, error) {
 
 	var groupID string
 	for {
-		groupName, err := ic.Ask("Atlas Project ID", groups[0].Name)
+		projectResponse, err := ic.Ask("Atlas Project Name or ID", groups[0].Name)
 		if err != nil {
 			return "", err
 		}
 
-		groupID = groupsByName[groupName]
+		if isObjectIDHex(projectResponse) {
+			groupID = projectResponse
+			break
+		}
+
+		groupID = groupsByName[projectResponse]
 		if groupID != "" {
 			break
 		}
 
-		groupFromName, err := atlasClient.GroupByName(groupName)
+		groupFromName, err := atlasClient.GroupByName(projectResponse)
 		if err != nil {
 			return "", err
 		}
@@ -387,4 +393,14 @@ func (ic *ImportCommand) resolveAppInstanceData(path string) (models.AppInstance
 	}
 
 	return appInstanceDataFromFile, nil
+}
+
+// isObjectIDHex returns whether s is a valid hex representation of an ObjectId.
+// copied from mgo/bson#IsObjectIdHex
+func isObjectIDHex(s string) bool {
+	if len(s) != 24 {
+		return false
+	}
+	_, err := hex.DecodeString(s)
+	return err == nil
 }
