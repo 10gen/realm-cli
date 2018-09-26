@@ -118,13 +118,13 @@ func (lc *LoginCommand) logIn() error {
 	}
 
 	if user.LoggedIn() {
-		shouldContinue, err := lc.AskYesNo(fmt.Sprintf(
+		shouldContinue, askErr := lc.AskYesNo(fmt.Sprintf(
 			"you are already logged in as %s, this action will deauthenticate the existing user [apiKey: %s].\ncontinue?",
 			user.Username,
 			user.RedactedAPIKey(),
 		))
 
-		if err != nil {
+		if askErr != nil {
 			return err
 		}
 

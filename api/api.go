@@ -112,9 +112,9 @@ func (ac *AuthClient) ExecuteRequest(method, path string, options RequestOptions
 
 	if res.StatusCode == http.StatusUnauthorized {
 		res.Body.Close()
-		authResponse, err := ac.RefreshAuth()
-		if err != nil {
-			return nil, err
+		authResponse, refreshErr := ac.RefreshAuth()
+		if refreshErr != nil {
+			return nil, refreshErr
 		}
 
 		return ac.Client.ExecuteRequest(method, path, RequestOptions{

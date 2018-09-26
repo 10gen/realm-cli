@@ -108,7 +108,7 @@ func (ec *ExportCommand) run() error {
 		return u.ErrNotLoggedIn
 	}
 
-	if dir, err := utils.GetDirectoryContainingFile(ec.workingDirectory, models.AppConfigFileName); err == nil {
+	if dir, getErr := utils.GetDirectoryContainingFile(ec.workingDirectory, models.AppConfigFileName); getErr == nil {
 		return fmt.Errorf("cannot export within config directory %q", dir)
 	}
 

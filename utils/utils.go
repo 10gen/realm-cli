@@ -97,8 +97,8 @@ func WriteZipToDir(dest string, zipData io.Reader, overwrite bool) error {
 	}
 
 	for _, zipFile := range r.File {
-		if err := processFile(filepath.Join(dest, zipFile.Name), zipFile); err != nil {
-			return err
+		if processErr := processFile(filepath.Join(dest, zipFile.Name), zipFile); processErr != nil {
+			return processErr
 		}
 	}
 

@@ -46,7 +46,7 @@ func CheckForNewCLIVersion(client HTTPClient) string {
 	dec := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
 	dec.UseNumber()
-	if err := dec.Decode(&manifest); err != nil {
+	if decodeErr := dec.Decode(&manifest); decodeErr != nil {
 		return ""
 	}
 

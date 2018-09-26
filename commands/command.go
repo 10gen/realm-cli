@@ -193,9 +193,9 @@ func (c *BaseCommand) run(args []string) error {
 		}
 
 		if path == "" {
-			home, err := homedir.Dir()
-			if err != nil {
-				return err
+			home, dirErr := homedir.Dir()
+			if dirErr != nil {
+				return dirErr
 			}
 			path = filepath.Join(home, ".config", "stitch", "stitch")
 		}

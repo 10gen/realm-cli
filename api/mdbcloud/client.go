@@ -71,12 +71,12 @@ func (client *simpleClient) Groups() ([]Group, error) {
 	}
 
 	dec := json.NewDecoder(resp.Body)
-	var groupResponse groupResponse
-	if err := dec.Decode(&groupResponse); err != nil {
-		return nil, err
+	var groupResp groupResponse
+	if decodeErr := dec.Decode(&groupResp); decodeErr != nil {
+		return nil, decodeErr
 	}
 
-	return groupResponse.Results, nil
+	return groupResp.Results, nil
 }
 
 func (client *simpleClient) GroupByName(groupName string) (*Group, error) {
@@ -99,16 +99,16 @@ func (client *simpleClient) GroupByName(groupName string) (*Group, error) {
 	}
 
 	dec := json.NewDecoder(resp.Body)
-	var groupResponse Group
-	if err := dec.Decode(&groupResponse); err != nil {
+	var groupResp Group
+	if err := dec.Decode(&groupResp); err != nil {
 		return nil, err
 	}
 
-	return &groupResponse, nil
+	return &groupResp, nil
 }
 
 func (client *simpleClient) do(
-	method, url string, // nolint: unparam
+	method, url string,
 	body interface{},
 	needAuth bool, // nolint: unparam
 ) (*http.Response, error) {

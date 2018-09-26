@@ -1,15 +1,17 @@
 {
     "LineLength": 140,
     "Linters": {
-        "vet-nocomposites": "go tool vet -composites=false:^(?:vet:.*?\\.go:\\s+(?P<path>.*?\\.go):(?P<line>\\d+):(?P<col>\\d+):\\s*(?P<message>.*))|(?:(?P<path>.*?\\.go):(?P<line>\\d+):\\s*(?P<message>.*))$"
+        "vet-nocomposites": "go vet -composites=false:^(?:vet:.*?\\.go:\\s+(?P<path>.*?\\.go):(?P<line>\\d+):(?P<col>\\d+):\\s*(?P<message>.*))|(?:(?P<path>.*?\\.go):(?P<line>\\d+):\\s*(?P<message>.*))$"
     },
     "MinConfidence": 0.3,
     "MinOccurrences": 2,
-    "Deadline": "120s",
+    "Deadline": "600s",
+    "WarnUnmatchedDirective": true,
     "Enable": [
+        "vet-nocomposites",
+        "vetshadow",
         "megacheck",
         "goimports",
-        "vet-nocomposites",
         "golint",
         "structcheck",
         "unconvert",

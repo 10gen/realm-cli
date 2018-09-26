@@ -197,16 +197,16 @@ func (ic *ImportCommand) importApp() error {
 		appInstanceData[models.AppIDField] = app.ClientAppID
 		appInstanceData[models.AppNameField] = app.Name
 
-		if err := ic.writeAppConfigToFile(appPath, appInstanceData); err != nil {
-			return errCreateAppSyncFailure(err)
+		if writeErr := ic.writeAppConfigToFile(appPath, appInstanceData); writeErr != nil {
+			return errCreateAppSyncFailure(writeErr)
 		}
 	}
 
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
-		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
-		if err != nil {
-			return fmt.Errorf("failed to diff app with currently deployed instance: %s", err)
+		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
+		if diffErr != nil {
+			return fmt.Errorf("failed to diff app with currently deployed instance: %s", diffErr)
 		}
 
 		if len(diffs) == 0 {
@@ -218,9 +218,9 @@ func (ic *ImportCommand) importApp() error {
 			ic.UI.Info(diff)
 		}
 
-		confirm, err := ic.AskYesNo("Please confirm the changes shown above:")
-		if err != nil {
-			return err
+		confirm, askErr := ic.AskYesNo("Please confirm the changes shown above:")
+		if askErr != nil {
+			return askErr
 		}
 
 		if !confirm {
@@ -228,8 +228,8 @@ func (ic *ImportCommand) importApp() error {
 		}
 	}
 
-	if err := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); err != nil {
-		return fmt.Errorf("failed to import app: %s", err)
+	if importErr := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
+		return fmt.Errorf("failed to import app: %s", importErr)
 	}
 
 	// re-fetch imported app to sync IDs

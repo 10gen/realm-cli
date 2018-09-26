@@ -161,7 +161,7 @@ tasks:
             go get -u github.com/alecthomas/gometalinter
             $GOPATH/bin/gometalinter --install
             cd src/github.com/10gen/stitch-cli
-            $GOPATH/bin/gometalinter --exclude=vendor --vendor --config=.linter.config ./...
+            (export PKGS=`go list ./... | grep -v "/vendor/"`; cd $GOPATH/src && echo $PKGS | xargs $GOPATH/bin/gometalinter --config=$GOPATH/src/github.com/10gen/stitch-cli/.gometalinter.json)
 
   - name: build_publish_clis
     depends_on:

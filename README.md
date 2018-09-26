@@ -46,7 +46,7 @@ Where `USERNAME` and `PASSWORD` are the credentials for an existing local user.
 provided by gometalinter
 
 ```go
-gometalinter --exclude=vendor --vendor --config=.linter.config ./...
+(export PKGS=`go list ./... | grep -v "/vendor/"`; cd $GOPATH/src && echo $PKGS | xargs $GOPATH/bin/gometalinter --config=$GOPATH/src/github.com/10gen/stitch-cli/.gometalinter.json)
 ```
 
 ## Testing
