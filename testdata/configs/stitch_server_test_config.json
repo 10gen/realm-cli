@@ -40,6 +40,25 @@
     "mongoDBURI": "mongodb://localhost:26000"
   },
   "dataStore": "mongodb",
+  "products": [
+    {
+      "name": "standard",
+      "default": true,
+      "admin": {
+        "actionRoleMappings": {
+          "read": [
+            "GROUP_OWNER",
+            "GROUP_READ_ONLY",
+            "GLOBAL_OWNER",
+            "GLOBAL_READ_ONLY",
+            "GLOBAL_STITCH_ADMIN"
+          ],
+          "write": ["GROUP_OWNER", "GLOBAL_STITCH_ADMIN"]
+        }
+      },
+      "inheritedFeatureFlags": ["mongodb_service"]
+    }
+  ],
   "auth": {
     "salt": "DQOWene1723baqD!_@#",
     "saml": {

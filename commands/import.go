@@ -256,12 +256,12 @@ func (ic *ImportCommand) resolveGroupID() (string, error) {
 
 	atlasClient, err := ic.AtlasClient()
 	if err != nil {
-		return "", fmt.Errorf("failed to find Project: %s", err)
+		return "", fmt.Errorf("an unexpected error occurred: %s", err)
 	}
 
 	groups, err := atlasClient.Groups()
 	if err != nil {
-		return "", fmt.Errorf("failed to find Project: %s", err)
+		return "", err
 	}
 
 	groupsByName := map[string]string{}

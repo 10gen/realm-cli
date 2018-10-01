@@ -313,6 +313,8 @@ type MongoDBCloudEnv struct {
 	StitchServerBaseURL string
 	APIKey              string
 	Username            string
+	AdminUsername       string
+	AdminAPIKey         string
 	GroupID             string
 }
 
@@ -336,6 +338,8 @@ func ENV() MongoDBCloudEnv {
 		APIKey:              os.Getenv("STITCH_MONGODB_CLOUD_API_KEY"),
 		Username:            os.Getenv("STITCH_MONGODB_CLOUD_USERNAME"),
 		GroupID:             os.Getenv("STITCH_MONGODB_CLOUD_GROUP_ID"),
+		AdminUsername:       os.Getenv("STITCH_MONGODB_CLOUD_ADMIN_USERNAME"),
+		AdminAPIKey:         os.Getenv("STITCH_MONGODB_CLOUD_ADMIN_API_KEY"),
 	}
 }
 

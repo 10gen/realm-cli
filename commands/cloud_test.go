@@ -57,7 +57,7 @@ func TestCloudCommands(t *testing.T) {
 	appID := importOut[strings.Index(importOut, "'simple-app-")+1 : len(importOut)-2]
 
 	atlasClient := mdbcloud.NewClient(cloudEnv.CloudAPIBaseURL).
-		WithAuth(cloudEnv.Username, cloudEnv.APIKey)
+		WithAuth(cloudEnv.AdminUsername, cloudEnv.AdminAPIKey)
 
 	defer atlasClient.DeleteDatabaseUser(cloudEnv.GroupID, "mongodb-stitch-"+appID)
 
