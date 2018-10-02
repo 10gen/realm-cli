@@ -1,14 +1,17 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/stitch-cli/utils"
 	u "github.com/10gen/stitch-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 
@@ -61,9 +64,10 @@ func TestExportCommand(t *testing.T) {
 
 		t.Run("on success", func(t *testing.T) {
 			type testCase struct {
-				Description         string
-				ExpectedDestination string
-				Args                []string
+				Description          string
+				ExpectedDestination  string
+				ExpectedMetadataFile string
+				Args                 []string
 
 				ExpectedGroupID                         string
 				FetchAppByClientIDInvocations           int
@@ -73,6 +77,44 @@ func TestExportCommand(t *testing.T) {
 			zipFileName := "my_app_123456.zip"
 			zipData := "myZipData"
 			appID := "my-cool-app-123456"
+
+			assetDescriptions := []api.AssetDescription{
+				{
+					FilePath: "/bar/shouldRemainSame.txt",
+					Attrs: []api.AssetAttribute{
+						{Name: "Content-Type", Value: "html"},
+					},
+				},
+				{
+					FilePath: "/bar/attrsShouldAllRemain.html",
+					Attrs: []api.AssetAttribute{
+						{Name: "Content-Disposition", Value: "inline"},
+						{Name: "Content-Type", Value: "htmp"},
+						{Name: "Content-Language", Value: "fr"},
+						{Name: "Content-Encoding", Value: "utf-8"},
+						{Name: "Cache-Control", Value: "true"},
+					},
+				},
+				{
+					FilePath: "/bar/attrsShouldRemoveAllButOne.html",
+					Attrs: []api.AssetAttribute{
+						{Name: "Content-Disposition", Value: "inline"},
+					},
+				},
+				{
+					FilePath: "/bar/shouldBeRemoved",
+					Attrs: []api.AssetAttribute{
+						{Name: "Content-Type", Value: "htmp"},
+						{Name: "Content-Language", Value: "fr"},
+					},
+				},
+			}
+			assetDescriptionData, err := json.Marshal(assetDescriptions)
+			if err != nil {
+				panic(err)
+			}
+			expectedMetadataFile := string(assetDescriptionData)
+			expectedAssetFile := "here is my fake file it means nothing"
 
 			homeDir, err := homedir.Dir()
 			u.So(t, err, gc.ShouldBeNil)
@@ -122,6 +164,15 @@ func TestExportCommand(t *testing.T) {
 					Description:         "it writes response data to an expanded home directory output path using the '-o' flag",
 					ExpectedDestination: homeDir + "/my_app",
 					Args:                []string{`--app-id=` + appID, `-o`, `~/my_app`},
+
+					ExpectedGroupID:               "group-id",
+					FetchAppByClientIDInvocations: 1,
+				},
+				{
+					Description:          "it writes response data to the default directory and includes hosting assets",
+					ExpectedDestination:  homeDir + "/my_app",
+					Args:                 []string{`--app-id=` + appID, `--include-hosting=true`, `--output=~/my_app`},
+					ExpectedMetadataFile: expectedMetadataFile,
 
 					ExpectedGroupID:               "group-id",
 					FetchAppByClientIDInvocations: 1,
@@ -178,10 +229,32 @@ func TestExportCommand(t *testing.T) {
 						destination = dest
 						b, err := ioutil.ReadAll(r)
 						if err != nil {
-							panic(err)
+							return err
 						}
 						zipData = string(b)
 						return nil
+					}
+
+					metadataStr := ""
+					var fileStrs []string
+
+					exportCommand.writeFileToDirectory = func(dest string, data io.Reader) error {
+						b, err := ioutil.ReadAll(data)
+						if err != nil {
+							return err
+						}
+
+						if strings.HasSuffix(dest, utils.HostingAttributes) {
+							metadataStr = string(b)
+						} else {
+							fileStrs = append(fileStrs, string(b))
+						}
+						return nil
+					}
+
+					exportCommand.getAssetAtURL = func(url string) (io.ReadCloser, error) {
+						reader := strings.NewReader("here is my fake file it means nothing")
+						return ioutil.NopCloser(reader), nil
 					}
 
 					exitCode := exportCommand.Run(tc.Args)
@@ -189,6 +262,10 @@ func TestExportCommand(t *testing.T) {
 					u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
 					u.So(t, destination, gc.ShouldEqual, tc.ExpectedDestination)
 					u.So(t, zipData, gc.ShouldEqual, zipData)
+					u.So(t, metadataStr, gc.ShouldEqual, tc.ExpectedMetadataFile)
+					for _, fileStr := range fileStrs {
+						u.So(t, fileStr, gc.ShouldEqual, expectedAssetFile)
+					}
 
 					u.So(t, fetchAppByClientAppID, gc.ShouldEqual, tc.FetchAppByClientIDInvocations)
 					u.So(t, fetchAppByGroupIDAndClientAppID, gc.ShouldEqual, tc.FetchAppByGroupIDAndClientIDInvocations)

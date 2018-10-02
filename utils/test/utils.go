@@ -191,6 +191,7 @@ type MockStitchClient struct {
 	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
 	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
+	ListAssetsForAppIDFn              func(groupID, appID string) ([]string, []api.AssetDescription, error)
 	UploadAssetFn                     func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error
 
 	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
@@ -278,6 +279,60 @@ func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size
 	}
 
 	return nil
+}
+
+// ListAssetsForAppID fetches a Stitch app given a clientAppID
+func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]api.AssetMetadata, error) {
+	assetMetadata := []api.AssetMetadata{
+		{
+			FilePath: "/bar/shouldRemainSame.txt",
+			URL:      "URL/bar/shouldRemainSame.txt",
+			Attrs: []api.AssetAttribute{
+				{Name: "Content-Type", Value: "html"},
+			},
+		},
+		{
+			FilePath: "/bar/shouldBeRemoved.txt",
+			URL:      "URL/bar/shouldBeRemoved.txt",
+			Attrs: []api.AssetAttribute{
+				{Name: "Content-Type", Value: "text/plain"},
+			},
+		},
+		{
+			FilePath: "/bar/attrsShouldAllRemain.html",
+			URL:      "URL/bar/attrsShouldAllRemain.html",
+			Attrs: []api.AssetAttribute{
+				{Name: "Content-Disposition", Value: "inline"},
+				{Name: "Content-Type", Value: "htmp"},
+				{Name: "Content-Language", Value: "fr"},
+				{Name: "Content-Encoding", Value: "utf-8"},
+				{Name: "Cache-Control", Value: "true"},
+			},
+		},
+		{
+			FilePath: "/bar/attrsShouldRemoveAllButOne.html",
+			URL:      "URL/bar/attrsShouldAllRemain.html",
+			Attrs: []api.AssetAttribute{
+				{Name: "Content-Disposition", Value: "inline"},
+				{Name: "content-type", Value: "htmp"},
+				{Name: "content-language", Value: "fr"},
+			},
+		},
+		{
+			FilePath: "/bar/shouldBeRemoved.html",
+			URL:      "URL/bar/shouldBeRemoved.html",
+			Attrs:    []api.AssetAttribute{},
+		},
+		{
+			FilePath: "/bar/shouldBeRemoved",
+			URL:      "URL/bar/shouldBeRemoved",
+			Attrs: []api.AssetAttribute{
+				{Name: "Content-Type", Value: "htmp"},
+				{Name: "Content-Language", Value: "fr"},
+			},
+		},
+	}
+	return assetMetadata, nil
 }
 
 // MockMDBClient satisfies a mdbcloud.Client

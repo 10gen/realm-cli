@@ -14,6 +14,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
+const numWorkers = 4
+
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
 func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
@@ -23,8 +25,10 @@ func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 		}
 
 		return &ExportCommand{
-			workingDirectory:  workingDirectory,
-			exportToDirectory: utils.WriteZipToDir,
+			workingDirectory:     workingDirectory,
+			exportToDirectory:    utils.WriteZipToDir,
+			writeFileToDirectory: utils.WriteFileToDir,
+			getAssetAtURL:        getAssetAtURL,
 			BaseCommand: &BaseCommand{
 				Name: "export",
 				UI:   ui,
@@ -37,13 +41,16 @@ func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 type ExportCommand struct {
 	*BaseCommand
 
-	workingDirectory  string
-	exportToDirectory func(dest string, zipData io.Reader, overwrite bool) error
+	workingDirectory     string
+	exportToDirectory    func(dest string, zipData io.Reader, overwrite bool) error
+	writeFileToDirectory func(dest string, data io.Reader) error
+	getAssetAtURL        func(url string) (io.ReadCloser, error)
 
-	flagProjectID  string
-	flagAppID      string
-	flagOutput     string
-	flagAsTemplate bool
+	flagProjectID      string
+	flagAppID          string
+	flagOutput         string
+	flagAsTemplate     bool
+	flagIncludeHosting bool
 }
 
 // Help returns long-form help information for this command
@@ -62,7 +69,10 @@ OPTIONS:
 	Directory to write the exported configuration. Defaults to "<app_name>_<timestamp>"
 
   --as-template
-	Indicate that the application should be exported as a template.` +
+	Indicate that the application should be exported as a template.
+
+  --include-hosting
+	Download static assets associated with this project` +
 		ec.BaseCommand.Help()
 }
 
@@ -80,6 +90,7 @@ func (ec *ExportCommand) Run(args []string) int {
 	set.StringVar(&ec.flagOutput, "output", "", "")
 	set.StringVar(&ec.flagOutput, "o", "", "")
 	set.BoolVar(&ec.flagAsTemplate, "as-template", false, "")
+	set.BoolVar(&ec.flagIncludeHosting, "include-hosting", false, "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
 		ec.UI.Error(err.Error())
@@ -129,12 +140,10 @@ func (ec *ExportCommand) run() error {
 			return err
 		}
 	}
-
 	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate)
 	if err != nil {
 		return err
 	}
-
 	defer body.Close()
 
 	if ec.flagOutput != "" {
@@ -146,5 +155,14 @@ func (ec *ExportCommand) run() error {
 		filename = filename[:lastUnderscoreIdx]
 	}
 
-	return ec.exportToDirectory(filename, body, false)
+	if err := ec.exportToDirectory(filename, body, false); err != nil {
+		return err
+	}
+
+	if ec.flagIncludeHosting {
+		if err := exportStaticHostingAssets(stitchClient, ec, filename, app); err != nil {
+			return err
+		}
+	}
+	return nil
 }

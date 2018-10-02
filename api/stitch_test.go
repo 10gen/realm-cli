@@ -134,3 +134,49 @@ func TestUploadAsset(t *testing.T) {
 		})
 	})
 }
+
+func TestListAssetsForAppID(t *testing.T) {
+
+	var testHandler http.HandlerFunc
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		testHandler(w, r)
+	}))
+
+	testContents := []api.AssetMetadata{
+		{
+			AppID:    "appid",
+			FilePath: "foo.txt",
+			URL:      "url/foo.txt",
+			FileSize: 20,
+			FileHash: "OWEJFOWEF",
+		},
+		{
+			AppID:    "appid",
+			FilePath: "bar.txt",
+			URL:      "url/bar.txt",
+			FileSize: 203,
+			FileHash: "OWEJddsdcsFOWEF",
+		},
+	}
+	t.Run("listing assets by AppID should work", func(t *testing.T) {
+
+		testHandler = func(w http.ResponseWriter, r *http.Request) {
+			metaJson, err := json.Marshal(&testContents)
+			if err != nil {
+				http.Error(w, "invalid asset metadata", http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write(metaJson)
+		}
+
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		assetMetadatas, err := testClient.ListAssetsForAppID("groupid", "appID")
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, len(assetMetadatas), gc.ShouldEqual, 2)
+		u.So(t, assetMetadatas[0], gc.ShouldResemble, testContents[0])
+		u.So(t, assetMetadatas[1], gc.ShouldResemble, testContents[1])
+	})
+}
