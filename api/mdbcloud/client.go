@@ -117,7 +117,7 @@ func (client *simpleClient) GroupByName(groupName string) (*Group, error) {
 func (client *simpleClient) DeleteDatabaseUser(groupID, username string) error {
 	resp, err := client.do(
 		http.MethodDelete,
-		fmt.Sprintf("%s/api/atlas/v1.0/groups/%s/databaseUsers/admin/%s",
+		fmt.Sprintf("%s/api/atlas/v1.0/groups/%s/databaseUsers/admin/%s?overrideEditable=true",
 			client.atlasAPIBaseURL,
 			groupID,
 			username,
@@ -131,7 +131,7 @@ func (client *simpleClient) DeleteDatabaseUser(groupID, username string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusAccepted {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf(errPrefix, username, resp.Status)
 	}
 

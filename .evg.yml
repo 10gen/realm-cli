@@ -146,6 +146,8 @@ tasks:
             export STITCH_MONGODB_CLOUD_GROUP_ID="${stitch_mongodb_cloud_group_id}"
             export STITCH_MONGODB_CLOUD_USERNAME="${stitch_mongodb_cloud_username}"
             export STITCH_MONGODB_CLOUD_API_KEY="${stitch_mongodb_cloud_api_key}"
+            export STITCH_MONGODB_CLOUD_ADMIN_USERNAME="${stitch_mongodb_cloud_admin_username}"
+            export STITCH_MONGODB_CLOUD_ADMIN_API_KEY="${stitch_mongodb_cloud_admin_api_key}"
             export STITCH_MONGODB_CLOUD_API_BASE_URL="${mongoDBCloudURL}"
             export STITCH_SERVER_BASE_URL="${stitchServerURL}"
             go test -v -covermode=count -coverprofile=cover.out $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $GOPATH/stitch-cli.suite
