@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
+	"time"
 
 	"github.com/10gen/stitch-cli/utils"
 )
@@ -35,6 +37,22 @@ type AssetMetadata struct {
 type AssetAttribute struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
+}
+
+// NewAssetMetadata is a constructor for AssetMetadata
+func NewAssetMetadata(appID string, filePath string, fileHash string, fileSize int64) *AssetMetadata {
+	return &AssetMetadata{
+		AppID:        appID,
+		FilePath:     filePath,
+		FileHash:     fileHash,
+		FileSize:     fileSize,
+		LastModified: time.Now().Unix(),
+	}
+}
+
+// IsDir is true if the asset represents a directory
+func (amd *AssetMetadata) IsDir() bool {
+	return strings.HasSuffix(amd.FilePath, "/")
 }
 
 // AssetDescription is the struct that contains the metadata we store for the CLI
