@@ -27,6 +27,39 @@ var (
 	errGroupNotFound         = errors.New("group could not be found")
 )
 
+// AssetMetadata represents the metadata of a static hosted asset
+type AssetMetadata struct {
+	AppID        string           `json:"appId,omitempty"`
+	FilePath     string           `json:"path"`
+	FileHash     string           `json:"hash,omitempty"`
+	FileSize     int64            `json:"size,omitempty"`
+	Attrs        []AssetAttribute `json:"attrs"`
+	AttrsHash    string           `json:"attrs_hash,omitempty"`
+	LastModified int64            `json:"last_modified,omitempty"`
+	URL          string           `json:"url,omitempty"`
+}
+
+// AssetAttribute represents an attribute of a particular static hosting asset
+type AssetAttribute struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// AssetDescription is the struct that contains the metadata we store for the CLI
+type AssetDescription struct {
+	FilePath string           `json:"path"`
+	Attrs    []AssetAttribute `json:"attrs"`
+}
+
+// ValidAttributeNames stores the attribute name sthat Stitch static hosting supports
+var ValidAttributeNames = map[string]bool{
+	"Content-Type":        true,
+	"Content-Disposition": true,
+	"Content-Language":    true,
+	"Content-Encoding":    true,
+	"Cache-Control":       true,
+}
+
 // ErrAppNotFound is used when an app cannot be found by client app ID
 type ErrAppNotFound struct {
 	ClientAppID string
