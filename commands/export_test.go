@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/api"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -78,16 +78,16 @@ func TestExportCommand(t *testing.T) {
 			zipData := "myZipData"
 			appID := "my-cool-app-123456"
 
-			assetDescriptions := []api.AssetDescription{
+			assetDescriptions := []hosting.AssetDescription{
 				{
 					FilePath: "/bar/shouldRemainSame.txt",
-					Attrs: []api.AssetAttribute{
+					Attrs: []hosting.AssetAttribute{
 						{Name: "Content-Type", Value: "html"},
 					},
 				},
 				{
 					FilePath: "/bar/attrsShouldAllRemain.html",
-					Attrs: []api.AssetAttribute{
+					Attrs: []hosting.AssetAttribute{
 						{Name: "Content-Disposition", Value: "inline"},
 						{Name: "Content-Type", Value: "htmp"},
 						{Name: "Content-Language", Value: "fr"},
@@ -97,13 +97,13 @@ func TestExportCommand(t *testing.T) {
 				},
 				{
 					FilePath: "/bar/attrsShouldRemoveAllButOne.html",
-					Attrs: []api.AssetAttribute{
+					Attrs: []hosting.AssetAttribute{
 						{Name: "Content-Disposition", Value: "inline"},
 					},
 				},
 				{
 					FilePath: "/bar/shouldBeRemoved",
-					Attrs: []api.AssetAttribute{
+					Attrs: []hosting.AssetAttribute{
 						{Name: "Content-Type", Value: "htmp"},
 						{Name: "Content-Language", Value: "fr"},
 					},

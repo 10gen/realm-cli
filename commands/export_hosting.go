@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/10gen/stitch-cli/api"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/utils"
 )
@@ -32,7 +33,7 @@ func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand,
 		return err
 	}
 
-	assetDescriptions := api.AssetMetadatasToAssetDescriptions(assetMetadatas)
+	assetDescriptions := hosting.AssetMetadatasToAssetDescriptions(assetMetadatas)
 	assetDescriptionsData, err := json.Marshal(assetDescriptions)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand,
 
 	// Variables for the parallelization below
 	var wg sync.WaitGroup
-	jobs := make(chan api.AssetMetadata)
+	jobs := make(chan hosting.AssetMetadata)
 	errs := make(chan error)
 	errorsHandlerDone := make(chan struct{})
 
@@ -85,7 +86,7 @@ func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand,
 }
 
 // function for workers to run
-func assetDownloadWorker(jobs <-chan api.AssetMetadata, wg *sync.WaitGroup, errs chan<- error, ec *ExportCommand, appPath string) {
+func assetDownloadWorker(jobs <-chan hosting.AssetMetadata, wg *sync.WaitGroup, errs chan<- error, ec *ExportCommand, appPath string) {
 	defer wg.Done()
 
 	for job := range jobs {

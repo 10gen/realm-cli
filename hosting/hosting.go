@@ -1,24 +1,19 @@
 package hosting
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/stitch-cli/api"
-
 	"github.com/10gen/stitch-cli/utils"
 )
 
-// AssetMetadata ------------------------------------------------------------------------------------------------------
-func listLocalAssetMetadata(appID, rootDirectory string) ([]api.AssetMetadata, error) {
-	if err := validatePath(rootDirectory); err != nil {
-		return nil, err
-	}
+// ListLocalAssetMetadata walks all files from the rootDirectory
+// and builds []AssetMetadata from those files
+func ListLocalAssetMetadata(appID, rootDirectory string, assetDescriptions map[string]AssetDescription) ([]AssetMetadata, error) {
+	var assetMetadata []AssetMetadata
 
-	var assetMetadata []api.AssetMetadata
-	err := filepath.Walk(rootDirectory, buildAssetMetadata(appID, &assetMetadata))
+	err := filepath.Walk(rootDirectory, buildAssetMetadata(appID, &assetMetadata, rootDirectory, assetDescriptions))
 	if err != nil {
 		return nil, err
 	}
@@ -26,10 +21,18 @@ func listLocalAssetMetadata(appID, rootDirectory string) ([]api.AssetMetadata, e
 	return assetMetadata, nil
 }
 
-func buildAssetMetadata(appID string, assetMetadata *[]api.AssetMetadata) func(path string, info os.FileInfo, err error) error {
+func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir string, assetDescriptions map[string]AssetDescription) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
-			am, fileErr := fileToAssetMetadata(appID, path, info)
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			assetPath := strings.TrimPrefix(path, rootDir)
+			var assetDesc AssetDescription
+			if assetDescriptions != nil {
+				assetDesc = assetDescriptions[assetPath]
+			}
+			am, fileErr := FileToAssetMetadata(appID, path, info, rootDir, assetDesc)
 			if fileErr != nil {
 				return fileErr
 			}
@@ -39,32 +42,49 @@ func buildAssetMetadata(appID string, assetMetadata *[]api.AssetMetadata) func(p
 	}
 }
 
-func fileToAssetMetadata(appID string, path string, info os.FileInfo) (*api.AssetMetadata, error) {
-	fileHash, err := utils.GenerateFileHash(path)
+// FileToAssetMetadata generates a file hash for the given file
+// and generates the assetAttributes and creates an AssetMetadata from these
+func FileToAssetMetadata(appID string, path string, info os.FileInfo, rootDir string, desc AssetDescription) (*AssetMetadata, error) {
+	fileHashStr, err := utils.GenerateFileHashStr(path)
 	if err != nil {
 		return nil, err
 	}
-
-	//TODO STITCH-2028 add assetAttributes
-
-	fileHashStr := utils.FileHashStr(fileHash)
-	return &api.AssetMetadata{
-		AppID:        appID,
-		FilePath:     path,
-		FileHash:     fileHashStr,
-		FileSize:     info.Size(),
-		LastModified: info.ModTime().Unix(),
-	}, nil
+	return NewAssetMetadata(appID, strings.TrimPrefix(path, rootDir), fileHashStr, info.Size(), desc.Attrs), nil
 }
 
-// ValidatePath checks if a path string contains illegal path characters
-func validatePath(path string) error {
-	if containsDotDot(path) {
-		return errors.New("invalid path")
+// DiffAssetMetadata compares a local and remote []AssetMetadata and returns a AssetMetadataDiffs
+// which contains information about the difrences between the two
+func DiffAssetMetadata(local, remote []AssetMetadata) AssetMetadataDiffs {
+	var addedLocally []AssetMetadata
+	var modifiedLocally []ModifiedAssetMetadata
+	remoteAM := mapAssetMetadataByPath(remote)
+
+	for _, lAM := range local {
+		if rAM, ok := remoteAM[lAM.FilePath]; !ok {
+			addedLocally = append(addedLocally, lAM)
+		} else {
+			modifiedAM := GetModifiedAssetMetadata(lAM, rAM)
+			if modifiedAM.BodyModified || modifiedAM.AttrModified {
+				modifiedLocally = append(modifiedLocally, modifiedAM)
+			}
+			delete(remoteAM, lAM.FilePath)
+		}
 	}
-	return nil
+
+	var deletedLocally []AssetMetadata
+	//at this point the remoteAM map only contains AssetMetadata that were deleted locally
+	for _, rAM := range remoteAM {
+		deletedLocally = append(deletedLocally, rAM)
+	}
+
+	return *NewAssetMetadataDiffs(addedLocally, deletedLocally, modifiedLocally)
 }
 
-func containsDotDot(v string) bool {
-	return strings.Contains(v, "..")
+// mapAssetMetadataByPath returns the AssetMetadata mapped by their FilePath
+func mapAssetMetadataByPath(assetsMetadata []AssetMetadata) map[string]AssetMetadata {
+	mdM := make(map[string]AssetMetadata, len(assetsMetadata))
+	for _, md := range assetsMetadata {
+		mdM[md.FilePath] = md
+	}
+	return mdM
 }

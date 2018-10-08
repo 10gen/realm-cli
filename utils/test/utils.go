@@ -17,6 +17,7 @@ import (
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/api/mdbcloud"
 	"github.com/10gen/stitch-cli/auth"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/storage"
 	"github.com/10gen/stitch-cli/user"
@@ -191,20 +192,17 @@ type MockStitchClient struct {
 	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
 	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
-	ListAssetsForAppIDFn              func(groupID, appID string) ([]string, []api.AssetDescription, error)
-	UploadAssetFn                     func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error
+	ListAssetsForAppIDFn              func(groupID, appID string) ([]string, []hosting.AssetDescription, error)
+	UploadAssetFn                     func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
 	CopyAssetFn                       func(groupID, appID, fromPath, toPath string) error
 	MoveAssetFn                       func(groupID, appID, fromPath, toPath string) error
 	DeleteAssetFn                     func(groupID, appID, path string) error
-	SetAssetAttributesFn              func(groupID, appID, path string, attributes ...api.AssetAttribute) error
-
-	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
-	ExportFnCalls [][]string
-
-	ImportFn      func(groupID, appID string, appData []byte, strategy string) error
-	ImportFnCalls [][]string
-
-	DiffFn func(groupID, appID string, appData []byte, strategy string) ([]string, error)
+	SetAssetAttributesFn              func(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
+	ExportFn                          func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
+	ExportFnCalls                     [][]string
+	ImportFn                          func(groupID, appID string, appData []byte, strategy string) error
+	ImportFnCalls                     [][]string
+	DiffFn                            func(groupID, appID string, appData []byte, strategy string) ([]string, error)
 }
 
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
@@ -277,7 +275,7 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 }
 
 // UploadAsset uploads an asset
-func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error {
+func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
 	if msc.UploadAssetFn != nil {
 		return msc.UploadAssetFn(groupID, appID, path, hash, size, body, attributes...)
 	}
@@ -313,7 +311,7 @@ func (msc *MockStitchClient) DeleteAsset(groupID, appID, path string) error {
 }
 
 // SetAssetAttributes sets an asset's attributes
-func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...api.AssetAttribute) error {
+func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
 	if msc.SetAssetAttributesFn != nil {
 		return msc.SetAssetAttributesFn(groupID, appID, path, attributes...)
 	}
@@ -322,26 +320,26 @@ func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, att
 }
 
 // ListAssetsForAppID fetches a Stitch app given a clientAppID
-func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]api.AssetMetadata, error) {
-	assetMetadata := []api.AssetMetadata{
+func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
+	assetMetadata := []hosting.AssetMetadata{
 		{
 			FilePath: "/bar/shouldRemainSame.txt",
 			URL:      "URL/bar/shouldRemainSame.txt",
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{Name: "Content-Type", Value: "html"},
 			},
 		},
 		{
 			FilePath: "/bar/shouldBeRemoved.txt",
 			URL:      "URL/bar/shouldBeRemoved.txt",
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{Name: "Content-Type", Value: "text/plain"},
 			},
 		},
 		{
 			FilePath: "/bar/attrsShouldAllRemain.html",
 			URL:      "URL/bar/attrsShouldAllRemain.html",
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{Name: "Content-Disposition", Value: "inline"},
 				{Name: "Content-Type", Value: "htmp"},
 				{Name: "Content-Language", Value: "fr"},
@@ -352,7 +350,7 @@ func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]api.As
 		{
 			FilePath: "/bar/attrsShouldRemoveAllButOne.html",
 			URL:      "URL/bar/attrsShouldAllRemain.html",
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{Name: "Content-Disposition", Value: "inline"},
 				{Name: "content-type", Value: "htmp"},
 				{Name: "content-language", Value: "fr"},
@@ -361,12 +359,12 @@ func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]api.As
 		{
 			FilePath: "/bar/shouldBeRemoved.html",
 			URL:      "URL/bar/shouldBeRemoved.html",
-			Attrs:    []api.AssetAttribute{},
+			Attrs:    []hosting.AssetAttribute{},
 		},
 		{
 			FilePath: "/bar/shouldBeRemoved",
 			URL:      "URL/bar/shouldBeRemoved",
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{Name: "Content-Type", Value: "htmp"},
 				{Name: "Content-Language", Value: "fr"},
 			},
