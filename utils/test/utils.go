@@ -191,6 +191,7 @@ type MockStitchClient struct {
 	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
 	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
+	UploadAssetFn                     func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error
 
 	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
 	ExportFnCalls [][]string
@@ -268,6 +269,15 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 	}
 
 	return nil, api.ErrAppNotFound{clientAppID}
+}
+
+// UploadAsset uploads an asset
+func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error {
+	if msc.UploadAssetFn != nil {
+		return msc.UploadAssetFn(groupID, appID, path, hash, size, body, attributes...)
+	}
+
+	return nil
 }
 
 // MockMDBClient satisfies a mdbcloud.Client

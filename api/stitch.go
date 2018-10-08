@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
@@ -20,6 +21,7 @@ const (
 	appImportRoute         = adminBaseURL + "/groups/%s/apps/%s/import"
 	appsByGroupIDRoute     = adminBaseURL + "/groups/%s/apps"
 	userProfileRoute       = adminBaseURL + "/auth/profile"
+	hostingAssetRoute      = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
 )
 
 var (
@@ -123,7 +125,13 @@ type StitchClient interface {
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 	FetchAppsByGroupID(groupID string) ([]*models.App, error)
 	CreateEmptyApp(groupID, appName string) (*models.App, error)
+	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...AssetAttribute) error
 }
+
+const (
+	metadataParam = "meta"
+	fileParam     = "file"
+)
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
 func NewStitchClient(client Client) StitchClient {
@@ -332,6 +340,76 @@ func (sc *basicStitchClient) CreateEmptyApp(groupID, appName string) (*models.Ap
 	}
 
 	return &app, nil
+}
+
+func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...AssetAttribute) error {
+	// The upload request consists of a multipart body with two parts:
+	// 1) the metadata, as json, and 2) the file data itself.
+
+	// First build the metadata part
+	metaPart, err := json.Marshal(AssetMetadata{
+		AppID:    appID,
+		FilePath: path,
+		FileHash: hash,
+		FileSize: size,
+		Attrs:    attributes,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Construct a pipe stream: the reader side will be consumed and sent as the
+	// body of the outgoing request, and the writer side we can use to
+	// asynchronously populate it.
+	pipeReader, pipeWriter := io.Pipe()
+
+	bodyWriter := multipart.NewWriter(pipeWriter)
+	go func() (err error) {
+		defer func() {
+			// If building the request failed, force the reader side to fail
+			// so that ExecuteRequest returns the error. This behaves equivalent to
+			// .Close() if err is nil.
+			pipeWriter.CloseWithError(err)
+			bodyWriter.Close()
+		}()
+		// Create the first part and write the metadata into it
+		metaWriter, formErr := bodyWriter.CreateFormField(metadataParam)
+		if err != nil {
+			return fmt.Errorf("failed to create metadata multipart field: %s", formErr)
+		}
+
+		if _, metaErr := metaWriter.Write(metaPart); metaErr != nil {
+			return fmt.Errorf("failed to write metadata to body: %s", metaErr)
+		}
+
+		// Create the second part, stream the file body into it, then close it.
+		fileWriter, fileErr := bodyWriter.CreateFormField(fileParam)
+		if fileErr != nil {
+			return fmt.Errorf("failed to create metadata multipart field: %s", fileErr)
+		}
+
+		if _, copyErr := io.Copy(fileWriter, body); copyErr != nil {
+			return fmt.Errorf("failed to write file to body: %s", copyErr)
+		}
+		return nil
+	}()
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPut,
+		fmt.Sprintf(hostingAssetRoute, groupID, appID),
+		RequestOptions{
+			Body:   pipeReader,
+			Header: http.Header{"Content-Type": {"multipart/mixed; boundary=" + bodyWriter.Boundary()}},
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("%s: failed to upload asset: %s", res.Status, UnmarshalStitchError(res))
+	}
+	return nil
 }
 
 func findAppByClientAppID(apps []*models.App, clientAppID string) *models.App {
