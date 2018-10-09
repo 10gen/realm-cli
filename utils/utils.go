@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -26,6 +27,13 @@ const (
 	servicesName                = "services"
 	sourceName                  = "source"
 	valuesName                  = "values"
+)
+
+const (
+	// HostingDirectory is the directory to place the static hosting assets
+	HostingDirectory = "hosting/files/"
+	// HostingAttributes is the file that stores the static hosting asset descriptions struct
+	HostingAttributes = "hosting/metadata.json"
 )
 
 var (
@@ -103,6 +111,29 @@ func WriteZipToDir(dest string, zipData io.Reader, overwrite bool) error {
 	}
 
 	return err
+}
+
+// WriteFileToDir writes the data to dest and creates the necessary directories along the path
+func WriteFileToDir(dest string, data io.Reader) error {
+	// make all subdirectories if necessary
+	err := os.MkdirAll(path.Dir(dest), os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("failed to create sub-directory %q: %s", dest, err)
+	}
+
+	// now we create the file
+	f, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create file %q: %s", dest, err)
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, data)
+	if err != nil {
+		return fmt.Errorf("failed to copy file %q: %s", dest, err)
+	}
+
+	return nil
 }
 
 func processFile(path string, zipFile *zip.File) error {
