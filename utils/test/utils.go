@@ -193,6 +193,10 @@ type MockStitchClient struct {
 	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
 	ListAssetsForAppIDFn              func(groupID, appID string) ([]string, []api.AssetDescription, error)
 	UploadAssetFn                     func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error
+	CopyAssetFn                       func(groupID, appID, fromPath, toPath string) error
+	MoveAssetFn                       func(groupID, appID, fromPath, toPath string) error
+	DeleteAssetFn                     func(groupID, appID, path string) error
+	SetAssetAttributesFn              func(groupID, appID, path string, attributes ...api.AssetAttribute) error
 
 	ExportFn      func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
 	ExportFnCalls [][]string
@@ -276,6 +280,42 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...api.AssetAttribute) error {
 	if msc.UploadAssetFn != nil {
 		return msc.UploadAssetFn(groupID, appID, path, hash, size, body, attributes...)
+	}
+
+	return nil
+}
+
+// CopyAsset copies an asset
+func (msc *MockStitchClient) CopyAsset(groupID, appID, fromPath, toPath string) error {
+	if msc.CopyAssetFn != nil {
+		return msc.CopyAssetFn(groupID, appID, fromPath, toPath)
+	}
+
+	return nil
+}
+
+// MoveAsset moves an asset
+func (msc *MockStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
+	if msc.MoveAssetFn != nil {
+		return msc.MoveAssetFn(groupID, appID, fromPath, toPath)
+	}
+
+	return nil
+}
+
+// DeleteAsset deletes an asset
+func (msc *MockStitchClient) DeleteAsset(groupID, appID, path string) error {
+	if msc.DeleteAssetFn != nil {
+		return msc.DeleteAssetFn(groupID, appID, path)
+	}
+
+	return nil
+}
+
+// SetAssetAttributes sets an asset's attributes
+func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...api.AssetAttribute) error {
+	if msc.SetAssetAttributesFn != nil {
+		return msc.SetAssetAttributesFn(groupID, appID, path, attributes...)
 	}
 
 	return nil

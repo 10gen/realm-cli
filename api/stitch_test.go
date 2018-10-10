@@ -19,6 +19,12 @@ import (
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
+const (
+	groupID   = "groupID"
+	appID     = "appID"
+	pathParam = "path"
+)
+
 func TestErrStitchResponse(t *testing.T) {
 	t.Run("with a non-JSON response should return the original content", func(t *testing.T) {
 		err := api.UnmarshalStitchError(&http.Response{
@@ -51,20 +57,13 @@ func md5Sum(in string) string {
 }
 
 func TestUploadAsset(t *testing.T) {
-
-	var testHandler http.HandlerFunc
-
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testHandler(w, r)
-	}))
-
-	testContents := "hello world"
 	t.Run("uploading an asset should work", func(t *testing.T) {
 
 		var uploadedAssetMetadata api.AssetMetadata
 		uploadedFileData := &bytes.Buffer{}
 
-		testHandler = func(w http.ResponseWriter, r *http.Request) {
+		testContents := "hello world"
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
 			mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -103,13 +102,14 @@ func TestUploadAsset(t *testing.T) {
 			}
 			w.WriteHeader(http.StatusNoContent)
 		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 
 		path, hash, size := "/test", md5Sum(testContents), int64(len(testContents))
 
 		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
 		testClient.UploadAsset(
-			"groupid",
-			"appid",
+			groupID,
+			appID,
 			path,
 			hash,
 			size,
@@ -121,7 +121,7 @@ func TestUploadAsset(t *testing.T) {
 		)
 
 		u.So(t, uploadedAssetMetadata, gc.ShouldResemble, api.AssetMetadata{
-			AppID:    "appid",
+			AppID:    appID,
 			FilePath: path,
 			FileHash: hash,
 			FileSize: size,
@@ -136,32 +136,24 @@ func TestUploadAsset(t *testing.T) {
 }
 
 func TestListAssetsForAppID(t *testing.T) {
-
-	var testHandler http.HandlerFunc
-
-	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		testHandler(w, r)
-	}))
-
-	testContents := []api.AssetMetadata{
-		{
-			AppID:    "appid",
-			FilePath: "foo.txt",
-			URL:      "url/foo.txt",
-			FileSize: 20,
-			FileHash: "OWEJFOWEF",
-		},
-		{
-			AppID:    "appid",
-			FilePath: "bar.txt",
-			URL:      "url/bar.txt",
-			FileSize: 203,
-			FileHash: "OWEJddsdcsFOWEF",
-		},
-	}
 	t.Run("listing assets by AppID should work", func(t *testing.T) {
-
-		testHandler = func(w http.ResponseWriter, r *http.Request) {
+		testContents := []api.AssetMetadata{
+			{
+				AppID:    appID,
+				FilePath: "foo.txt",
+				URL:      "url/foo.txt",
+				FileSize: 20,
+				FileHash: "OWEJFOWEF",
+			},
+			{
+				AppID:    appID,
+				FilePath: "bar.txt",
+				URL:      "url/bar.txt",
+				FileSize: 203,
+				FileHash: "OWEJddsdcsFOWEF",
+			},
+		}
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
 			metaJson, err := json.Marshal(&testContents)
 			if err != nil {
 				http.Error(w, "invalid asset metadata", http.StatusBadRequest)
@@ -171,12 +163,114 @@ func TestListAssetsForAppID(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 			w.Write(metaJson)
 		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 
 		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
-		assetMetadatas, err := testClient.ListAssetsForAppID("groupid", "appID")
+		assetMetadatas, err := testClient.ListAssetsForAppID(groupID, appID)
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, len(assetMetadatas), gc.ShouldEqual, 2)
 		u.So(t, assetMetadatas[0], gc.ShouldResemble, testContents[0])
 		u.So(t, assetMetadatas[1], gc.ShouldResemble, testContents[1])
+	})
+}
+
+func TestSetAssetAttributes(t *testing.T) {
+	t.Run("setting app attributes should work", func(t *testing.T) {
+		testContents := []api.AssetAttribute{
+			{
+				Name:  "asset1",
+				Value: "value1",
+			},
+			{
+				Name:  "asset2",
+				Value: "value2",
+			},
+		}
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Query().Get(pathParam)
+			if path == "" {
+				http.Error(w, "path param required", http.StatusBadRequest)
+				return
+			}
+
+			payload := struct {
+				Attributes []api.AssetAttribute `json:"attributes"`
+			}{}
+			dec := json.NewDecoder(r.Body)
+			if err := dec.Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+			fmt.Printf("hello\n")
+
+			w.WriteHeader(http.StatusNoContent)
+		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		path := "/foo"
+
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		err := testClient.SetAssetAttributes(groupID, appID, path, testContents...)
+		u.So(t, err, gc.ShouldBeNil)
+	})
+}
+
+func TestPostAsset(t *testing.T) {
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		dec := json.NewDecoder(r.Body)
+		defer r.Body.Close()
+		payload := struct {
+			MoveFrom string `json:"move_from"`
+			MoveTo   string `json:"move_to"`
+			CopyFrom string `json:"copy_from"`
+			CopyTo   string `json:"copy_to"`
+		}{}
+		if err := dec.Decode(&payload); err != nil {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		isMoveRequest := payload.MoveFrom != "" && payload.MoveTo != ""
+		isCopyRequest := payload.CopyFrom != "" && payload.CopyTo != ""
+
+		if isMoveRequest == isCopyRequest {
+			http.Error(w, "invalid payload", http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+	testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+	testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+	fromPath := "/foo"
+	toPath := "/bar"
+
+	t.Run("copying an asset should work", func(t *testing.T) {
+		err := testClient.CopyAsset(groupID, appID, fromPath, toPath)
+		u.So(t, err, gc.ShouldBeNil)
+	})
+
+	t.Run("moving an asset should work", func(t *testing.T) {
+		err := testClient.MoveAsset(groupID, appID, fromPath, toPath)
+		u.So(t, err, gc.ShouldBeNil)
+	})
+}
+
+func TestDeleteAsset(t *testing.T) {
+	t.Run("deleting an asset should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			path := r.URL.Query().Get(pathParam)
+			if path == "" {
+				http.Error(w, "path param required", http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusNoContent)
+		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		path := "/foo"
+
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		err := testClient.DeleteAsset(groupID, appID, path)
+		u.So(t, err, gc.ShouldBeNil)
 	})
 }
