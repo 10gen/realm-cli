@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/10gen/stitch-cli/auth"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 )
 
@@ -47,7 +48,7 @@ type movePayload struct {
 }
 
 type setAttributesPayload struct {
-	Attributes []AssetAttribute `json:"attributes"`
+	Attributes []hosting.AssetAttribute `json:"attributes"`
 }
 
 // StitchClient represents a Client that can be used to call the Stitch Admin API
@@ -60,12 +61,12 @@ type StitchClient interface {
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 	FetchAppsByGroupID(groupID string) ([]*models.App, error)
 	CreateEmptyApp(groupID, appName string) (*models.App, error)
-	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...AssetAttribute) error
+	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
 	CopyAsset(groupID, appID, fromPath, toPath string) error
 	MoveAsset(groupID, appID, fromPath, toPath string) error
 	DeleteAsset(groupID, appID, path string) error
-	SetAssetAttributes(groupID, appID, path string, attributes ...AssetAttribute) error
-	ListAssetsForAppID(groupID, appID string) ([]AssetMetadata, error)
+	SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
+	ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error)
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -123,7 +124,7 @@ func (sc *basicStitchClient) Export(groupID, appID string, isTemplated bool) (st
 		return "", nil, UnmarshalStitchError(res)
 	}
 
-	_, params, err := mime.ParseMediaType(res.Header.Get(AttributeContentDisposition))
+	_, params, err := mime.ParseMediaType(res.Header.Get(hosting.AttributeContentDisposition))
 	if err != nil {
 		res.Body.Close()
 		return "", nil, err
@@ -238,12 +239,12 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 }
 
 // UploadAsset creates a pipe and writes the asset to an http.POST along with its metadata
-func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...AssetAttribute) error {
+func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
 	// The upload request consists of a multipart body with two parts:
 	// 1) the metadata, as json, and 2) the file data itself.
 
 	// First build the metadata part
-	metaPart, err := json.Marshal(AssetMetadata{
+	metaPart, err := json.Marshal(hosting.AssetMetadata{
 		AppID:    appID,
 		FilePath: path,
 		FileHash: hash,
@@ -302,7 +303,7 @@ func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size
 }
 
 // SetAssetAttributes sets the asset at the given path to have the provided AssetAttributes
-func (sc *basicStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...AssetAttribute) error {
+func (sc *basicStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
 	attrs, err := json.Marshal(setAttributesPayload{attributes})
 	if err != nil {
 		return err
@@ -400,7 +401,7 @@ func (sc *basicStitchClient) CreateEmptyApp(groupID, appName string) (*models.Ap
 	return &app, nil
 }
 
-func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]AssetMetadata, error) {
+func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
 	res, err := sc.ExecuteRequest(
 		http.MethodGet,
 		fmt.Sprintf(hostingAssetsRoute+"?recursive=true", groupID, appID),
@@ -417,7 +418,7 @@ func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]AssetM
 	}
 
 	dec := json.NewDecoder(res.Body)
-	var assetMetadata []AssetMetadata
+	var assetMetadata []hosting.AssetMetadata
 	if err := dec.Decode(&assetMetadata); err != nil {
 		return nil, err
 	}

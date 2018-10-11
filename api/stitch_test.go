@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/10gen/stitch-cli/api"
+	"github.com/10gen/stitch-cli/hosting"
 
 	u "github.com/10gen/stitch-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
@@ -59,7 +60,7 @@ func md5Sum(in string) string {
 func TestUploadAsset(t *testing.T) {
 	t.Run("uploading an asset should work", func(t *testing.T) {
 
-		var uploadedAssetMetadata api.AssetMetadata
+		var uploadedAssetMetadata hosting.AssetMetadata
 		uploadedFileData := &bytes.Buffer{}
 
 		testContents := "hello world"
@@ -114,18 +115,18 @@ func TestUploadAsset(t *testing.T) {
 			hash,
 			size,
 			strings.NewReader(testContents),
-			api.AssetAttribute{
+			hosting.AssetAttribute{
 				Name:  "Content-Type",
 				Value: "application/json",
 			},
 		)
 
-		u.So(t, uploadedAssetMetadata, gc.ShouldResemble, api.AssetMetadata{
+		u.So(t, uploadedAssetMetadata, gc.ShouldResemble, hosting.AssetMetadata{
 			AppID:    appID,
 			FilePath: path,
 			FileHash: hash,
 			FileSize: size,
-			Attrs: []api.AssetAttribute{
+			Attrs: []hosting.AssetAttribute{
 				{
 					Name:  "Content-Type",
 					Value: "application/json",
@@ -137,7 +138,7 @@ func TestUploadAsset(t *testing.T) {
 
 func TestListAssetsForAppID(t *testing.T) {
 	t.Run("listing assets by AppID should work", func(t *testing.T) {
-		testContents := []api.AssetMetadata{
+		testContents := []hosting.AssetMetadata{
 			{
 				AppID:    appID,
 				FilePath: "foo.txt",
@@ -176,7 +177,7 @@ func TestListAssetsForAppID(t *testing.T) {
 
 func TestSetAssetAttributes(t *testing.T) {
 	t.Run("setting app attributes should work", func(t *testing.T) {
-		testContents := []api.AssetAttribute{
+		testContents := []hosting.AssetAttribute{
 			{
 				Name:  "asset1",
 				Value: "value1",
@@ -194,7 +195,7 @@ func TestSetAssetAttributes(t *testing.T) {
 			}
 
 			payload := struct {
-				Attributes []api.AssetAttribute `json:"attributes"`
+				Attributes []hosting.AssetAttribute `json:"attributes"`
 			}{}
 			dec := json.NewDecoder(r.Body)
 			if err := dec.Decode(&payload); err != nil {

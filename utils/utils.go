@@ -3,6 +3,7 @@ package utils
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -355,3 +356,20 @@ const (
 	MediaTypeFormURLEncoded    = MediaType("application/x-www-form-urlencoded")
 	MediaTypeZip               = MediaType("application/zip")
 )
+
+// GenerateFileHashStr takes a file name and opens and generates a string of the hash.Hash for that file
+func GenerateFileHashStr(fName string) (string, error) {
+	f, err := os.Open(fName)
+	if err != nil {
+		return "", err
+	}
+
+	defer f.Close()
+
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
