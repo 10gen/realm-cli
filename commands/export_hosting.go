@@ -33,7 +33,7 @@ func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand,
 		return err
 	}
 
-	assetDescriptions := hosting.AssetMetadatasToAssetDescriptions(assetMetadatas)
+	assetDescriptions := hosting.AssetMetadataToAssetDescriptions(assetMetadatas)
 	assetDescriptionsData, err := json.Marshal(assetDescriptions)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func assetDownloadWorker(jobs <-chan hosting.AssetMetadata, wg *sync.WaitGroup, 
 		}
 
 		// Now store the asset at the proper filePath
-		err = ec.writeFileToDirectory(path.Join(appPath, utils.HostingDirectory, job.FilePath), reader)
+		err = ec.writeFileToDirectory(path.Join(appPath, utils.HostingFilesDirectory, job.FilePath), reader)
 		reader.Close()
 		if err != nil {
 			errs <- err

@@ -45,7 +45,7 @@ func (amd *AssetMetadata) IsDir() bool {
 }
 
 // NewAssetMetadata is a constructor for AssetMetadata
-func NewAssetMetadata(appID string, filePath string, fileHash string, fileSize int64, attrs []AssetAttribute) *AssetMetadata {
+func NewAssetMetadata(appID, filePath, fileHash string, fileSize int64, attrs []AssetAttribute) *AssetMetadata {
 	return &AssetMetadata{
 		AppID:        appID,
 		FilePath:     filePath,
@@ -54,6 +54,18 @@ func NewAssetMetadata(appID string, filePath string, fileHash string, fileSize i
 		Attrs:        attrs,
 		LastModified: time.Now().Unix(),
 	}
+}
+
+// AssetsMetadata is a list of AssetMetadata
+type AssetsMetadata []AssetMetadata
+
+// MapByPath returns the AssetMetadata as a map
+func (assetsMetadata AssetsMetadata) MapByPath() map[string]AssetMetadata {
+	mdM := make(map[string]AssetMetadata, len(assetsMetadata))
+	for _, md := range assetsMetadata {
+		mdM[md.FilePath] = md
+	}
+	return mdM
 }
 
 // AssetAttribute represents an attribute of a particular static hosting asset
@@ -104,9 +116,9 @@ type AssetDescription struct {
 	Attrs    []AssetAttribute `json:"attrs"`
 }
 
-// AssetMetadatasToAssetDescriptions takes AssetMetadatas and outputs the slice of AssetDescriptions
+// AssetMetadataToAssetDescriptions takes AssetMetadata and outputs the slice of AssetDescriptions
 // that should be written into the metadata file
-func AssetMetadatasToAssetDescriptions(assetMetadata []AssetMetadata) []AssetDescription {
+func AssetMetadataToAssetDescriptions(assetMetadata []AssetMetadata) []AssetDescription {
 	assetDescriptions := make([]AssetDescription, 0, len(assetMetadata))
 	for _, amd := range assetMetadata {
 

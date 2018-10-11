@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/10gen/stitch-cli/api"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -18,11 +20,12 @@ import (
 )
 
 const (
-	importFlagPath        = "path"
-	importFlagStrategy    = "strategy"
-	importFlagAppName     = "app-name"
-	importStrategyMerge   = "merge"
-	importStrategyReplace = "replace"
+	importFlagPath           = "path"
+	importFlagStrategy       = "strategy"
+	importFlagAppName        = "app-name"
+	importFlagIncludeHosting = "include-hosting"
+	importStrategyMerge      = "merge"
+	importStrategyReplace    = "replace"
 )
 
 func errCreateAppSyncFailure(err error) error {
@@ -31,6 +34,10 @@ func errCreateAppSyncFailure(err error) error {
 
 func errImportAppSyncFailure(err error) error {
 	return fmt.Errorf("failed to sync app with local directory after import: %s", err)
+}
+
+func errIncludeHosting(err error) error {
+	return fmt.Errorf("--include-hosting error: %s", err)
 }
 
 // NewImportCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -63,11 +70,12 @@ type ImportCommand struct {
 	writeAppConfigToFile func(dest string, app models.AppInstanceData) error
 	workingDirectory     string
 
-	flagAppID    string
-	flagAppPath  string
-	flagAppName  string
-	flagGroupID  string
-	flagStrategy string
+	flagAppID          string
+	flagAppPath        string
+	flagAppName        string
+	flagGroupID        string
+	flagStrategy       string
+	flagIncludeHosting bool
 }
 
 // Help returns long-form help information for this command
@@ -91,6 +99,9 @@ OPTIONS:
   --strategy [merge|replace] (default: merge)
 	How your app should be imported.
 
+  --include-hosting
+	Upload static assets from "/hosting" directory.
+
 	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
 	` +
@@ -104,13 +115,14 @@ func (ic *ImportCommand) Synopsis() string {
 
 // Run executes the command
 func (ic *ImportCommand) Run(args []string) int {
-	set := ic.NewFlagSet()
+	flags := ic.NewFlagSet()
 
-	set.StringVar(&ic.flagAppID, flagAppIDName, "", "")
-	set.StringVar(&ic.flagAppPath, importFlagPath, "", "")
-	set.StringVar(&ic.flagGroupID, flagProjectIDName, "", "")
-	set.StringVar(&ic.flagAppName, importFlagAppName, "", "")
-	set.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
+	flags.StringVar(&ic.flagAppID, flagAppIDName, "", "")
+	flags.StringVar(&ic.flagAppPath, importFlagPath, "", "")
+	flags.StringVar(&ic.flagGroupID, flagProjectIDName, "", "")
+	flags.StringVar(&ic.flagAppName, importFlagAppName, "", "")
+	flags.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
+	flags.BoolVar(&ic.flagIncludeHosting, importFlagIncludeHosting, false, "")
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
@@ -202,11 +214,42 @@ func (ic *ImportCommand) importApp() error {
 		}
 	}
 
+	var assetMetadataDiffs *hosting.AssetMetadataDiffs
+	rootDir, dirErr := filepath.Abs(filepath.Join(appPath, utils.HostingFilesDirectory))
+	if dirErr != nil {
+		return dirErr
+	}
+	if ic.flagIncludeHosting {
+		assetDescs, fileErr := hosting.MetadataFileToAssetDescriptions(filepath.Join(appPath, utils.HostingAttributes))
+		if fileErr != nil {
+			return errIncludeHosting(fileErr)
+		}
+
+		localAssetMetadata, aMErr := hosting.ListLocalAssetMetadata(appInstanceData.AppID(), rootDir, assetDescs)
+		if aMErr != nil {
+			return errIncludeHosting(fmt.Errorf("error processing local assets %s: %s", rootDir, aMErr))
+		}
+
+		remoteAssetMetadata, rAMErr := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
+		if rAMErr != nil {
+			return errIncludeHosting(fmt.Errorf("error retrieving remote assets: %s", aMErr))
+		}
+
+		assetMetadataDiffs = hosting.DiffAssetMetadata(localAssetMetadata, remoteAssetMetadata)
+	}
+
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
+
 		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
+
 		if diffErr != nil {
 			return fmt.Errorf("failed to diff app with currently deployed instance: %s", diffErr)
+		}
+
+		if ic.flagIncludeHosting && assetMetadataDiffs != nil {
+			hostingDiff := assetMetadataDiffs.Diff()
+			diffs = append(diffs, hostingDiff...)
 		}
 
 		if len(diffs) == 0 {
@@ -228,8 +271,18 @@ func (ic *ImportCommand) importApp() error {
 		}
 	}
 
+	ic.UI.Info("Importing app...")
 	if importErr := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
 		return fmt.Errorf("failed to import app: %s", importErr)
+	}
+	ic.UI.Info("Done.")
+
+	if ic.flagIncludeHosting && assetMetadataDiffs != nil {
+		ic.UI.Info("Importing hosting assets...")
+		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, ic.flagStrategy, assetMetadataDiffs, stitchClient, ic.UI); hostingImportErr != nil {
+			return fmt.Errorf("failed to import hosting assets %s", hostingImportErr)
+		}
+		ic.UI.Info("Done.")
 	}
 
 	// re-fetch imported app to sync IDs

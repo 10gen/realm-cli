@@ -30,11 +30,14 @@ const (
 	valuesName                  = "values"
 )
 
-const (
-	// HostingDirectory is the directory to place the static hosting assets
-	HostingDirectory = "hosting/files/"
+//
+var (
+	// HostingRoot is the root directory for hosting assets and attributes
+	HostingRoot = "hosting"
+	// HostingFilesDirectory is the directory to place the static hosting assets
+	HostingFilesDirectory = fmt.Sprintf("%s/files", HostingRoot)
 	// HostingAttributes is the file that stores the static hosting asset descriptions struct
-	HostingAttributes = "hosting/metadata.json"
+	HostingAttributes = fmt.Sprintf("%s/metadata.json", HostingRoot)
 )
 
 var (
