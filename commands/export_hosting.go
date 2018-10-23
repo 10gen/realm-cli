@@ -22,13 +22,13 @@ func getAssetAtURL(url string) (io.ReadCloser, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
-		return nil, fmt.Errorf("downloading asset failed: response status code was %d", resp.StatusCode)
+		return nil, fmt.Errorf("downloading asset (url: %s) failed: response status code was %d", url, resp.StatusCode)
 	}
 	return resp.Body, nil
 }
 
 func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand, appPath string, app *models.App) error {
-	assetMetadatas, err := stitchClient.ListAssetsForAppID(app.GroupID, app.ClientAppID)
+	assetMetadatas, err := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
