@@ -11,6 +11,7 @@ import (
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/api/mdbcloud"
+	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
 	u "github.com/10gen/stitch-cli/utils/test"
@@ -438,6 +439,31 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
+				Description:      "it succeeds if given a valid flagAppPath and flagIncludeHosting",
+				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
+			{
 				Description:      "reports an error if it fails to fetch the app by clientID",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,
@@ -577,7 +603,6 @@ func TestImportCommand(t *testing.T) {
 				importCommand.workingDirectory = tc.WorkingDirectory
 
 				exitCode := importCommand.Run(tc.Args)
-
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
 				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
 			})

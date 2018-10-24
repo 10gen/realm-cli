@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/10gen/stitch-cli/hosting"
@@ -26,8 +25,10 @@ func localFileToAssetMetadata(t *testing.T, localPath, rootDir string, assetDesc
 	u.So(t, hashErr, gc.ShouldBeNil)
 
 	appID := "3720"
-	filePath := strings.TrimPrefix(localPath, rootDir)
-	assetMetadata, famErr := hosting.FileToAssetMetadata(appID, localPath, info, rootDir, assetDescriptions[filePath])
+	relPath, pathErr := filepath.Rel(rootDir, localPath)
+	u.So(t, pathErr, gc.ShouldBeNil)
+	filePath := fmt.Sprintf("/%s", relPath)
+	assetMetadata, famErr := hosting.FileToAssetMetadata(appID, localPath, filePath, info, assetDescriptions[filePath])
 	u.So(t, famErr, gc.ShouldBeNil)
 
 	u.So(t, assetMetadata.AppID, gc.ShouldEqual, appID)
@@ -40,14 +41,14 @@ func localFileToAssetMetadata(t *testing.T, localPath, rootDir string, assetDesc
 
 func TestListLocalAssetMetadata(t *testing.T) {
 	var testData []hosting.AssetMetadata
-	path0 := "testdata/asset_file0.json"
-	path1 := "testdata/ships/nostromo.json"
+	path0 := "../testdata/full_app/hosting/files/asset_file0.json"
+	path1 := "../testdata/full_app/hosting/files/ships/nostromo.json"
 	fp0, fErr := filepath.Abs(path0)
 	u.So(t, fErr, gc.ShouldBeNil)
 	fp1, fErr := filepath.Abs(path1)
 	u.So(t, fErr, gc.ShouldBeNil)
 
-	rootDir, fErr := filepath.Abs("testdata")
+	rootDir, fErr := filepath.Abs("../testdata/full_app/hosting/files")
 
 	jsonAttr := hosting.AssetAttribute{
 		Name:  hosting.AttributeContentType,
@@ -318,7 +319,7 @@ func TestDiffAssetMetadata(t *testing.T) {
 			},
 		},
 	} {
-		u.So(t, hosting.DiffAssetMetadata(tc.local, tc.remote), gc.ShouldResemble, *hosting.NewAssetMetadataDiffs(tc.added, tc.deleted, tc.modified))
+		u.So(t, hosting.DiffAssetMetadata(tc.local, tc.remote), gc.ShouldResemble, hosting.NewAssetMetadataDiffs(tc.added, tc.deleted, tc.modified))
 	}
 }
 
@@ -351,4 +352,101 @@ func TestAssetAttributesEqual(t *testing.T) {
 	} {
 		u.So(t, hosting.AssetAttributesEqual(tc.a, tc.b), gc.ShouldEqual, tc.equal)
 	}
+}
+
+func TestMetadataFileToAssetDescriptions(t *testing.T) {
+	assetDescriptions, err := hosting.MetadataFileToAssetDescriptions("../testdata/full_app/hosting/metadata.json")
+	u.So(t, err, gc.ShouldBeNil)
+
+	u.So(t, len(assetDescriptions), gc.ShouldEqual, 2)
+	path0 := "/asset_file0.json"
+	path1 := "/ships/nostromo.json"
+	u.So(t, assetDescriptions, gc.ShouldResemble, map[string]hosting.AssetDescription{
+		path0: {
+			path0,
+			[]hosting.AssetAttribute{},
+		},
+		path1: {
+			path1,
+			[]hosting.AssetAttribute{},
+		},
+	})
+}
+
+func TestAssetMetadataDiff(t *testing.T) {
+	a1Path := "/addMe/1"
+	a2Path := "/addMe/2"
+	added := []hosting.AssetMetadata{
+		{
+			FilePath: a1Path,
+		},
+		{
+			FilePath: a2Path,
+		},
+	}
+
+	addDiff := []string{
+		"New Files:",
+		fmt.Sprintf("\t+ %s", a1Path),
+		fmt.Sprintf("\t+ %s", a2Path),
+	}
+
+	d1Path := "/deleteMe/1"
+	d2Path := "/deleteMe/2"
+	deleted := []hosting.AssetMetadata{
+		{
+			FilePath: d1Path,
+		},
+		{
+			FilePath: d2Path,
+		},
+	}
+
+	deleteDiff := []string{
+		"Removed Files:",
+		fmt.Sprintf("\t- %s", d1Path),
+		fmt.Sprintf("\t- %s", d2Path),
+	}
+
+	m1Path := "/modifyMe/1"
+	m2Path := "/modifyMe/2"
+	modified := []hosting.ModifiedAssetMetadata{
+		{
+			AssetMetadata: hosting.AssetMetadata{
+				FilePath: m1Path,
+			},
+		},
+		{
+			AssetMetadata: hosting.AssetMetadata{
+				FilePath: m2Path,
+			},
+		},
+	}
+
+	modifyDiff := []string{
+		"Modified Files:",
+		fmt.Sprintf("\t* %s", m1Path),
+		fmt.Sprintf("\t* %s", m2Path),
+	}
+
+	t.Run("with local additions only", func(t *testing.T) {
+		amd := hosting.NewAssetMetadataDiffs(added, []hosting.AssetMetadata{}, []hosting.ModifiedAssetMetadata{})
+		u.So(t, amd.Diff(), gc.ShouldResemble, addDiff)
+	})
+
+	t.Run("with local removals only", func(t *testing.T) {
+		amd := hosting.NewAssetMetadataDiffs([]hosting.AssetMetadata{}, deleted, []hosting.ModifiedAssetMetadata{})
+		u.So(t, amd.Diff(), gc.ShouldResemble, deleteDiff)
+	})
+
+	t.Run("with local modifications only", func(t *testing.T) {
+		amd := hosting.NewAssetMetadataDiffs([]hosting.AssetMetadata{}, []hosting.AssetMetadata{}, modified)
+		u.So(t, amd.Diff(), gc.ShouldResemble, modifyDiff)
+	})
+
+	t.Run("with additions, deletions, and modifcations", func(t *testing.T) {
+		amd := hosting.NewAssetMetadataDiffs(added, deleted, modified)
+		u.So(t, amd.Diff(), gc.ShouldResemble, append(append(addDiff, deleteDiff...), modifyDiff...))
+	})
+
 }

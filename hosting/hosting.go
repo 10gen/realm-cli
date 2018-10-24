@@ -1,9 +1,10 @@
 package hosting
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/10gen/stitch-cli/utils"
 )
@@ -27,12 +28,16 @@ func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir st
 			return err
 		}
 		if !info.IsDir() {
-			assetPath := strings.TrimPrefix(path, rootDir)
+			relPath, pathErr := filepath.Rel(rootDir, path)
+			if pathErr != nil {
+				return pathErr
+			}
+			assetPath := fmt.Sprintf("/%s", relPath)
 			var assetDesc AssetDescription
 			if assetDescriptions != nil {
 				assetDesc = assetDescriptions[assetPath]
 			}
-			am, fileErr := FileToAssetMetadata(appID, path, info, rootDir, assetDesc)
+			am, fileErr := FileToAssetMetadata(appID, path, assetPath, info, assetDesc)
 			if fileErr != nil {
 				return fileErr
 			}
@@ -44,20 +49,42 @@ func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir st
 
 // FileToAssetMetadata generates a file hash for the given file
 // and generates the assetAttributes and creates an AssetMetadata from these
-func FileToAssetMetadata(appID string, path string, info os.FileInfo, rootDir string, desc AssetDescription) (*AssetMetadata, error) {
+func FileToAssetMetadata(appID, path, assetPath string, info os.FileInfo, desc AssetDescription) (*AssetMetadata, error) {
 	fileHashStr, err := utils.GenerateFileHashStr(path)
 	if err != nil {
 		return nil, err
 	}
-	return NewAssetMetadata(appID, strings.TrimPrefix(path, rootDir), fileHashStr, info.Size(), desc.Attrs), nil
+
+	return NewAssetMetadata(appID, assetPath, fileHashStr, info.Size(), desc.Attrs), nil
+}
+
+// MetadataFileToAssetDescriptions attempts to open the file at the path given
+// and build AssetDescriptions from this file
+func MetadataFileToAssetDescriptions(path string) (map[string]AssetDescription, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(f)
+	descs := []AssetDescription{}
+	decErr := dec.Decode(&descs)
+	if decErr != nil {
+		return nil, decErr
+	}
+
+	descM := make(map[string]AssetDescription, len(descs))
+	for _, desc := range descs {
+		descM[desc.FilePath] = desc
+	}
+	return descM, nil
 }
 
 // DiffAssetMetadata compares a local and remote []AssetMetadata and returns a AssetMetadataDiffs
 // which contains information about the difrences between the two
-func DiffAssetMetadata(local, remote []AssetMetadata) AssetMetadataDiffs {
+func DiffAssetMetadata(local, remote []AssetMetadata) *AssetMetadataDiffs {
 	var addedLocally []AssetMetadata
 	var modifiedLocally []ModifiedAssetMetadata
-	remoteAM := mapAssetMetadataByPath(remote)
+	remoteAM := AssetsMetadata(remote).MapByPath()
 
 	for _, lAM := range local {
 		if rAM, ok := remoteAM[lAM.FilePath]; !ok {
@@ -77,14 +104,33 @@ func DiffAssetMetadata(local, remote []AssetMetadata) AssetMetadataDiffs {
 		deletedLocally = append(deletedLocally, rAM)
 	}
 
-	return *NewAssetMetadataDiffs(addedLocally, deletedLocally, modifiedLocally)
+	return NewAssetMetadataDiffs(addedLocally, deletedLocally, modifiedLocally)
 }
 
-// mapAssetMetadataByPath returns the AssetMetadata mapped by their FilePath
-func mapAssetMetadataByPath(assetsMetadata []AssetMetadata) map[string]AssetMetadata {
-	mdM := make(map[string]AssetMetadata, len(assetsMetadata))
-	for _, md := range assetsMetadata {
-		mdM[md.FilePath] = md
+// Diff returns a list of strings representing the diff
+func (amd *AssetMetadataDiffs) Diff() []string {
+	var diff []string
+
+	if len(amd.AddedLocally) > 0 {
+		diff = append(diff, "New Files:")
 	}
-	return mdM
+	for _, added := range amd.AddedLocally {
+		diff = append(diff, fmt.Sprintf("\t+ %s", added.FilePath))
+	}
+
+	if len(amd.DeletedLocally) > 0 {
+		diff = append(diff, "Removed Files:")
+	}
+	for _, deleted := range amd.DeletedLocally {
+		diff = append(diff, fmt.Sprintf("\t- %s", deleted.FilePath))
+	}
+
+	if len(amd.ModifiedLocally) > 0 {
+		diff = append(diff, "Modified Files:")
+	}
+	for _, modified := range amd.ModifiedLocally {
+		diff = append(diff, fmt.Sprintf("\t* %s", modified.AssetMetadata.FilePath))
+	}
+
+	return diff
 }
