@@ -67,7 +67,26 @@ functions:
           cd $GOPATH/src/github.com/10gen/stitch
           export PATH="$GOPATH/src/github.com/10gen/stitch/etc/transpiler/bin:$PATH"
           which transpiler
-          go run cmd/server/main.go --configFile $GOPATH/../src/github.com/10gen/stitch-cli/testdata/configs/stitch_server_test_config.json
+          cat > atlas_config.json <<EOF
+          {
+            "admin": {
+              "authProviders": [
+                {
+                  "name": "mongodb-cloud",
+                  "type": "mongodb-cloud",
+                  "config": {
+                      "publicAPIBaseUrl": "https://cloud-dev.mongodb.com/api/public/v1.0",
+                      "atlasAPIBaseUrl": "https://cloud-dev.mongodb.com/api/atlas/v1.0",
+                      "adminUsername": "${stitch_mongodb_cloud_atlas_admin_username}",
+                      "adminAPIKey": "${stitch_mongodb_cloud_atlas_admin_api_key}"
+                    },
+                    "metadataFields": [{ "name": "name", "required": false}]
+                }
+              ]
+            }
+          }
+          EOF
+          go run cmd/server/main.go --configFile $GOPATH/../src/github.com/10gen/stitch-cli/testdata/configs/stitch_server_test_config.json --configFile ./atlas_config.json
     - command: shell.exec
       params:
         script: |
