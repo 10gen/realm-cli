@@ -3,8 +3,6 @@
     "type": "mongodb-atlas",
     "config": {
         "clusterName": "Cluster0",
-        "groupName": "dev",
-        "orgName": "cap-dev",
         "wireProtocolEnabled": false
     }
 }
