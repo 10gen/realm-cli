@@ -34,7 +34,6 @@ type AssetMetadata struct {
 	FileHash     string           `json:"hash,omitempty"`
 	FileSize     int64            `json:"size,omitempty"`
 	Attrs        []AssetAttribute `json:"attrs"`
-	AttrsHash    string           `json:"attrs_hash,omitempty"`
 	LastModified int64            `json:"last_modified,omitempty"`
 	URL          string           `json:"url,omitempty"`
 }
