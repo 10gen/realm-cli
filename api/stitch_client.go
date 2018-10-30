@@ -17,13 +17,14 @@ import (
 )
 
 const (
-	authProviderLoginRoute = adminBaseURL + "/auth/providers/%s/login"
-	appExportRoute         = adminBaseURL + "/groups/%s/apps/%s/export?template=%t"
-	appImportRoute         = adminBaseURL + "/groups/%s/apps/%s/import"
-	appsByGroupIDRoute     = adminBaseURL + "/groups/%s/apps"
-	userProfileRoute       = adminBaseURL + "/auth/profile"
-	hostingAssetRoute      = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
-	hostingAssetsRoute     = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
+	authProviderLoginRoute      = adminBaseURL + "/auth/providers/%s/login"
+	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export?template=%t"
+	appImportRoute              = adminBaseURL + "/groups/%s/apps/%s/import"
+	appsByGroupIDRoute          = adminBaseURL + "/groups/%s/apps"
+	userProfileRoute            = adminBaseURL + "/auth/profile"
+	hostingAssetRoute           = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
+	hostingAssetsRoute          = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
+	hostingInvalidateCacheRoute = adminBaseURL + "/groups/%s/apps/%s/hosting/cache"
 )
 
 var (
@@ -51,6 +52,11 @@ type setAttributesPayload struct {
 	Attributes []hosting.AssetAttribute `json:"attributes"`
 }
 
+type invalidateCachePayload struct {
+	Invalidate bool   `json:"invalidate"`
+	Path       string `json:"path"`
+}
+
 // StitchClient represents a Client that can be used to call the Stitch Admin API
 type StitchClient interface {
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
@@ -67,6 +73,7 @@ type StitchClient interface {
 	DeleteAsset(groupID, appID, path string) error
 	SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
 	ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error)
+	InvalidateCache(groupID, appID, path string) error
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -424,6 +431,24 @@ func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]hostin
 	}
 
 	return assetMetadata, nil
+}
+
+// InvalidateCache requests cache invalidation for the resource at the given
+// path in the app's CloudFront distribution
+func (sc *basicStitchClient) InvalidateCache(groupID, appID, path string) error {
+	payload, err := json.Marshal(invalidateCachePayload{Invalidate: true, Path: path})
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPut,
+		fmt.Sprintf(hostingInvalidateCacheRoute, groupID, appID),
+		RequestOptions{
+			Body: bytes.NewReader(payload),
+		},
+	)
+	return checkStatusNoContent(res, err, "failed to invalidate cache")
 }
 
 func checkStatusNoContent(res *http.Response, requestErr error, errMessage string) error {

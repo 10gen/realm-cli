@@ -464,6 +464,34 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
+				Description:      "it succeeds if given a valid flagAppPath, flagIncludeHosting, and flagResetCDNCache",
+				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting", "--reset-cdn-cache"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+					InvalidateCacheFn: func(groupID, appID, path string) error {
+						return nil
+					},
+				},
+			},
+			{
 				Description:      "reports an error if it fails to fetch the app by clientID",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,

@@ -275,3 +275,35 @@ func TestDeleteAsset(t *testing.T) {
 		u.So(t, err, gc.ShouldBeNil)
 	})
 }
+
+func TestInvalidateCache(t *testing.T) {
+	t.Run("cache invalidation should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			payload := struct {
+				Invalidate bool   `json:"invalidate"`
+				Path       string `json:"path"`
+			}{}
+
+			dec := json.NewDecoder(r.Body)
+			defer r.Body.Close()
+
+			if err := dec.Decode(&payload); err != nil {
+				http.Error(w, "invalid payload", http.StatusBadRequest)
+				return
+			}
+
+			if !payload.Invalidate {
+				http.Error(w, "'invalidate' param should be true", http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusNoContent)
+		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		path := "foo"
+
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		err := testClient.InvalidateCache(groupID, appID, path)
+		u.So(t, err, gc.ShouldBeNil)
+	})
+}

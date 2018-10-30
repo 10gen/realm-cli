@@ -203,6 +203,7 @@ type MockStitchClient struct {
 	ImportFn                          func(groupID, appID string, appData []byte, strategy string) error
 	ImportFnCalls                     [][]string
 	DiffFn                            func(groupID, appID string, appData []byte, strategy string) ([]string, error)
+	InvalidateCacheFn                 func(groupID, appID, path string) error
 }
 
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
@@ -371,6 +372,15 @@ func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]hostin
 		},
 	}
 	return assetMetadata, nil
+}
+
+// InvalidateCache requests cache invalidation for the asset at the argued path
+func (msc *MockStitchClient) InvalidateCache(groupID, appID, path string) error {
+	if msc.InvalidateCacheFn != nil {
+		return msc.InvalidateCacheFn(groupID, appID, path)
+	}
+
+	return nil
 }
 
 // MockMDBClient satisfies a mdbcloud.Client

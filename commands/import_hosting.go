@@ -22,7 +22,7 @@ func checkErrs(errChan <-chan error, errDoneChan chan<- struct{}, ui cli.Ui, err
 }
 
 // ImportHosting will push local Stitch hosting assets to the server
-func ImportHosting(groupID, appID, rootDir, strategy string, assetMetadataDiffs *hosting.AssetMetadataDiffs, client api.StitchClient, ui cli.Ui) error {
+func ImportHosting(groupID, appID, rootDir, strategy string, assetMetadataDiffs *hosting.AssetMetadataDiffs, resetCache bool, client api.StitchClient, ui cli.Ui) error {
 	// build a channel of hosting operations
 	var opWG sync.WaitGroup
 	opChan := make(chan hostingOp)
@@ -62,6 +62,12 @@ func ImportHosting(groupID, appID, rootDir, strategy string, assetMetadataDiffs 
 
 	if len(errors) > 0 {
 		return fmt.Errorf("%v error(s) occurred while importing hosting assets", len(errors))
+	}
+
+	if resetCache {
+		if err := client.InvalidateCache(groupID, appID, "/*"); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -133,6 +139,7 @@ func (op *modifyOp) Do() error {
 				mAM.AssetMetadata.Attrs...); err != nil {
 			return fmt.Errorf("%s => %s", fp, err)
 		}
+
 		return nil
 	}
 

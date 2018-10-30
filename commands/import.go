@@ -24,6 +24,7 @@ const (
 	importFlagStrategy       = "strategy"
 	importFlagAppName        = "app-name"
 	importFlagIncludeHosting = "include-hosting"
+	importFlagResetCDNCache  = "reset-cdn-cache"
 	importStrategyMerge      = "merge"
 	importStrategyReplace    = "replace"
 )
@@ -76,6 +77,7 @@ type ImportCommand struct {
 	flagGroupID        string
 	flagStrategy       string
 	flagIncludeHosting bool
+	flagResetCDNCache  bool
 }
 
 // Help returns long-form help information for this command
@@ -94,13 +96,16 @@ OPTIONS:
 	A path to the local directory containing your app.
 
   --project-id [string]
-  The Atlas Project ID.
+	The Atlas Project ID.
 
   --strategy [merge|replace] (default: merge)
 	How your app should be imported.
 
   --include-hosting
 	Upload static assets from "/hosting" directory.
+
+  --reset-cdn-cache
+	Invalidate cdn cache for modified files.
 
 	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
@@ -123,6 +128,7 @@ func (ic *ImportCommand) Run(args []string) int {
 	flags.StringVar(&ic.flagAppName, importFlagAppName, "", "")
 	flags.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 	flags.BoolVar(&ic.flagIncludeHosting, importFlagIncludeHosting, false, "")
+	flags.BoolVar(&ic.flagResetCDNCache, importFlagResetCDNCache, false, "")
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
@@ -279,7 +285,7 @@ func (ic *ImportCommand) importApp() error {
 
 	if ic.flagIncludeHosting && assetMetadataDiffs != nil {
 		ic.UI.Info("Importing hosting assets...")
-		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, ic.flagStrategy, assetMetadataDiffs, stitchClient, ic.UI); hostingImportErr != nil {
+		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, ic.flagStrategy, assetMetadataDiffs, ic.flagResetCDNCache, stitchClient, ic.UI); hostingImportErr != nil {
 			return fmt.Errorf("failed to import hosting assets %s", hostingImportErr)
 		}
 		ic.UI.Info("Done.")
