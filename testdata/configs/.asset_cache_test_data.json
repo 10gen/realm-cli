@@ -1,0 +1,16 @@
+{
+  "3720": {
+    "/nonexistent/file0": {
+      "path": "/nonexistent/file0",
+      "last_modified": 1540393202394,
+      "size": 421,
+      "hash": "ee4351a8s290tb33er13b3334oid8fe"
+    },
+    "/nonexistent/file1": {
+      "path": "/nonexistent/file1",
+      "last_modified": 1540393202394,
+      "size": 2187,
+      "hash": "ee4351a8c290fb33a6d13b3334cell1fe"
+    }
+  }
+}

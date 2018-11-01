@@ -231,9 +231,30 @@ func (ic *ImportCommand) importApp() error {
 			return errIncludeHosting(fileErr)
 		}
 
-		localAssetMetadata, aMErr := hosting.ListLocalAssetMetadata(appInstanceData.AppID(), rootDir, assetDescs)
+		cachePath, cPErr := getAssetCachePath(ic.flagConfigPath)
+		if cPErr != nil {
+			return cPErr
+		}
+
+		assetCache, cErr := hosting.CacheFileToAssetCache(cachePath)
+		if cErr != nil {
+			if !os.IsNotExist(cErr) {
+				return cErr
+			}
+			assetCache = hosting.NewAssetCache()
+		}
+
+		localAssetMetadata, aMErr :=
+			hosting.ListLocalAssetMetadata(appInstanceData.AppID(), rootDir, assetDescs, assetCache)
+
 		if aMErr != nil {
 			return errIncludeHosting(fmt.Errorf("error processing local assets %s: %s", rootDir, aMErr))
+		}
+
+		if assetCache.Dirty() {
+			if uError := hosting.UpdateCacheFile(cachePath, assetCache); uError != nil {
+				ic.UI.Error(uError.Error())
+			}
 		}
 
 		remoteAssetMetadata, rAMErr := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
@@ -241,12 +262,11 @@ func (ic *ImportCommand) importApp() error {
 			return errIncludeHosting(fmt.Errorf("error retrieving remote assets: %s", aMErr))
 		}
 
-		assetMetadataDiffs = hosting.DiffAssetMetadata(localAssetMetadata, remoteAssetMetadata)
+		assetMetadataDiffs = hosting.DiffAssetMetadata(localAssetMetadata, remoteAssetMetadata, ic.flagStrategy == importStrategyMerge)
 	}
 
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
-
 		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
 
 		if diffErr != nil {
@@ -285,7 +305,7 @@ func (ic *ImportCommand) importApp() error {
 
 	if ic.flagIncludeHosting && assetMetadataDiffs != nil {
 		ic.UI.Info("Importing hosting assets...")
-		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, ic.flagStrategy, assetMetadataDiffs, ic.flagResetCDNCache, stitchClient, ic.UI); hostingImportErr != nil {
+		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, assetMetadataDiffs, ic.flagResetCDNCache, stitchClient, ic.UI); hostingImportErr != nil {
 			return fmt.Errorf("failed to import hosting assets %s", hostingImportErr)
 		}
 		ic.UI.Info("Done.")

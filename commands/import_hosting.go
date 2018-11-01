@@ -8,8 +8,10 @@ import (
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/hosting"
+	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
+	"github.com/mitchellh/go-homedir"
 )
 
 // checkErrs builds a list of errors from the error channel errChan and logs them
@@ -22,7 +24,7 @@ func checkErrs(errChan <-chan error, errDoneChan chan<- struct{}, ui cli.Ui, err
 }
 
 // ImportHosting will push local Stitch hosting assets to the server
-func ImportHosting(groupID, appID, rootDir, strategy string, assetMetadataDiffs *hosting.AssetMetadataDiffs, resetCache bool, client api.StitchClient, ui cli.Ui) error {
+func ImportHosting(groupID, appID, rootDir string, assetMetadataDiffs *hosting.AssetMetadataDiffs, resetCache bool, client api.StitchClient, ui cli.Ui) error {
 	// build a channel of hosting operations
 	var opWG sync.WaitGroup
 	opChan := make(chan hostingOp)
@@ -44,11 +46,8 @@ func ImportHosting(groupID, appID, rootDir, strategy string, assetMetadataDiffs 
 		opChan <- &addOp{baseOp, added}
 	}
 
-	// if this is a merge then just ignore files deleted locally
-	if strategy != importStrategyMerge {
-		for _, deleted := range assetMetadataDiffs.DeletedLocally {
-			opChan <- &deleteOp{baseOp, deleted}
-		}
+	for _, deleted := range assetMetadataDiffs.DeletedLocally {
+		opChan <- &deleteOp{baseOp, deleted}
 	}
 
 	for _, modified := range assetMetadataDiffs.ModifiedLocally {
@@ -157,10 +156,30 @@ func doUpload(groupID, appID, rootDir string, client api.StitchClient, am hostin
 	if bodyErr != nil {
 		return fmt.Errorf(errStrF, am.FilePath, bodyErr)
 	}
+	defer body.Close()
 
 	if uploadErr := client.UploadAsset(groupID, appID, am.FilePath, am.FileHash, am.FileSize, body, am.Attrs...); uploadErr != nil {
 		return fmt.Errorf(errStrF, am.FilePath, uploadErr)
 	}
 
 	return nil
+}
+
+func getAssetCachePath(configPath string) (string, error) {
+	cachePath, eErr := homedir.Expand(configPath)
+	if eErr != nil {
+		return "", eErr
+	}
+
+	if cachePath == "" {
+		home, dirErr := homedir.Dir()
+		if dirErr != nil {
+			return "", dirErr
+		}
+		cachePath = filepath.Join(home, ".config", "stitch")
+	} else {
+		cachePath = filepath.Dir(cachePath)
+	}
+
+	return filepath.Join(cachePath, utils.HostingCacheFileName), nil
 }

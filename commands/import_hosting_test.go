@@ -52,7 +52,7 @@ func TestImportHosting(t *testing.T) {
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
-		u.So(t, ImportHosting("groupID", "appID", rootDir, importStrategyReplace, assetMetadataDiffs, false, testClient, cli.NewMockUi()), gc.ShouldBeNil)
+		u.So(t, ImportHosting("groupID", "appID", rootDir, assetMetadataDiffs, false, testClient, cli.NewMockUi()), gc.ShouldBeNil)
 	})
 
 	t.Run("should log errors correctly", func(t *testing.T) {
@@ -63,10 +63,10 @@ func TestImportHosting(t *testing.T) {
 		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
 
 		mockUI := cli.NewMockUi()
-		importErr := ImportHosting("groupID", "appID", rootDir, importStrategyMerge, assetMetadataDiffs, false, testClient, mockUI)
+		importErr := ImportHosting("groupID", "appID", rootDir, assetMetadataDiffs, false, testClient, mockUI)
 		u.So(t, importErr, gc.ShouldNotBeNil)
-		u.So(t, importErr.Error(), gc.ShouldContainSubstring, "2")
-		u.So(t, len(strings.Split(mockUI.ErrorWriter.String(), "\n"))-1, gc.ShouldEqual, 2)
+		u.So(t, importErr.Error(), gc.ShouldContainSubstring, "3")
+		u.So(t, len(strings.Split(mockUI.ErrorWriter.String(), "\n"))-1, gc.ShouldEqual, 3)
 	})
 }
 

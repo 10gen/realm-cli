@@ -38,9 +38,9 @@ var (
 	HostingFilesDirectory = fmt.Sprintf("%s/files", HostingRoot)
 	// HostingAttributes is the file that stores the static hosting asset descriptions struct
 	HostingAttributes = fmt.Sprintf("%s/metadata.json", HostingRoot)
-)
+	// HostingCacheFileName is the file that stores the cached hosting asset data
+	HostingCacheFileName = ".asset-cache.json"
 
-var (
 	errAppNotFound = errors.New("could not find stitch app")
 )
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/stitch-cli/utils"
 	u "github.com/10gen/stitch-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 
@@ -439,59 +441,6 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
-				Description:      "it succeeds if given a valid flagAppPath and flagIncludeHosting",
-				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting"}, validArgs...),
-				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
-					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
-						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
-					},
-					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
-						return nil
-					},
-					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
-						return []string{"sample-diff-contents"}, nil
-					},
-					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
-						return nil
-					},
-					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
-						return &models.App{
-							GroupID: "group-id",
-							ID:      "app-id",
-						}, nil
-					},
-				},
-			},
-			{
-				Description:      "it succeeds if given a valid flagAppPath, flagIncludeHosting, and flagResetCDNCache",
-				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting", "--reset-cdn-cache"}, validArgs...),
-				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
-					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
-						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
-					},
-					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
-						return nil
-					},
-					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
-						return []string{"sample-diff-contents"}, nil
-					},
-					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
-						return nil
-					},
-					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
-						return &models.App{
-							GroupID: "group-id",
-							ID:      "app-id",
-						}, nil
-					},
-					InvalidateCacheFn: func(groupID, appID, path string) error {
-						return nil
-					},
-				},
-			},
-			{
 				Description:      "reports an error if it fails to fetch the app by clientID",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,
@@ -633,6 +582,90 @@ func TestImportCommand(t *testing.T) {
 				exitCode := importCommand.Run(tc.Args)
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
 				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
+			})
+		}
+
+		//include hosting
+		for _, tc := range []testCase{
+			{
+				Description:      "it succeeds if given a valid flagAppPath and flagIncludeHosting",
+				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
+			{
+				Description:      "it succeeds if given a valid flagAppPath, flagIncludeHosting, and flagResetCDNCache",
+				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting", "--reset-cdn-cache"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					UploadAssetFn: func(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+						return nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+					InvalidateCacheFn: func(groupID, appID, path string) error {
+						return nil
+					},
+				},
+			},
+		} {
+			t.Run(tc.Description, func(t *testing.T) {
+				importCommand, mockUI := setup()
+
+				// Mock a "yes" response when we prompt the user to confirm the diff
+				mockUI.InputReader = strings.NewReader("y\n")
+				importCommand.stitchClient = &tc.StitchClient
+				importCommand.workingDirectory = tc.WorkingDirectory
+
+				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/stitch.json"))
+				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
+				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
+
+				cachePath := filepath.Join(filepath.Dir(importCommand.flagConfigPath), utils.HostingCacheFileName)
+
+				assetCache, cErr := hosting.CacheFileToAssetCache(cachePath)
+				u.So(t, cErr, gc.ShouldBeNil)
+
+				rErr := os.Remove(cachePath)
+				u.So(t, rErr, gc.ShouldBeNil)
+
+				_, ok := assetCache.Get(importCommand.flagAppID, "/asset_file0.json")
+				u.So(t, ok, gc.ShouldBeTrue)
+
+				_, ok = assetCache.Get(importCommand.flagAppID, "/ships/nostromo.json")
+				u.So(t, ok, gc.ShouldBeTrue)
 			})
 		}
 

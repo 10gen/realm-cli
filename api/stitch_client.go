@@ -362,7 +362,7 @@ func (sc *basicStitchClient) invokePostRoute(groupID, appID string, payload io.R
 func (sc *basicStitchClient) DeleteAsset(groupID, appID, path string) error {
 	res, err := sc.ExecuteRequest(
 		http.MethodDelete,
-		fmt.Sprintf(hostingAssetsRoute+"?%s=%s", groupID, appID, pathParam, path),
+		fmt.Sprintf(hostingAssetRoute+"?%s=%s", groupID, appID, pathParam, path),
 		RequestOptions{},
 	)
 	return checkStatusNoContent(res, err, "failed to delete asset")

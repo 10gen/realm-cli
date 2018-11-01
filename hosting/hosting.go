@@ -11,10 +11,11 @@ import (
 
 // ListLocalAssetMetadata walks all files from the rootDirectory
 // and builds []AssetMetadata from those files
-func ListLocalAssetMetadata(appID, rootDirectory string, assetDescriptions map[string]AssetDescription) ([]AssetMetadata, error) {
+// returns the assetMetadata and possibly alters the assetCache
+func ListLocalAssetMetadata(appID, rootDirectory string, assetDescriptions map[string]AssetDescription, assetCache AssetCache) ([]AssetMetadata, error) {
 	var assetMetadata []AssetMetadata
 
-	err := filepath.Walk(rootDirectory, buildAssetMetadata(appID, &assetMetadata, rootDirectory, assetDescriptions))
+	err := filepath.Walk(rootDirectory, buildAssetMetadata(appID, &assetMetadata, rootDirectory, assetDescriptions, assetCache))
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +23,7 @@ func ListLocalAssetMetadata(appID, rootDirectory string, assetDescriptions map[s
 	return assetMetadata, nil
 }
 
-func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir string, assetDescriptions map[string]AssetDescription) filepath.WalkFunc {
+func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir string, assetDescriptions map[string]AssetDescription, assetCache AssetCache) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -37,10 +38,11 @@ func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir st
 			if assetDescriptions != nil {
 				assetDesc = assetDescriptions[assetPath]
 			}
-			am, fileErr := FileToAssetMetadata(appID, path, assetPath, info, assetDesc)
+			am, fileErr := FileToAssetMetadata(appID, path, assetPath, info, assetDesc, assetCache)
 			if fileErr != nil {
 				return fileErr
 			}
+
 			*assetMetadata = append(*assetMetadata, *am)
 		}
 		return nil
@@ -49,13 +51,29 @@ func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir st
 
 // FileToAssetMetadata generates a file hash for the given file
 // and generates the assetAttributes and creates an AssetMetadata from these
-func FileToAssetMetadata(appID, path, assetPath string, info os.FileInfo, desc AssetDescription) (*AssetMetadata, error) {
-	fileHashStr, err := utils.GenerateFileHashStr(path)
+// if the file hash has changed this will update the assetCache
+func FileToAssetMetadata(appID, path, assetPath string, info os.FileInfo, desc AssetDescription, assetCache AssetCache) (*AssetMetadata, error) {
+	// check cache for file hash
+	if ace, ok := assetCache.Get(appID, assetPath); ok {
+		if ace.FileSize == info.Size() && ace.LastModified == info.ModTime().Unix() {
+			return NewAssetMetadata(appID, assetPath, ace.FileHash, info.Size(), desc.Attrs), nil
+		}
+	}
+
+	// file hash was not cached so generate one
+	generated, err := utils.GenerateFileHashStr(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewAssetMetadata(appID, assetPath, fileHashStr, info.Size(), desc.Attrs), nil
+	assetCache.Set(appID, AssetCacheEntry{
+		assetPath,
+		info.ModTime().Unix(),
+		info.Size(),
+		generated,
+	})
+
+	return NewAssetMetadata(appID, assetPath, generated, info.Size(), desc.Attrs), nil
 }
 
 // MetadataFileToAssetDescriptions attempts to open the file at the path given
@@ -65,6 +83,8 @@ func MetadataFileToAssetDescriptions(path string) (map[string]AssetDescription, 
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+
 	dec := json.NewDecoder(f)
 	descs := []AssetDescription{}
 	decErr := dec.Decode(&descs)
@@ -76,12 +96,53 @@ func MetadataFileToAssetDescriptions(path string) (map[string]AssetDescription, 
 	for _, desc := range descs {
 		descM[desc.FilePath] = desc
 	}
+
 	return descM, nil
 }
 
+// CacheFileToAssetCache attempts to open the file at the path given
+// and build a map of appID to a map of file path strings a AssetCache
+func CacheFileToAssetCache(path string) (AssetCache, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	assetCache := basicAssetCache{}
+	decErr := dec.Decode(&assetCache)
+	if decErr != nil {
+		return nil, decErr
+	}
+	return &assetCache, nil
+}
+
+// UpdateCacheFile attempts to update the file at the path given
+// with the AssetCache passed in
+func UpdateCacheFile(path string, assetCache AssetCache) error {
+	mAssetCache, mErr := json.Marshal(assetCache)
+	if mErr != nil {
+		return mErr
+	}
+
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	_, wErr := f.Write(mAssetCache)
+	if wErr != nil {
+		return wErr
+	}
+
+	return f.Close()
+}
+
 // DiffAssetMetadata compares a local and remote []AssetMetadata and returns a AssetMetadataDiffs
-// which contains information about the difrences between the two
-func DiffAssetMetadata(local, remote []AssetMetadata) *AssetMetadataDiffs {
+// which contains information about the differences between the two
+// if the merge paramater is true than me ignore deleted assets
+func DiffAssetMetadata(local, remote []AssetMetadata, merge bool) *AssetMetadataDiffs {
 	var addedLocally []AssetMetadata
 	var modifiedLocally []ModifiedAssetMetadata
 	remoteAM := AssetsMetadata(remote).MapByPath()
@@ -100,8 +161,11 @@ func DiffAssetMetadata(local, remote []AssetMetadata) *AssetMetadataDiffs {
 
 	var deletedLocally []AssetMetadata
 	//at this point the remoteAM map only contains AssetMetadata that were deleted locally
-	for _, rAM := range remoteAM {
-		deletedLocally = append(deletedLocally, rAM)
+	//if this is a merge then just ignore files deleted locally
+	if !merge {
+		for _, rAM := range remoteAM {
+			deletedLocally = append(deletedLocally, rAM)
+		}
 	}
 
 	return NewAssetMetadataDiffs(addedLocally, deletedLocally, modifiedLocally)

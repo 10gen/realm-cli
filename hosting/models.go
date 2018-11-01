@@ -1,6 +1,7 @@
 package hosting
 
 import (
+	"encoding/json"
 	"path"
 	"sort"
 	"strings"
@@ -182,5 +183,78 @@ func NewAssetMetadataDiffs(added, deleted []AssetMetadata, modified []ModifiedAs
 		DeletedLocally:  deleted,
 		AddedLocally:    added,
 		ModifiedLocally: modified,
+	}
+}
+
+// AssetCacheEntry represents the relevant data for caching
+type AssetCacheEntry struct {
+	FilePath     string `json:"path"`
+	LastModified int64  `json:"last_modified,omitempty"`
+	FileSize     int64  `json:"size,omitempty"`
+	FileHash     string `json:"hash,omitempty"`
+}
+
+// entryMap is a map of appID to filePath to AssetCacheEntry
+type entryMap map[string]map[string]AssetCacheEntry
+
+// AssetCache represents the entires that make up the cache
+type AssetCache interface {
+	Dirty() bool
+	Entries() entryMap
+	Get(appID, filePath string) (AssetCacheEntry, bool)
+	Set(appID string, ace AssetCacheEntry)
+}
+
+type basicAssetCache struct {
+	dirty   bool
+	entries entryMap
+}
+
+// Dirty returns whether or not this basicAssetCache is dirty
+func (ac *basicAssetCache) Dirty() bool {
+	return ac.dirty
+}
+
+// Entries returns the entires for this assetCache
+func (ac *basicAssetCache) Entries() entryMap {
+	return ac.entries
+}
+
+// Get will get an AssetCacheEntry by appID and filePath or return an empty AssetCacheEntry if one does not exist
+// returns true if the entry exists, false otherwise
+func (ac *basicAssetCache) Get(appID, filePath string) (AssetCacheEntry, bool) {
+	if aces, ok := ac.entries[appID]; ok {
+		if ace, ok := aces[filePath]; ok {
+			return ace, true
+		}
+	}
+	return AssetCacheEntry{}, false
+}
+
+// Set will set an appID's filePath's AssetCacheEntry by appID and the filePath inside the entry
+// or add them if they don't exist already
+func (ac *basicAssetCache) Set(appID string, ace AssetCacheEntry) {
+	if _, ok := ac.entries[appID]; !ok {
+		ac.entries[appID] = map[string]AssetCacheEntry{}
+	}
+	ac.entries[appID][ace.FilePath] = ace
+	ac.dirty = true
+}
+
+// MarshalJSON marshals the entries of this basicAssetCache
+func (ac *basicAssetCache) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ac.entries)
+}
+
+// UnmarshalJSON unmarshals JSON into the basicAssetCache entries
+func (ac *basicAssetCache) UnmarshalJSON(cacheEntries []byte) error {
+	return json.Unmarshal(cacheEntries, &ac.entries)
+}
+
+//NewAssetCache returns a new empty AssetCache
+func NewAssetCache() AssetCache {
+	return &basicAssetCache{
+		false,
+		entryMap{},
 	}
 }
