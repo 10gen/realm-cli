@@ -1,7 +1,8 @@
 package commands
 
 import (
-	"fmt"
+	"encoding/json"
+	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
@@ -82,22 +83,20 @@ func TestCloudCommands(t *testing.T) {
 	out, _ = exec.Command("cat", "../exported_app/stitch.json").Output()
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
-	out, _ = exec.Command(
-		"diff",
+	diffFiles(
+		t,
 		"../testdata/simple_app_with_cluster/stitch.json",
 		"../exported_app/stitch.json",
-	).Output()
-	u.So(t, out, gc.ShouldHaveLength, 0)
+	)
 
 	out, _ = exec.Command("cat", "../exported_app/services/mongodb-atlas/config.json").Output()
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
-	out, _ = exec.Command(
-		"diff",
+	diffFiles(
+		t,
 		"../testdata/simple_app_with_cluster/services/mongodb-atlas/config.json",
 		"../exported_app/services/mongodb-atlas/config.json",
-	).Output()
-	u.So(t, out, gc.ShouldHaveLength, 0)
+	)
 
 	// test export template
 	exportTemplateArgs := []string{
@@ -121,27 +120,34 @@ func TestCloudCommands(t *testing.T) {
 	out, _ = exec.Command("cat", "../exported_tmpl/stitch.json").Output()
 	u.So(t, string(out), gc.ShouldNotContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
-	fmt.Println("exported tmpl")
-	fmt.Println(string(out))
 
-	out, _ = exec.Command("cat", "../testdata/template_app_with_cluster/stitch.json").Output()
-	fmt.Println("test data")
-	fmt.Println(string(out))
-
-	out, _ = exec.Command(
-		"diff",
+	diffFiles(
+		t,
 		"../testdata/template_app_with_cluster/stitch.json",
 		"../exported_tmpl/stitch.json",
-	).Output()
-	u.So(t, out, gc.ShouldHaveLength, 0)
+	)
 
 	out, _ = exec.Command("cat", "../exported_tmpl/services/mongodb-atlas/config.json").Output()
 	u.So(t, string(out), gc.ShouldNotContainSubstring, "\"id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
-	out, _ = exec.Command(
-		"diff",
+
+	diffFiles(
+		t,
 		"../testdata/template_app_with_cluster/services/mongodb-atlas/config.json",
 		"../exported_tmpl/services/mongodb-atlas/config.json",
-	).Output()
-	u.So(t, out, gc.ShouldHaveLength, 0)
+	)
+}
+
+func diffFiles(t *testing.T, expectedFilePath, actualFilePath string) {
+	var expectedConfig map[string]interface{}
+	expectedData, err := ioutil.ReadFile(expectedFilePath)
+	u.So(t, err, gc.ShouldBeNil)
+	u.So(t, json.Unmarshal(expectedData, &expectedConfig), gc.ShouldBeNil)
+
+	var actualConfig map[string]interface{}
+	actualData, err := ioutil.ReadFile(actualFilePath)
+	u.So(t, err, gc.ShouldBeNil)
+	u.So(t, json.Unmarshal(actualData, &actualConfig), gc.ShouldBeNil)
+
+	u.So(t, actualConfig, gc.ShouldResemble, expectedConfig)
 }
