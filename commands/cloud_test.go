@@ -31,9 +31,12 @@ func TestCloudCommands(t *testing.T) {
 		cloudEnv.APIKey,
 	}
 
-	err := exec.Command("go", loginArgs...).Run()
+	out, err := exec.Command("go", loginArgs...).Output()
+	t.Logf("output from login command: %s", string(out))
 	u.So(t, err, gc.ShouldBeNil)
-	err = exec.Command("ls", "../cli_conf").Run()
+
+	out, err = exec.Command("ls", "../cli_conf").Output()
+	t.Logf("output from ls command: %s", string(out))
 	u.So(t, err, gc.ShouldBeNil)
 
 	// test import
@@ -51,7 +54,8 @@ func TestCloudCommands(t *testing.T) {
 		cloudEnv.GroupID,
 		"--yes",
 	}
-	out, err := exec.Command("go", importArgs...).Output()
+	out, err = exec.Command("go", importArgs...).Output()
+	t.Logf("Output from import command: '%s'", string(out))
 	u.So(t, err, gc.ShouldBeNil)
 
 	importOut := string(out)

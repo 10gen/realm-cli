@@ -228,7 +228,7 @@ func (ic *ImportCommand) importApp() error {
 	if ic.flagIncludeHosting {
 		assetDescs, fileErr := hosting.MetadataFileToAssetDescriptions(filepath.Join(appPath, utils.HostingAttributes))
 		if fileErr != nil {
-			return errIncludeHosting(fileErr)
+			return errIncludeHosting(fmt.Errorf("error loading metadata.json file: %v", fileErr))
 		}
 
 		cachePath, cPErr := getAssetCachePath(ic.flagConfigPath)
@@ -259,7 +259,7 @@ func (ic *ImportCommand) importApp() error {
 
 		remoteAssetMetadata, rAMErr := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
 		if rAMErr != nil {
-			return errIncludeHosting(fmt.Errorf("error retrieving remote assets: %s", aMErr))
+			return errIncludeHosting(fmt.Errorf("error retrieving remote assets: %s", rAMErr))
 		}
 
 		assetMetadataDiffs = hosting.DiffAssetMetadata(localAssetMetadata, remoteAssetMetadata, ic.flagStrategy == importStrategyMerge)

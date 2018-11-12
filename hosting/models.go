@@ -5,7 +5,6 @@ import (
 	"path"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/10gen/stitch-cli/utils"
 )
@@ -45,14 +44,14 @@ func (amd *AssetMetadata) IsDir() bool {
 }
 
 // NewAssetMetadata is a constructor for AssetMetadata
-func NewAssetMetadata(appID, filePath, fileHash string, fileSize int64, attrs []AssetAttribute) *AssetMetadata {
+func NewAssetMetadata(appID, filePath, fileHash string, fileSize int64, attrs []AssetAttribute, lastModified int64) *AssetMetadata {
 	return &AssetMetadata{
 		AppID:        appID,
 		FilePath:     filePath,
 		FileHash:     fileHash,
 		FileSize:     fileSize,
 		Attrs:        attrs,
-		LastModified: time.Now().Unix(),
+		LastModified: lastModified,
 	}
 }
 

@@ -14,95 +14,134 @@ import (
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
-func localFileToAssetMetadata(t *testing.T, localPath, rootDir string, assetDescriptions map[string]hosting.AssetDescription) *hosting.AssetMetadata {
-	file, err := os.Open(localPath)
-	u.So(t, err, gc.ShouldBeNil)
-	defer file.Close()
+func mustGenerateFileHash(path string) string {
+	fileHashStr, hashErr := utils.GenerateFileHashStr(path)
+	if hashErr != nil {
+		panic(hashErr)
+	}
+	return fileHashStr
+}
 
-	info, statErr := file.Stat()
-	u.So(t, statErr, gc.ShouldBeNil)
-
-	fileHashStr, hashErr := utils.GenerateFileHashStr(localPath)
-	u.So(t, hashErr, gc.ShouldBeNil)
-
-	appID := "3720"
-	relPath, pathErr := filepath.Rel(rootDir, localPath)
-	u.So(t, pathErr, gc.ShouldBeNil)
-	filePath := fmt.Sprintf("/%s", relPath)
-	assetCache := hosting.NewAssetCache()
-	assetMetadata, famErr := hosting.FileToAssetMetadata(appID, localPath, filePath, info, assetDescriptions[filePath], assetCache)
-	u.So(t, famErr, gc.ShouldBeNil)
-	u.So(t, assetCache.Dirty(), gc.ShouldBeTrue)
-
-	u.So(t, assetMetadata.AppID, gc.ShouldEqual, appID)
-	u.So(t, assetMetadata.FilePath, gc.ShouldEqual, filePath)
-	u.So(t, assetMetadata.FileHash, gc.ShouldEqual, fileHashStr)
-	u.So(t, assetMetadata.FileSize, gc.ShouldEqual, info.Size())
-
-	return assetMetadata
+func mustGetFileInfo(path string) os.FileInfo {
+	info, statErr := os.Stat(path)
+	if statErr != nil {
+		panic(statErr)
+	}
+	return info
 }
 
 func TestListLocalAssetMetadata(t *testing.T) {
-	var testData []hosting.AssetMetadata
-	path0 := "../testdata/full_app/hosting/files/asset_file0.json"
-	path1 := "../testdata/full_app/hosting/files/ships/nostromo.json"
-	fp0, fErr := filepath.Abs(path0)
-	u.So(t, fErr, gc.ShouldBeNil)
-	fp1, fErr := filepath.Abs(path1)
-	u.So(t, fErr, gc.ShouldBeNil)
+	const (
+		testAppID = "3720"
+		filesRoot = "../testdata/full_app/hosting/files/"
+		path0     = "/asset_file0.json"
+		path1     = "/ships/nostromo.json"
+		path2     = "/asset_file1.html"
+	)
 
 	rootDir, fErr := filepath.Abs("../testdata/full_app/hosting/files")
-
-	jsonAttr := hosting.AssetAttribute{
-		Name:  hosting.AttributeContentType,
-		Value: "json",
-	}
-	p0 := fmt.Sprintf("/%s", path0)
-	p1 := fmt.Sprintf("/%s", path1)
-	assetDescriptions := map[string]hosting.AssetDescription{
-		p0: {
-			FilePath: p0,
-			Attrs:    []hosting.AssetAttribute{jsonAttr},
-		},
-		p1: {
-			FilePath: p1,
-			Attrs:    []hosting.AssetAttribute{jsonAttr},
-		},
-	}
-
-	am0 := localFileToAssetMetadata(t, fp0, rootDir, assetDescriptions)
-	am1 := localFileToAssetMetadata(t, fp1, rootDir, assetDescriptions)
-	testData = append(testData, *am0)
-	testData = append(testData, *am1)
-
 	u.So(t, fErr, gc.ShouldBeNil)
-	file, err := os.Open(rootDir)
-	u.So(t, err, gc.ShouldBeNil)
-	defer file.Close()
-
-	info, statErr := file.Stat()
-	u.So(t, statErr, gc.ShouldBeNil)
-	u.So(t, info.IsDir(), gc.ShouldBeTrue)
-
 	appID := "3720"
 	assetCache := hosting.NewAssetCache()
+	assetDescriptions := map[string]hosting.AssetDescription{
+		path0: {
+			FilePath: path0,
+			Attrs:    []hosting.AssetAttribute{jsonAttr},
+		},
+		path1: {
+			FilePath: path1,
+			Attrs: []hosting.AssetAttribute{
+				{Name: "Content-Type", Value: "application/octet-stream"},
+			},
+		},
+	}
 	assetMetadata, listErr := hosting.ListLocalAssetMetadata(appID, rootDir, assetDescriptions, assetCache)
 	u.So(t, listErr, gc.ShouldBeNil)
-	u.So(t, assetCache.Dirty(), gc.ShouldBeTrue)
+
+	localPath0, localPath1, localPath2 := filepath.Join(filesRoot, path0), filepath.Join(filesRoot, path1), filepath.Join(filesRoot, path2)
+	fileInfo0, fileInfo1, fileInfo2 := mustGetFileInfo(localPath0), mustGetFileInfo(localPath1), mustGetFileInfo(localPath2)
+
+	testData := []hosting.AssetMetadata{
+		{
+			AppID:        testAppID,
+			FilePath:     path0,
+			FileHash:     mustGenerateFileHash(localPath0),
+			FileSize:     fileInfo0.Size(),
+			LastModified: fileInfo0.ModTime().Unix(),
+			Attrs: []hosting.AssetAttribute{
+				// Derived from entry in asset descriptions
+				{Name: hosting.AttributeContentType, Value: "json"},
+			},
+		},
+		{
+			AppID:        testAppID,
+			FilePath:     path2,
+			FileHash:     mustGenerateFileHash(localPath2),
+			FileSize:     fileInfo2.Size(),
+			LastModified: fileInfo2.ModTime().Unix(),
+			Attrs: []hosting.AssetAttribute{
+				// Does not exist in assetDescriptions, so content type is populated from
+				// extension
+				{Name: hosting.AttributeContentType, Value: "text/html"},
+			},
+		},
+		{
+			AppID:        testAppID,
+			FilePath:     path1,
+			FileHash:     mustGenerateFileHash(localPath1),
+			FileSize:     fileInfo1.Size(),
+			LastModified: fileInfo1.ModTime().Unix(),
+			Attrs: []hosting.AssetAttribute{
+				// Derived from entry in asset descriptions, overrides extension default
+				{Name: hosting.AttributeContentType, Value: "application/octet-stream"},
+			},
+		},
+	}
+
 	u.So(t, assetMetadata, gc.ShouldResemble, testData)
 
-	ace0, ok := assetCache.Get(appID, am0.FilePath)
-	u.So(t, ok, gc.ShouldBeTrue)
+	t.Run("asset cache should be updated from local listing", func(t *testing.T) {
+		entry, ok := assetCache.Get(testAppID, path0)
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(
+			t,
+			entry,
+			gc.ShouldResemble,
+			hosting.AssetCacheEntry{
+				FilePath:     path0,
+				LastModified: fileInfo0.ModTime().Unix(),
+				FileSize:     fileInfo0.Size(),
+				FileHash:     mustGenerateFileHash(localPath0),
+			},
+		)
+		entry, ok = assetCache.Get(testAppID, path1)
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(
+			t,
+			entry,
+			gc.ShouldResemble,
+			hosting.AssetCacheEntry{
+				FilePath:     path1,
+				LastModified: fileInfo1.ModTime().Unix(),
+				FileSize:     fileInfo1.Size(),
+				FileHash:     mustGenerateFileHash(localPath1),
+			},
+		)
 
-	u.So(t, ace0.FileHash, gc.ShouldEqual, am0.FileHash)
-	u.So(t, ace0.FilePath, gc.ShouldEqual, am0.FilePath)
-	u.So(t, ace0.FileSize, gc.ShouldEqual, am0.FileSize)
-
-	ace1, ok := assetCache.Get(appID, am1.FilePath)
-	u.So(t, ok, gc.ShouldBeTrue)
-	u.So(t, ace1.FileHash, gc.ShouldEqual, am1.FileHash)
-	u.So(t, ace1.FilePath, gc.ShouldEqual, am1.FilePath)
-	u.So(t, ace1.FileSize, gc.ShouldEqual, am1.FileSize)
+		entry, ok = assetCache.Get(testAppID, path2)
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(
+			t,
+			entry,
+			gc.ShouldResemble,
+			hosting.AssetCacheEntry{
+				FilePath:     path2,
+				LastModified: fileInfo2.ModTime().Unix(),
+				FileSize:     fileInfo2.Size(),
+				FileHash:     mustGenerateFileHash(localPath2),
+			},
+		)
+	})
 }
 
 var jsonAttr = hosting.AssetAttribute{
