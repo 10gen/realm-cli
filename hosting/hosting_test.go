@@ -37,6 +37,7 @@ func TestListLocalAssetMetadata(t *testing.T) {
 		path0     = "/asset_file0.json"
 		path1     = "/ships/nostromo.json"
 		path2     = "/asset_file1.html"
+		path3     = "/asset_file1.json"
 	)
 
 	rootDir, fErr := filepath.Abs("../testdata/full_app/hosting/files")
@@ -99,6 +100,16 @@ func TestListLocalAssetMetadata(t *testing.T) {
 	}
 
 	u.So(t, assetMetadata, gc.ShouldResemble, testData)
+
+	assetDescriptions = map[string]hosting.AssetDescription{
+		path3: {
+			FilePath: path3,
+			Attrs:    []hosting.AssetAttribute{jsonAttr},
+		},
+	}
+	_, listErr = hosting.ListLocalAssetMetadata(appID, rootDir, assetDescriptions, assetCache)
+	expectedError := fmt.Sprintf("file '%s' has an entry in metadata file, but does not appear in files directory", path3)
+	u.So(t, listErr.Error(), gc.ShouldEqual, expectedError)
 
 	t.Run("asset cache should be updated from local listing", func(t *testing.T) {
 		entry, ok := assetCache.Get(testAppID, path0)
