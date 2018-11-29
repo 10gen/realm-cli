@@ -188,7 +188,7 @@ func GenerateValidAccessToken() string {
 
 // MockStitchClient satisfies an api.StitchClient
 type MockStitchClient struct {
-	CreateEmptyAppFn                  func(groupID, appName string) (*models.App, error)
+	CreateEmptyAppFn                  func(groupID, appName, locationName, deploymentModelName string) (*models.App, error)
 	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
 	FetchAppsByGroupIDFn              func(groupID string) ([]*models.App, error)
@@ -240,9 +240,9 @@ func (msc *MockStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, 
 }
 
 // CreateEmptyApp does nothing
-func (msc *MockStitchClient) CreateEmptyApp(groupID, appName string) (*models.App, error) {
+func (msc *MockStitchClient) CreateEmptyApp(groupID, appName, locationName, deploymentModelName string) (*models.App, error) {
 	if msc.CreateEmptyAppFn != nil {
-		return msc.CreateEmptyAppFn(groupID, appName)
+		return msc.CreateEmptyAppFn(groupID, appName, locationName, deploymentModelName)
 	}
 
 	return nil, errors.New("someone should test me")

@@ -11,10 +11,18 @@ import (
 // AppConfigFileName is the name of top-level config file describing the app
 const AppConfigFileName string = "stitch.json"
 
+// Default deployment settings
+const (
+	DefaultLocation        string = "US-VA"
+	DefaultDeploymentModel string = "GLOBAL"
+)
+
 // App config field identifiers
 const (
-	AppIDField   string = "app_id"
-	AppNameField string = "name"
+	AppIDField              string = "app_id"
+	AppNameField            string = "name"
+	AppLocationField        string = "location"
+	AppDeploymentModelField string = "deployment_model"
 )
 
 const (
@@ -42,32 +50,42 @@ func (aic *AppInstanceData) MarshalFile(path string) error {
 
 // AppID returns the app's Client App ID
 func (aic AppInstanceData) AppID() string {
-	appID, ok := aic[AppIDField]
+	appID, ok := aic[AppIDField].(string)
 	if !ok {
 		return ""
 	}
 
-	appIDString, ok := appID.(string)
-	if !ok {
-		return ""
-	}
-
-	return appIDString
+	return appID
 }
 
 // AppName returns the app's user-defined name
 func (aic AppInstanceData) AppName() string {
-	appName, ok := aic[AppNameField]
+	appName, ok := aic[AppNameField].(string)
 	if !ok {
 		return ""
 	}
 
-	appNameString, ok := appName.(string)
+	return appName
+}
+
+// AppLocation returns the app's target location
+func (aic AppInstanceData) AppLocation() string {
+	appLocation, ok := aic[AppLocationField].(string)
 	if !ok {
-		return ""
+		return DefaultLocation
 	}
 
-	return appNameString
+	return appLocation
+}
+
+// AppDeploymentModel returns the app's deployment model
+func (aic AppInstanceData) AppDeploymentModel() string {
+	appDeploymentModel, ok := aic[AppDeploymentModelField].(string)
+	if !ok {
+		return DefaultDeploymentModel
+	}
+
+	return appDeploymentModel
 }
 
 // UserProfile holds basic metadata for a given user

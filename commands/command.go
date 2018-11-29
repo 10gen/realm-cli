@@ -277,6 +277,41 @@ func (c *BaseCommand) Ask(query string, defaultVal string) (string, error) {
 	}
 }
 
+// AskWithOptions is used to prompt user for input from a list of options
+func (c *BaseCommand) AskWithOptions(query, defaultValue string, options []string) (string, error) {
+	if c.flagYes && defaultValue != "" {
+		c.UI.Info(fmt.Sprintf("%s [%s]: %s", query, defaultValue, defaultValue))
+		return defaultValue, nil
+	}
+
+	var defaultClause string
+	if defaultValue != "" {
+		defaultClause = fmt.Sprintf(" [%s]", defaultValue)
+	}
+	res, err := c.UI.Ask(fmt.Sprintf("%s%s:", query, defaultClause))
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		answer := strings.TrimSpace(res)
+
+		if answer == "" && defaultValue != "" {
+			return defaultValue, nil
+		}
+
+		if answer != "" {
+			for _, option := range options {
+				if strings.EqualFold(answer, option) {
+					return option, nil
+				}
+			}
+		}
+
+		res, _ = c.UI.Ask(fmt.Sprintf("Could not understand response, valid values are %s:", strings.Join(options, ", ")))
+	}
+}
+
 // Help defines help documentation for parameters that apply to all commands
 func (c *BaseCommand) Help() string {
 	return `

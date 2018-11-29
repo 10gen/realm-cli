@@ -66,7 +66,7 @@ type StitchClient interface {
 	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 	FetchAppsByGroupID(groupID string) ([]*models.App, error)
-	CreateEmptyApp(groupID, appName string) (*models.App, error)
+	CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error)
 	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
 	CopyAsset(groupID, appID, fromPath, toPath string) error
 	MoveAsset(groupID, appID, fromPath, toPath string) error
@@ -383,11 +383,11 @@ func (sc *basicStitchClient) findProjectAppByClientAppID(groupIDs []string, clie
 	return nil, ErrAppNotFound{clientAppID}
 }
 
-func (sc *basicStitchClient) CreateEmptyApp(groupID, appName string) (*models.App, error) {
+func (sc *basicStitchClient) CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error) {
 	res, err := sc.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf(appsByGroupIDRoute, groupID),
-		RequestOptions{Body: strings.NewReader(fmt.Sprintf(`{"name":"%s"}`, appName))},
+		RequestOptions{Body: strings.NewReader(fmt.Sprintf(`{"name":"%s","location":"%s","deployment_model":"%s"}`, appName, location, deploymentModel))},
 	)
 	if err != nil {
 		return nil, err
