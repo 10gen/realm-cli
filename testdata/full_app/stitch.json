@@ -6,5 +6,8 @@
       "http://www.somewhere.com",
       "http://www.somewhere-else.com"
     ]
+  },
+  "hosting": {
+    "enabled": false
   }
 }
