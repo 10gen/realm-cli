@@ -99,16 +99,16 @@ OPTIONS:
 	The Atlas Project ID.
 
   --strategy [merge|replace] (default: merge)
-	How your app should be imported.
+	How your app should be imported.	
+	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
+	replace - like merge but does not preserve entities missing from the local directory's app configuration.
+
 
   --include-hosting
 	Upload static assets from "/hosting" directory.
 
   --reset-cdn-cache
-	Invalidate cdn cache for modified files.
-
-	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
-	replace - like merge but does not preserve entities missing from the local directory's app configuration.
+	Invalidate cdn cache for modified files.	
 	` +
 		ic.BaseCommand.Help()
 }
