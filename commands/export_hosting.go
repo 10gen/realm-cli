@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path"
 	"sync"
 
@@ -90,6 +91,14 @@ func assetDownloadWorker(jobs <-chan hosting.AssetMetadata, wg *sync.WaitGroup, 
 	defer wg.Done()
 
 	for job := range jobs {
+		if job.IsDir() {
+			assetDir := path.Join(appPath, utils.HostingFilesDirectory, job.FilePath)
+			if mkdirErr := os.MkdirAll(assetDir, os.ModePerm); mkdirErr != nil {
+				errs <- fmt.Errorf("failed to create directory %q: %s", assetDir, mkdirErr)
+			}
+			continue
+		}
+
 		// Go get the asset at the given URL
 		reader, err := ec.getAssetAtURL(job.URL)
 		if err != nil {
