@@ -180,6 +180,9 @@ func DiffAssetMetadata(local, remote []AssetMetadata, merge bool) *AssetMetadata
 	var modifiedLocally []ModifiedAssetMetadata
 	remoteAM := AssetsMetadata(remote).MapByPath()
 
+	// Ignore the root directory
+	delete(remoteAM, "/")
+
 	for _, lAM := range local {
 		if rAM, ok := remoteAM[lAM.FilePath]; !ok {
 			addedLocally = append(addedLocally, lAM)
