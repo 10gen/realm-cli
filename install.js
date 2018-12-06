@@ -3,7 +3,7 @@ const path = require('path');
 const request = require('request');
 
 const baseDownloadURL =
-  'https://s3.amazonaws.com/stitch-clis/stitch_cli_linux_64_eee5526256f472f13282170e8bea46f8628403d9_18_10_01_20_40_16';
+  'https://s3.amazonaws.com/stitch-clis/stitch_cli_linux_64_f21637afd3f02fde319df8bf05cf173e5892f88f_18_12_06_00_55_54';
 const linuxDownloadURL = `${baseDownloadURL}/linux-amd64/stitch-cli`;
 const macDownloadURL = `${baseDownloadURL}/macos-amd64/stitch-cli`;
 const windowsDownloadURL = `${baseDownloadURL}/windows-amd64/stitch-cli.exe`;
