@@ -1,9 +1,19 @@
 cloud_dependent_pkg: &cloud_dependent_pkg "commands"
 
 functions:
+  "fetch_go111":
+    - command: shell.exec
+      params:
+        shell: "bash"
+        shell: "bash"
+        script: |
+          set -e
+          wget --quiet ${go_url}
+          tar xvf ./go1.11*gz
   "setup_project":
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           mkdir -p src/github.com/10gen
     - command: git.get_project
@@ -13,55 +23,70 @@ functions:
   "setup_mongod":
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             set -v
             curl --silent ${mongodb_url} | tar xvz
       - command: shell.exec
         params:
+          shell: "bash"
           background: true
           script: |
             set -v
             cd mongodb-*
             echo "starting mongod..."
             mkdir db_files
-            ./bin/mongod --dbpath ./db_files --port 26000 &
+            ./bin/mongod --dbpath ./db_files --port 26000 --replSet "test" &
             echo "waiting for mongod to start up"
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             set -e
             cd mongodb-*
             echo "waiting for mongod to start up"
             ./bin/mongo --nodb --eval 'assert.soon(function(x){try{var d = new Mongo("localhost:26000"); return true}catch(e){return false}}, "timed out connecting")'
+            ./bin/mongo --port 26000 --eval 'rs.initiate()'
             echo "mongod is up."
 
   "setup_stitch_server":
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           wget --quiet "${libmongo_url}"
           chmod +x libmongo.so
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           mkdir -p src/github.com/10gen
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           mkdir -p server/src/github.com/10gen
             git clone git@github.com:10gen/stitch.git server/src/github.com/10gen/stitch
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           set -e
           cd server/src/github.com/10gen/stitch/etc/transpiler
+          curl -OL https://yarnpkg.com/latest.tar.gz
+          tar zvxf latest.tar.gz
+          mv yarn-* yarn
+          export PATH="`pwd`/yarn/bin:$PATH"
           yarn install && yarn run build -t ${transpiler_target}
   "start_server":
     - command: shell.exec
       params:
+        shell: "bash"
         background: true
         script: |
           export PATH="`pwd`:$PATH"
+          export GOROOT=`pwd`/go
+          export PATH=`pwd`/go/bin:$PATH
           cd server
           export GOPATH=`pwd`
           cd $GOPATH/src/github.com/10gen/stitch
@@ -89,6 +114,7 @@ functions:
           go run cmd/server/main.go --configFile $GOPATH/../src/github.com/10gen/stitch-cli/testdata/configs/stitch_server_test_config.json --configFile ./atlas_config.json
     - command: shell.exec
       params:
+        shell: "bash"
         script: |
           counter=0
           until $(curl --output /dev/null --silent --head --fail ${stitchServerURL}); do
@@ -102,17 +128,21 @@ functions:
   "submit_coverage":
     - command: shell.exec
       params:
+        shell: "bash"
         silent: true
         script: |
           set -e
           echo export COVERALLS_TOKEN=${coveralls_repo_token} >> creds
     - command: shell.exec
       params:
+        shell: "bash"
         silent: true
         script: |
           set -e
           export GOPATH=`pwd`
           export PATH="`pwd`:$PATH"
+          export GOROOT=`pwd`/go
+          export PATH=`pwd`/go/bin:$PATH
           source ./creds
           go get github.com/edaniels/goveralls
           export COVERALLS_PARALLEL=true
@@ -137,31 +167,41 @@ tasks:
   - name: test_unit
     exec_timeout_secs: 3600
     commands:
+      - func: "fetch_go111"
       - func: "setup_project"
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             set -v
             set -e
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
+            export GOPATH=`pwd`
+            export GOROOT=`pwd`/go
+            export PATH=`pwd`/go/bin:$PATH
             go test -v -covermode=count -coverprofile=cover.out $(go list github.com/10gen/stitch-cli/...) > $GOPATH/stitch-cli.suite
       - func: "submit_coverage"
 
   - name: tests-with-cloud
     exec_timeout_secs: 3600
     commands:
+      - func: "fetch_go111"
       - func: "setup_project"
       - func: "setup_mongod"
       - func: "setup_stitch_server"
       - func: "start_server"
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             set -v
             set -e
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
+            export GOPATH=`pwd`
+            export GOROOT=`pwd`/go
+            export PATH=`pwd`/go/bin:$PATH
             export STITCH_MONGODB_CLOUD_GROUP_ID="${stitch_mongodb_cloud_group_id}"
             export STITCH_MONGODB_CLOUD_USERNAME="${stitch_mongodb_cloud_username}"
             export STITCH_MONGODB_CLOUD_API_KEY="${stitch_mongodb_cloud_api_key}"
@@ -174,11 +214,15 @@ tasks:
 
   - name: gometalinter
     commands:
+      - func: "fetch_go111"
       - func: "setup_project"
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             export GOPATH=`pwd`
+            export GOROOT=`pwd`/go
+            export PATH=`pwd`/go/bin:$PATH
             go get -u github.com/alecthomas/gometalinter
             $GOPATH/bin/gometalinter --install
             cd src/github.com/10gen/stitch-cli
@@ -190,14 +234,18 @@ tasks:
       - name: gometalinter
     patchable: false
     commands:
+      - func: "fetch_go111"
       - func: "setup_project"
       - command: shell.exec
         params:
+          shell: "bash"
           script: |
             set -v
             set -e
             export GOPATH=`pwd`
             export PATH="`pwd`:$PATH"
+            export GOROOT=`pwd`/go
+            export PATH=`pwd`/go/bin:$PATH
             cd src/github.com/10gen/stitch-cli
             export VERSION="1.2.0"
             export GOARCH=amd64
@@ -253,12 +301,14 @@ tasks:
     commands:
       - command: shell.exec
         params:
+          shell: "bash"
           silent: true
           script: |
             set -e
             echo export COVERALLS_TOKEN=${coveralls_repo_token} >> creds
       - command: shell.exec
         params:
+          shell: "bash"
           silent: true
           script: |
             set -e
@@ -271,13 +321,14 @@ post:
       files: ["*.suite"]
 
 buildvariants:
-- name: linux-64
-  display_name: Linux-64
+- name: ubuntu-1804
+  display_name: Ubuntu-1804
   run_on:
-  - baas-linux
+    - ubuntu1804-build
   expansions:
+    go_url: "https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz"
+    mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
     transpiler_target: node8-linux
-    mongodb_url: https://downloads.mongodb.com/linux/mongodb-linux-x86_64-enterprise-rhel70-3.4.6.tgz
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_a4c34cbf6cdd2036fef442f966e404c8be506e62_5bb3da540305b91647c0dfd9_18_10_02_20_51_32/libmongo.so'
     mongoDBCloudURL: https://cloud-dev.mongodb.com
     stitchServerURL: http://localhost:9090
