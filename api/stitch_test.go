@@ -63,7 +63,7 @@ func TestUploadAsset(t *testing.T) {
 		var uploadedAssetMetadata hosting.AssetMetadata
 		uploadedFileData := &bytes.Buffer{}
 
-		testContents := "hello world"
+		testContents := "hello world\r\n"
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
 			mediaType, params, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 			if err != nil {
