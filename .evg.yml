@@ -247,7 +247,7 @@ tasks:
             export GOROOT=`pwd`/go
             export PATH=`pwd`/go/bin:$PATH
             cd src/github.com/10gen/stitch-cli
-            export VERSION="1.2.0"
+            export VERSION="1.2.1"
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
