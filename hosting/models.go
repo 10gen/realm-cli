@@ -11,20 +11,22 @@ import (
 
 // Valid attribute types names
 var (
-	AttributeContentType        = "Content-Type"
-	AttributeContentDisposition = "Content-Disposition"
-	AttributeContentLanguage    = "Content-Language"
-	AttributeContentEncoding    = "Content-Encoding"
-	AttributeCacheControl       = "Cache-Control"
+	AttributeContentType             = "Content-Type"
+	AttributeContentDisposition      = "Content-Disposition"
+	AttributeContentLanguage         = "Content-Language"
+	AttributeContentEncoding         = "Content-Encoding"
+	AttributeCacheControl            = "Cache-Control"
+	AttributeWebsiteRedirectLocation = "Website-Redirect-Location"
 )
 
 // ValidAttributeNames stores the attribute names that Stitch static hosting supports
 var ValidAttributeNames = map[string]bool{
-	AttributeContentType:        true,
-	AttributeContentDisposition: true,
-	AttributeContentLanguage:    true,
-	AttributeContentEncoding:    true,
-	AttributeCacheControl:       true,
+	AttributeContentType:             true,
+	AttributeContentDisposition:      true,
+	AttributeContentLanguage:         true,
+	AttributeContentEncoding:         true,
+	AttributeCacheControl:            true,
+	AttributeWebsiteRedirectLocation: true,
 }
 
 // AssetMetadata represents the metadata of a static hosted asset
