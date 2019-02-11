@@ -72,6 +72,15 @@ functions:
         shell: "bash"
         script: |
           set -e
+          cd server/src/github.com/10gen/stitch
+          mkdir -p etc/dylib
+          cd etc/dylib
+          curl -s "${server_stitch_lib_url}" | tar xvfz - --strip-components=1
+    - command: shell.exec
+      params:
+        shell: "bash"
+        script: |
+          set -e
           cd server/src/github.com/10gen/stitch/etc/transpiler
           curl -OL https://yarnpkg.com/latest.tar.gz
           tar zvxf latest.tar.gz
@@ -91,6 +100,7 @@ functions:
           export GOPATH=`pwd`
           cd $GOPATH/src/github.com/10gen/stitch
           export PATH="$GOPATH/src/github.com/10gen/stitch/etc/transpiler/bin:$PATH"
+          export LD_LIBRARY_PATH="$GOPATH/src/github.com/10gen/stitch/etc/dylib/lib"
           which transpiler
           cat > atlas_config.json <<EOF
           {
@@ -327,6 +337,7 @@ buildvariants:
     - rhel70
   expansions:
     go_url: "https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz"
+    server_stitch_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/rhel70/5ee0b3805e9116bf0f4655d5ee5cd5b108e7a7e4/stitch-support-4.1.7-200-g5ee0b38.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
     transpiler_target: node8-linux
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_a4c34cbf6cdd2036fef442f966e404c8be506e62_5bb3da540305b91647c0dfd9_18_10_02_20_51_32/libmongo.so'
