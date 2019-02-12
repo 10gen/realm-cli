@@ -22,9 +22,9 @@ const (
 )
 
 const (
-	usernameField string = "username"
-	passwordField        = "password"
-	apiKeyField          = "apiKey"
+	usernameField = "username"
+	passwordField = "password"
+	apiKeyField   = "apiKey"
 )
 
 // AuthenticationProvider represents an authentication method

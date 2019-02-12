@@ -8,9 +8,9 @@
     "Deadline": "600s",
     "WarnUnmatchedDirective": true,
     "Enable": [
+        "staticcheck",
         "vet-nocomposites",
         "vetshadow",
-        "megacheck",
         "goimports",
         "golint",
         "structcheck",

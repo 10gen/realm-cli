@@ -15,19 +15,19 @@ import (
 )
 
 const (
-	jsonExt              string = ".json"
-	jsExt                       = ".js"
-	authProvidersName           = "auth_providers"
-	appConfigName               = "stitch"
-	configName                  = "config"
-	functionsName               = "functions"
-	triggersName                = "triggers"
-	incomingWebhooksName        = "incoming_webhooks"
-	rulesName                   = "rules"
-	secretsName                 = "secrets"
-	servicesName                = "services"
-	sourceName                  = "source"
-	valuesName                  = "values"
+	jsonExt              = ".json"
+	jsExt                = ".js"
+	authProvidersName    = "auth_providers"
+	appConfigName        = "stitch"
+	configName           = "config"
+	functionsName        = "functions"
+	triggersName         = "triggers"
+	incomingWebhooksName = "incoming_webhooks"
+	rulesName            = "rules"
+	secretsName          = "secrets"
+	servicesName         = "services"
+	sourceName           = "source"
+	valuesName           = "values"
 )
 
 //
