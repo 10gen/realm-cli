@@ -31,11 +31,11 @@ func TestCloudCommands(t *testing.T) {
 		cloudEnv.APIKey,
 	}
 
-	out, err := exec.Command("go", loginArgs...).Output()
+	out, err := exec.Command("go", loginArgs...).CombinedOutput()
 	t.Logf("output from login command: %s", string(out))
 	u.So(t, err, gc.ShouldBeNil)
 
-	out, err = exec.Command("ls", "../cli_conf").Output()
+	out, err = exec.Command("ls", "../cli_conf").CombinedOutput()
 	t.Logf("output from ls command: %s", string(out))
 	u.So(t, err, gc.ShouldBeNil)
 
@@ -54,7 +54,7 @@ func TestCloudCommands(t *testing.T) {
 		cloudEnv.GroupID,
 		"--yes",
 	}
-	out, err = exec.Command("go", importArgs...).Output()
+	out, err = exec.Command("go", importArgs...).CombinedOutput()
 	t.Logf("Output from import command: '%s'", string(out))
 	u.So(t, err, gc.ShouldBeNil)
 
@@ -84,7 +84,7 @@ func TestCloudCommands(t *testing.T) {
 	err = exec.Command("go", exportArgs...).Run()
 	u.So(t, err, gc.ShouldBeNil)
 
-	out, _ = exec.Command("cat", "../exported_app/stitch.json").Output()
+	out, _ = exec.Command("cat", "../exported_app/stitch.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 	diffFiles(
@@ -93,7 +93,7 @@ func TestCloudCommands(t *testing.T) {
 		"../exported_app/stitch.json",
 	)
 
-	out, _ = exec.Command("cat", "../exported_app/services/mongodb-atlas/config.json").Output()
+	out, _ = exec.Command("cat", "../exported_app/services/mongodb-atlas/config.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 	diffFiles(
@@ -121,7 +121,7 @@ func TestCloudCommands(t *testing.T) {
 	err = exec.Command("go", exportTemplateArgs...).Run()
 	u.So(t, err, gc.ShouldBeNil)
 
-	out, _ = exec.Command("cat", "../exported_tmpl/stitch.json").Output()
+	out, _ = exec.Command("cat", "../exported_tmpl/stitch.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldNotContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 
@@ -131,7 +131,7 @@ func TestCloudCommands(t *testing.T) {
 		"../exported_tmpl/stitch.json",
 	)
 
-	out, _ = exec.Command("cat", "../exported_tmpl/services/mongodb-atlas/config.json").Output()
+	out, _ = exec.Command("cat", "../exported_tmpl/services/mongodb-atlas/config.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldNotContainSubstring, "\"id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 
