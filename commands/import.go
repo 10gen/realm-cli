@@ -189,7 +189,7 @@ func (ic *ImportCommand) importApp() error {
 		return err
 	}
 
-	app, err := stitchClient.FetchAppByClientAppID(appInstanceData.AppID())
+	app, err := ic.fetchAppByClientAppID(appInstanceData.AppID())
 	var appNotFound bool
 	if err != nil {
 		switch err.(type) {
@@ -332,6 +332,19 @@ func (ic *ImportCommand) importApp() error {
 	ic.UI.Info(fmt.Sprintf("Successfully imported '%s'", app.ClientAppID))
 
 	return nil
+}
+
+func (ic *ImportCommand) fetchAppByClientAppID(clientAppID string) (*models.App, error) {
+	stitchClient, err := ic.StitchClient()
+	if err != nil {
+		return nil, err
+	}
+
+	if ic.flagGroupID == "" {
+		return stitchClient.FetchAppByClientAppID(clientAppID)
+	}
+
+	return stitchClient.FetchAppByGroupIDAndClientAppID(ic.flagGroupID, clientAppID)
 }
 
 func (ic *ImportCommand) resolveGroupID() (string, error) {

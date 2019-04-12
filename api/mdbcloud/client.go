@@ -131,7 +131,7 @@ func (client *simpleClient) DeleteDatabaseUser(groupID, username string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf(errPrefix, username, resp.Status)
 	}
 
