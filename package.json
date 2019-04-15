@@ -1,6 +1,6 @@
 {
   "name": "mongodb-stitch-cli",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "The MongoDB Stitch Command Line Interface",
   "repository": {
     "type": "git",
