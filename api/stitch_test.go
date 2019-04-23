@@ -307,3 +307,21 @@ func TestInvalidateCache(t *testing.T) {
 		u.So(t, err, gc.ShouldBeNil)
 	})
 }
+
+func TestRequestOrigin(t *testing.T) {
+	t.Run("the request origin header should be set", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get(api.StitchRequestOriginHeader) != api.StitchCLIHeaderValue {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewClient(testServer.URL)
+
+		resp, err := testClient.ExecuteRequest(http.MethodGet, "", api.RequestOptions{})
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, resp.StatusCode, gc.ShouldEqual, http.StatusNoContent)
+	})
+}

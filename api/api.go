@@ -36,6 +36,16 @@ type basicAPIClient struct {
 	baseURL string
 }
 
+const (
+	// StitchRequestOriginHeader is the name of the header for where the api request
+	// is coming from (UI, CLI, ADMIN API)
+	StitchRequestOriginHeader = "X-STITCH-Request-Origin"
+
+	// StitchCLIHeaderValue is the value of the StitchRequestOriginHeader if the request
+	// is from the CLI
+	StitchCLIHeaderValue = "mongodb-stitch-cli"
+)
+
 // ExecuteRequest makes an HTTP request to the provided path
 func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options RequestOptions) (*http.Response, error) {
 	req, err := http.NewRequest(method, apiClient.baseURL+path, options.Body)
@@ -44,6 +54,10 @@ func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options Req
 	}
 
 	req.Header = options.Header
+	if req.Header == nil {
+		req.Header = http.Header{}
+	}
+	req.Header.Set(StitchRequestOriginHeader, StitchCLIHeaderValue)
 
 	client := &http.Client{}
 
