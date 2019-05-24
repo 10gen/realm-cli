@@ -90,9 +90,7 @@ func (c *BaseCommand) AtlasClient() (mdbcloud.Client, error) {
 		return nil, err
 	}
 
-	atlasClient := mdbcloud.NewClient(c.flagAtlasBaseURL).WithAuth(user.Username, user.APIKey)
-
-	c.atlasClient = atlasClient
+	c.atlasClient = mdbcloud.NewClient(c.flagAtlasBaseURL).WithAuth(user.PublicAPIKey, user.PrivateAPIKey)
 
 	return c.atlasClient, nil
 }

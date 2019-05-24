@@ -47,8 +47,8 @@ func TestWhoamiCommand(t *testing.T) {
 		{
 			description: "after reading in memory user details",
 			user: &user.User{
-				Username: "in-memory.username",
-				APIKey:   "in-memory-api-key",
+				PublicAPIKey:  "in-memory.username",
+				PrivateAPIKey: "in-memory-api-key",
 			},
 			storage: func() *storage.Storage {
 				return u.NewEmptyStorage()
@@ -60,8 +60,8 @@ func TestWhoamiCommand(t *testing.T) {
 			description: "after reading in storage user details",
 			storage: func() *storage.Storage {
 				usr := &user.User{
-					Username: "storage.username",
-					APIKey:   "storage-api-key",
+					PublicAPIKey:  "storage.username",
+					PrivateAPIKey: "storage-api-key",
 				}
 
 				strg := u.NewEmptyStorage()

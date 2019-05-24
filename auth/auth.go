@@ -7,9 +7,9 @@ import (
 
 // Errors related to auth
 var (
-	ErrInvalidAPIKey   = errors.New("stitch: invalid API key")
-	ErrInvalidUsername = errors.New("stitch: invalid username")
-	ErrInvalidPassword = errors.New("stitch: invalid password")
+	ErrInvalidAPIKey       = errors.New("stitch: invalid API key")
+	ErrInvalidPublicAPIKey = errors.New("stitch: invalid username or public API key")
+	ErrInvalidPassword     = errors.New("stitch: invalid password")
 )
 
 // ProviderType represents available types of auth providers
@@ -61,8 +61,8 @@ func NewAPIKeyProvider(username, apiKey string) *APIKeyProvider {
 	return &APIKeyProvider{
 		providerType: ProviderTypeAPIKey,
 		payload: map[string]string{
-			"apiKey":   apiKey,
-			"username": username,
+			usernameField: username,
+			apiKeyField:   apiKey,
 		},
 	}
 }
@@ -84,7 +84,7 @@ func (p *APIKeyProvider) Validate() error {
 	}
 
 	if username, ok := p.payload[usernameField]; !ok || username == "" {
-		return ErrInvalidUsername
+		return ErrInvalidPublicAPIKey
 	}
 
 	return nil
@@ -110,7 +110,7 @@ func NewUsernamePasswordProvider(username, password string) *UsernamePasswordPro
 // Validate will determine if a given provider is valid
 func (p *UsernamePasswordProvider) Validate() error {
 	if username, ok := p.payload[usernameField]; !ok || username == "" {
-		return ErrInvalidUsername
+		return ErrInvalidPublicAPIKey
 	}
 
 	if password, ok := p.payload[passwordField]; !ok || password == "" {

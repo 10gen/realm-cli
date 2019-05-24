@@ -46,7 +46,7 @@ func TestBaseCommandUser(t *testing.T) {
 		usr, err := base.User()
 		u.So(t, err, gc.ShouldBeNil)
 
-		u.So(t, usr.APIKey, gc.ShouldEqual, "key")
+		u.So(t, usr.PrivateAPIKey, gc.ShouldEqual, "key")
 		u.So(t, usr.AccessToken, gc.ShouldEqual, "access")
 		u.So(t, usr.RefreshToken, gc.ShouldEqual, "refresh")
 	})

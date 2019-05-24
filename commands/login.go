@@ -10,8 +10,9 @@ import (
 )
 
 const (
-	flagLoginAPIKeyName   = "api-key"
-	flagLoginUsernameName = "username"
+	flagLoginAPIKeyName        = "api-key"
+	flagLoginPrivateAPIKeyName = "private-api-key"
+	flagLoginUsernameName      = "username"
 )
 
 // NewLoginCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -30,22 +31,30 @@ func NewLoginCommandFactory(ui cli.Ui) cli.CommandFactory {
 type LoginCommand struct {
 	*BaseCommand
 
-	flagAPIKey       string
-	flagUsername     string
-	flagAuthProvider string
-	flagPassword     string
+	flagAPIKey        string
+	flagPrivateAPIKey string
+	flagUsername      string
+	flagAuthProvider  string
+	flagPassword      string
 }
 
 // Synopsis returns a one-liner description for this command
 func (lc *LoginCommand) Synopsis() string {
-	return `Log in using an Atlas API Key`
+	return `Log in using an Atlas Programmatic API Key`
 }
 
 // Help returns long-form help information for this command
 func (lc *LoginCommand) Help() string {
 	return `Authenticate as an administrator.
 
-REQUIRED:
+Programmatic API Key:
+  --api-key [string]
+	The Public API key for a MongoDB Cloud account.
+
+  --private-api-key [string]
+	The Private API key for a MongoDB Cloud account.
+
+Personal API Key (DEPRECATED):
   --api-key [string]
 	The API key for a MongoDB Cloud account.
 
@@ -61,6 +70,7 @@ func (lc *LoginCommand) Run(args []string) int {
 	set := lc.NewFlagSet()
 
 	set.StringVar(&lc.flagAPIKey, flagLoginAPIKeyName, "", "")
+	set.StringVar(&lc.flagPrivateAPIKey, flagLoginPrivateAPIKeyName, "", "")
 	set.StringVar(&lc.flagAuthProvider, "auth-provider", string(auth.ProviderTypeAPIKey), "")
 	set.StringVar(&lc.flagPassword, "password", "", "")
 	set.StringVar(&lc.flagUsername, flagLoginUsernameName, "", "")
@@ -75,7 +85,6 @@ func (lc *LoginCommand) Run(args []string) int {
 		return 1
 	}
 
-	lc.UI.Info(fmt.Sprintf("you have successfully logged in as %s", lc.flagUsername))
 	return 0
 }
 
@@ -84,7 +93,29 @@ func (lc *LoginCommand) validateAuthCredentials() (auth.AuthenticationProvider, 
 
 	switch auth.ProviderType(lc.flagAuthProvider) {
 	case auth.ProviderTypeAPIKey:
-		provider = auth.NewAPIKeyProvider(lc.flagUsername, lc.flagAPIKey)
+		// TODO remove after personal API key support has been fully removed
+		if lc.flagPrivateAPIKey != "" && lc.flagUsername != "" {
+			return nil, fmt.Errorf(
+				"'%s' and '%s' flags are mutually exclusive. If you are using Programmatic API Keys to log in, use the '%s' and '%s' flags. Otherwise, for Personal API Keys, use the '%s' and '%s' flags",
+				flagLoginPrivateAPIKeyName,
+				flagLoginUsernameName,
+				flagLoginAPIKeyName,
+				flagLoginPrivateAPIKeyName,
+				flagLoginUsernameName,
+				flagLoginAPIKeyName,
+			)
+		}
+
+		apiKey := lc.flagAPIKey
+		privateAPIKey := lc.flagPrivateAPIKey
+
+		// TODO remove after personal API key support has been fully removed
+		if lc.flagPrivateAPIKey == "" {
+			apiKey = lc.flagUsername
+			privateAPIKey = lc.flagAPIKey
+		}
+
+		provider = auth.NewAPIKeyProvider(apiKey, privateAPIKey)
 	case auth.ProviderTypeUsernamePassword:
 		if lc.flagPassword == "" {
 			password, err := lc.UI.AskSecret("Password:")
@@ -120,7 +151,7 @@ func (lc *LoginCommand) logIn() error {
 	if user.LoggedIn() {
 		shouldContinue, askErr := lc.AskYesNo(fmt.Sprintf(
 			"you are already logged in as %s, this action will deauthenticate the existing user [apiKey: %s].\ncontinue?",
-			user.Username,
+			user.PublicAPIKey,
 			user.RedactedAPIKey(),
 		))
 
@@ -143,10 +174,23 @@ func (lc *LoginCommand) logIn() error {
 		return err
 	}
 
-	user.APIKey = lc.flagAPIKey
-	user.Username = lc.flagUsername
+	// TODO remove after personal API key support has been fully removed
+	if lc.flagPrivateAPIKey == "" {
+		user.PublicAPIKey = lc.flagUsername
+		user.PrivateAPIKey = lc.flagAPIKey
+	} else {
+		user.PublicAPIKey = lc.flagAPIKey
+		user.PrivateAPIKey = lc.flagPrivateAPIKey
+	}
+
 	user.AccessToken = authResponse.AccessToken
 	user.RefreshToken = authResponse.RefreshToken
 
-	return lc.storage.WriteUserConfig(user)
+	if err := lc.storage.WriteUserConfig(user); err != nil {
+		return err
+	}
+
+	lc.UI.Info(fmt.Sprintf("you have successfully logged in as %s", user.PublicAPIKey))
+
+	return nil
 }

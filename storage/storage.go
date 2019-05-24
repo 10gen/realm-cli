@@ -24,6 +24,15 @@ type Storage struct {
 
 // WriteUserConfig writes the user data to Storage
 func (s *Storage) WriteUserConfig(u *user.User) error {
+	// TODO remove after personal API key support has been fully removed
+	if u.PublicAPIKey != "" {
+		u.Username = ""
+	}
+
+	if u.PrivateAPIKey != "" {
+		u.APIKey = ""
+	}
+
 	raw, err := yaml.Marshal(u)
 	if err != nil {
 		return err
@@ -42,6 +51,15 @@ func (s *Storage) ReadUserConfig() (*user.User, error) {
 	var user user.User
 	if err := yaml.Unmarshal(b, &user); err != nil {
 		return nil, err
+	}
+
+	// TODO remove after personal API key support has been fully removed
+	if user.Username != "" && user.PublicAPIKey == "" {
+		user.PublicAPIKey = user.Username
+	}
+
+	if user.APIKey != "" && user.PrivateAPIKey == "" {
+		user.PrivateAPIKey = user.APIKey
 	}
 
 	return &user, nil

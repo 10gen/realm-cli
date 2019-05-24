@@ -3,8 +3,5 @@
     "name": "simple-app",
     "location": "US-VA",
     "deployment_model": "GLOBAL",
-    "security": {},
-    "hosting": {
-        "enabled": false
-    }
+    "security": {}
 }

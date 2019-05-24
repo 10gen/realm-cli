@@ -133,12 +133,25 @@ func NewEmptyStorage() *storage.Storage {
 }
 
 // NewPopulatedStorage creates a new MemoryStrategy populated with data
-func NewPopulatedStorage(apiKey, refreshToken, accessToken string) *storage.Storage {
+func NewPopulatedStorage(privateAPIKey, refreshToken, accessToken string) *storage.Storage {
 	b, err := yaml.Marshal(user.User{
-		APIKey:       apiKey,
-		Username:     "user.name",
-		RefreshToken: refreshToken,
-		AccessToken:  accessToken,
+		PublicAPIKey:  "user.name",
+		PrivateAPIKey: privateAPIKey,
+		RefreshToken:  refreshToken,
+		AccessToken:   accessToken,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	return storage.New(NewMemoryStrategy(b))
+}
+
+// NewPopulatedDeprecatedStorage creates a new MemoryStrategy populated with data in the old deprecated format
+func NewPopulatedDeprecatedStorage(username, apiKey string) *storage.Storage {
+	b, err := yaml.Marshal(user.User{
+		Username: username,
+		APIKey:   apiKey,
 	})
 	if err != nil {
 		panic(err)
