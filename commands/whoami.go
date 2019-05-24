@@ -49,8 +49,8 @@ func (whoami *WhoamiCommand) Run(args []string) int {
 	}
 
 	message := "no user info available"
-	if username := user.Username; username != "" {
-		message = fmt.Sprintf("%s [API Key: %s]", username, user.RedactedAPIKey())
+	if publicAPIKey := user.PublicAPIKey; publicAPIKey != "" {
+		message = fmt.Sprintf("%s [API Key: %s]", publicAPIKey, user.RedactedAPIKey())
 	}
 
 	whoami.UI.Info(message)

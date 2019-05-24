@@ -14,8 +14,12 @@ var (
 
 // User stores the user's login credentials and some metadata.
 type User struct {
-	APIKey       string `yaml:"api_key"`
-	Username     string `yaml:"username"`
+	APIKey   string `yaml:"api_key,omitempty"`
+	Username string `yaml:"username,omitempty"`
+
+	PublicAPIKey  string `yaml:"public_api_key,omitempty"`
+	PrivateAPIKey string `yaml:"private_api_key,omitempty"`
+
 	RefreshToken string `yaml:"refresh_token"`
 	AccessToken  string `yaml:"access_token"`
 }
@@ -39,7 +43,14 @@ func (u *User) TokenIsExpired() (bool, error) {
 // RedactedAPIKey returns a string representing the user's API key
 // with everything but the last portion of the key displayed as "*"
 func (u *User) RedactedAPIKey() string {
-	apiKeyParts := strings.Split(u.APIKey, "-")
+	// TODO remove after personal API key support has been fully removed
+	privateAPIKey := u.PrivateAPIKey
+	if privateAPIKey == "" {
+		// no private key, so assume the user was using personal API key auth
+		privateAPIKey = u.APIKey
+	}
+
+	apiKeyParts := strings.Split(privateAPIKey, "-")
 	redactedParts := make([]string, len(apiKeyParts))
 
 	lastIndex := len(apiKeyParts) - 1

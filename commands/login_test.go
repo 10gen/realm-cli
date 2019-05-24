@@ -36,12 +36,20 @@ func TestLoginCommand(t *testing.T) {
 			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidAPIKey.Error())
 		})
 
-		t.Run("should require a username", func(t *testing.T) {
+		t.Run("should require a username when using personal API keys", func(t *testing.T) {
 			loginCommand, mockUI := setup()
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`})
 			u.So(t, exitCode, gc.ShouldEqual, 1)
 
-			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidUsername.Error())
+			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidPublicAPIKey.Error())
+		})
+
+		t.Run("should require an api key", func(t *testing.T) {
+			loginCommand, mockUI := setup()
+			exitCode := loginCommand.Run([]string{`--private-api-key=my-api-key`})
+			u.So(t, exitCode, gc.ShouldEqual, 1)
+
+			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, auth.ErrInvalidPublicAPIKey.Error())
 		})
 	})
 
@@ -75,14 +83,14 @@ func TestLoginCommand(t *testing.T) {
 
 		t.Run("logs the user in and updates auth data", func(t *testing.T) {
 			loginCommand, mockUI := setup()
-			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
+			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--private-api-key=my-private-api-key`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
 			validUser := &user.User{
-				APIKey:       "my-api-key",
-				Username:     "my.username",
-				AccessToken:  "new.access.token",
-				RefreshToken: "new.refresh.token",
+				PublicAPIKey:  "my-api-key",
+				PrivateAPIKey: "my-private-api-key",
+				AccessToken:   "new.access.token",
+				RefreshToken:  "new.refresh.token",
 			}
 
 			u.So(t, loginCommand.user, gc.ShouldResemble, validUser)
@@ -92,7 +100,7 @@ func TestLoginCommand(t *testing.T) {
 
 			u.So(t, storedUser, gc.ShouldResemble, validUser)
 
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you have successfully logged in as my.username")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you have successfully logged in as my-api-key")
 		})
 	})
 
@@ -120,9 +128,10 @@ func TestLoginCommand(t *testing.T) {
 
 			loginCommand.client = mockClient
 			loginCommand.user = &user.User{
-				Username:    "my.username",
-				AccessToken: "my-existing-token",
-				APIKey:      "my-existing-api-key",
+				PublicAPIKey:  "user.name",
+				PrivateAPIKey: "my-existing-api-key",
+				AccessToken:   "my-existing-token",
+				RefreshToken:  "my-refresh-token",
 			}
 			loginCommand.storage = u.NewEmptyStorage()
 
@@ -135,10 +144,10 @@ func TestLoginCommand(t *testing.T) {
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
 			validUser := &user.User{
-				APIKey:       "my-api-key",
-				Username:     "my.username",
-				AccessToken:  "new.access.token",
-				RefreshToken: "new.refresh.token",
+				PublicAPIKey:  "my.username",
+				PrivateAPIKey: "my-api-key",
+				AccessToken:   "new.access.token",
+				RefreshToken:  "new.refresh.token",
 			}
 
 			u.So(t, loginCommand.user, gc.ShouldResemble, validUser)
@@ -153,11 +162,11 @@ func TestLoginCommand(t *testing.T) {
 			loginCommand, mockUI, _ := setup()
 
 			mockUI.InputReader = strings.NewReader("n\n")
-			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
+			exitCode := loginCommand.Run([]string{`--api-key=my-api-key-updated`, `--username=my.username`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as my.username, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
-			u.So(t, loginCommand.user.APIKey, gc.ShouldEqual, "my-existing-api-key")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as user.name, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
+			u.So(t, loginCommand.user.PrivateAPIKey, gc.ShouldEqual, "my-existing-api-key")
 		})
 
 		t.Run("prompts the user for confirmation and continues if 'y' is entered", func(t *testing.T) {
@@ -167,14 +176,15 @@ func TestLoginCommand(t *testing.T) {
 			exitCode := loginCommand.Run([]string{`--api-key=my-api-key`, `--username=my.username`})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as my.username, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "you are already logged in as user.name, this action will deauthenticate the existing user [apiKey: **-********-***-key]")
 
 			validUser := &user.User{
-				APIKey:       "my-api-key",
-				Username:     "my.username",
-				AccessToken:  "new.access.token",
-				RefreshToken: "new.refresh.token",
+				PublicAPIKey:  "my.username",
+				PrivateAPIKey: "my-api-key",
+				AccessToken:   "new.access.token",
+				RefreshToken:  "new.refresh.token",
 			}
+
 			u.So(t, loginCommand.user, gc.ShouldResemble, validUser)
 		})
 	})
