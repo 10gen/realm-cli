@@ -5,9 +5,11 @@
 package mock_api
 
 import (
+	api "github.com/10gen/stitch-cli/api"
 	auth "github.com/10gen/stitch-cli/auth"
 	hosting "github.com/10gen/stitch-cli/hosting"
 	models "github.com/10gen/stitch-cli/models"
+	secrets "github.com/10gen/stitch-cli/secrets"
 	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
@@ -34,6 +36,20 @@ func NewMockStitchClient(ctrl *gomock.Controller) *MockStitchClient {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockStitchClient) EXPECT() *MockStitchClientMockRecorder {
 	return m.recorder
+}
+
+// AddSecret mocks base method
+func (m *MockStitchClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddSecret", groupID, appID, secret)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddSecret indicates an expected call of AddSecret
+func (mr *MockStitchClientMockRecorder) AddSecret(groupID, appID, secret interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSecret", reflect.TypeOf((*MockStitchClient)(nil).AddSecret), groupID, appID, secret)
 }
 
 // Authenticate mocks base method
@@ -169,9 +185,9 @@ func (mr *MockStitchClientMockRecorder) DraftDiff(groupID, appID, draftID interf
 }
 
 // Export mocks base method
-func (m *MockStitchClient) Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+func (m *MockStitchClient) Export(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Export", groupID, appID, isTemplated)
+	ret := m.ctrl.Call(m, "Export", groupID, appID, strategy)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(io.ReadCloser)
 	ret2, _ := ret[2].(error)
@@ -179,9 +195,9 @@ func (m *MockStitchClient) Export(groupID, appID string, isTemplated bool) (stri
 }
 
 // Export indicates an expected call of Export
-func (mr *MockStitchClientMockRecorder) Export(groupID, appID, isTemplated interface{}) *gomock.Call {
+func (mr *MockStitchClientMockRecorder) Export(groupID, appID, strategy interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockStitchClient)(nil).Export), groupID, appID, isTemplated)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockStitchClient)(nil).Export), groupID, appID, strategy)
 }
 
 // FetchAppByClientAppID mocks base method
@@ -302,6 +318,21 @@ func (mr *MockStitchClientMockRecorder) ListAssetsForAppID(groupID, appID interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAssetsForAppID", reflect.TypeOf((*MockStitchClient)(nil).ListAssetsForAppID), groupID, appID)
 }
 
+// ListSecrets mocks base method
+func (m *MockStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSecrets", groupID, appID)
+	ret0, _ := ret[0].([]secrets.Secret)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListSecrets indicates an expected call of ListSecrets
+func (mr *MockStitchClientMockRecorder) ListSecrets(groupID, appID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSecrets", reflect.TypeOf((*MockStitchClient)(nil).ListSecrets), groupID, appID)
+}
+
 // MoveAsset mocks base method
 func (m *MockStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
 	m.ctrl.T.Helper()
@@ -314,6 +345,34 @@ func (m *MockStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) er
 func (mr *MockStitchClientMockRecorder) MoveAsset(groupID, appID, fromPath, toPath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MoveAsset", reflect.TypeOf((*MockStitchClient)(nil).MoveAsset), groupID, appID, fromPath, toPath)
+}
+
+// RemoveSecretByID mocks base method
+func (m *MockStitchClient) RemoveSecretByID(groupID, appID, secretID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveSecretByID", groupID, appID, secretID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveSecretByID indicates an expected call of RemoveSecretByID
+func (mr *MockStitchClientMockRecorder) RemoveSecretByID(groupID, appID, secretID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSecretByID", reflect.TypeOf((*MockStitchClient)(nil).RemoveSecretByID), groupID, appID, secretID)
+}
+
+// RemoveSecretByName mocks base method
+func (m *MockStitchClient) RemoveSecretByName(groupID, appID, secretName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveSecretByName", groupID, appID, secretName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveSecretByName indicates an expected call of RemoveSecretByName
+func (mr *MockStitchClientMockRecorder) RemoveSecretByName(groupID, appID, secretName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveSecretByName", reflect.TypeOf((*MockStitchClient)(nil).RemoveSecretByName), groupID, appID, secretName)
 }
 
 // SetAssetAttributes mocks base method
@@ -333,6 +392,34 @@ func (mr *MockStitchClientMockRecorder) SetAssetAttributes(groupID, appID, path 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{groupID, appID, path}, attributes...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAssetAttributes", reflect.TypeOf((*MockStitchClient)(nil).SetAssetAttributes), varargs...)
+}
+
+// UpdateSecretByID mocks base method
+func (m *MockStitchClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSecretByID", groupID, appID, secretID, secretValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSecretByID indicates an expected call of UpdateSecretByID
+func (mr *MockStitchClientMockRecorder) UpdateSecretByID(groupID, appID, secretID, secretValue interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecretByID", reflect.TypeOf((*MockStitchClient)(nil).UpdateSecretByID), groupID, appID, secretID, secretValue)
+}
+
+// UpdateSecretByName mocks base method
+func (m *MockStitchClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSecretByName", groupID, appID, secretName, secretValue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSecretByName indicates an expected call of UpdateSecretByName
+func (mr *MockStitchClientMockRecorder) UpdateSecretByName(groupID, appID, secretName, secretValue interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecretByName", reflect.TypeOf((*MockStitchClient)(nil).UpdateSecretByName), groupID, appID, secretName, secretValue)
 }
 
 // UploadAsset mocks base method
