@@ -7,6 +7,9 @@
     "MinOccurrences": 2,
     "Deadline": "600s",
     "WarnUnmatchedDirective": true,
+    "Exclude": [
+        ".*/mocks/.*"
+    ],
     "Enable": [
         "staticcheck",
         "vet-nocomposites",

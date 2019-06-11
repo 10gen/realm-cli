@@ -8,6 +8,7 @@ import (
 	"fmt"
 )
 
+// DeploymentStatus is the enumeration of values which can be provided in a Deployment's status field
 type DeploymentStatus string
 
 // AppConfigFileName is the name of top-level config file describing the app
@@ -150,20 +151,24 @@ type App struct {
 	Name        string `json:"name"`
 }
 
+// AppDraft represents a Stitch App Draft
 type AppDraft struct {
 	ID string `json:"_id"`
 }
 
+// Deployment represents a Stitch Deployment
 type Deployment struct {
 	ID     string           `json:"_id"`
 	Status DeploymentStatus `json:"status"`
 }
 
+// DraftDiff represents the diff of an AppDraft
 type DraftDiff struct {
 	Diffs            []string    `json:"diffs"`
 	HostingFilesDiff HostingDiff `json:"hosting_files_diff"`
 }
 
+// HasChanges returns whether the DraftDiff contains any changes or not
 func (d *DraftDiff) HasChanges() bool {
 	return len(d.Diffs) != 0 ||
 		len(d.HostingFilesDiff.Added) != 0 ||
@@ -171,6 +176,7 @@ func (d *DraftDiff) HasChanges() bool {
 		len(d.HostingFilesDiff.Modified) != 0
 }
 
+// HostingDiff represents the hosting files section of a DraftDiff
 type HostingDiff struct {
 	Added    []string `json:"added"`
 	Deleted  []string `json:"deleted"`

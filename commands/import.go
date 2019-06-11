@@ -280,9 +280,9 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
-		diffs, err := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
-		if err != nil {
-			return fmt.Errorf("failed to diff app with currently deployed instance: %s", err)
+		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
+		if diffErr != nil {
+			return fmt.Errorf("failed to diff app with currently deployed instance: %s", diffErr)
 		}
 
 		if ic.flagIncludeHosting && assetMetadataDiffs != nil {
@@ -303,9 +303,9 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			return nil
 		}
 
-		confirm, askErr := ic.AskYesNo("Please confirm the changes shown above:")
-		if askErr != nil {
-			return askErr
+		confirm, confirmErr := ic.AskYesNo("Please confirm the changes shown above:")
+		if confirmErr != nil {
+			return confirmErr
 		}
 
 		if !confirm {
@@ -320,14 +320,14 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			return fmt.Errorf("failed to create draft for import: %s", err)
 		}
 
-		drafts, err := stitchClient.GetDrafts(app.GroupID, app.ID)
-		if err != nil || len(drafts) != 1 {
-			return fmt.Errorf("failed to fetch existing draft: %s", err)
+		drafts, draftErr := stitchClient.GetDrafts(app.GroupID, app.ID)
+		if draftErr != nil || len(drafts) != 1 {
+			return fmt.Errorf("failed to fetch existing draft: %s", draftErr)
 		}
 
-		appDraftDiff, err := stitchClient.DraftDiff(app.GroupID, app.ID, drafts[0].ID)
-		if err != nil {
-			return fmt.Errorf("failed to fetch existing draft diff: %s", err)
+		appDraftDiff, diffErr := stitchClient.DraftDiff(app.GroupID, app.ID, drafts[0].ID)
+		if diffErr != nil {
+			return fmt.Errorf("failed to fetch existing draft diff: %s", diffErr)
 		}
 
 		var discardDraft bool
@@ -351,7 +351,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 		if discardDraft {
 			ic.UI.Info("Discarding draft...")
-			err := stitchClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
+			err = stitchClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
 			if err != nil {
 				return fmt.Errorf("failed to discard existing draft: %s", err)
 			}

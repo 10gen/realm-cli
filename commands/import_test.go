@@ -574,7 +574,7 @@ func TestImportCommand(t *testing.T) {
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
 			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
-				models.AppDraft{ID: "draft-id"},
+				{ID: "draft-id"},
 			}, nil)
 			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
@@ -599,7 +599,7 @@ func TestImportCommand(t *testing.T) {
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
 			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
-				models.AppDraft{ID: "draft-id"},
+				{ID: "draft-id"},
 			}, nil)
 			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
@@ -625,7 +625,7 @@ func TestImportCommand(t *testing.T) {
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
 			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
-				models.AppDraft{ID: "draft-id"},
+				{ID: "draft-id"},
 			}, nil)
 			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
@@ -658,7 +658,7 @@ func TestImportCommand(t *testing.T) {
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
 			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
-				models.AppDraft{ID: "draft-id"},
+				{ID: "draft-id"},
 			}, nil)
 			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{}, nil) // empty diff
 			stitchClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
