@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -29,16 +30,26 @@ const (
 	// ExportStrategySourceControl will result in the `source_control` querystring parameter getting added to the call to Export
 	ExportStrategySourceControl ExportStrategy = "source_control"
 
-	authProviderLoginRoute      = adminBaseURL + "/auth/providers/%s/login"
-	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export?%s"
-	appImportRoute              = adminBaseURL + "/groups/%s/apps/%s/import"
-	appsByGroupIDRoute          = adminBaseURL + "/groups/%s/apps"
-	userProfileRoute            = adminBaseURL + "/auth/profile"
-	hostingAssetRoute           = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
-	hostingAssetsRoute          = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
+	userProfileRoute       = adminBaseURL + "/auth/profile"
+	authProviderLoginRoute = adminBaseURL + "/auth/providers/%s/login"
+
+	appsByGroupIDRoute = adminBaseURL + "/groups/%s/apps"
+	appImportRoute     = adminBaseURL + "/groups/%s/apps/%s/import"
+	appExportRoute     = adminBaseURL + "/groups/%s/apps/%s/export?%s"
+
+	draftsRoute      = adminBaseURL + "/groups/%s/apps/%s/drafts"
+	draftByIDRoute   = adminBaseURL + "/groups/%s/apps/%s/drafts/%s"
+	deployDraftRoute = adminBaseURL + "/groups/%s/apps/%s/drafts/%s/deployment"
+	diffDraftRoute   = adminBaseURL + "/groups/%s/apps/%s/drafts/%s/diff"
+
+	getDeploymentRoute = adminBaseURL + "/groups/%s/apps/%s/deployments/%s"
+
 	hostingInvalidateCacheRoute = adminBaseURL + "/groups/%s/apps/%s/hosting/cache"
-	secretsRoute                = adminBaseURL + "/groups/%s/apps/%s/secrets"
-	secretRoute                 = adminBaseURL + "/groups/%s/apps/%s/secrets/%s"
+	hostingAssetsRoute          = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
+	hostingAssetRoute           = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
+
+	secretsRoute = adminBaseURL + "/groups/%s/apps/%s/secrets"
+	secretRoute  = adminBaseURL + "/groups/%s/apps/%s/secrets/%s"
 )
 
 var (
@@ -73,27 +84,33 @@ type invalidateCachePayload struct {
 
 // StitchClient represents a Client that can be used to call the Stitch Admin API
 type StitchClient interface {
-	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
-	Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error)
-	Import(groupID, appID string, appData []byte, strategy string) error
-	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
-	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
-	FetchAppByClientAppID(clientAppID string) (*models.App, error)
-	FetchAppsByGroupID(groupID string) ([]*models.App, error)
-	CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error)
-	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
-	CopyAsset(groupID, appID, fromPath, toPath string) error
-	MoveAsset(groupID, appID, fromPath, toPath string) error
-	DeleteAsset(groupID, appID, path string) error
-	SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
-	ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error)
-	InvalidateCache(groupID, appID, path string) error
-	ListSecrets(groupID, appID string) ([]secrets.Secret, error)
 	AddSecret(groupID, appID string, secret secrets.Secret) error
-	UpdateSecretByID(groupID, appID, secretID, secretValue string) error
-	UpdateSecretByName(groupID, appID, secretName, secretValue string) error
+	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
+	CopyAsset(groupID, appID, fromPath, toPath string) error
+	CreateDraft(groupID, appID string) (*models.AppDraft, error)
+	CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error)
+	DeleteAsset(groupID, appID, path string) error
+	DeployDraft(groupID, appID, draftID string) (*models.Deployment, error)
+	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
+	DiscardDraft(groupID, appID, draftID string) error
+	DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error)
+	Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error)
+	FetchAppByClientAppID(clientAppID string) (*models.App, error)
+	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
+	FetchAppsByGroupID(groupID string) ([]*models.App, error)
+	GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error)
+	GetDrafts(groupID, appID string) ([]models.AppDraft, error)
+	Import(groupID, appID string, appData []byte, strategy string) error
+	InvalidateCache(groupID, appID, path string) error
+	ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error)
+	ListSecrets(groupID, appID string) ([]secrets.Secret, error)
+	MoveAsset(groupID, appID, fromPath, toPath string) error
 	RemoveSecretByID(groupID, appID, secretID string) error
 	RemoveSecretByName(groupID, appID, secretName string) error
+	SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
+	UpdateSecretByID(groupID, appID, secretID, secretValue string) error
+	UpdateSecretByName(groupID, appID, secretName, secretValue string) error
+	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -208,6 +225,151 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte, strat
 	}
 
 	return nil
+}
+
+func (sc *basicStitchClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
+	res, err := sc.ExecuteRequest(http.MethodPost, fmt.Sprintf(draftsRoute, groupID, appID), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var draft models.AppDraft
+	err = json.Unmarshal(bytes, &draft)
+	if err != nil {
+		return nil, err
+	}
+
+	return &draft, nil
+}
+
+func (sc *basicStitchClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
+	res, err := sc.ExecuteRequest(http.MethodPost, fmt.Sprintf(deployDraftRoute, groupID, appID, draftID), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var deployment models.Deployment
+	err = json.Unmarshal(bytes, &deployment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deployment, nil
+}
+
+func (sc *basicStitchClient) DiscardDraft(groupID, appID, draftID string) error {
+	res, err := sc.ExecuteRequest(http.MethodDelete, fmt.Sprintf(draftByIDRoute, groupID, appID, draftID), RequestOptions{})
+	if err != nil {
+		return nil
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusNoContent {
+		return UnmarshalStitchError(res)
+	}
+
+	return nil
+}
+
+func (sc *basicStitchClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
+	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(getDeploymentRoute, groupID, appID, deploymentID), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var deployment models.Deployment
+	err = json.Unmarshal(bytes, &deployment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &deployment, nil
+}
+
+func (sc *basicStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
+	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(draftsRoute, groupID, appID), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var drafts []models.AppDraft
+	err = json.Unmarshal(bytes, &drafts)
+	if err != nil {
+		return nil, err
+	}
+
+	return drafts, nil
+}
+
+func (sc *basicStitchClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
+	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(diffDraftRoute, groupID, appID, draftID), RequestOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	bytes, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var diff models.DraftDiff
+	err = json.Unmarshal(bytes, &diff)
+	if err != nil {
+		return nil, err
+	}
+
+	return &diff, nil
 }
 
 func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []byte, strategy string, diff bool) (*http.Response, error) {

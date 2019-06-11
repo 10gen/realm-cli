@@ -8,6 +8,8 @@ import (
 	"fmt"
 )
 
+type DeploymentStatus string
+
 // AppConfigFileName is the name of top-level config file describing the app
 const AppConfigFileName string = "stitch.json"
 
@@ -15,6 +17,18 @@ const AppConfigFileName string = "stitch.json"
 const (
 	DefaultLocation        string = "US-VA"
 	DefaultDeploymentModel string = "GLOBAL"
+
+	// DeploymentStatusCreated indicates the app deployment has been created but is not in the job queue yet
+	DeploymentStatusCreated DeploymentStatus = "created"
+
+	// DeploymentStatusSuccessful indicates the app was successfully deployed
+	DeploymentStatusSuccessful DeploymentStatus = "successful"
+
+	// DeploymentStatusFailed indicates the app deployment failed
+	DeploymentStatusFailed DeploymentStatus = "failed"
+
+	// DeploymentStatusPending indicates the app deployment is in the job queue but has not yet started
+	DeploymentStatusPending DeploymentStatus = "pending"
 )
 
 // App config field identifiers
@@ -134,4 +148,31 @@ type App struct {
 	GroupID     string `json:"group_id"`
 	ClientAppID string `json:"client_app_id"`
 	Name        string `json:"name"`
+}
+
+type AppDraft struct {
+	ID string `json:"_id"`
+}
+
+type Deployment struct {
+	ID     string           `json:"_id"`
+	Status DeploymentStatus `json:"status"`
+}
+
+type DraftDiff struct {
+	Diffs            []string    `json:"diffs"`
+	HostingFilesDiff HostingDiff `json:"hosting_files_diff"`
+}
+
+func (d *DraftDiff) HasChanges() bool {
+	return len(d.Diffs) != 0 ||
+		len(d.HostingFilesDiff.Added) != 0 ||
+		len(d.HostingFilesDiff.Deleted) != 0 ||
+		len(d.HostingFilesDiff.Modified) != 0
+}
+
+type HostingDiff struct {
+	Added    []string `json:"added"`
+	Deleted  []string `json:"deleted"`
+	Modified []string `json:"modified"`
 }
