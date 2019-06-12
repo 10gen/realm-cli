@@ -105,7 +105,7 @@ OPTIONS:
 	The Atlas Project ID.
 
   --strategy [merge|replace] (default: merge)
-	How your app should be imported.	
+	How your app should be imported.
 	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
 
@@ -114,7 +114,7 @@ OPTIONS:
 	Upload static assets from "/hosting" directory.
 
   --reset-cdn-cache
-	Invalidate cdn cache for modified files.	
+	Invalidate cdn cache for modified files.
 	` +
 		ic.BaseCommand.Help()
 }
@@ -146,7 +146,8 @@ func (ic *ImportCommand) Run(args []string) int {
 		return 1
 	}
 
-	if err := ic.importApp(); err != nil {
+	dryRun := false
+	if err := ic.importApp(dryRun); err != nil {
 		ic.UI.Error(err.Error())
 		return 1
 	}
@@ -154,7 +155,7 @@ func (ic *ImportCommand) Run(args []string) int {
 	return 0
 }
 
-func (ic *ImportCommand) importApp() error {
+func (ic *ImportCommand) importApp(dryRun bool) error {
 	user, err := ic.User()
 	if err != nil {
 		return err
@@ -206,6 +207,12 @@ func (ic *ImportCommand) importApp() error {
 	var skipDiff bool
 
 	if appNotFound {
+
+		if dryRun {
+			ic.UI.Info(fmt.Sprintf("%s. To create a new app, use the 'import' command", err.Error()))
+			return nil
+		}
+
 		skipDiff = true
 		ic.flagStrategy = importStrategyReplace
 
@@ -291,6 +298,10 @@ func (ic *ImportCommand) importApp() error {
 
 		for _, diff := range diffs {
 			ic.UI.Info(diff)
+		}
+
+		if dryRun {
+			return nil
 		}
 
 		confirm, askErr := ic.AskYesNo("Please confirm the changes shown above:")
