@@ -42,7 +42,7 @@ const (
 	deployDraftRoute = adminBaseURL + "/groups/%s/apps/%s/drafts/%s/deployment"
 	diffDraftRoute   = adminBaseURL + "/groups/%s/apps/%s/drafts/%s/diff"
 
-	getDeploymentRoute = adminBaseURL + "/groups/%s/apps/%s/deployments/%s"
+	deploymentByIDRoute = adminBaseURL + "/groups/%s/apps/%s/deployments/%s"
 
 	hostingInvalidateCacheRoute = adminBaseURL + "/groups/%s/apps/%s/hosting/cache"
 	hostingAssetsRoute          = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
@@ -295,7 +295,7 @@ func (sc *basicStitchClient) DiscardDraft(groupID, appID, draftID string) error 
 }
 
 func (sc *basicStitchClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
-	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(getDeploymentRoute, groupID, appID, deploymentID), RequestOptions{})
+	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(deploymentByIDRoute, groupID, appID, deploymentID), RequestOptions{})
 	if err != nil {
 		return nil, err
 	}
