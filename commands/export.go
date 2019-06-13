@@ -46,11 +46,12 @@ type ExportCommand struct {
 	writeFileToDirectory func(dest string, data io.Reader) error
 	getAssetAtURL        func(url string) (io.ReadCloser, error)
 
-	flagProjectID      string
-	flagAppID          string
-	flagOutput         string
-	flagAsTemplate     bool
-	flagIncludeHosting bool
+	flagProjectID        string
+	flagAppID            string
+	flagOutput           string
+	flagAsTemplate       bool
+	flagIncludeHosting   bool
+	flagForSourceControl bool
 }
 
 // Help returns long-form help information for this command
@@ -71,6 +72,9 @@ OPTIONS:
   --as-template
 	Indicate that the application should be exported as a template.
 
+	--for-source-control
+	Indicate that the application should be exported for source control.
+
   --include-hosting
 	Download static assets associated with this project` +
 		ec.BaseCommand.Help()
@@ -90,6 +94,7 @@ func (ec *ExportCommand) Run(args []string) int {
 	set.StringVar(&ec.flagOutput, "output", "", "")
 	set.StringVar(&ec.flagOutput, "o", "", "")
 	set.BoolVar(&ec.flagAsTemplate, "as-template", false, "")
+	set.BoolVar(&ec.flagForSourceControl, "for-source-control", false, "")
 	set.BoolVar(&ec.flagIncludeHosting, "include-hosting", false, "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
@@ -140,7 +145,7 @@ func (ec *ExportCommand) run() error {
 			return err
 		}
 	}
-	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate)
+	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate, ec.flagForSourceControl)
 	if err != nil {
 		return err
 	}

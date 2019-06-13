@@ -211,7 +211,7 @@ type MockStitchClient struct {
 	MoveAssetFn                       func(groupID, appID, fromPath, toPath string) error
 	DeleteAssetFn                     func(groupID, appID, path string) error
 	SetAssetAttributesFn              func(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
-	ExportFn                          func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
+	ExportFn                          func(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error)
 	ExportFnCalls                     [][]string
 	ImportFn                          func(groupID, appID string, appData []byte, strategy string) error
 	ImportFnCalls                     [][]string
@@ -225,10 +225,10 @@ func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 }
 
 // Export will download a Stitch app as a .zip
-func (msc *MockStitchClient) Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+func (msc *MockStitchClient) Export(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
 	if msc.ExportFn != nil {
 		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID, strconv.FormatBool(isTemplated)})
-		return msc.ExportFn(groupID, appID, isTemplated)
+		return msc.ExportFn(groupID, appID, isTemplated, forSourceControl)
 	}
 
 	return "", nil, nil

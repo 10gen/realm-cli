@@ -18,7 +18,7 @@ import (
 
 const (
 	authProviderLoginRoute      = adminBaseURL + "/auth/providers/%s/login"
-	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export?template=%t"
+	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export?%s"
 	appImportRoute              = adminBaseURL + "/groups/%s/apps/%s/import"
 	appsByGroupIDRoute          = adminBaseURL + "/groups/%s/apps"
 	userProfileRoute            = adminBaseURL + "/auth/profile"
@@ -60,7 +60,7 @@ type invalidateCachePayload struct {
 // StitchClient represents a Client that can be used to call the Stitch Admin API
 type StitchClient interface {
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
-	Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error)
+	Export(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData []byte, strategy string) error
 	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
 	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
@@ -120,8 +120,15 @@ func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 }
 
 // Export will download a Stitch app as a .zip
-func (sc *basicStitchClient) Export(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
-	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(appExportRoute, groupID, appID, isTemplated), RequestOptions{})
+func (sc *basicStitchClient) Export(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
+	url := fmt.Sprintf(appExportRoute, groupID, appID, "")
+	if isTemplated {
+		url = fmt.Sprintf(appExportRoute, groupID, appID, "template=true")
+	} else if forSourceControl {
+		url = fmt.Sprintf(appExportRoute, groupID, appID, "source_control=true")
+	}
+
+	res, err := sc.ExecuteRequest(http.MethodGet, url, RequestOptions{})
 	if err != nil {
 		return "", nil, err
 	}
