@@ -15,6 +15,7 @@ import (
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/hosting"
+	"github.com/10gen/stitch-cli/models"
 
 	u "github.com/10gen/stitch-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
@@ -323,5 +324,108 @@ func TestRequestOrigin(t *testing.T) {
 		resp, err := testClient.ExecuteRequest(http.MethodGet, "", api.RequestOptions{})
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, resp.StatusCode, gc.ShouldEqual, http.StatusNoContent)
+	})
+}
+
+func TestCreateDraft(t *testing.T) {
+	t.Run("CreateDraft should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/drafts")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{ "_id": "test" }`))
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		draft, err := testClient.CreateDraft(groupID, appID)
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, draft, gc.ShouldNotBeNil)
+		u.So(t, draft.ID, gc.ShouldEqual, "test")
+	})
+}
+
+func TestDeployDraft(t *testing.T) {
+	t.Run("DeployDraft should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/drafts/123/deployment")
+			w.WriteHeader(http.StatusCreated)
+			w.Write([]byte(`{ "_id": "test", "status": "pending" }`))
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		deploy, err := testClient.DeployDraft(groupID, appID, "123")
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, deploy, gc.ShouldNotBeNil)
+		u.So(t, deploy.ID, gc.ShouldEqual, "test")
+		u.So(t, deploy.Status, gc.ShouldEqual, models.DeploymentStatusPending)
+	})
+}
+
+func TestDiscardDraft(t *testing.T) {
+	t.Run("DiscardDraft should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/drafts/123")
+			w.WriteHeader(http.StatusNoContent)
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		err := testClient.DiscardDraft(groupID, appID, "123")
+		u.So(t, err, gc.ShouldBeNil)
+	})
+}
+
+func TestGetDeployment(t *testing.T) {
+	t.Run("GetDeployment should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/deployments/123")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{ "_id": "test", "status": "pending" }`))
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		deploy, err := testClient.GetDeployment(groupID, appID, "123")
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, deploy, gc.ShouldNotBeNil)
+		u.So(t, deploy.ID, gc.ShouldEqual, "test")
+		u.So(t, deploy.Status, gc.ShouldEqual, models.DeploymentStatusPending)
+	})
+}
+
+func TestGetDrafts(t *testing.T) {
+	t.Run("GetDrafts should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/drafts")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`[{ "_id": "test" }]`))
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		drafts, err := testClient.GetDrafts(groupID, appID)
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, drafts, gc.ShouldNotBeNil)
+		u.So(t, len(drafts), gc.ShouldEqual, 1)
+		u.So(t, drafts[0].ID, gc.ShouldEqual, "test")
+	})
+}
+
+func TestDraftDiff(t *testing.T) {
+	t.Run("DraftDiff should work", func(t *testing.T) {
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			u.So(t, r.URL.Path, gc.ShouldEqual, "/api/admin/v3.0/groups/groupID/apps/appID/drafts/123/diff")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{ "diffs": ["--first diff"] }`))
+		}
+
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		diff, err := testClient.DraftDiff(groupID, appID, "123")
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, diff, gc.ShouldNotBeNil)
+		u.So(t, len(diff.Diffs), gc.ShouldEqual, 1)
+		u.So(t, diff.Diffs[0], gc.ShouldEqual, "--first diff")
 	})
 }
