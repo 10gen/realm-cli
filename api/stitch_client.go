@@ -16,7 +16,18 @@ import (
 	"github.com/10gen/stitch-cli/models"
 )
 
+// ExportStrategy is the enumeration of possible strategies which can be used
+// when exporting a stitch application
+type ExportStrategy string
+
 const (
+	// ExportStrategyNone will result in no extra configuration into the call to Export
+	ExportStrategyNone ExportStrategy = "none"
+	// ExportStrategyTemplate will result in the `template` querystring parameter getting added to the call to Export
+	ExportStrategyTemplate ExportStrategy = "template"
+	// ExportStrategySourceControl will result in the `source_control` querystring parameter getting added to the call to Export
+	ExportStrategySourceControl ExportStrategy = "source_control"
+
 	authProviderLoginRoute      = adminBaseURL + "/auth/providers/%s/login"
 	appExportRoute              = adminBaseURL + "/groups/%s/apps/%s/export?%s"
 	appImportRoute              = adminBaseURL + "/groups/%s/apps/%s/import"
@@ -60,7 +71,7 @@ type invalidateCachePayload struct {
 // StitchClient represents a Client that can be used to call the Stitch Admin API
 type StitchClient interface {
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
-	Export(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error)
+	Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData []byte, strategy string) error
 	Diff(groupID, appID string, appData []byte, strategy string) ([]string, error)
 	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
@@ -120,11 +131,11 @@ func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 }
 
 // Export will download a Stitch app as a .zip
-func (sc *basicStitchClient) Export(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
+func (sc *basicStitchClient) Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error) {
 	url := fmt.Sprintf(appExportRoute, groupID, appID, "")
-	if isTemplated {
+	if strategy == ExportStrategyTemplate {
 		url = fmt.Sprintf(appExportRoute, groupID, appID, "template=true")
-	} else if forSourceControl {
+	} else if strategy == ExportStrategySourceControl {
 		url = fmt.Sprintf(appExportRoute, groupID, appID, "source_control=true")
 	}
 

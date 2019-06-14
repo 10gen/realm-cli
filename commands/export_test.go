@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
@@ -216,7 +217,7 @@ func TestExportCommand(t *testing.T) {
 								ID:          responseAppID,
 							}, nil
 						},
-						ExportFn: func(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
+						ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 							u.So(t, groupID, gc.ShouldEqual, tc.ExpectedGroupID)
 							u.So(t, appID, gc.ShouldEqual, responseAppID)
 
@@ -292,8 +293,8 @@ func TestExportCommand(t *testing.T) {
 							ID:          "app-id",
 						}, nil
 					},
-					ExportFn: func(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
-						u.So(t, forSourceControl, gc.ShouldBeTrue)
+					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
+						u.So(t, strategy, gc.ShouldEqual, api.ExportStrategySourceControl)
 						return "", u.NewResponseBody(strings.NewReader("")), nil
 					},
 				}
@@ -314,7 +315,7 @@ func TestExportCommand(t *testing.T) {
 						ID:          "app-id",
 					}, nil
 				},
-				ExportFn: func(groupID, appID string, isTemplated, forSourceControl bool) (string, io.ReadCloser, error) {
+				ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 					return "", nil, fmt.Errorf("oh noes")
 				},
 			}

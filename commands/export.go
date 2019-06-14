@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/models"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -72,7 +73,7 @@ OPTIONS:
   --as-template
 	Indicate that the application should be exported as a template.
 
-	--for-source-control
+  --for-source-control
 	Indicate that the application should be exported for source control.
 
   --include-hosting
@@ -145,7 +146,15 @@ func (ec *ExportCommand) run() error {
 			return err
 		}
 	}
-	filename, body, err := stitchClient.Export(app.GroupID, app.ID, ec.flagAsTemplate, ec.flagForSourceControl)
+
+	exportStrategy := api.ExportStrategyNone
+	if ec.flagAsTemplate {
+		exportStrategy = api.ExportStrategyTemplate
+	} else if ec.flagForSourceControl {
+		exportStrategy = api.ExportStrategySourceControl
+	}
+
+	filename, body, err := stitchClient.Export(app.GroupID, app.ID, exportStrategy)
 	if err != nil {
 		return err
 	}
