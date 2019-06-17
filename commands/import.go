@@ -329,7 +329,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 	}
 
 	// re-fetch imported app to sync IDs
-	_, body, err := stitchClient.Export(app.GroupID, app.ID, false)
+	_, body, err := stitchClient.Export(app.GroupID, app.ID, api.ExportStrategyNone)
 	if err != nil {
 		return errImportAppSyncFailure(err)
 	}

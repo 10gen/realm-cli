@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
@@ -31,6 +32,14 @@ func TestExportCommand(t *testing.T) {
 		exportCommand.storage = u.NewEmptyStorage()
 		return exportCommand, mockUI
 	}
+
+	t.Run("help output", func(t *testing.T) {
+		t.Run("describes --for-source-control", func(t *testing.T) {
+			exportCommand, _ := setup()
+			helpOutput := exportCommand.Help()
+			u.So(t, helpOutput, gc.ShouldContainSubstring, "--for-source-control")
+		})
+	})
 
 	t.Run("should require an app-id", func(t *testing.T) {
 		exportCommand, mockUI := setup()
@@ -208,7 +217,7 @@ func TestExportCommand(t *testing.T) {
 								ID:          responseAppID,
 							}, nil
 						},
-						ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+						ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 							u.So(t, groupID, gc.ShouldEqual, tc.ExpectedGroupID)
 							u.So(t, appID, gc.ShouldEqual, responseAppID)
 
@@ -273,6 +282,28 @@ func TestExportCommand(t *testing.T) {
 			}
 		})
 
+		t.Run("--for-source-control", func(t *testing.T) {
+			t.Run("calls StitchClient.Export properly", func(t *testing.T) {
+				exportCommand, _ := setup()
+				exportCommand.stitchClient = &u.MockStitchClient{
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							ClientAppID: clientAppID,
+							GroupID:     "group-id",
+							ID:          "app-id",
+						}, nil
+					},
+					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
+						u.So(t, strategy, gc.ShouldEqual, api.ExportStrategySourceControl)
+						return "", u.NewResponseBody(strings.NewReader("")), nil
+					},
+				}
+
+				exportCommand.user = &user.User{APIKey: "my-api-key", AccessToken: u.GenerateValidAccessToken()}
+				exportCommand.Run([]string{"--app-id=my-cool-app", "--for-source-control=true"})
+			})
+		})
+
 		t.Run("returns an error when the response from the API is unexpected", func(t *testing.T) {
 			exportCommand, mockUI := setup()
 
@@ -284,7 +315,7 @@ func TestExportCommand(t *testing.T) {
 						ID:          "app-id",
 					}, nil
 				},
-				ExportFn: func(groupID, appID string, isTemplated bool) (string, io.ReadCloser, error) {
+				ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 					return "", nil, fmt.Errorf("oh noes")
 				},
 			}
