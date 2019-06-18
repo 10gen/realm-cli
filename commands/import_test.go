@@ -644,7 +644,7 @@ func TestImportCommand(t *testing.T) {
 			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
-			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Draft discarded successfully...")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Discarding existing draft...")
 		})
 
 		t.Run("it asks the user to discard empty drafts", func(t *testing.T) {

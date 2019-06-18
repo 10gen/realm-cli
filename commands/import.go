@@ -207,7 +207,6 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 	var skipDiff bool
 
 	if appNotFound {
-
 		if dryRun {
 			ic.UI.Info(fmt.Sprintf("%s. To create a new app, use the 'import' command", err.Error()))
 			return nil
@@ -331,26 +330,28 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		}
 
 		var discardDraft bool
-		if appDraftDiff.HasChanges() {
-			ic.UI.Info("The following draft already exists for your app...\n")
+		if !ic.flagYes {
+			if appDraftDiff.HasChanges() {
+				ic.UI.Info("The following draft already exists for your app...\n")
 
-			for _, diff := range appDraftDiff.Diffs {
-				ic.UI.Info(diff)
-			}
+				for _, diff := range appDraftDiff.Diffs {
+					ic.UI.Info(diff)
+				}
 
-			discardDraft, err = ic.AskYesNo("Would you like to discard these changes?")
-			if err != nil {
-				return fmt.Errorf("failed to create draft for import: %s", err)
-			}
-		} else {
-			discardDraft, err = ic.AskYesNo("An empty draft already exists for your app, would you like to discard it first?")
-			if err != nil {
-				return fmt.Errorf("failed to create draft for import: %s", err)
+				discardDraft, err = ic.AskYesNo("Would you like to discard these changes?")
+				if err != nil {
+					return fmt.Errorf("failed to create draft for import: %s", err)
+				}
+			} else {
+				discardDraft, err = ic.AskYesNo("An empty draft already exists for your app, would you like to discard it first?")
+				if err != nil {
+					return fmt.Errorf("failed to create draft for import: %s", err)
+				}
 			}
 		}
 
-		if discardDraft {
-			ic.UI.Info("Discarding draft...")
+		if discardDraft || ic.flagYes {
+			ic.UI.Info("Discarding existing draft...")
 			err = stitchClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
 			if err != nil {
 				return fmt.Errorf("failed to discard existing draft: %s", err)
@@ -360,14 +361,13 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			if err != nil {
 				return fmt.Errorf("failed to create draft for import: %s", err)
 			}
-
-			ic.UI.Info("Draft discarded successfully...")
 		} else {
 			ic.UI.Info("Cancelling import.")
 			return nil
 		}
 	}
 
+	ic.UI.Info("Draft created successfully...")
 	ic.UI.Info("Importing app...")
 	if importErr := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
 		ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
