@@ -12,6 +12,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/10gen/stitch-cli/models"
+	"github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -43,24 +46,6 @@ var (
 
 	errAppNotFound = errors.New("could not find stitch app")
 )
-
-// ReadAndUnmarshalInto unmarshals data from the given path into an interface{} using the provided marshalFn
-func ReadAndUnmarshalInto(marshalFn func(in []byte, out interface{}) error, path string, out interface{}) error {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	if len(data) == 0 {
-		return nil
-	}
-
-	if err := marshalFn(data, out); err != nil {
-		return fmt.Errorf("failed to parse %s: %s", path, err)
-	}
-
-	return nil
-}
 
 const maxDirectoryContainSearchDepth = 8
 
@@ -339,7 +324,16 @@ func iterDirectories(iterFn func(info os.FileInfo, path string) error, path stri
 }
 
 func readAndUnmarshalJSONInto(path string, out interface{}) error {
-	if err := ReadAndUnmarshalInto(json.Unmarshal, path, out); err != nil {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	if err := json.Unmarshal(data, out); err != nil {
 		return fmt.Errorf("failed to parse %s: %s", path, err)
 	}
 
@@ -375,4 +369,44 @@ func GenerateFileHashStr(fName string) (string, error) {
 	}
 
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
+}
+
+// ResolveAppDirectory returns the directory path for an app
+func ResolveAppDirectory(appPath, workingDirectory string) (string, error) {
+	if appPath != "" {
+		path, err := homedir.Expand(appPath)
+		if err != nil {
+			return "", err
+		}
+
+		if _, err := os.Stat(path); err != nil {
+			return "", errors.New("directory does not exist")
+		}
+		return path, nil
+	}
+
+	return GetDirectoryContainingFile(workingDirectory, models.AppConfigFileName)
+}
+
+// ResolveAppInstanceData loads data for an app from a stitch.json file located in the provided directory path,
+// merging in any overridden parameters from command line flags
+func ResolveAppInstanceData(appID, path string) (models.AppInstanceData, error) {
+	appInstanceDataFromFile := models.AppInstanceData{}
+	err := appInstanceDataFromFile.UnmarshalFile(path)
+
+	if os.IsNotExist(err) {
+		return models.AppInstanceData{
+			models.AppIDField: appID,
+		}, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if appID != "" {
+		appInstanceDataFromFile[models.AppIDField] = appID
+	}
+
+	return appInstanceDataFromFile, nil
 }

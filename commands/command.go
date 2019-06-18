@@ -36,7 +36,8 @@ type BaseCommand struct {
 
 	Name string
 
-	UI cli.Ui
+	CLI *cli.CLI
+	UI  cli.Ui
 
 	client       api.Client
 	atlasClient  mdbcloud.Client

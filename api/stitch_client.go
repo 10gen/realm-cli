@@ -14,6 +14,7 @@ import (
 	"github.com/10gen/stitch-cli/auth"
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
+	"github.com/10gen/stitch-cli/secrets"
 )
 
 // ExportStrategy is the enumeration of possible strategies which can be used
@@ -36,6 +37,8 @@ const (
 	hostingAssetRoute           = adminBaseURL + "/groups/%s/apps/%s/hosting/assets/asset"
 	hostingAssetsRoute          = adminBaseURL + "/groups/%s/apps/%s/hosting/assets"
 	hostingInvalidateCacheRoute = adminBaseURL + "/groups/%s/apps/%s/hosting/cache"
+	secretsRoute                = adminBaseURL + "/groups/%s/apps/%s/secrets"
+	secretRoute                 = adminBaseURL + "/groups/%s/apps/%s/secrets/%s"
 )
 
 var (
@@ -85,6 +88,12 @@ type StitchClient interface {
 	SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
 	ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error)
 	InvalidateCache(groupID, appID, path string) error
+	ListSecrets(groupID, appID string) ([]secrets.Secret, error)
+	AddSecret(groupID, appID string, secret secrets.Secret) error
+	UpdateSecretByID(groupID, appID, secretID, secretValue string) error
+	UpdateSecretByName(groupID, appID, secretName, secretValue string) error
+	RemoveSecretByID(groupID, appID, secretID string) error
+	RemoveSecretByName(groupID, appID, secretName string) error
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -467,6 +476,171 @@ func (sc *basicStitchClient) InvalidateCache(groupID, appID, path string) error 
 		},
 	)
 	return checkStatusNoContent(res, err, "failed to invalidate cache")
+}
+
+// ListSecrets list secrets for the app
+func (sc *basicStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
+	res, err := sc.ExecuteRequest(
+		http.MethodGet,
+		fmt.Sprintf(secretsRoute, groupID, appID),
+		RequestOptions{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return nil, UnmarshalStitchError(res)
+	}
+
+	dec := json.NewDecoder(res.Body)
+	var secrets []secrets.Secret
+	if err := dec.Decode(&secrets); err != nil {
+		return nil, err
+	}
+
+	return secrets, nil
+}
+
+// AddSecret creates a secret for the app
+func (sc *basicStitchClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
+	payload, err := json.Marshal(secret)
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPost,
+		fmt.Sprintf(secretsRoute, groupID, appID),
+		RequestOptions{
+			Body: bytes.NewReader(payload),
+		},
+	)
+	if err != nil {
+		return nil
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusCreated {
+		return UnmarshalStitchError(res)
+	}
+
+	return nil
+}
+
+// UpdateSecretByID updates a secret's value from the app
+func (sc *basicStitchClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
+	appSecrets, err := sc.ListSecrets(groupID, appID)
+	if err != nil {
+		return err
+	}
+
+	var secretToUpdate *secrets.Secret
+	for _, s := range appSecrets {
+		if s.ID == secretID {
+			secretToUpdate = &s
+			break
+		}
+	}
+
+	if secretToUpdate == nil {
+		return fmt.Errorf("secret not found: %s", secretID)
+	}
+
+	secretToUpdate.Value = secretValue
+	payload, err := json.Marshal(secretToUpdate)
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPut,
+		fmt.Sprintf(secretRoute, groupID, appID, secretID),
+		RequestOptions{
+			Body: bytes.NewReader(payload),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return checkStatusNoContent(res, err, "failed to update secret")
+}
+
+// UpdateSecretByName updates a secret's value from the app
+func (sc *basicStitchClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
+	appSecrets, err := sc.ListSecrets(groupID, appID)
+	if err != nil {
+		return err
+	}
+
+	var secretToUpdate *secrets.Secret
+	for _, s := range appSecrets {
+		if s.Name == secretName {
+			secretToUpdate = &s
+			break
+		}
+	}
+
+	if secretToUpdate == nil {
+		return fmt.Errorf("secret not found: %s", secretName)
+	}
+
+	secretToUpdate.Value = secretValue
+	payload, err := json.Marshal(secretToUpdate)
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPut,
+		fmt.Sprintf(secretRoute, groupID, appID, secretToUpdate.ID),
+		RequestOptions{
+			Body: bytes.NewReader(payload),
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	return checkStatusNoContent(res, err, "failed to update secret")
+}
+
+// RemoveSecretByID deletes a secret from the app
+func (sc *basicStitchClient) RemoveSecretByID(groupID, appID, secretID string) error {
+	res, err := sc.ExecuteRequest(
+		http.MethodDelete,
+		fmt.Sprintf(secretRoute, groupID, appID, secretID),
+		RequestOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	return checkStatusNoContent(res, err, "failed to remove secret")
+}
+
+// RemoveSecretByName deletes a secret from the app
+func (sc *basicStitchClient) RemoveSecretByName(groupID, appID, secretName string) error {
+	secrets, err := sc.ListSecrets(groupID, appID)
+	if err != nil {
+		return err
+	}
+
+	var secretID string
+	for _, s := range secrets {
+		if s.Name == secretName {
+			secretID = s.ID
+			break
+		}
+	}
+
+	if secretID == "" {
+		return fmt.Errorf("secret not found: %s", secretName)
+	}
+
+	return sc.RemoveSecretByID(groupID, appID, secretID)
 }
 
 func checkStatusNoContent(res *http.Response, requestErr error, errMessage string) error {

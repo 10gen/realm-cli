@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/10gen/stitch-cli/utils"
+	"fmt"
 )
 
 // AppConfigFileName is the name of top-level config file describing the app
@@ -35,7 +35,25 @@ type AppInstanceData map[string]interface{}
 
 // UnmarshalFile unmarshals data from a local config file into an AppInstanceData
 func (aic *AppInstanceData) UnmarshalFile(path string) error {
-	return utils.ReadAndUnmarshalInto(json.Unmarshal, filepath.Join(path, AppConfigFileName), &aic)
+	return readAndUnmarshalInto(json.Unmarshal, filepath.Join(path, AppConfigFileName), &aic)
+}
+
+// readAndUnmarshalInto unmarshals data from the given path into an interface{} using the provided marshalFn
+func readAndUnmarshalInto(marshalFn func(in []byte, out interface{}) error, path string, out interface{}) error {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	if err := marshalFn(data, out); err != nil {
+		return fmt.Errorf("failed to parse %s: %s", path, err)
+	}
+
+	return nil
 }
 
 // MarshalFile writes the AppInstanceData to the AppConfigFileName at the provided path

@@ -16,7 +16,6 @@ import (
 	"github.com/10gen/stitch-cli/utils"
 
 	"github.com/mitchellh/cli"
-	"github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -165,12 +164,12 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		return u.ErrNotLoggedIn
 	}
 
-	appPath, err := ic.resolveAppDirectory()
+	appPath, err := utils.ResolveAppDirectory(ic.flagAppPath, ic.workingDirectory)
 	if err != nil {
 		return err
 	}
 
-	appInstanceData, err := ic.resolveAppInstanceData(appPath)
+	appInstanceData, err := utils.ResolveAppInstanceData(ic.flagAppID, appPath)
 	if err != nil {
 		return err
 	}
@@ -473,45 +472,6 @@ func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocatio
 
 	ic.UI.Info(fmt.Sprintf("New app created: %s", app.ClientAppID))
 	return app, true, nil
-}
-
-func (ic *ImportCommand) resolveAppDirectory() (string, error) {
-	if ic.flagAppPath != "" {
-		path, err := homedir.Expand(ic.flagAppPath)
-		if err != nil {
-			return "", err
-		}
-
-		if _, err := os.Stat(path); err != nil {
-			return "", errors.New("directory does not exist")
-		}
-		return path, nil
-	}
-
-	return utils.GetDirectoryContainingFile(ic.workingDirectory, models.AppConfigFileName)
-}
-
-// resolveAppInstanceData loads data for an app from a stitch.json file located in the provided directory path,
-// merging in any overridden parameters from command line flags
-func (ic *ImportCommand) resolveAppInstanceData(path string) (models.AppInstanceData, error) {
-	appInstanceDataFromFile := models.AppInstanceData{}
-	err := appInstanceDataFromFile.UnmarshalFile(path)
-
-	if os.IsNotExist(err) {
-		return models.AppInstanceData{
-			models.AppIDField: ic.flagAppID,
-		}, nil
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if ic.flagAppID != "" {
-		appInstanceDataFromFile[models.AppIDField] = ic.flagAppID
-	}
-
-	return appInstanceDataFromFile, nil
 }
 
 // isObjectIDHex returns whether s is a valid hex representation of an ObjectId.
