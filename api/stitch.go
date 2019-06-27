@@ -26,13 +26,19 @@ func (esr ErrStitchResponse) Error() string {
 	return fmt.Sprintf("error: %s", esr.data.Error)
 }
 
+// ErrorCode returns this ErrorCode on the error
+func (esr ErrStitchResponse) ErrorCode() string {
+	return esr.data.ErrorCode
+}
+
 // UnmarshalJSON unmarshals JSON data into an ErrStitchResponse
 func (esr *ErrStitchResponse) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &esr.data)
 }
 
 type errStitchResponseData struct {
-	Error string `json:"error"`
+	Error     string `json:"error"`
+	ErrorCode string `json:"error_code"`
 }
 
 // UnmarshalStitchError unmarshals an *http.Response into an ErrStitchResponse. If the Body does not

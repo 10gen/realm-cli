@@ -61,6 +61,12 @@
   "db": {
     "mongoDBURI": "mongodb://localhost:26000"
   },
+  "events": {
+    "enabled": true,
+    "queues": {
+      "mongoDBURI": "mongodb://localhost:26000"
+    }
+  },
   "dataStore": "mongodb",
   "products": [
     {

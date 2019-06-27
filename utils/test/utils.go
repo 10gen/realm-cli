@@ -225,6 +225,8 @@ type MockStitchClient struct {
 	RemoveSecretByNameFn              func(groupID, appID, secretName string) error
 }
 
+var _ api.StitchClient = (*MockStitchClient)(nil)
+
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
 func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
 	return nil, nil
@@ -238,6 +240,36 @@ func (msc *MockStitchClient) Export(groupID, appID string, strategy api.ExportSt
 	}
 
 	return "", nil, nil
+}
+
+// CreateDraft returns a mock AppDraft
+func (msc *MockStitchClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
+	return &models.AppDraft{ID: "draft-id"}, nil
+}
+
+// DeployDraft returns a mock Deployment
+func (msc *MockStitchClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
+	return &models.Deployment{ID: "deployment-id"}, nil
+}
+
+// DiscardDraft does nothing
+func (msc *MockStitchClient) DiscardDraft(groupID, appID, draftID string) error {
+	return nil
+}
+
+// DraftDiff returns an empty DraftDiff
+func (msc *MockStitchClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
+	return &models.DraftDiff{}, nil
+}
+
+// GetDeployment returns a mock Deployment
+func (msc *MockStitchClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
+	return &models.Deployment{ID: "deployment-id"}, nil
+}
+
+// GetDrafts returns an empty list of AppDrafts
+func (msc *MockStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
+	return []models.AppDraft{}, nil
 }
 
 // Diff will execute a dry-run of an import, returning a diff of proposed changes

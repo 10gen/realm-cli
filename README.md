@@ -56,3 +56,23 @@ Run all tests:
 ```go
 go test -v $(go list github.com/10gen/stitch-cli/...)
 ```
+
+
+### Mocks
+
+A custom mock of `StitchClient` can be found in `utils/test/utils.go` which can be used for simple mocking of most `StitchClient` methods.
+
+If you need more sophisticated mocking utilities (such as being able to mock calls to the same method more than once in a single test) you can use the [`gomock`](https://github.com/golang/mock) version found in `api/mocks/stitch_api.go`
+
+To update the `gomock` version, simply install `gomock`:
+
+```
+go get github.com/golang/mock/gomock
+go install github.com/golang/mock/mockgen
+```
+
+And run:
+
+```
+mockgen -source ./api/stitch_client.go -destination ./api/mocks/stitch_client.go
+```

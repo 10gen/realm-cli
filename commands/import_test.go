@@ -6,13 +6,17 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/api/mdbcloud"
+	"github.com/10gen/stitch-cli/api/mocks"
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
@@ -557,6 +561,120 @@ func TestImportCommand(t *testing.T) {
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
 			u.So(t, len(mockClient.ImportFnCalls), gc.ShouldEqual, 0)
+		})
+
+		t.Run("it asks the user to discard existing drafts", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			defer ctrl.Finish()
+
+			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
+			}))
+			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+				{ID: "draft-id"},
+			}, nil)
+			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+				Diffs: []string{"just", "some", "diffs"},
+			}, nil)
+
+			importCommand, mockUI := setup()
+			mockUI.InputReader = strings.NewReader("y\n")
+			importCommand.stitchClient = stitchClient
+			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
+
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
+		})
+
+		t.Run("it cancels the import if the user doesn't discard draft", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			defer ctrl.Finish()
+
+			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
+			}))
+			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+				{ID: "draft-id"},
+			}, nil)
+			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+				Diffs: []string{"just", "some", "diffs"},
+			}, nil)
+
+			importCommand, mockUI := setup()
+			mockUI.InputReader = strings.NewReader("y\nn\n")
+			importCommand.stitchClient = stitchClient
+			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
+
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Cancelling import.")
+		})
+
+		t.Run("it discards the draft and deploys the new draft", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			defer ctrl.Finish()
+
+			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
+			}))
+			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+				{ID: "draft-id"},
+			}, nil)
+			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+				Diffs: []string{"just", "some", "diffs"},
+			}, nil)
+			stitchClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
+			stitchClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
+			stitchClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
+				Status: models.DeploymentStatusSuccessful,
+			}, nil)
+			stitchClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
+
+			importCommand, mockUI := setup()
+			mockUI.InputReader = strings.NewReader("y\ny\n")
+			importCommand.stitchClient = stitchClient
+			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
+
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Discarding existing draft...")
+		})
+
+		t.Run("it asks the user to discard empty drafts", func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			defer ctrl.Finish()
+
+			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
+			}))
+			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+				{ID: "draft-id"},
+			}, nil)
+			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{}, nil) // empty diff
+			stitchClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
+			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
+			stitchClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
+			stitchClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
+				Status: models.DeploymentStatusSuccessful,
+			}, nil)
+			stitchClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
+
+			importCommand, mockUI := setup()
+			mockUI.InputReader = strings.NewReader("y\ny\n")
+			importCommand.stitchClient = stitchClient
+			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
+
+			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "An empty draft already exists for your app, would you like to discard it first?")
 		})
 
 		for _, tc := range []testCase{

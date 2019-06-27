@@ -8,6 +8,9 @@ import (
 	"fmt"
 )
 
+// DeploymentStatus is the enumeration of values which can be provided in a Deployment's status field
+type DeploymentStatus string
+
 // AppConfigFileName is the name of top-level config file describing the app
 const AppConfigFileName string = "stitch.json"
 
@@ -15,6 +18,18 @@ const AppConfigFileName string = "stitch.json"
 const (
 	DefaultLocation        string = "US-VA"
 	DefaultDeploymentModel string = "GLOBAL"
+
+	// DeploymentStatusCreated indicates the app deployment has been created but is not in the job queue yet
+	DeploymentStatusCreated DeploymentStatus = "created"
+
+	// DeploymentStatusSuccessful indicates the app was successfully deployed
+	DeploymentStatusSuccessful DeploymentStatus = "successful"
+
+	// DeploymentStatusFailed indicates the app deployment failed
+	DeploymentStatusFailed DeploymentStatus = "failed"
+
+	// DeploymentStatusPending indicates the app deployment is in the job queue but has not yet started
+	DeploymentStatusPending DeploymentStatus = "pending"
 )
 
 // App config field identifiers
@@ -134,4 +149,36 @@ type App struct {
 	GroupID     string `json:"group_id"`
 	ClientAppID string `json:"client_app_id"`
 	Name        string `json:"name"`
+}
+
+// AppDraft represents a Stitch App Draft
+type AppDraft struct {
+	ID string `json:"_id"`
+}
+
+// Deployment represents a Stitch Deployment
+type Deployment struct {
+	ID     string           `json:"_id"`
+	Status DeploymentStatus `json:"status"`
+}
+
+// DraftDiff represents the diff of an AppDraft
+type DraftDiff struct {
+	Diffs            []string    `json:"diffs"`
+	HostingFilesDiff HostingDiff `json:"hosting_files_diff"`
+}
+
+// HasChanges returns whether the DraftDiff contains any changes or not
+func (d *DraftDiff) HasChanges() bool {
+	return len(d.Diffs) != 0 ||
+		len(d.HostingFilesDiff.Added) != 0 ||
+		len(d.HostingFilesDiff.Deleted) != 0 ||
+		len(d.HostingFilesDiff.Modified) != 0
+}
+
+// HostingDiff represents the hosting files section of a DraftDiff
+type HostingDiff struct {
+	Added    []string `json:"added"`
+	Deleted  []string `json:"deleted"`
+	Modified []string `json:"modified"`
 }

@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/hosting"
@@ -206,7 +207,6 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 	var skipDiff bool
 
 	if appNotFound {
-
 		if dryRun {
 			ic.UI.Info(fmt.Sprintf("%s. To create a new app, use the 'import' command", err.Error()))
 			return nil
@@ -280,7 +280,6 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
 		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
-
 		if diffErr != nil {
 			return fmt.Errorf("failed to diff app with currently deployed instance: %s", diffErr)
 		}
@@ -303,9 +302,9 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			return nil
 		}
 
-		confirm, askErr := ic.AskYesNo("Please confirm the changes shown above:")
-		if askErr != nil {
-			return askErr
+		confirm, confirmErr := ic.AskYesNo("Please confirm the changes shown above:")
+		if confirmErr != nil {
+			return confirmErr
 		}
 
 		if !confirm {
@@ -313,10 +312,86 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		}
 	}
 
+	ic.UI.Info("Creating draft for app...")
+	draft, err := stitchClient.CreateDraft(app.GroupID, app.ID)
+	if err != nil {
+		if e, ok := err.(api.ErrStitchResponse); !ok || e.ErrorCode() != "DraftAlreadyExists" {
+			return fmt.Errorf("failed to create draft for import: %s", err)
+		}
+
+		drafts, draftErr := stitchClient.GetDrafts(app.GroupID, app.ID)
+		if draftErr != nil || len(drafts) != 1 {
+			return fmt.Errorf("failed to fetch existing draft: %s", draftErr)
+		}
+
+		appDraftDiff, diffErr := stitchClient.DraftDiff(app.GroupID, app.ID, drafts[0].ID)
+		if diffErr != nil {
+			return fmt.Errorf("failed to fetch existing draft diff: %s", diffErr)
+		}
+
+		var discardDraft bool
+		if !ic.flagYes {
+			if appDraftDiff.HasChanges() {
+				ic.UI.Info("The following draft already exists for your app...\n")
+
+				for _, diff := range appDraftDiff.Diffs {
+					ic.UI.Info(diff)
+				}
+
+				discardDraft, err = ic.AskYesNo("Would you like to discard these changes?")
+				if err != nil {
+					return fmt.Errorf("failed to create draft for import: %s", err)
+				}
+			} else {
+				discardDraft, err = ic.AskYesNo("An empty draft already exists for your app, would you like to discard it first?")
+				if err != nil {
+					return fmt.Errorf("failed to create draft for import: %s", err)
+				}
+			}
+		}
+
+		if discardDraft || ic.flagYes {
+			ic.UI.Info("Discarding existing draft...")
+			err = stitchClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
+			if err != nil {
+				return fmt.Errorf("failed to discard existing draft: %s", err)
+			}
+
+			draft, err = stitchClient.CreateDraft(app.GroupID, app.ID)
+			if err != nil {
+				return fmt.Errorf("failed to create draft for import: %s", err)
+			}
+		} else {
+			ic.UI.Info("Cancelling import.")
+			return nil
+		}
+	}
+
+	ic.UI.Info("Draft created successfully...")
 	ic.UI.Info("Importing app...")
 	if importErr := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
+		ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
 		return fmt.Errorf("failed to import app: %s", importErr)
 	}
+
+	ic.UI.Info("Deploying app...")
+	deployment, err := stitchClient.DeployDraft(app.GroupID, app.ID, draft.ID)
+	if err != nil {
+		ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
+		return fmt.Errorf("failed to deploy draft: %s", err)
+	}
+
+	for deployment.Status == models.DeploymentStatusCreated || deployment.Status == models.DeploymentStatusPending {
+		time.Sleep(time.Second * 1)
+		ic.UI.Info("Deploying app...")
+
+		deployment, err = stitchClient.GetDeployment(app.GroupID, app.ID, deployment.ID)
+		if err != nil {
+			ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
+			return fmt.Errorf("failed to deploy draft: %s", err)
+		}
+	}
+
 	ic.UI.Info("Done.")
 
 	if ic.flagIncludeHosting && assetMetadataDiffs != nil {
@@ -472,6 +547,13 @@ func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocatio
 
 	ic.UI.Info(fmt.Sprintf("New app created: %s", app.ClientAppID))
 	return app, true, nil
+}
+
+func (ic *ImportCommand) discardDraftAndWarnOnFailure(groupID, appID, draftID string) {
+	err := ic.stitchClient.DiscardDraft(groupID, appID, draftID)
+	if err != nil {
+		ic.UI.Warn("We failed to discard the draft we created for your deployment.")
+	}
 }
 
 // isObjectIDHex returns whether s is a valid hex representation of an ObjectId.
