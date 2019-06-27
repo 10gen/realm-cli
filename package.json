@@ -19,7 +19,7 @@
   ],
   "author": "",
   "dependencies": {
-    "request": "^2.87.0"
+    "request": "^2.88.0"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.2",
