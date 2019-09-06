@@ -22,13 +22,17 @@ func main() {
 	}
 
 	c.Commands = map[string]cli.CommandFactory{
-		"whoami":  commands.NewWhoamiCommandFactory(ui),
-		"login":   commands.NewLoginCommandFactory(ui),
-		"logout":  commands.NewLogoutCommandFactory(ui),
-		"export":  commands.NewExportCommandFactory(ui),
-		"import":  commands.NewImportCommandFactory(ui),
-		"diff":    commands.NewDiffCommandFactory(ui),
-		"secrets": commands.NewSecretsCommandFactory(ui),
+		"whoami":         commands.NewWhoamiCommandFactory(ui),
+		"login":          commands.NewLoginCommandFactory(ui),
+		"logout":         commands.NewLogoutCommandFactory(ui),
+		"export":         commands.NewExportCommandFactory(ui),
+		"import":         commands.NewImportCommandFactory(ui),
+		"diff":           commands.NewDiffCommandFactory(ui),
+		"secrets":        commands.NewSecretsCommandFactory(ui),
+		"secrets list":   commands.NewSecretsListCommandFactory(ui),
+		"secrets add":    commands.NewSecretsAddCommandFactory(ui),
+		"secrets update": commands.NewSecretsUpdateCommandFactory(ui),
+		"secrets remove": commands.NewSecretsRemoveCommandFactory(ui),
 	}
 
 	exitStatus, err := c.Run()

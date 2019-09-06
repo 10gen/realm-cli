@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
+	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/secrets"
 	u "github.com/10gen/stitch-cli/user"
 	"github.com/10gen/stitch-cli/utils"
@@ -14,43 +14,18 @@ import (
 // NewSecretsCommandFactory returns a new cli.CommandFactory given a cli.Ui
 func NewSecretsCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
-		c := cli.NewCLI(filepath.Base(os.Args[0]), utils.CLIVersion)
-		c.Args = os.Args[1:]
-
-		workingDirectory, err := os.Getwd()
-		if err != nil {
-			return nil, err
-		}
-
-		sc := &SecretsCommand{
-			BasePath: filepath.Base(os.Args[0]),
+		return &SecretsCommand{
 			BaseCommand: &BaseCommand{
 				Name: "secrets",
-				CLI:  c,
 				UI:   ui,
 			},
-			workingDirectory: workingDirectory,
-		}
-
-		c.Commands = map[string]cli.CommandFactory{
-			"list":   NewSecretsListCommandFactory(sc),
-			"add":    NewSecretsAddCommandFactory(sc),
-			"update": NewSecretsUpdateCommandFactory(sc),
-			"remove": NewSecretsRemoveCommandFactory(sc),
-		}
-
-		return sc, nil
+		}, nil
 	}
 }
 
 // SecretsCommand is used to run CRUD operations on a Stitch App's secrets
 type SecretsCommand struct {
 	*BaseCommand
-
-	Name     string
-	BasePath string
-
-	workingDirectory string
 }
 
 // Synopsis returns a one-liner description for this command
@@ -60,26 +35,21 @@ func (sc *SecretsCommand) Synopsis() string {
 
 // Help returns long-form help information for this command
 func (sc *SecretsCommand) Help() string {
-	return sc.BaseCommand.CLI.HelpFunc(sc.CLI.Commands)
+	return sc.Synopsis()
 }
 
 // Run executes the command
 func (sc *SecretsCommand) Run(args []string) int {
-	sc.BaseCommand.CLI.Args = args
-
-	exitStatus, err := sc.BaseCommand.CLI.Run()
-	if err != nil {
-		sc.BaseCommand.UI.Error(err.Error())
-	}
-
-	return exitStatus
+	return cli.RunResultHelp
 }
 
 const (
-	flagSecretName           = "name"
-	flagSecretValue          = "value"
-	flagSecretID             = "secret-id"
-	flagSecretNameIdentifier = "secret-name"
+	flagSecretName                     = "name"
+	flagSecretValue                    = "value"
+	flagSecretID                       = "id"
+	flagSecretNameIdentifier           = "name"
+	flagSecretIDDeprecated             = "secret-id"
+	flagSecretNameIdentifierDeprecated = "secret-name"
 )
 
 var (
@@ -88,22 +58,109 @@ var (
 	errSecretIDOrNameRequired = fmt.Errorf("a Secret name or ID (--%s=[string] or --%s=[string]) is required", flagSecretNameIdentifier, flagSecretID)
 )
 
+// NewSecretsBaseCommand returns a new *SecretsBaseCommand
+func NewSecretsBaseCommand(name, workingDirectory string, ui cli.Ui) *SecretsBaseCommand {
+	return &SecretsBaseCommand{
+		ProjectCommand:   NewProjectCommand(name, ui),
+		workingDirectory: workingDirectory,
+	}
+}
+
+// SecretsBaseCommand represents a common Atlas project-based secrets command
+type SecretsBaseCommand struct {
+	*ProjectCommand
+
+	workingDirectory string
+
+	flagAppID string
+}
+
+// Help returns long-form help information for the SecretsBaseCommand command
+func (sbc *SecretsBaseCommand) Help() string {
+	return `
+OPTIONAL:
+  --app-id [string]
+	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
+	Required if not being run from within a stitch project directory.` +
+		sbc.ProjectCommand.Help()
+}
+
+func (sbc *SecretsBaseCommand) run(args []string) error {
+	if sbc.FlagSet == nil {
+		sbc.NewFlagSet()
+	}
+
+	sbc.FlagSet.StringVar(&sbc.flagAppID, flagAppIDName, "", "")
+
+	if err := sbc.ProjectCommand.run(args); err != nil {
+		return err
+	}
+
+	user, err := sbc.User()
+	if err != nil {
+		return err
+	}
+
+	if !user.LoggedIn() {
+		return u.ErrNotLoggedIn
+	}
+
+	return nil
+}
+
+func (sbc *SecretsBaseCommand) resolveApp() (*models.App, error) {
+	appID := sbc.flagAppID
+	if sbc.flagAppID == "" {
+		appPath, err := utils.ResolveAppDirectory("", sbc.workingDirectory)
+		if err != nil {
+			return nil, err
+		}
+
+		appInstanceData, err := utils.ResolveAppInstanceData(sbc.flagAppID, appPath)
+		if err != nil {
+			return nil, err
+		}
+		appID = appInstanceData.AppID()
+	}
+
+	stitchClient, err := sbc.StitchClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var app *models.App
+	if sbc.flagProjectID == "" {
+		app, err = stitchClient.FetchAppByClientAppID(appID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		app, err = stitchClient.FetchAppByGroupIDAndClientAppID(sbc.flagProjectID, appID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return app, nil
+}
+
 // NewSecretsListCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsListCommandFactory(sc *SecretsCommand) cli.CommandFactory {
+func NewSecretsListCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
-		sc.Name = "list"
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
 
 		return &SecretsListCommand{
-			SecretsCommand: sc,
+			SecretsBaseCommand: NewSecretsBaseCommand("list", workingDirectory, ui),
 		}, nil
 	}
 }
 
 // SecretsListCommand is used to list secrets from a Stitch app
 type SecretsListCommand struct {
-	*SecretsCommand
-
-	flagAppID string
+	*SecretsBaseCommand
 }
 
 // Synopsis returns a one-liner description for this command
@@ -115,21 +172,14 @@ func (slc *SecretsListCommand) Synopsis() string {
 func (slc *SecretsListCommand) Help() string {
 	return `List secrets from your Stitch Application.
 
-OPTIONAL:
-  --app-id [string]
-	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
-	Required if not being run from within a stitch project directory.
-	` +
-		slc.BaseCommand.Help()
+Usage: stitch-cli secrets list [options]
+` +
+		slc.SecretsBaseCommand.Help()
 }
 
 // Run executes the command
 func (slc *SecretsListCommand) Run(args []string) int {
-	flags := slc.NewFlagSet()
-
-	flags.StringVar(&slc.flagAppID, flagAppIDName, "", "")
-
-	if err := slc.BaseCommand.run(args); err != nil {
+	if err := slc.SecretsBaseCommand.run(args); err != nil {
 		slc.UI.Error(err.Error())
 		return 1
 	}
@@ -154,35 +204,12 @@ func (slc *SecretsListCommand) Run(args []string) int {
 }
 
 func (slc *SecretsListCommand) listSecrets() ([]secrets.Secret, error) {
-	appID := slc.flagAppID
-	if slc.flagAppID == "" {
-		appPath, err := utils.ResolveAppDirectory("", slc.workingDirectory)
-		if err != nil {
-			return nil, err
-		}
-
-		appInstanceData, err := utils.ResolveAppInstanceData(slc.flagAppID, appPath)
-		if err != nil {
-			return nil, err
-		}
-		appID = appInstanceData.AppID()
-	}
-
-	user, err := slc.User()
+	app, err := slc.resolveApp()
 	if err != nil {
 		return nil, err
-	}
-
-	if !user.LoggedIn() {
-		return nil, u.ErrNotLoggedIn
 	}
 
 	stitchClient, err := slc.StitchClient()
-	if err != nil {
-		return nil, err
-	}
-
-	app, err := stitchClient.FetchAppByClientAppID(appID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,21 +218,23 @@ func (slc *SecretsListCommand) listSecrets() ([]secrets.Secret, error) {
 }
 
 // NewSecretsAddCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsAddCommandFactory(sc *SecretsCommand) cli.CommandFactory {
+func NewSecretsAddCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
-		sc.Name = "add"
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
 
 		return &SecretsAddCommand{
-			SecretsCommand: sc,
+			SecretsBaseCommand: NewSecretsBaseCommand("add", workingDirectory, ui),
 		}, nil
 	}
 }
 
 // SecretsAddCommand is used to add secrets to a Stitch app
 type SecretsAddCommand struct {
-	*SecretsCommand
+	*SecretsBaseCommand
 
-	flagAppID       string
 	flagSecretName  string
 	flagSecretValue string
 }
@@ -219,30 +248,26 @@ func (sac *SecretsAddCommand) Synopsis() string {
 func (sac *SecretsAddCommand) Help() string {
 	return `Add a secret to your Stitch Application.
 
+Usage: stitch-cli secrets add --name [string] --value [string] [options]
+
 REQUIRED:
   --name [string]
 	The name of your secret.
 
   --value [string]
 	The value of your secret.
-
-OPTIONAL:
-  --app-id [string]
-	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
-	Required if not being run from within a stitch project directory.
-	` +
-		sac.BaseCommand.Help()
+` +
+		sac.SecretsBaseCommand.Help()
 }
 
 // Run executes the command
 func (sac *SecretsAddCommand) Run(args []string) int {
-	flags := sac.NewFlagSet()
+	sac.NewFlagSet()
 
-	flags.StringVar(&sac.flagAppID, flagAppIDName, "", "")
-	flags.StringVar(&sac.flagSecretName, flagSecretName, "", "")
-	flags.StringVar(&sac.flagSecretValue, flagSecretValue, "", "")
+	sac.FlagSet.StringVar(&sac.flagSecretName, flagSecretName, "", "")
+	sac.FlagSet.StringVar(&sac.flagSecretValue, flagSecretValue, "", "")
 
-	if err := sac.BaseCommand.run(args); err != nil {
+	if err := sac.SecretsBaseCommand.run(args); err != nil {
 		sac.UI.Error(err.Error())
 		return 1
 	}
@@ -256,20 +281,6 @@ func (sac *SecretsAddCommand) Run(args []string) int {
 }
 
 func (sac *SecretsAddCommand) addSecret() error {
-	appID := sac.flagAppID
-	if sac.flagAppID == "" {
-		appPath, err := utils.ResolveAppDirectory("", sac.workingDirectory)
-		if err != nil {
-			return err
-		}
-
-		appInstanceData, err := utils.ResolveAppInstanceData(sac.flagAppID, appPath)
-		if err != nil {
-			return err
-		}
-		appID = appInstanceData.AppID()
-	}
-
 	if sac.flagSecretName == "" {
 		return errSecretNameRequired
 	}
@@ -278,21 +289,12 @@ func (sac *SecretsAddCommand) addSecret() error {
 		return errSecretValueRequired
 	}
 
-	user, err := sac.User()
+	app, err := sac.resolveApp()
 	if err != nil {
 		return err
-	}
-
-	if !user.LoggedIn() {
-		return u.ErrNotLoggedIn
 	}
 
 	stitchClient, err := sac.StitchClient()
-	if err != nil {
-		return err
-	}
-
-	app, err := stitchClient.FetchAppByClientAppID(appID)
 	if err != nil {
 		return err
 	}
@@ -309,21 +311,23 @@ func (sac *SecretsAddCommand) addSecret() error {
 }
 
 // NewSecretsUpdateCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsUpdateCommandFactory(sc *SecretsCommand) cli.CommandFactory {
+func NewSecretsUpdateCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
-		sc.Name = "update"
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
 
 		return &SecretsUpdateCommand{
-			SecretsCommand: sc,
+			SecretsBaseCommand: NewSecretsBaseCommand("update", workingDirectory, ui),
 		}, nil
 	}
 }
 
 // SecretsUpdateCommand is used to update a secret from a Stitch app
 type SecretsUpdateCommand struct {
-	*SecretsCommand
+	*SecretsBaseCommand
 
-	flagAppID       string
 	flagSecretID    string
 	flagSecretName  string
 	flagSecretValue string
@@ -338,31 +342,31 @@ func (suc *SecretsUpdateCommand) Synopsis() string {
 func (suc *SecretsUpdateCommand) Help() string {
 	return `Update a secret for your Stitch Application.
 
+Usage:
+  stitch-cli secrets update --name [string] --value [string] [options]
+  stitch-cli secrets update --id [string] --value [string] [options]
+
 REQUIRED:
-  --secret-name [string] OR --secret-id [string]
+  --name [string] OR --id [string]
 	The name or ID of your secret.
 
   --value [string]
 	The value that your secret is being updated to.
-
-OPTIONAL:
-  --app-id [string]
-	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
-	Required if not being run from within a stitch project directory.
-	` +
-		suc.BaseCommand.Help()
+` +
+		suc.SecretsBaseCommand.Help()
 }
 
 // Run executes the command
 func (suc *SecretsUpdateCommand) Run(args []string) int {
-	flags := suc.NewFlagSet()
+	suc.NewFlagSet()
 
-	flags.StringVar(&suc.flagAppID, flagAppIDName, "", "")
-	flags.StringVar(&suc.flagSecretID, flagSecretID, "", "")
-	flags.StringVar(&suc.flagSecretName, flagSecretNameIdentifier, "", "")
-	flags.StringVar(&suc.flagSecretValue, flagSecretValue, "", "")
+	suc.FlagSet.StringVar(&suc.flagSecretID, flagSecretID, "", "")
+	suc.FlagSet.StringVar(&suc.flagSecretID, flagSecretIDDeprecated, "", "")
+	suc.FlagSet.StringVar(&suc.flagSecretName, flagSecretNameIdentifier, "", "")
+	suc.FlagSet.StringVar(&suc.flagSecretName, flagSecretNameIdentifierDeprecated, "", "")
+	suc.FlagSet.StringVar(&suc.flagSecretValue, flagSecretValue, "", "")
 
-	if err := suc.BaseCommand.run(args); err != nil {
+	if err := suc.SecretsBaseCommand.run(args); err != nil {
 		suc.UI.Error(err.Error())
 		return 1
 	}
@@ -376,43 +380,16 @@ func (suc *SecretsUpdateCommand) Run(args []string) int {
 }
 
 func (suc *SecretsUpdateCommand) updateSecret() error {
-	appID := suc.flagAppID
-	if suc.flagAppID == "" {
-		appPath, err := utils.ResolveAppDirectory("", suc.workingDirectory)
-		if err != nil {
-			return err
-		}
-
-		appInstanceData, err := utils.ResolveAppInstanceData(suc.flagAppID, appPath)
-		if err != nil {
-			return err
-		}
-		appID = appInstanceData.AppID()
-	}
-
 	if suc.flagSecretID == "" && suc.flagSecretName == "" {
 		return errSecretIDOrNameRequired
 	}
 
-	if suc.flagSecretValue == "" {
-		return errSecretValueRequired
-	}
-
-	user, err := suc.User()
+	app, err := suc.resolveApp()
 	if err != nil {
 		return err
-	}
-
-	if !user.LoggedIn() {
-		return u.ErrNotLoggedIn
 	}
 
 	stitchClient, err := suc.StitchClient()
-	if err != nil {
-		return err
-	}
-
-	app, err := stitchClient.FetchAppByClientAppID(appID)
 	if err != nil {
 		return err
 	}
@@ -433,21 +410,23 @@ func (suc *SecretsUpdateCommand) updateSecret() error {
 }
 
 // NewSecretsRemoveCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsRemoveCommandFactory(sc *SecretsCommand) cli.CommandFactory {
+func NewSecretsRemoveCommandFactory(ui cli.Ui) cli.CommandFactory {
 	return func() (cli.Command, error) {
-		sc.Name = "remove"
+		workingDirectory, err := os.Getwd()
+		if err != nil {
+			return nil, err
+		}
 
 		return &SecretsRemoveCommand{
-			SecretsCommand: sc,
+			SecretsBaseCommand: NewSecretsBaseCommand("remove", workingDirectory, ui),
 		}, nil
 	}
 }
 
 // SecretsRemoveCommand is used to remove secrets from a Stitch app
 type SecretsRemoveCommand struct {
-	*SecretsCommand
+	*SecretsBaseCommand
 
-	flagAppID      string
 	flagSecretID   string
 	flagSecretName string
 }
@@ -461,27 +440,27 @@ func (src *SecretsRemoveCommand) Synopsis() string {
 func (src *SecretsRemoveCommand) Help() string {
 	return `Remove a secret from your Stitch Application.
 
-REQUIRED:
-  --secret-name [string] OR --secret-id [string]
-	The name or ID of your secret.
+Usage:
+  stitch-cli secrets remove --name [string] [options]
+  stitch-cli secrets remove --id [string] [options]
 
-OPTIONAL:
-  --app-id [string]
-	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
-	Required if not being run from within a stitch project directory.
-	` +
-		src.BaseCommand.Help()
+REQUIRED:
+  --name [string] OR --id [string]
+	The name or ID of your secret.
+` +
+		src.SecretsBaseCommand.Help()
 }
 
 // Run executes the command
 func (src *SecretsRemoveCommand) Run(args []string) int {
-	flags := src.NewFlagSet()
+	src.NewFlagSet()
 
-	flags.StringVar(&src.flagAppID, flagAppIDName, "", "")
-	flags.StringVar(&src.flagSecretID, flagSecretID, "", "")
-	flags.StringVar(&src.flagSecretName, flagSecretNameIdentifier, "", "")
+	src.FlagSet.StringVar(&src.flagSecretID, flagSecretID, "", "")
+	src.FlagSet.StringVar(&src.flagSecretID, flagSecretIDDeprecated, "", "")
+	src.FlagSet.StringVar(&src.flagSecretName, flagSecretNameIdentifier, "", "")
+	src.FlagSet.StringVar(&src.flagSecretName, flagSecretNameIdentifierDeprecated, "", "")
 
-	if err := src.BaseCommand.run(args); err != nil {
+	if err := src.SecretsBaseCommand.run(args); err != nil {
 		src.UI.Error(err.Error())
 		return 1
 	}
@@ -495,39 +474,16 @@ func (src *SecretsRemoveCommand) Run(args []string) int {
 }
 
 func (src *SecretsRemoveCommand) removeSecret() error {
-	appID := src.flagAppID
-	if src.flagAppID == "" {
-		appPath, err := utils.ResolveAppDirectory("", src.workingDirectory)
-		if err != nil {
-			return err
-		}
-
-		appInstanceData, err := utils.ResolveAppInstanceData(src.flagAppID, appPath)
-		if err != nil {
-			return err
-		}
-		appID = appInstanceData.AppID()
-	}
-
 	if src.flagSecretID == "" && src.flagSecretName == "" {
 		return errSecretIDOrNameRequired
 	}
 
-	user, err := src.User()
+	app, err := src.resolveApp()
 	if err != nil {
 		return err
-	}
-
-	if !user.LoggedIn() {
-		return u.ErrNotLoggedIn
 	}
 
 	stitchClient, err := src.StitchClient()
-	if err != nil {
-		return err
-	}
-
-	app, err := stitchClient.FetchAppByClientAppID(appID)
 	if err != nil {
 		return err
 	}
