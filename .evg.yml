@@ -135,43 +135,6 @@ functions:
               exit 1
             fi
           done
-  "submit_coverage":
-    - command: shell.exec
-      params:
-        shell: "bash"
-        silent: true
-        script: |
-          set -e
-          echo export COVERALLS_TOKEN=${coveralls_repo_token} >> creds
-    - command: shell.exec
-      params:
-        shell: "bash"
-        silent: true
-        script: |
-          set -e
-          export GOPATH=`pwd`
-          export PATH="`pwd`:$PATH"
-          export GOROOT=`pwd`/go
-          export PATH=`pwd`/go/bin:$PATH
-          source ./creds
-          go get github.com/edaniels/goveralls
-          export COVERALLS_PARALLEL=true
-          export COVERALLS_GIT_COMMIT=${revision}
-          export BUILD_NUMBER="${version_id}"
-          if [ -z "${github_pr_number}" ]
-          then
-            if [ "${is_patch}" = "true" ]; then
-              exit 0
-            fi
-            export CI_BRANCH=${branch_name}
-          else
-            PR_INFO=`curl  -H "Authorization: bearer ${github_api_token}" https://api.github.com/repos/${github_org}/${github_repo}/pulls/${github_pr_number}`
-            BRANCH=`echo $PR_INFO | python -c "import sys, json; print json.load(sys.stdin)['head']['ref']"`
-            export CI_BRANCH=$BRANCH
-            export CI_PULL_REQUEST=${github_pr_number}
-          fi
-          cd src/github.com/10gen/stitch-cli
-          $GOPATH/bin/goveralls -service evergreen -coverprofile=$GOPATH/cover.out
 
 tasks:
   - name: test_unit
@@ -190,8 +153,16 @@ tasks:
             export GOPATH=`pwd`
             export GOROOT=`pwd`/go
             export PATH=`pwd`/go/bin:$PATH
-            go test -v -covermode=count -coverprofile=cover.out $(go list github.com/10gen/stitch-cli/...) > $GOPATH/stitch-cli.suite
-      - func: "submit_coverage"
+            go test -v -covermode=count -coverprofile=$GOPATH/cover.out $(go list github.com/10gen/stitch-cli/...) > $GOPATH/stitch-cli.suite
+      - command: s3.put
+        params:
+          aws_key: ${test_aws_key}
+          aws_secret: ${test_aws_secret}
+          local_file: cover.out
+          remote_file: ${task_id}/cover.out
+          bucket: stitch-test-artifacts
+          content_type: text/plain
+          permissions: public-read
 
   - name: tests-with-cloud
     exec_timeout_secs: 3600
@@ -219,8 +190,16 @@ tasks:
             export STITCH_MONGODB_CLOUD_ADMIN_API_KEY="${stitch_mongodb_cloud_admin_api_key}"
             export STITCH_MONGODB_CLOUD_API_BASE_URL="${mongoDBCloudURL}"
             export STITCH_SERVER_BASE_URL="${stitchServerURL}"
-            go test -v -covermode=count -coverprofile=cover.out $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $GOPATH/stitch-cli.suite
-      - func: "submit_coverage"
+            go test -v -covermode=count -coverprofile=$GOPATH/cover.out $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $GOPATH/stitch-cli.suite
+      - command: s3.put
+        params:
+          aws_key: ${test_aws_key}
+          aws_secret: ${test_aws_secret}
+          local_file: cover.out
+          remote_file: ${task_id}/cover.out
+          bucket: stitch-test-artifacts
+          content_type: text/plain
+          permissions: public-read
 
   - name: gometalinter
     commands:
@@ -302,29 +281,6 @@ tasks:
           content_type: application/octet-stream
           permissions: public-read
 
-  - name: finalize_coverage
-    depends_on:
-      - name: test_unit
-        status: '*'
-      - name: tests-with-cloud
-        status: '*'
-    commands:
-      - command: shell.exec
-        params:
-          shell: "bash"
-          silent: true
-          script: |
-            set -e
-            echo export COVERALLS_TOKEN=${coveralls_repo_token} >> creds
-      - command: shell.exec
-        params:
-          shell: "bash"
-          silent: true
-          script: |
-            set -e
-            source ./creds
-            curl -k -X POST "https://coveralls.io/webhook?repo_token=$COVERALLS_TOKEN" -H "Content-Type: application/json" -d "{\"payload\": {\"build_num\": \"${version_id}\", \"status\": \"done\"}}"
-
 post:
   - command: gotest.parse_files
     params:
@@ -348,4 +304,3 @@ buildvariants:
   - name: tests-with-cloud
   - name: gometalinter
   - name: build_publish_clis
-  - name: finalize_coverage
