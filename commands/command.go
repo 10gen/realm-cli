@@ -5,6 +5,7 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -170,7 +171,9 @@ func (c *BaseCommand) run(args []string) error {
 
 	// FlagSet uses flag.ExitOnError, so we let it handle flag-related errors
 	// to avoid duplicate error output
-	c.Parse(args)
+	if err := c.Parse(args); err != nil {
+		return err
+	}
 
 	if !c.flagColorDisabled && isatty.IsTerminal(os.Stdout.Fd()) {
 		c.UI = &cli.ColoredUi{
@@ -236,7 +239,10 @@ func (c *BaseCommand) AskYesNo(query string) (bool, error) {
 			return true, nil
 		}
 
-		res, _ = c.UI.Ask("Could not understand response, try again [y/n]:")
+		res, err = c.UI.Ask("Could not understand response, try again [y/n]:")
+		if err != nil && err != io.EOF {
+			return false, err
+		}
 	}
 }
 
@@ -271,7 +277,10 @@ func (c *BaseCommand) Ask(query string, defaultVal string) (string, error) {
 			return answer, nil
 		}
 
-		res, _ = c.UI.Ask(fmt.Sprintf("Could not understand response, try again%s:", defaultClause))
+		res, err = c.UI.Ask(fmt.Sprintf("Could not understand response, try again%s:", defaultClause))
+		if err != nil && err != io.EOF {
+			return "", err
+		}
 	}
 }
 
@@ -306,7 +315,10 @@ func (c *BaseCommand) AskWithOptions(query, defaultValue string, options []strin
 			}
 		}
 
-		res, _ = c.UI.Ask(fmt.Sprintf("Could not understand response, valid values are %s:", strings.Join(options, ", ")))
+		res, err = c.UI.Ask(fmt.Sprintf("Could not understand response, valid values are %s:", strings.Join(options, ", ")))
+		if err != nil && err != io.EOF {
+			return "", err
+		}
 	}
 }
 

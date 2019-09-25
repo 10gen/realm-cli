@@ -2,3 +2,4 @@
 stitch-cli*
 node_modules/
 .idea
+vendor

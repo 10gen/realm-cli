@@ -457,34 +457,35 @@ func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size
 	pipeReader, pipeWriter := io.Pipe()
 
 	bodyWriter := multipart.NewWriter(pipeWriter)
-	go func() (err error) {
+	errChan := make(chan error, 2)
+	go func() {
 		defer func() {
 			bodyWriter.Close()
 			// If building the request failed, force the reader side to fail
 			// so that ExecuteRequest returns the error. This behaves equivalent to
 			// .Close() if err is nil.
-			pipeWriter.CloseWithError(err)
+			errChan <- pipeWriter.CloseWithError(err)
 		}()
 		// Create the first part and write the metadata into it
 		metaWriter, formErr := bodyWriter.CreateFormField(metadataParam)
 		if err != nil {
-			return fmt.Errorf("failed to create metadata multipart field: %s", formErr)
+			errChan <- fmt.Errorf("failed to create metadata multipart field: %s", formErr)
 		}
 
 		if _, metaErr := metaWriter.Write(metaPart); metaErr != nil {
-			return fmt.Errorf("failed to write metadata to body: %s", metaErr)
+			errChan <- fmt.Errorf("failed to write metadata to body: %s", metaErr)
 		}
 
 		// Create the second part, stream the file body into it, then close it.
 		fileWriter, fileErr := bodyWriter.CreateFormField(fileParam)
 		if fileErr != nil {
-			return fmt.Errorf("failed to create metadata multipart field: %s", fileErr)
+			errChan <- fmt.Errorf("failed to create metadata multipart field: %s", fileErr)
 		}
 
 		if _, copyErr := io.Copy(fileWriter, body); copyErr != nil {
-			return fmt.Errorf("failed to write file to body: %s", copyErr)
+			errChan <- fmt.Errorf("failed to write file to body: %s", copyErr)
 		}
-		return nil
+		errChan <- nil
 	}()
 
 	res, err := sc.ExecuteRequest(
@@ -495,6 +496,9 @@ func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size
 			Header: http.Header{"Content-Type": {"multipart/mixed; boundary=" + bodyWriter.Boundary()}},
 		},
 	)
+	if err := <-errChan; err != nil {
+		return err
+	}
 	return checkStatusNoContent(res, err, "failed to upload asset")
 }
 

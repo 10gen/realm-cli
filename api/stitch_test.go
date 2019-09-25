@@ -87,7 +87,7 @@ func TestUploadAsset(t *testing.T) {
 			metaDecoder := json.NewDecoder(metaReader)
 			metaDecoderErr := metaDecoder.Decode(&uploadedAssetMetadata)
 			if metaDecoderErr != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, metaDecoderErr.Error(), http.StatusBadRequest)
 				return
 			}
 
@@ -156,14 +156,14 @@ func TestListAssetsForAppID(t *testing.T) {
 			},
 		}
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			metaJson, err := json.Marshal(&testContents)
+			metaJSON, err := json.Marshal(&testContents)
 			if err != nil {
 				http.Error(w, "invalid asset metadata", http.StatusBadRequest)
 				return
 			}
 
 			w.WriteHeader(http.StatusOK)
-			w.Write(metaJson)
+			w.Write(metaJSON)
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 

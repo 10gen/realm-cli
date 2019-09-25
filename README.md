@@ -46,7 +46,7 @@ Where `USERNAME` and `PASSWORD` are the credentials for an existing local user.
 provided by gometalinter
 
 ```go
-(export PKGS=`go list ./... | grep -v "/vendor/"`; cd $GOPATH/src && echo $PKGS | xargs $GOPATH/bin/gometalinter --config=$GOPATH/src/github.com/10gen/stitch-cli/.gometalinter.json)
+go run github.com/golangci/golangci-lint/cmd/golangci-lint run ./...
 ```
 
 ## Testing
@@ -64,15 +64,8 @@ A custom mock of `StitchClient` can be found in `utils/test/utils.go` which can 
 
 If you need more sophisticated mocking utilities (such as being able to mock calls to the same method more than once in a single test) you can use the [`gomock`](https://github.com/golang/mock) version found in `api/mocks/stitch_api.go`
 
-To update the `gomock` version, simply install `gomock`:
+Run:
 
 ```
-go get github.com/golang/mock/gomock
-go install github.com/golang/mock/mockgen
-```
-
-And run:
-
-```
-mockgen -source ./api/stitch_client.go -destination ./api/mocks/stitch_client.go
+go run github.com/golang/mock/mockgen -source ./api/stitch_client.go -destination ./api/mocks/stitch_client.go
 ```
