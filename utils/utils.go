@@ -170,7 +170,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[secretsName] = secrets
 	}
 
-	values, err := unmarshalJSONFiles(filepath.Join(path, valuesName))
+	values, err := unmarshalJSONFiles(filepath.Join(path, valuesName), true)
 	if err != nil {
 		return app, err
 	}
@@ -179,7 +179,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[valuesName] = values
 	}
 
-	authProviders, err := unmarshalJSONFiles(filepath.Join(path, authProvidersName))
+	authProviders, err := unmarshalJSONFiles(filepath.Join(path, authProvidersName), true)
 	if err != nil {
 		return app, err
 	}
@@ -188,7 +188,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[authProvidersName] = authProviders
 	}
 
-	functions, err := unmarshalFunctionDirectories(filepath.Join(path, functionsName))
+	functions, err := unmarshalFunctionDirectories(filepath.Join(path, functionsName), true)
 	if err != nil {
 		return app, err
 	}
@@ -197,7 +197,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[functionsName] = functions
 	}
 
-	triggers, err := unmarshalJSONFiles(filepath.Join(path, triggersName))
+	triggers, err := unmarshalJSONFiles(filepath.Join(path, triggersName), true)
 	if err != nil {
 		return app, err
 	}
@@ -206,7 +206,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[triggersName] = triggers
 	}
 
-	services, err := unmarshalServiceDirectories(filepath.Join(path, servicesName))
+	services, err := unmarshalServiceDirectories(filepath.Join(path, servicesName), true)
 	if err != nil {
 		return app, err
 	}
@@ -216,8 +216,11 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 	return app, nil
 }
 
-func unmarshalJSONFiles(path string) ([]interface{}, error) {
-	fileInfos, _ := ioutil.ReadDir(path)
+func unmarshalJSONFiles(path string, ignoreDirErr bool) ([]interface{}, error) {
+	fileInfos, err := ioutil.ReadDir(path)
+	if err != nil && !ignoreDirErr {
+		return []interface{}{}, err
+	}
 	files := make([]interface{}, 0, len(fileInfos))
 
 	for _, fileInfo := range fileInfos {
@@ -237,11 +240,14 @@ func unmarshalJSONFiles(path string) ([]interface{}, error) {
 	return files, nil
 }
 
-func unmarshalFunctionDirectories(path string) ([]interface{}, error) {
-	fileInfos, _ := ioutil.ReadDir(path)
+func unmarshalFunctionDirectories(path string, ignoreDirErr bool) ([]interface{}, error) {
+	fileInfos, err := ioutil.ReadDir(path)
+	if err != nil && !ignoreDirErr {
+		return []interface{}{}, err
+	}
 	directories := []interface{}{}
 
-	err := iterDirectories(func(info os.FileInfo, path string) error {
+	err = iterDirectories(func(info os.FileInfo, path string) error {
 		var config interface{}
 		if err := readAndUnmarshalJSONInto(filepath.Join(path, configName+jsonExt), &config); err != nil {
 			return err
@@ -268,11 +274,14 @@ func unmarshalFunctionDirectories(path string) ([]interface{}, error) {
 	return directories, nil
 }
 
-func unmarshalServiceDirectories(path string) ([]interface{}, error) {
-	fileInfos, _ := ioutil.ReadDir(path)
+func unmarshalServiceDirectories(path string, ignoreDirErr bool) ([]interface{}, error) {
+	fileInfos, err := ioutil.ReadDir(path)
+	if err != nil && !ignoreDirErr {
+		return []interface{}{}, err
+	}
 	services := []interface{}{}
 
-	err := iterDirectories(func(info os.FileInfo, path string) error {
+	err = iterDirectories(func(info os.FileInfo, path string) error {
 		svc := map[string]interface{}{}
 
 		var config map[string]interface{}
@@ -282,14 +291,14 @@ func unmarshalServiceDirectories(path string) ([]interface{}, error) {
 
 		svc[configName] = config
 
-		incomingWebhooks, err := unmarshalFunctionDirectories(filepath.Join(path, incomingWebhooksName))
+		incomingWebhooks, err := unmarshalFunctionDirectories(filepath.Join(path, incomingWebhooksName), true)
 		if err != nil {
 			return err
 		}
 
 		svc[incomingWebhooksName] = incomingWebhooks
 
-		rules, err := unmarshalJSONFiles(filepath.Join(path, rulesName))
+		rules, err := unmarshalJSONFiles(filepath.Join(path, rulesName), true)
 		if err != nil {
 			return err
 		}

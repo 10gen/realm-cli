@@ -16,7 +16,7 @@ import (
 
 	"github.com/10gen/stitch-cli/api"
 	"github.com/10gen/stitch-cli/api/mdbcloud"
-	"github.com/10gen/stitch-cli/api/mocks"
+	mock_api "github.com/10gen/stitch-cli/api/mocks"
 	"github.com/10gen/stitch-cli/hosting"
 	"github.com/10gen/stitch-cli/models"
 	"github.com/10gen/stitch-cli/user"
