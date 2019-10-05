@@ -98,8 +98,7 @@ functions:
                   "name": "mongodb-cloud",
                   "type": "mongodb-cloud",
                   "config": {
-                      "publicAPIBaseUrl": "https://cloud-dev.mongodb.com/api/public/v1.0",
-                      "atlasAPIBaseUrl": "https://cloud-dev.mongodb.com/api/atlas/v1.0",
+                      "baseUrl": "https://cloud-dev.mongodb.com",
                       "adminUsername": "${stitch_mongodb_cloud_atlas_admin_username}",
                       "adminAPIKey": "${stitch_mongodb_cloud_atlas_admin_api_key}"
                     },
