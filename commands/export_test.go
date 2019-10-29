@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -155,7 +156,7 @@ func TestExportCommand(t *testing.T) {
 				},
 				{
 					Description:         "it writes response data to an expanded home directory output path using the '--output' flag",
-					ExpectedDestination: homeDir + "/my_app",
+					ExpectedDestination: fmt.Sprintf("%s%smy_app", homeDir, string(os.PathSeparator)),
 					Args:                []string{`--app-id=` + appID, `--output=~/my_app`},
 
 					ExpectedGroupID:               "group-id",
@@ -171,7 +172,7 @@ func TestExportCommand(t *testing.T) {
 				},
 				{
 					Description:         "it writes response data to an expanded home directory output path using the '-o' flag",
-					ExpectedDestination: homeDir + "/my_app",
+					ExpectedDestination: fmt.Sprintf("%s%smy_app", homeDir, string(os.PathSeparator)),
 					Args:                []string{`--app-id=` + appID, `-o`, `~/my_app`},
 
 					ExpectedGroupID:               "group-id",
@@ -179,7 +180,7 @@ func TestExportCommand(t *testing.T) {
 				},
 				{
 					Description:          "it writes response data to the default directory and includes hosting assets",
-					ExpectedDestination:  homeDir + "/my_app",
+					ExpectedDestination:  fmt.Sprintf("%s%smy_app", homeDir, string(os.PathSeparator)),
 					Args:                 []string{`--app-id=` + appID, `--include-hosting=true`, `--output=~/my_app`},
 					ExpectedMetadataFile: expectedMetadataFile,
 

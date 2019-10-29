@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/10gen/stitch-cli/utils"
 )
@@ -45,7 +46,7 @@ func buildAssetMetadata(appID string, assetMetadata *[]AssetMetadata, rootDir st
 			if pathErr != nil {
 				return pathErr
 			}
-			assetPath := fmt.Sprintf("/%s", relPath)
+			assetPath := fmt.Sprintf("/%s", replacePathSeparator(relPath))
 
 			var desc *AssetDescription
 			if assetDescriptions != nil {
@@ -127,7 +128,8 @@ func MetadataFileToAssetDescriptions(path string) (map[string]AssetDescription, 
 
 	descM := make(map[string]AssetDescription, len(descs))
 	for _, desc := range descs {
-		descM[desc.FilePath] = desc
+		descFilePath := replacePathSeparator(desc.FilePath)
+		descM[descFilePath] = desc
 	}
 
 	return descM, nil
@@ -233,4 +235,9 @@ func (amd *AssetMetadataDiffs) Diff() []string {
 	}
 
 	return diff
+}
+
+// ReplacePathSeparator returns path with os dependent path separators replaced by uniform '/'
+func replacePathSeparator(path string) string {
+	return strings.ReplaceAll(path, string(os.PathSeparator), "/")
 }
