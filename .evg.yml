@@ -221,7 +221,7 @@ tasks:
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             cd $ROOT_DIR/stitch-cli
-            export VERSION="1.7.0"
+            export VERSION="1.7.1"
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
