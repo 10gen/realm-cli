@@ -1,6 +1,10 @@
 {
   "config_version": 20180301,
   "name": "simple-app",
+  "custom_user_data_config": {
+    "enabled": false,
+    "mongo_service_id":"000000000000000000000000"
+  },
   "security": {
     "allowed_request_origins": []
   },
