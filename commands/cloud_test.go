@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"strings"
@@ -64,7 +65,12 @@ func TestCloudCommands(t *testing.T) {
 	atlasClient := mdbcloud.NewClient(cloudEnv.CloudAPIBaseURL).
 		WithAuth(cloudEnv.AdminUsername, cloudEnv.AdminAPIKey)
 
-	defer atlasClient.DeleteDatabaseUser(cloudEnv.GroupID, "mongodb-stitch-"+appID)
+	defer func() {
+		user := fmt.Sprintf("mongodb-stitch-%s-mongodb-atlas", appID)
+		if err := atlasClient.DeleteDatabaseUser(cloudEnv.GroupID, user); err != nil {
+			t.Errorf("Failed to delete user '%s': %s", user, err)
+		}
+	}()
 
 	// test export
 	exportArgs := []string{
