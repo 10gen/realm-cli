@@ -3,8 +3,7 @@
     "name": "simple-app",
     "location": "US-VA",
     "custom_user_data_config": {
-      "enabled": false,
-      "mongo_service_id":"000000000000000000000000"
+      "enabled": false
     },
     "deployment_model": "GLOBAL",
     "security": {}

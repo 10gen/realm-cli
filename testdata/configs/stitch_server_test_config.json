@@ -65,6 +65,15 @@
     "enabled": true,
     "queues": {
       "mongoDBURI": "mongodb://localhost:26000"
+    },
+    "event_processors": {
+      "AWS_EVENTBRIDGE": {
+        "config": {
+          "partnerName": "mongodb.com.test",
+          "awsAccessKeyId": "XXXXXXXXXXXXXXXXXXXX",
+          "awsSecretKey": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+        }
+      }
     }
   },
   "dataStore": "mongodb",
