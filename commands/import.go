@@ -20,13 +20,14 @@ import (
 )
 
 const (
-	importFlagPath           = "path"
-	importFlagStrategy       = "strategy"
-	importFlagAppName        = "app-name"
-	importFlagIncludeHosting = "include-hosting"
-	importFlagResetCDNCache  = "reset-cdn-cache"
-	importStrategyMerge      = "merge"
-	importStrategyReplace    = "replace"
+	importFlagPath                = "path"
+	importFlagStrategy            = "strategy"
+	importFlagAppName             = "app-name"
+	importFlagIncludeHosting      = "include-hosting"
+	importFlagResetCDNCache       = "reset-cdn-cache"
+	importStrategyMerge           = "merge"
+	importStrategyReplace         = "replace"
+	importFlagIncludeDependencies = "include-dependencies"
 )
 
 // Set of location and deployment model options supported by Stitch backend
@@ -77,13 +78,14 @@ type ImportCommand struct {
 	writeAppConfigToFile func(dest string, app models.AppInstanceData) error
 	workingDirectory     string
 
-	flagAppID          string
-	flagAppPath        string
-	flagAppName        string
-	flagGroupID        string
-	flagStrategy       string
-	flagIncludeHosting bool
-	flagResetCDNCache  bool
+	flagAppID               string
+	flagAppPath             string
+	flagAppName             string
+	flagGroupID             string
+	flagStrategy            string
+	flagIncludeHosting      bool
+	flagResetCDNCache       bool
+	flagIncludeDependencies bool
 }
 
 // Help returns long-form help information for this command
@@ -115,6 +117,11 @@ OPTIONS:
 
   --reset-cdn-cache
 	Invalidate cdn cache for modified files.
+
+
+  --include-dependencies
+	Upload the node_modules archive within the "/functions" directory.
+	The supported formats are: TAR, GZIP, and ZIP
 	` +
 		ic.BaseCommand.Help()
 }
@@ -135,6 +142,7 @@ func (ic *ImportCommand) Run(args []string) int {
 	flags.StringVar(&ic.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 	flags.BoolVar(&ic.flagIncludeHosting, importFlagIncludeHosting, false, "")
 	flags.BoolVar(&ic.flagResetCDNCache, importFlagResetCDNCache, false, "")
+	flags.BoolVar(&ic.flagIncludeDependencies, importFlagIncludeDependencies, false, "")
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
@@ -289,6 +297,10 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			diffs = append(diffs, hostingDiff...)
 		}
 
+		if ic.flagIncludeDependencies {
+			diffs = append(diffs, "Import dependencies")
+		}
+
 		if len(diffs) == 0 {
 			ic.UI.Info("Deployed app is identical to proposed version, nothing to do.")
 			return nil
@@ -398,6 +410,19 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		ic.UI.Info("Importing hosting assets...")
 		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, assetMetadataDiffs, ic.flagResetCDNCache, stitchClient, ic.UI); hostingImportErr != nil {
 			return fmt.Errorf("failed to import hosting assets %s", hostingImportErr)
+		}
+		ic.UI.Info("Done.")
+	}
+
+	if ic.flagIncludeDependencies {
+		functionsDir, dirErr := filepath.Abs(filepath.Join(appPath, utils.FunctionsRoot))
+		if dirErr != nil {
+			return dirErr
+		}
+
+		importErr := ImportDependencies(app.GroupID, app.ID, functionsDir, stitchClient)
+		if importErr != nil {
+			return importErr
 		}
 		ic.UI.Info("Done.")
 	}

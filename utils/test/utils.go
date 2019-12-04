@@ -223,6 +223,7 @@ type MockStitchClient struct {
 	UpdateSecretByNameFn              func(groupID, appID, secretName, secretValue string) error
 	RemoveSecretByIDFn                func(groupID, appID, secretID string) error
 	RemoveSecretByNameFn              func(groupID, appID, secretName string) error
+	UploadDependenciesFn              func(groupID, appID, fullPath string) error
 }
 
 var _ api.StitchClient = (*MockStitchClient)(nil)
@@ -485,6 +486,13 @@ func (msc *MockStitchClient) RemoveSecretByName(groupID, appID, secretName strin
 		return msc.RemoveSecretByNameFn(groupID, appID, secretName)
 	}
 
+	return nil
+}
+
+func (msc *MockStitchClient) UploadDependencies(groupID, appID, fullPath string) error {
+	if msc.UploadDependenciesFn != nil {
+		return msc.UploadDependenciesFn(groupID, appID, fullPath)
+	}
 	return nil
 }
 

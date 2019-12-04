@@ -18,12 +18,14 @@ import (
 )
 
 const (
+	// FunctionsRoot is the root directory for functions and dependencies
+	FunctionsRoot = "functions"
+
 	jsonExt              = ".json"
 	jsExt                = ".js"
 	authProvidersName    = "auth_providers"
 	appConfigName        = "stitch"
 	configName           = "config"
-	functionsName        = "functions"
 	triggersName         = "triggers"
 	incomingWebhooksName = "incoming_webhooks"
 	rulesName            = "rules"
@@ -188,13 +190,13 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[authProvidersName] = authProviders
 	}
 
-	functions, err := unmarshalFunctionDirectories(filepath.Join(path, functionsName), true)
+	functions, err := unmarshalFunctionDirectories(filepath.Join(path, FunctionsRoot), true)
 	if err != nil {
 		return app, err
 	}
 
 	if len(functions) != 0 {
-		app[functionsName] = functions
+		app[FunctionsRoot] = functions
 	}
 
 	triggers, err := unmarshalJSONFiles(filepath.Join(path, triggersName), true)

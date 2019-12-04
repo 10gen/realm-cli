@@ -10,6 +10,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -203,7 +205,6 @@ func TestSetAssetAttributes(t *testing.T) {
 				http.Error(w, "invalid payload", http.StatusBadRequest)
 				return
 			}
-			fmt.Printf("hello\n")
 
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -427,5 +428,41 @@ func TestDraftDiff(t *testing.T) {
 		u.So(t, diff, gc.ShouldNotBeNil)
 		u.So(t, len(diff.Diffs), gc.ShouldEqual, 1)
 		u.So(t, diff.Diffs[0], gc.ShouldEqual, "--first diff")
+	})
+}
+
+func TestUploadDependencies(t *testing.T) {
+	t.Run("uploading dependencies should work", func(t *testing.T) {
+		path, pathErr := filepath.Abs("../testdata/app_with_dependencies/functions/node_modules.tar")
+		u.So(t, pathErr, gc.ShouldBeNil)
+		file, openErr := os.Open(path)
+		u.So(t, openErr, gc.ShouldBeNil)
+		defer file.Close()
+
+		expectedFileData := &bytes.Buffer{}
+		expectedSize, copyErr := io.Copy(expectedFileData, file)
+		u.So(t, copyErr, gc.ShouldBeNil)
+		u.So(t, expectedSize, gc.ShouldBeGreaterThan, 0)
+
+		uploadedFileData := &bytes.Buffer{}
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			formFile, header, err := r.FormFile("file")
+			u.So(t, err, gc.ShouldBeNil)
+			defer formFile.Close()
+			u.So(t, header.Filename, gc.ShouldEqual, "node_modules.tar")
+			u.So(t, header.Size, gc.ShouldEqual, expectedSize)
+
+			_, err = io.Copy(uploadedFileData, formFile)
+			u.So(t, err, gc.ShouldBeNil)
+
+			w.WriteHeader(http.StatusNoContent)
+		}
+		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+
+		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient.UploadDependencies(groupID, appID, path)
+
+		u.So(t, len(uploadedFileData.Bytes()), gc.ShouldResemble, len(expectedFileData.Bytes()))
+		u.So(t, uploadedFileData, gc.ShouldResemble, expectedFileData)
 	})
 }

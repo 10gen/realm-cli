@@ -10,6 +10,7 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/10gen/stitch-cli/auth"
@@ -50,6 +51,8 @@ const (
 
 	secretsRoute = adminBaseURL + "/groups/%s/apps/%s/secrets"
 	secretRoute  = adminBaseURL + "/groups/%s/apps/%s/secrets/%s"
+
+	dependenciesRoute = adminBaseURL + "/groups/%s/apps/%s/dependencies"
 )
 
 var (
@@ -111,6 +114,7 @@ type StitchClient interface {
 	UpdateSecretByID(groupID, appID, secretID, secretValue string) error
 	UpdateSecretByName(groupID, appID, secretName, secretValue string) error
 	UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error
+	UploadDependencies(groupID, appID, fullPath string) error
 }
 
 // NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
@@ -827,4 +831,56 @@ func findAppByClientAppID(apps []*models.App, clientAppID string) *models.App {
 	}
 
 	return nil
+}
+
+func (sc *basicStitchClient) UploadDependencies(groupID, appID, fullPath string) error {
+	body, formatDataContentType, err := newMultipartMessage(fullPath)
+	if err != nil {
+		return err
+	}
+
+	res, err := sc.ExecuteRequest(
+		http.MethodPost,
+		fmt.Sprintf(dependenciesRoute, groupID, appID),
+		RequestOptions{
+			Body:   body,
+			Header: http.Header{"Content-Type": {formatDataContentType}},
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return UnmarshalStitchError(res)
+	}
+	return nil
+}
+
+func newMultipartMessage(fullPath string) (io.Reader, string, error) {
+	file, openErr := os.Open(fullPath)
+	if openErr != nil {
+		return nil, "", fmt.Errorf("failed to open the dependencies file '%s': %s", fullPath, openErr)
+	}
+	defer file.Close()
+	fileInfo, statErr := file.Stat()
+	if statErr != nil {
+		return nil, "", errors.New("failed to grab the dependencies file info")
+	}
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	defer writer.Close()
+	part, formErr := writer.CreateFormFile(fileParam, fileInfo.Name())
+	if formErr != nil {
+		return nil, "", fmt.Errorf("failed to create multipart form file: %s", formErr)
+	}
+
+	_, copyErr := io.Copy(part, file)
+	if copyErr != nil {
+		return nil, "", fmt.Errorf("failed to write file to body: %s", copyErr)
+	}
+
+	return body, writer.FormDataContentType(), nil
 }

@@ -960,6 +960,45 @@ func TestImportCommand(t *testing.T) {
 			})
 		}
 
+		// include dependencies
+		for _, tc := range []testCase{
+			{
+				Description:      "it succeeds if given a valid flagAppPath and flagIncludeDependencies",
+				Args:             append([]string{"--path=../testdata/full_app", "--include-dependencies"}, validArgs...),
+				ExpectedExitCode: 0,
+				StitchClient: u.MockStitchClient{
+					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
+						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
+					},
+					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
+						return nil
+					},
+					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+						return []string{"sample-diff-contents"}, nil
+					},
+					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
+						return &models.App{
+							GroupID: "group-id",
+							ID:      "app-id",
+						}, nil
+					},
+				},
+			},
+		} {
+			t.Run(tc.Description, func(t *testing.T) {
+				importCommand, mockUI := setup()
+
+				// Mock a "yes" response when we prompt the user to confirm the diff
+				mockUI.InputReader = strings.NewReader("y\n")
+				importCommand.stitchClient = &tc.StitchClient
+				importCommand.workingDirectory = tc.WorkingDirectory
+
+				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/stitch.json"))
+				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
+				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
+			})
+		}
+
 		t.Run("syncing data after a successful import", func(t *testing.T) {
 			t.Run("on success", func(t *testing.T) {
 				type testCase struct {

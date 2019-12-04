@@ -440,3 +440,17 @@ func (mr *MockStitchClientMockRecorder) UploadAsset(groupID, appID, path, hash, 
 	varargs := append([]interface{}{groupID, appID, path, hash, size, body}, attributes...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadAsset", reflect.TypeOf((*MockStitchClient)(nil).UploadAsset), varargs...)
 }
+
+// UploadDependencies mocks base method
+func (m *MockStitchClient) UploadDependencies(groupID, appID, fullPath string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadDependencies", groupID, appID, fullPath)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UploadDependencies indicates an expected call of UploadDependencies
+func (mr *MockStitchClientMockRecorder) UploadDependencies(groupID, appID, fullPath interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadDependencies", reflect.TypeOf((*MockStitchClient)(nil).UploadDependencies), groupID, appID, fullPath)
+}
