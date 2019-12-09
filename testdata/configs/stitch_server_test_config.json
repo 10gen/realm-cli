@@ -94,6 +94,23 @@
         }
       },
       "inheritedFeatureFlags": ["mongodb_service"]
+    },
+    {
+      "name": "atlas",
+      "maxAppsPerGroup": 1,
+      "admin": {
+        "actionRoleMappings": {
+          "read": [
+            "GROUP_OWNER",
+            "GROUP_READ_ONLY",
+            "GLOBAL_OWNER",
+            "GLOBAL_READ_ONLY",
+            "GLOBAL_STITCH_ADMIN"
+          ],
+          "write": ["GROUP_OWNER", "GLOBAL_STITCH_ADMIN"]
+        }
+      },
+      "inheritedFeatureFlags": ["mongodb_service"]
     }
   ],
   "auth": {

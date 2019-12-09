@@ -328,6 +328,36 @@ func TestRequestOrigin(t *testing.T) {
 	})
 }
 
+func TestFetchAppByGroupIDAndClientAppID(t *testing.T) {
+	groupID := "group-id"
+	atlasAppID := "triggers-stitchapp-abcde"
+	standardAppID := "standard-stitchapp-abcde"
+	resultTemplate := func(resultAppId string) string {
+		return fmt.Sprintf(`[{ "client_app_id": "%v" }]`, resultAppId)
+	}
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		productParam := r.URL.Query().Get("product")
+		w.WriteHeader(http.StatusOK)
+		if productParam == "atlas" {
+			w.Write([]byte(resultTemplate(atlasAppID)))
+			return
+		}
+		w.Write([]byte(resultTemplate(standardAppID)))
+	}
+	testServer := httptest.NewServer(http.HandlerFunc(testHandler))
+	testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+	t.Run("Should fetch stitch apps", func(t *testing.T) {
+		app, err := testClient.FetchAppByGroupIDAndClientAppID(groupID, standardAppID)
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, app.ClientAppID, gc.ShouldEqual, standardAppID)
+	})
+	t.Run("Should fetch atlas app", func(t *testing.T) {
+		app, err := testClient.FetchAppByGroupIDAndClientAppID(groupID, atlasAppID)
+		u.So(t, err, gc.ShouldBeNil)
+		u.So(t, app.ClientAppID, gc.ShouldEqual, atlasAppID)
+	})
+}
+
 func TestCreateDraft(t *testing.T) {
 	t.Run("CreateDraft should work", func(t *testing.T) {
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
