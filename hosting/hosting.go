@@ -175,8 +175,8 @@ func UpdateCacheFile(path string, assetCache AssetCache) error {
 }
 
 // DiffAssetMetadata compares a local and remote []AssetMetadata and returns a AssetMetadataDiffs
-// which contains information about the differences between the two
-// if the merge paramater is true than me ignore deleted assets
+// which contains information about the differences between the two.
+// If the merge parameter is true, we ignore deleted assets
 func DiffAssetMetadata(local, remote []AssetMetadata, merge bool) *AssetMetadataDiffs {
 	var addedLocally []AssetMetadata
 	var modifiedLocally []ModifiedAssetMetadata

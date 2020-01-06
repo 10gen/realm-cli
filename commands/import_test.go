@@ -1002,32 +1002,44 @@ func TestImportCommand(t *testing.T) {
 		t.Run("syncing data after a successful import", func(t *testing.T) {
 			t.Run("on success", func(t *testing.T) {
 				type testCase struct {
-					Description       string
-					Args              []string
-					WorkingDirectory  string
-					ExpectedDirectory string
+					description            string
+					args                   []string
+					workingDirectory       string
+					expectedDirectory      string
+					expectedExportStrategy api.ExportStrategy
 				}
 
 				for _, tc := range []testCase{
 					{
-						Description:       "it writes data to the provided directory",
-						Args:              append([]string{"--path=../testdata/simple_app"}, validArgs...),
-						WorkingDirectory:  "",
-						ExpectedDirectory: abs("../testdata/simple_app"),
+						description:            "it writes data to the provided directory",
+						args:                   append([]string{"--path=../testdata/simple_app"}, validArgs...),
+						workingDirectory:       "",
+						expectedDirectory:      abs("../testdata/simple_app"),
+						expectedExportStrategy: api.ExportStrategyNone,
 					},
 					{
-						Description:       "it writes data to the working directory when using app config file data",
-						Args:              []string{},
-						WorkingDirectory:  "../testdata/simple_app_with_instance_data",
-						ExpectedDirectory: abs("../testdata/simple_app_with_instance_data"),
+						description:            "it writes data to the working directory when using app config file data",
+						args:                   []string{},
+						workingDirectory:       "../testdata/simple_app_with_instance_data",
+						expectedDirectory:      abs("../testdata/simple_app_with_instance_data"),
+						expectedExportStrategy: api.ExportStrategyNone,
+					},
+					{
+						description:            "it uses the 'template' export strategy when importing using the 'replace-by-name' import strategy",
+						args:                   append([]string{"--path=../testdata/simple_app", "--strategy=replace-by-name"}, validArgs...),
+						workingDirectory:       "",
+						expectedDirectory:      abs("../testdata/simple_app"),
+						expectedExportStrategy: api.ExportStrategyTemplate,
 					},
 				} {
-					t.Run(tc.Description, func(t *testing.T) {
+					t.Run(tc.description, func(t *testing.T) {
 						importCommand, mockUI := setup()
 						mockUI.InputReader = strings.NewReader("y\n")
-						importCommand.workingDirectory = tc.WorkingDirectory
+						importCommand.workingDirectory = tc.workingDirectory
+						var exportStrategy api.ExportStrategy
 						mockStitchClient := &u.MockStitchClient{
 							ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
+								exportStrategy = strategy
 								return "", u.NewResponseBody(strings.NewReader("export response")), nil
 							},
 							ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
@@ -1058,10 +1070,11 @@ func TestImportCommand(t *testing.T) {
 							return nil
 						}
 
-						exitCode := importCommand.Run(tc.Args)
+						exitCode := importCommand.Run(tc.args)
 						u.So(t, exitCode, gc.ShouldEqual, 0)
 						u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
-						u.So(t, abs(destinationDirectory), gc.ShouldEqual, tc.ExpectedDirectory)
+						u.So(t, abs(destinationDirectory), gc.ShouldEqual, tc.expectedDirectory)
+						u.So(t, exportStrategy, gc.ShouldEqual, tc.expectedExportStrategy)
 						u.So(t, writeContent, gc.ShouldEqual, "export response")
 					})
 				}

@@ -27,6 +27,7 @@ const (
 	importFlagResetCDNCache       = "reset-cdn-cache"
 	importStrategyMerge           = "merge"
 	importStrategyReplace         = "replace"
+	importStrategyReplaceByName   = "replace-by-name"
 	importFlagIncludeDependencies = "include-dependencies"
 )
 
@@ -106,10 +107,11 @@ OPTIONS:
   --project-id [string]
 	The Atlas Project ID.
 
-  --strategy [merge|replace] (default: merge)
+  --strategy [merge|replace|replace-by-name] (default: merge, recommended: replace-by-name)
 	How your app should be imported.
 	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
+	replace-by-name - like replace, but uses resource names instead of _id's for identity resolution
 
 
   --include-hosting
@@ -149,8 +151,10 @@ func (ic *ImportCommand) Run(args []string) int {
 		return 1
 	}
 
-	if ic.flagStrategy != importStrategyMerge && ic.flagStrategy != importStrategyReplace {
-		ic.UI.Error(fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace))
+	switch ic.flagStrategy {
+	case importStrategyMerge, importStrategyReplace, importStrategyReplaceByName:
+	default:
+		ic.UI.Error(fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName))
 		return 1
 	}
 
@@ -427,8 +431,12 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		ic.UI.Info("Done.")
 	}
 
-	// re-fetch imported app to sync IDs
-	_, body, err := stitchClient.Export(app.GroupID, app.ID, api.ExportStrategyNone)
+	exportStrategy := api.ExportStrategyNone
+	if ic.flagStrategy == importStrategyReplaceByName {
+		exportStrategy = api.ExportStrategyTemplate
+	}
+
+	_, body, err := stitchClient.Export(app.GroupID, app.ID, exportStrategy)
 	if err != nil {
 		return errImportAppSyncFailure(err)
 	}
