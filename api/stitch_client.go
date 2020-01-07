@@ -847,7 +847,7 @@ func (sc *basicStitchClient) UploadDependencies(groupID, appID, fullPath string)
 		return err
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusNoContent {
 		return UnmarshalStitchError(res)
 	}
 	return nil

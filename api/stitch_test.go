@@ -490,7 +490,8 @@ func TestUploadDependencies(t *testing.T) {
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 
 		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
-		testClient.UploadDependencies(groupID, appID, path)
+		err := testClient.UploadDependencies(groupID, appID, path)
+		u.So(t, err, gc.ShouldBeNil)
 
 		u.So(t, len(uploadedFileData.Bytes()), gc.ShouldResemble, len(expectedFileData.Bytes()))
 		u.So(t, uploadedFileData, gc.ShouldResemble, expectedFileData)
