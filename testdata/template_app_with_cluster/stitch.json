@@ -6,5 +6,8 @@
       "enabled": false
     },
     "deployment_model": "GLOBAL",
+    "realm_config": {
+      "development_mode_enabled": false
+    },
     "security": {}
 }

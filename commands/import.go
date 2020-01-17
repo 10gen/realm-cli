@@ -107,11 +107,10 @@ OPTIONS:
   --project-id [string]
 	The Atlas Project ID.
 
-  --strategy [merge|replace|replace-by-name] (default: merge, recommended: replace-by-name)
+  --strategy [merge|replace]
 	How your app should be imported.
 	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
-	replace-by-name - like replace, but uses resource names instead of _id's for identity resolution
 
 
   --include-hosting
