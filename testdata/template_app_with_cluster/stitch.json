@@ -6,7 +6,7 @@
       "enabled": false
     },
     "deployment_model": "GLOBAL",
-    "realm_config": {
+    "sync": {
       "development_mode_enabled": false
     },
     "security": {}
