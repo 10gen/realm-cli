@@ -113,6 +113,15 @@
       "inheritedFeatureFlags": ["mongodb_service"]
     }
   ],
+  "applog": {
+    "insertWorkers": 4,
+    "store": {
+      "type": "mongodb",
+      "urisByLocation": {
+        "US-VA": "mongodb://localhost:26000"
+      }
+    }
+  },
   "auth": {
     "salt": "DQOWene1723baqD!_@#",
     "saml": {
