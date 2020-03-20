@@ -5,14 +5,15 @@
 package mock_api
 
 import (
+	io "io"
+	reflect "reflect"
+
 	api "github.com/10gen/stitch-cli/api"
 	auth "github.com/10gen/stitch-cli/auth"
 	hosting "github.com/10gen/stitch-cli/hosting"
 	models "github.com/10gen/stitch-cli/models"
 	secrets "github.com/10gen/stitch-cli/secrets"
 	gomock "github.com/golang/mock/gomock"
-	io "io"
-	reflect "reflect"
 )
 
 // MockStitchClient is a mock of StitchClient interface

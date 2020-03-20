@@ -17,6 +17,11 @@ Or, to build binary and install in your Go workspace's bin directory:
 go install
 ```
 
+To upload dependencies, the transpiler needs to be built as well:
+```
+cd etc/transpiler
+yarn && yarn build
+```
 
 ## Documentation
 

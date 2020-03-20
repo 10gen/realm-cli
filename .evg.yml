@@ -5,11 +5,19 @@ functions:
     - command: shell.exec
       params:
         shell: "bash"
-        shell: "bash"
         script: |
           set -e
           wget --quiet ${go_url}
           tar xvf ./go1.13*gz
+  "fetch_yarn":
+    - command: shell.exec
+      params:
+        shell: "bash"
+        script: |
+          set -e
+          curl --silent -OL https://yarnpkg.com/latest.tar.gz
+          tar zvxf latest.tar.gz
+          mv yarn-* yarn
   "setup_project":
     - command: git.get_project
       params:
@@ -43,7 +51,16 @@ functions:
             ./bin/mongo --nodb --eval 'assert.soon(function(x){try{var d = new Mongo("localhost:26000"); return true}catch(e){return false}}, "timed out connecting")'
             ./bin/mongo --port 26000 --eval 'rs.initiate()'
             echo "mongod is up."
-
+  "setup_transpiler": &setup_transpiler
+        command: shell.exec
+        params:
+          shell: "bash"
+          script: |
+            set -e
+            set -v
+            export PATH="`pwd`/yarn/bin:$PATH"
+            cd stitch-cli/etc/transpiler
+            yarn && yarn run build -t ${transpiler_target}
   "setup_stitch_server":
     - command: shell.exec
       params:
@@ -128,7 +145,9 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go113"
+      - func: "fetch_yarn"
       - func: "setup_project"
+      - func: "setup_transpiler"
       - command: shell.exec
         params:
           shell: "bash"
@@ -137,6 +156,7 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
+            export PATH=$PATH:$ROOT_DIR/stitch-cli/etc/transpiler/bin/
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             cd $ROOT_DIR/stitch-cli
@@ -155,7 +175,9 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go113"
+      - func: "fetch_yarn"
       - func: "setup_project"
+      - func: "setup_transpiler"
       - func: "setup_mongod"
       - func: "setup_stitch_server"
       - func: "start_server"
@@ -167,6 +189,7 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
+            export PATH=$PATH:$ROOT_DIR/stitch-cli/etc/transpiler/bin/
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             export STITCH_MONGODB_CLOUD_GROUP_ID="${stitch_mongodb_cloud_group_id}"
@@ -238,6 +261,22 @@ tasks:
             REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
             echo "Building stitch-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o stitch-cli-windows-amd64 main.go
+
+            # build transpilers
+            cd etc/transpiler
+            curl -OL https://yarnpkg.com/latest.tar.gz
+            tar zvxf latest.tar.gz
+            mv yarn-* yarn
+            export PATH="`pwd`/yarn/bin:$PATH"
+            # linux 
+            yarn install && yarn run build -t node8-linux-x64 -o transpiler-linux-x64
+            export PATH="`pwd`/yarn/bin:$PATH"
+            # mac 
+            yarn install && yarn run build -t node8-macos-x64 -o transpiler-macos-x64
+            export PATH="`pwd`/yarn/bin:$PATH"
+            # win 
+            yarn install && yarn run build -t node8-win-x64 -o transpiler-win-x64
+
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
@@ -262,6 +301,34 @@ tasks:
           aws_secret: ${artifacts_aws_secret}
           local_file: stitch-cli/stitch-cli-windows-amd64
           remote_file: ${build_id}/windows-amd64/stitch-cli.exe
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+      # transpilers
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: stitch-cli/etc/bin/transpiler-linux-x64
+          remote_file: ${build_id}/linux-amd64/transpiler
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: stitch-cli/etc/bin/transpiler-macos-x64
+          remote_file: ${build_id}/macos-amd64/transpiler
+          bucket: stitch-clis
+          content_type: application/octet-stream
+          permissions: public-read
+      - command: s3.put
+        params:
+          aws_key: ${artifacts_aws_key}
+          aws_secret: ${artifacts_aws_secret}
+          local_file: stitch-cli/etc/bin/transpiler-win-x64
+          remote_file: ${build_id}/windows-amd64/transpiler.exe
           bucket: stitch-clis
           content_type: application/octet-stream
           permissions: public-read

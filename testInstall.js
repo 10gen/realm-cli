@@ -88,7 +88,8 @@ const executable = path.resolve(
   tempInstallPath,
   'node_modules',
   'stitch-cli',
-  `stitch-cli${os.platform() === 'win32' ? '.exe' : ''}`
+  `stitch-cli${os.platform() === 'win32' ? '.exe' : ''}`,
+  `transpiler${os.platform() === 'win32' ? '.exe' : ''}`
 );
 if (fileExists(executable)) {
   console.log(`Stitch CLI installed fine.`);

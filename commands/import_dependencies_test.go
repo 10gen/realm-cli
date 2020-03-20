@@ -1,12 +1,12 @@
 package commands
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
 
 	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
@@ -16,24 +16,23 @@ func TestImportDependencies(t *testing.T) {
 		expectedAppID := "app-id"
 		dir := "../testdata/app_with_dependencies/functions"
 
-		excpectedPath, pathErr := filepath.Abs("../testdata/app_with_dependencies/functions/node_modules.tar")
-		u.So(t, pathErr, gc.ShouldBeNil)
-
 		stitchClient := &u.MockStitchClient{
 			UploadDependenciesFn: func(groupID, appID, fullPath string) error {
 				u.So(t, groupID, gc.ShouldEqual, expectedGroupID)
 				u.So(t, appID, gc.ShouldEqual, expectedAppID)
-				u.So(t, fullPath, gc.ShouldEqual, excpectedPath)
+				u.So(t, fullPath, gc.ShouldContainSubstring, "node_modules.zip")
 				return nil
 			},
 		}
 
-		err := ImportDependencies(expectedGroupID, expectedAppID, dir, stitchClient)
+		mockUI := cli.NewMockUi()
+		err := ImportDependencies(mockUI, expectedGroupID, expectedAppID, dir, stitchClient)
 		u.So(t, err, gc.ShouldBeNil)
 	})
+
 }
 
-func TestFindDependenciesArchive(t *testing.T) {
+func TestFindDependenciesLocation(t *testing.T) {
 	dirAbsPath, dirErr := filepath.Abs("../testdata/app_with_dependencies/functions")
 	u.So(t, dirErr, gc.ShouldBeNil)
 	for _, tc := range []struct {
@@ -53,7 +52,7 @@ func TestFindDependenciesArchive(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			filename, err := findDependenciesArchive(tc.dir)
+			filename, err := findDependenciesLocation(tc.dir)
 			excpectedPath, pathErr := filepath.Abs(tc.file)
 			u.So(t, pathErr, gc.ShouldBeNil)
 			u.So(t, filename, gc.ShouldEqual, excpectedPath)
@@ -86,52 +85,8 @@ func TestFindDependenciesArchive(t *testing.T) {
 			dir, dirErr := filepath.Abs(tc.dir)
 			u.So(t, dirErr, gc.ShouldBeNil)
 
-			_, err := findDependenciesArchive(dir)
+			_, err := findDependenciesLocation(dir)
 			u.So(t, err.Error(), gc.ShouldEqual, fmt.Sprintf(tc.err, dir))
-		})
-	}
-}
-
-func TestValidateFileFormat(t *testing.T) {
-	for _, tc := range []struct {
-		desc        string
-		file        string
-		expectedErr error
-	}{
-		{
-			desc:        "TAR format should be supported",
-			file:        "functions/node_modules.tar",
-			expectedErr: nil,
-		},
-		{
-			desc:        "ZIP format should be supported",
-			file:        "functions/node_modules.zip",
-			expectedErr: nil,
-		},
-		{
-			desc:        "GZIP format should be supported (gz)",
-			file:        "functions/node_modules.tar.gz",
-			expectedErr: nil,
-		},
-		{
-			desc:        "GZIP format should be supported (tgz)",
-			file:        "functions/node_modules.tgz",
-			expectedErr: nil,
-		},
-		{
-			desc:        "ZIPX should not be supported",
-			file:        "functions/node_modules.zipx",
-			expectedErr: errors.New("file 'functions/node_modules.zipx' has an unsupported format"),
-		},
-		{
-			desc:        "an extension with a 'gz' suffix should not be supported",
-			file:        "node_modules.2gz",
-			expectedErr: errors.New("file 'node_modules.2gz' has an unsupported format"),
-		},
-	} {
-		t.Run(tc.desc, func(t *testing.T) {
-			err := validateDependenciesFileFormat(tc.file)
-			u.So(t, err, gc.ShouldResemble, tc.expectedErr)
 		})
 	}
 }

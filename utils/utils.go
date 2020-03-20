@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/10gen/stitch-cli/models"
 	"github.com/mitchellh/go-homedir"
@@ -250,6 +251,10 @@ func unmarshalFunctionDirectories(path string, ignoreDirErr bool) ([]interface{}
 	directories := []interface{}{}
 
 	err = iterDirectories(func(info os.FileInfo, path string) error {
+		// we skip over node_modules since we upload that as a single entity
+		if strings.Contains(path, "node_modules") {
+			return nil
+		}
 		var config interface{}
 		if err := readAndUnmarshalJSONInto(filepath.Join(path, configName+jsonExt), &config); err != nil {
 			return err

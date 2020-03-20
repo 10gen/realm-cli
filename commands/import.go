@@ -423,7 +423,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			return dirErr
 		}
 
-		importErr := ImportDependencies(app.GroupID, app.ID, functionsDir, stitchClient)
+		importErr := ImportDependencies(ic.UI, app.GroupID, app.ID, functionsDir, stitchClient)
 		if importErr != nil {
 			return importErr
 		}

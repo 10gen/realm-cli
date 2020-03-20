@@ -4,30 +4,35 @@ const request = require('request');
 
 const versionMetadata = require('./version');
 
-const baseDownloadURL = `https://s3.amazonaws.com/stitch-clis/${versionMetadata.baseDirectory}`;
-const linuxDownloadURL = `${baseDownloadURL}/linux-amd64/stitch-cli`;
-const macDownloadURL = `${baseDownloadURL}/macos-amd64/stitch-cli`;
-const windowsDownloadURL = `${baseDownloadURL}/windows-amd64/stitch-cli.exe`;
+const basedownloadURL = `https://s3.amazonaws.com/stitch-clis/${versionMetadata.baseDirectory}`;
+const linuxdownloadURL = `${basedownloadURL}/linux-amd64/stitch-cli`;
+const macdownloadURL = `${basedownloadURL}/macos-amd64/stitch-cli`;
+const windowsdownloadURL = `${basedownloadURL}/windows-amd64/stitch-cli.exe`;
+// transpiler downloads
+const linuxTranspilerdownloadURL = `${basedownloadURL}/linux-amd64/transpiler`;
+const macTranspilerdownloadURL = `${basedownloadURL}/macos-amd64/transpiler`;
+const windowsTranspilerdownloadURL = `${basedownloadURL}/windows-amd64/transpiler.exe`;
 
-function getDownloadURL() {
+function getdownloadURL(cli) {
   const platform = process.platform;
-  let downloadUrl;
+  let downloadURL;
+  let transpilerdownloadURL;
 
   if (platform === 'linux') {
     if (process.arch === 'x64') {
-      downloadUrl = linuxDownloadURL;
+      downloadURL = cli ? linuxdownloadURL : linuxTranspilerdownloadURL;
     } else {
       throw new Error('Only Linux 64 bits supported.');
     }
   } else if (platform === 'darwin' || platform === 'freebsd') {
     if (process.arch === 'x64') {
-      downloadUrl = macDownloadURL;
+      downloadURL = cli ? macdownloadURL : macTranspilerdownloadURL;
     } else {
       throw new Error('Only Mac 64 bits supported.');
     }
   } else if (platform === 'win32') {
     if (process.arch === 'x64') {
-      downloadUrl = windowsDownloadURL;
+      downloadURL = cli ? windowsdownloadURL : windowsTranspilerdownloadURL;
     } else {
       throw new Error('Only Windows 64 bits supported.');
     }
@@ -35,7 +40,7 @@ function getDownloadURL() {
     throw new Error(`Unexpected platform or architecture: ${process.platform} ${process.arch}`);
   }
 
-  return downloadUrl;
+  return downloadURL;
 }
 
 function fixFilePermissions(filePath) {
@@ -50,19 +55,19 @@ function fixFilePermissions(filePath) {
   }
 }
 
-function requstBinary(downloadUrl) {
-  console.log(`downloading stitch-cli from "${downloadUrl}"`);
+function requstBinary(downloadURL, baseName) {
+  console.log(`downloading "${baseName}" from "${downloadURL}"`);
 
   return new Promise((resolve, reject) => {
     let count = 0;
     let notifiedCount = 0;
 
-    const binaryName = process.platform === 'win32' ? 'stitch-cli.exe' : 'stitch-cli';
+    const binaryName = process.platform === 'win32' ? baseName + '.exe' : baseName;
     const filePath = path.join(process.cwd(), binaryName);
     const outFile = fs.openSync(filePath, 'w');
 
     const requestOptions = {
-      uri: downloadUrl,
+      uri: downloadURL,
       method: 'GET',
     };
     const client = request(requestOptions);
@@ -90,15 +95,28 @@ function requstBinary(downloadUrl) {
 }
 
 // Install script starts here
-let downloadUrl;
+let downloadURL;
 try {
-  downloadUrl = getDownloadURL();
+  downloadURL = getdownloadURL(true);
 } catch (err) {
   console.error('Stitch CLI installation failed:', err);
   process.exit(1);
 }
 
-requstBinary(downloadUrl).catch(err => {
-  console.error('Stitch CLI installation failed while downloading:', err);
+requstBinary(downloadURL, 'stitch-cli').catch(err => {
+  console.error('failed to download Stitch CLI:', err);
+  process.exit(1);
+});
+
+let transpilerdownloadURL;
+try {
+  transpilerdownloadURL = getdownloadURL(false);
+} catch (err) {
+  console.error('Stitch CLI installation failed:', err);
+  process.exit(1);
+}
+
+requstBinary(transpilerdownloadURL, 'transpiler').catch(err => {
+  console.error('failed to download Stitch CLI:', err);
   process.exit(1);
 });

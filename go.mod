@@ -17,8 +17,10 @@ require (
 	github.com/mitchellh/cli v0.0.0-20180117155440-518dc677a1e1
 	github.com/mitchellh/go-homedir v1.0.0
 	github.com/posener/complete v0.0.0-20171104095702-dc2bc5a81acc // indirect
+	github.com/robertkrimen/otto v0.0.0-20191219234010-c382bd3c16ff
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20170602164621-9e8dc3f972df
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.2.1
 )

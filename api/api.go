@@ -60,7 +60,6 @@ func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options Req
 	req.Header.Set(StitchRequestOriginHeader, StitchCLIHeaderValue)
 
 	client := &http.Client{}
-
 	return client.Do(req)
 }
 
