@@ -277,7 +277,7 @@ tasks:
             mv bin/transpiler bin/transpiler-macos-x64
             # win 
             yarn run build -t node8-win-x64 
-            mv bin/transpiler bin/transpiler-win-x64
+            mv bin/transpiler.exe bin/transpiler-win-x64
 
       - command: s3.put
         params:
@@ -311,7 +311,7 @@ tasks:
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/bin/transpiler-linux-x64
+          local_file: stitch-cli/etc/transpiler/bin/transpiler-linux-x64
           remote_file: ${build_id}/linux-amd64/transpiler
           bucket: stitch-clis
           content_type: application/octet-stream
@@ -320,7 +320,7 @@ tasks:
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/bin/transpiler-macos-x64
+          local_file: stitch-cli/etc/transpiler/bin/transpiler-macos-x64
           remote_file: ${build_id}/macos-amd64/transpiler
           bucket: stitch-clis
           content_type: application/octet-stream
@@ -329,7 +329,7 @@ tasks:
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/bin/transpiler-win-x64
+          local_file: stitch-cli/etc/transpiler/bin/transpiler-win-x64
           remote_file: ${build_id}/windows-amd64/transpiler.exe
           bucket: stitch-clis
           content_type: application/octet-stream
