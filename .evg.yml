@@ -268,14 +268,16 @@ tasks:
             tar zvxf latest.tar.gz
             mv yarn-* yarn
             export PATH="`pwd`/yarn/bin:$PATH"
+            yarn install 
             # linux 
-            yarn install && yarn run build -t node8-linux-x64 -o transpiler-linux-x64
-            export PATH="`pwd`/yarn/bin:$PATH"
+            yarn run build -t node8-linux-x64
+            mv bin/transpiler bin/transpiler-linux-x64
             # mac 
-            yarn install && yarn run build -t node8-macos-x64 -o transpiler-macos-x64
-            export PATH="`pwd`/yarn/bin:$PATH"
+            yarn run build -t node8-macos-x64
+            mv bin/transpiler bin/transpiler-macos-x64
             # win 
-            yarn install && yarn run build -t node8-win-x64 -o transpiler-win-x64
+            yarn run build -t node8-win-x64 
+            mv bin/transpiler bin/transpiler-win-x64
 
       - command: s3.put
         params:
