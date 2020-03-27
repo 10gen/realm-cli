@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/10gen/stitch-cli/api"
@@ -47,12 +48,13 @@ type ExportCommand struct {
 	writeFileToDirectory func(dest string, data io.Reader) error
 	getAssetAtURL        func(url string) (io.ReadCloser, error)
 
-	flagProjectID        string
-	flagAppID            string
-	flagOutput           string
-	flagAsTemplate       bool
-	flagIncludeHosting   bool
-	flagForSourceControl bool
+	flagProjectID           string
+	flagAppID               string
+	flagOutput              string
+	flagAsTemplate          bool
+	flagIncludeHosting      bool
+	flagIncludeDependencies bool
+	flagForSourceControl    bool
 }
 
 // Help returns long-form help information for this command
@@ -76,6 +78,9 @@ OPTIONS:
   --for-source-control
 	Indicate that the application should be exported for source control.
 
+  --include-dependencies
+	Download dependencies associated with this project
+
   --include-hosting
 	Download static assets associated with this project` +
 		ec.BaseCommand.Help()
@@ -96,6 +101,7 @@ func (ec *ExportCommand) Run(args []string) int {
 	set.StringVar(&ec.flagOutput, "o", "", "")
 	set.BoolVar(&ec.flagAsTemplate, "as-template", false, "")
 	set.BoolVar(&ec.flagForSourceControl, "for-source-control", false, "")
+	set.BoolVar(&ec.flagIncludeDependencies, "include-dependencies", false, "")
 	set.BoolVar(&ec.flagIncludeHosting, "include-hosting", false, "")
 
 	if err := ec.BaseCommand.run(args); err != nil {
@@ -171,6 +177,20 @@ func (ec *ExportCommand) run() error {
 
 	if err := ec.exportToDirectory(filename, body, false); err != nil {
 		return err
+	}
+
+	if ec.flagIncludeDependencies {
+		depArchive, depBody, err := stitchClient.ExportDependencies(app.GroupID, app.ID)
+		if err != nil {
+			return err
+		}
+		defer depBody.Close()
+		functionsDir := filepath.Join(filename, utils.FunctionsRoot, depArchive)
+		err = ec.writeFileToDirectory(functionsDir, depBody)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	if ec.flagIncludeHosting {

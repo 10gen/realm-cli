@@ -201,6 +201,22 @@ func (mr *MockStitchClientMockRecorder) Export(groupID, appID, strategy interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*MockStitchClient)(nil).Export), groupID, appID, strategy)
 }
 
+// ExportDependencies mocks base method
+func (m *MockStitchClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportDependencies", groupID, appID)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(io.ReadCloser)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ExportDependencies indicates an expected call of ExportDependencies
+func (mr *MockStitchClientMockRecorder) ExportDependencies(groupID, appID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportDependencies", reflect.TypeOf((*MockStitchClient)(nil).ExportDependencies), groupID, appID)
+}
+
 // FetchAppByClientAppID mocks base method
 func (m *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
 	m.ctrl.T.Helper()

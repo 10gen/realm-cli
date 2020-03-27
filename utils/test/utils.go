@@ -212,6 +212,7 @@ type MockStitchClient struct {
 	DeleteAssetFn                     func(groupID, appID, path string) error
 	SetAssetAttributesFn              func(groupID, appID, path string, attributes ...hosting.AssetAttribute) error
 	ExportFn                          func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error)
+	ExportDependencyFn                func(groupID, appID string) (string, io.ReadCloser, error)
 	ExportFnCalls                     [][]string
 	ImportFn                          func(groupID, appID string, appData []byte, strategy string) error
 	ImportFnCalls                     [][]string
@@ -238,6 +239,15 @@ func (msc *MockStitchClient) Export(groupID, appID string, strategy api.ExportSt
 	if msc.ExportFn != nil {
 		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID, string(strategy)})
 		return msc.ExportFn(groupID, appID, strategy)
+	}
+
+	return "", nil, nil
+}
+
+// Export will download a Stitch app's dependencies
+func (msc *MockStitchClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+	if msc.ExportDependencyFn != nil {
+		return msc.ExportDependencyFn(groupID, appID)
 	}
 
 	return "", nil, nil

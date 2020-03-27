@@ -53,7 +53,8 @@ const (
 	secretsRoute = adminBaseURL + "/groups/%s/apps/%s/secrets"
 	secretRoute  = adminBaseURL + "/groups/%s/apps/%s/secrets/%s"
 
-	dependenciesRoute = adminBaseURL + "/groups/%s/apps/%s/dependencies"
+	dependenciesRoute              = adminBaseURL + "/groups/%s/apps/%s/dependencies"
+	dependenciesExportArchiveRoute = dependenciesRoute + "/archive"
 )
 
 var (
@@ -99,6 +100,7 @@ type StitchClient interface {
 	DiscardDraft(groupID, appID, draftID string) error
 	DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error)
 	Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error)
+	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
 	FetchAppByClientAppID(clientAppID string) (*models.App, error)
 	FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error)
 	FetchAppsByGroupID(groupID string) ([]*models.App, error)
@@ -181,6 +183,36 @@ func (sc *basicStitchClient) Export(groupID, appID string, strategy ExportStrate
 	}
 
 	_, params, err := mime.ParseMediaType(res.Header.Get(hosting.AttributeContentDisposition))
+	if err != nil {
+		res.Body.Close()
+		return "", nil, err
+	}
+
+	filename := params["filename"]
+	if len(filename) == 0 {
+		res.Body.Close()
+		return "", nil, errExportMissingFilename
+	}
+
+	return filename, res.Body, nil
+}
+
+// Export will download the installed dependencies as a zip
+func (sc *basicStitchClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+	url := fmt.Sprintf(dependenciesExportArchiveRoute, groupID, appID)
+
+	res, err := sc.ExecuteRequest(http.MethodGet, url, RequestOptions{})
+	if err != nil {
+		return "", nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		defer res.Body.Close()
+		return "", nil, UnmarshalStitchError(res)
+	}
+
+	contentDisposition := res.Header.Get("Content-Disposition")
+	_, params, err := mime.ParseMediaType(contentDisposition)
 	if err != nil {
 		res.Body.Close()
 		return "", nil, err
