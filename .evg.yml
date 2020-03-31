@@ -268,7 +268,7 @@ tasks:
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             cd $ROOT_DIR/stitch-cli
-            export VERSION="1.11.0"
+            export VERSION="${version}"
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
@@ -286,11 +286,11 @@ tasks:
             echo "Building stitch-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o stitch-cli-windows-amd64 main.go
 
-            # build transpilers
-            cd etc/transpiler
             curl -OL https://yarnpkg.com/latest.tar.gz
             tar zvxf latest.tar.gz
             mv yarn-* yarn
+            # build transpilers
+            cd etc/transpiler
             export PATH="$ROOT_DIR/yarn/bin:$PATH"
             export NVM_DIR="$ROOT_DIR/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -380,6 +380,7 @@ buildvariants:
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_f1f04683a9b5612f5a82a2d7f97818ef74a8fb05_5d898ee3306615699f265907_19_09_24_03_35_01/libmongo.so'
     mongoDBCloudURL: https://cloud-dev.mongodb.com
     stitchServerURL: http://localhost:9090
+    version: 1.11.0
   tasks:
   - name: test_unit
   - name: tests-with-cloud
