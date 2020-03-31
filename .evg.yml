@@ -18,6 +18,21 @@ functions:
           curl --silent -OL https://yarnpkg.com/latest.tar.gz
           tar zvxf latest.tar.gz
           mv yarn-* yarn
+  "setup_node": &setup_node
+      command: shell.exec
+      params:
+        shell: "bash"
+        script: |
+          set -e
+          export ROOT_DIR=`pwd`
+          export NVM_DIR="$ROOT_DIR/.nvm"
+          if [ ! -d "$NVM_DIR" ]; then
+            git clone https://github.com/nvm-sh/nvm.git "$NVM_DIR"
+            cd "$NVM_DIR"
+            git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
+          fi 
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install ${node_version}
   "setup_project":
     - command: git.get_project
       params:
@@ -52,13 +67,18 @@ functions:
             ./bin/mongo --port 26000 --eval 'rs.initiate()'
             echo "mongod is up."
   "setup_transpiler": &setup_transpiler
-        command: shell.exec
+      - *setup_node
+      - command: shell.exec
         params:
           shell: "bash"
           script: |
             set -e
             set -v
-            export PATH="`pwd`/yarn/bin:$PATH"
+            export ROOT_DIR=`pwd`
+            export PATH="$ROOT_DIR/yarn/bin:$PATH"
+            export NVM_DIR="$ROOT_DIR/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm use ${node_version}
             cd stitch-cli/etc/transpiler
             yarn && yarn run build -t ${transpiler_target}
   "setup_stitch_server":
@@ -87,11 +107,15 @@ functions:
         shell: "bash"
         script: |
           set -e
+          export ROOT_DIR=`pwd`
+          export PATH="$ROOT_DIR/yarn/bin:$PATH"
+          export NVM_DIR="$ROOT_DIR/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use ${node_version}
           cd stitch/etc/transpiler
           curl -OL https://yarnpkg.com/latest.tar.gz
           tar zvxf latest.tar.gz
           mv yarn-* yarn
-          export PATH="`pwd`/yarn/bin:$PATH"
           yarn install && yarn run build -t ${transpiler_target}
   "start_server":
     - command: shell.exec
@@ -267,7 +291,9 @@ tasks:
             curl -OL https://yarnpkg.com/latest.tar.gz
             tar zvxf latest.tar.gz
             mv yarn-* yarn
-            export PATH="`pwd`/yarn/bin:$PATH"
+            export PATH="$ROOT_DIR/yarn/bin:$PATH"
+            export NVM_DIR="$ROOT_DIR/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             yarn install 
             # linux 
             yarn run build -t node8-linux-x64
@@ -349,6 +375,7 @@ buildvariants:
     go_url: "https://dl.google.com/go/go1.13.linux-amd64.tar.gz"
     server_stitch_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/enterprise-rhel-70-64-bit/18ca0d551818d6c8274358b8e6444640bec93c88/stitch-support-4.3.0-120-g18ca0d5.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
+    node_version: 10.15.1
     transpiler_target: node8-linux
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_f1f04683a9b5612f5a82a2d7f97818ef74a8fb05_5d898ee3306615699f265907_19_09_24_03_35_01/libmongo.so'
     mongoDBCloudURL: https://cloud-dev.mongodb.com
