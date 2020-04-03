@@ -267,6 +267,14 @@ tasks:
             export PATH="$ROOT_DIR:$PATH"
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
+
+            curl -OL https://yarnpkg.com/latest.tar.gz
+            tar zvxf latest.tar.gz
+            mv yarn-* yarn
+            export PATH="$ROOT_DIR/yarn/bin:$PATH"
+            export NVM_DIR="$ROOT_DIR/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
             cd $ROOT_DIR/stitch-cli
             export VERSION="${version}"
             export GOARCH=amd64
@@ -286,14 +294,9 @@ tasks:
             echo "Building stitch-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o stitch-cli-windows-amd64 main.go
 
-            curl -OL https://yarnpkg.com/latest.tar.gz
-            tar zvxf latest.tar.gz
-            mv yarn-* yarn
+
             # build transpilers
             cd etc/transpiler
-            export PATH="$ROOT_DIR/yarn/bin:$PATH"
-            export NVM_DIR="$ROOT_DIR/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             yarn install 
             # linux 
             yarn run build -t node8-linux-x64
