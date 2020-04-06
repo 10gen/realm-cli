@@ -383,7 +383,7 @@ buildvariants:
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_f1f04683a9b5612f5a82a2d7f97818ef74a8fb05_5d898ee3306615699f265907_19_09_24_03_35_01/libmongo.so'
     mongoDBCloudURL: https://cloud-dev.mongodb.com
     stitchServerURL: http://localhost:9090
-    version: 1.11.0
+    version: 1.12.0
   tasks:
   - name: test_unit
   - name: tests-with-cloud
