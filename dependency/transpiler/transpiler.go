@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"os/exec"
-	"strings"
 )
 
 // DefaultTranspilerCommand is the binary used for executing the transpiler
@@ -19,18 +17,6 @@ type TranspileError struct {
 	Message string `json:"message"`
 	Line    int    `json:"line"`
 	Column  int    `json:"column"`
-}
-
-// ErrFunctionTranspilationFailed is a map of functions that failed transpilations to their associated errors
-type ErrFunctionTranspilationFailed map[string]error
-
-func (e ErrFunctionTranspilationFailed) Error() string {
-	errors := make([]string, 0, len(e)+1)
-	errors = append(errors, "Error in functions:")
-	for functionName, err := range e {
-		errors = append(errors, fmt.Sprintf("- %s: %s", functionName, err))
-	}
-	return strings.Join(errors, "\n")
 }
 
 // TranspileResult contains the transpiled code and the source map obtained from a transpiler run

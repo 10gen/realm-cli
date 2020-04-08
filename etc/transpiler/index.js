@@ -11,13 +11,11 @@ function processData(input) {
     errors: [],
   };
   const opts = {
-      presets: ['es2015'],
-    plugins: [
-      'transform-object-rest-spread',
-      'transform-regenerator',
-      // ,
-      // 'transform-async-to-generator'
-    ],
+    presets: ['es2015'],
+    plugins: ['transform-object-rest-spread', 'transform-regenerator'],
+    parserOpts: {
+      allowReturnOutsideFunction: true,
+    },
     sourceMap: true,
   };
   for (let i = 0; i < parsedInput.length; i++) {
@@ -25,27 +23,43 @@ function processData(input) {
     try {
       const result = babel.transform(code, opts);
       if (output.errors.length > 0) {
-        continue
+        continue;
       }
-      output.results.push({code: result.code, map: result.map});
+      output.results.push({ code: result.code, map: result.map });
     } catch (e) {
-      let error = {
+      const error = {
         index: i,
         // error message includes the snippet of code, which we don't want in the message
-        message: (e.message || '').split('\n')[0],        
+        message: (e.message || '').split('\n')[0],
       };
       if (e.loc) {
         error.line = e.loc.line;
         error.column = e.loc.column;
       }
+      /*
+        this was introduced trying to transpile this file:
+        https://github.com/protobufjs/protobuf.js/blob/master/cli/wrappers/es6.js
+        the file contains unrecoverable errors for the parser:
+              import * as $protobuf from $DEPENDENCY;
+
+              $OUTPUT;
+
+              export { $root as default };
+        this error was added as a warning to still have visibility without causing termination
+      */
+      if (e.message.includes('$')) {
+        output.warnings.push(error);
+        continue;
+      }
+
       output.errors.push(error);
     }
   }
 
   if (output.errors.length == 0) {
-    delete(output.errors);
+    delete output.errors;
   } else {
-    delete(output.results);
+    delete output.results;
   }
 
   const outData = JSON.stringify(output, null, 2);
