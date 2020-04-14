@@ -37,6 +37,13 @@ func TestAppLoadFromDirectory(t *testing.T) {
 			u.So(t, trgger.(map[string]interface{}), gc.ShouldNotBeEmpty)
 		}
 
+		gqlServices, _ := app["graphql"].(map[string][]interface{})
+		u.So(t, gqlServices["custom_resolvers"], gc.ShouldHaveLength, 1)
+		for _, customResolver := range gqlServices["custom_resolvers"] {
+			customResolverMap := customResolver.(map[string]interface{})
+			u.So(t, customResolverMap["field_name"], gc.ShouldNotBeEmpty)
+		}
+
 		u.So(t, app["services"], gc.ShouldHaveLength, 3)
 		for _, svc := range app["services"].([]interface{}) {
 			svcMap := svc.(map[string]interface{})

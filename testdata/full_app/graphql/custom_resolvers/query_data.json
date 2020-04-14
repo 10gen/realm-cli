@@ -1,0 +1,27 @@
+{
+  "id": "5e90c328859d442f795f8eb6",
+  "function_name": "function_a",
+  "on_type": "Query",
+  "field_name": "data",
+  "input_type": {
+      "properties": {
+          "name": {
+              "type": "string"
+          }
+      },
+      "required": [
+          "name"
+      ],
+      "title": "MyDataResolverInput",
+      "type": "object"
+  },
+  "payload_type": {
+      "properties": {
+          "hello": {
+              "type": "string"
+          }
+      },
+      "title": "MyDataResolverResult",
+      "type": "object"
+  }
+}

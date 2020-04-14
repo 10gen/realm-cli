@@ -34,6 +34,8 @@ const (
 	servicesName         = "services"
 	sourceName           = "source"
 	valuesName           = "values"
+	graphQLName          = "graphql"
+	customResolversName  = "custom_resolvers"
 )
 
 //
@@ -209,6 +211,13 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 		app[triggersName] = triggers
 	}
 
+	graphQL, err := unmarshalGraphQLDirectories(filepath.Join(path, graphQLName), true)
+	if err != nil {
+		return app, err
+	}
+
+	app[graphQLName] = graphQL
+
 	services, err := unmarshalServiceDirectories(filepath.Join(path, servicesName), true)
 	if err != nil {
 		return app, err
@@ -279,6 +288,42 @@ func unmarshalFunctionDirectories(path string, ignoreDirErr bool) ([]interface{}
 	}
 
 	return directories, nil
+}
+
+func unmarshalGraphQLDirectories(path string, ignoreDirErr bool) (map[string][]interface{}, error) {
+	fileInfos, err := ioutil.ReadDir(path)
+	if err != nil && !ignoreDirErr {
+		return map[string][]interface{}{}, err
+	}
+
+	gqlServices := map[string][]interface{}{}
+
+	err = iterDirectories(func(info os.FileInfo, path string) error {
+		gqlSvcFileInfos, err := ioutil.ReadDir(path)
+		if err != nil {
+			return err
+		}
+
+		for _, fileInfo := range gqlSvcFileInfos {
+			var config map[string]interface{}
+			if err := readAndUnmarshalJSONInto(filepath.Join(path, fileInfo.Name()), &config); err != nil {
+				return err
+			}
+
+			// As we add graphql-related services we can expand this to unmarshal each one accordingly
+			if strings.Contains(path, customResolversName) {
+				gqlServices[customResolversName] = append(gqlServices[customResolversName], config)
+			}
+		}
+
+		return nil
+	}, path, fileInfos)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return gqlServices, nil
 }
 
 func unmarshalServiceDirectories(path string, ignoreDirErr bool) ([]interface{}, error) {
