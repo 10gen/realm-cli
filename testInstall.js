@@ -87,14 +87,26 @@ if (process.platform === 'win32') {
 const executable = path.resolve(
   tempInstallPath,
   'node_modules',
-  'stitch-cli',
-  `stitch-cli${os.platform() === 'win32' ? '.exe' : ''}`,
-  `transpiler${os.platform() === 'win32' ? '.exe' : ''}`
+  'mongodb-stitch-cli',
+  `stitch-cli${os.platform() === 'win32' ? '.exe' : ''}`
 );
 if (fileExists(executable)) {
   console.log(`Stitch CLI installed fine.`);
 } else {
   console.error(`STITCH CLI did not install correctly, file '${executable}' was not found.`);
+  process.exit(2);
+}
+
+const executableTranspiler = path.resolve(
+  tempInstallPath,
+  'node_modules',
+  'mongodb-stitch-cli',
+  `transpiler${os.platform() === 'win32' ? '.exe' : ''}`
+);
+if (fileExists(executableTranspiler)) {
+  console.log(`Transpiler installed fine.`);
+} else {
+  console.error(`Transpiler did not install correctly, file '${executableTranspiler}' was not found.`);
   process.exit(2);
 }
 

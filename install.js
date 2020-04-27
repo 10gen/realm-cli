@@ -16,7 +16,6 @@ const windowsTranspilerdownloadURL = `${basedownloadURL}/windows-amd64/transpile
 function getdownloadURL(cli) {
   const platform = process.platform;
   let downloadURL;
-  let transpilerdownloadURL;
 
   if (platform === 'linux') {
     if (process.arch === 'x64') {

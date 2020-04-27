@@ -142,9 +142,6 @@ func findDependenciesLocation(dir string) (string, error) {
 	if len(matches) == 0 {
 		return "", fmt.Errorf("node_modules archive not found in the '%s' directory", dir)
 	}
-	if len(matches) > 1 {
-		return "", fmt.Errorf("found more than one node_modules archive in the '%s' directory", dir)
-	}
 
 	return filepath.Abs(matches[0])
 }

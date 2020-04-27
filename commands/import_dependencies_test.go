@@ -75,11 +75,6 @@ func TestFindDependenciesLocation(t *testing.T) {
 			dir:  "../testdata/simple_app/functions",
 			err:  "node_modules archive not found in the '%s' directory",
 		},
-		{
-			desc: "should return an error with an app with too many deps archives",
-			dir:  "../testdata/app_with_too_many_deps_archives/functions",
-			err:  "found more than one node_modules archive in the '%s' directory",
-		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			dir, dirErr := filepath.Abs(tc.dir)

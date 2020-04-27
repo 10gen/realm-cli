@@ -92,13 +92,13 @@ functions:
       params:
         shell: "bash"
         script: |
-          git clone git@github.com:10gen/stitch.git
+          git clone git@github.com:10gen/baas.git
     - command: shell.exec
       params:
         shell: "bash"
         script: |
           set -e
-          cd stitch
+          cd baas
           mkdir -p etc/dylib
           cd etc/dylib
           curl -s "${server_stitch_lib_url}" | tar xvfz - --strip-components=1
@@ -112,7 +112,7 @@ functions:
           export NVM_DIR="$ROOT_DIR/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm use ${node_version}
-          cd stitch/etc/transpiler
+          cd baas/etc/transpiler
           curl -OL https://yarnpkg.com/latest.tar.gz
           tar zvxf latest.tar.gz
           mv yarn-* yarn
@@ -127,9 +127,9 @@ functions:
           export PATH="$ROOT_DIR:$PATH"
           export GOROOT=$ROOT_DIR/go
           export PATH=$GOROOT/bin:$PATH
-          cd $ROOT_DIR/stitch
-          export PATH="$ROOT_DIR/stitch/etc/transpiler/bin:$PATH"
-          export LD_LIBRARY_PATH="$ROOT_DIR/stitch/etc/dylib/lib"
+          cd $ROOT_DIR/baas
+          export PATH="$ROOT_DIR/baas/etc/transpiler/bin:$PATH"
+          export LD_LIBRARY_PATH="$ROOT_DIR/baas/etc/dylib/lib"
           which transpiler
           cat > atlas_config.json <<EOF
           {
@@ -378,11 +378,11 @@ buildvariants:
     go_url: "https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz"
     server_stitch_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/enterprise-rhel-70-64-bit/18ca0d551818d6c8274358b8e6444640bec93c88/stitch-support-4.3.0-120-g18ca0d5.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
-    node_version: 10.15.1
+    node_version: 12.16.2
     transpiler_target: node8-linux
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_880e9e39c40bf9fbbdf9e8e771f6186450441046_5e91e60b0305b91b1cbbfa53_20_04_11_15_45_16/libmongo.so'
     mongoDBCloudURL: https://cloud-dev.mongodb.com
-    stitchServerURL: http://localhost:9090
+    stitchServerURL: http://localhost:8080
     version: 1.12.0
   tasks:
   - name: test_unit
