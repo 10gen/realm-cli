@@ -15,7 +15,7 @@ functions:
         shell: "bash"
         script: |
           set -e
-          curl --silent -OL https://yarnpkg.com/latest.tar.gz
+          curl --silent -OL ${yarn_url}
           tar zvxf latest.tar.gz
           mv yarn-* yarn
   "setup_node": &setup_node
@@ -113,7 +113,7 @@ functions:
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm use ${node_version}
           cd baas/etc/transpiler
-          curl -OL https://yarnpkg.com/latest.tar.gz
+          curl --silent -OL ${yarn_url}
           tar zvxf latest.tar.gz
           mv yarn-* yarn
           yarn install && yarn run build -t ${transpiler_target}
@@ -268,7 +268,7 @@ tasks:
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
 
-            curl -OL https://yarnpkg.com/latest.tar.gz
+            curl --silent -OL ${yarn_url}
             tar zvxf latest.tar.gz
             mv yarn-* yarn
             export PATH="$ROOT_DIR/yarn/bin:$PATH"
@@ -381,6 +381,7 @@ buildvariants:
     node_version: 12.16.2
     transpiler_target: node8-linux
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_880e9e39c40bf9fbbdf9e8e771f6186450441046_5e91e60b0305b91b1cbbfa53_20_04_11_15_45_16/libmongo.so'
+    yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
     mongoDBCloudURL: https://cloud-dev.mongodb.com
     stitchServerURL: http://localhost:8080
     version: 1.13.0
