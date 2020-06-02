@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/utils"
 )
 
 // Valid attribute types names
@@ -19,7 +19,7 @@ var (
 	AttributeWebsiteRedirectLocation = "Website-Redirect-Location"
 )
 
-// ValidAttributeNames stores the attribute names that Stitch static hosting supports
+// ValidAttributeNames stores the attribute names that Realm static hosting supports
 var ValidAttributeNames = map[string]bool{
 	AttributeContentType:             true,
 	AttributeContentDisposition:      true,

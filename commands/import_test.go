@@ -14,14 +14,14 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/api/mdbcloud"
-	mock_api "github.com/10gen/stitch-cli/api/mocks"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/api/mdbcloud"
+	mock_api "github.com/10gen/realm-cli/api/mocks"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
@@ -43,7 +43,7 @@ func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
 		return nil
 	}
 
-	mockStitchClient := &u.MockStitchClient{
+	mockRealmClient := &u.MockRealmClient{
 		ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 			return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 		},
@@ -60,7 +60,7 @@ func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
 			}, nil
 		},
 	}
-	importCommand.stitchClient = mockStitchClient
+	importCommand.realmClient = mockRealmClient
 	return importCommand, mockUI
 }
 
@@ -81,7 +81,7 @@ func TestImportNewApp(t *testing.T) {
 			Description             string
 			Args                    []string
 			ExpectedExitCode        int
-			StitchClient            u.MockStitchClient
+			RealmClient             u.MockRealmClient
 			AtlasClient             u.MockMDBClient
 			ProjectInput            string
 			LocationInput           string
@@ -92,7 +92,7 @@ func TestImportNewApp(t *testing.T) {
 		}
 
 		t.Run("supports creating and importing a new app", func(t *testing.T) {
-			stitchClient := u.MockStitchClient{
+			realmClient := u.MockRealmClient{
 				ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 					return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 				},
@@ -115,7 +115,7 @@ func TestImportNewApp(t *testing.T) {
 			enterLocation := "US-VA\n"
 			enterDeploymentModel := "GLOBAL\n"
 			mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterLocation + enterDeploymentModel)
-			importCommand.stitchClient = &stitchClient
+			importCommand.realmClient = &realmClient
 
 			var writeToDirectoryCallCount int
 			importCommand.writeToDirectory = func(dest string, zipData io.Reader, overwrite bool) error {
@@ -136,8 +136,8 @@ func TestImportNewApp(t *testing.T) {
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "New app created: My-Test-app-abcdef")
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Successfully imported 'My-Test-app-abcdef'")
 
-			mockStitchClient := importCommand.stitchClient.(*u.MockStitchClient)
-			u.So(t, mockStitchClient.ExportFnCalls, gc.ShouldHaveLength, 1)
+			mockRealmClient := importCommand.realmClient.(*u.MockRealmClient)
+			u.So(t, mockRealmClient.ExportFnCalls, gc.ShouldHaveLength, 1)
 
 			u.So(t, writeToDirectoryCallCount, gc.ShouldEqual, 1)
 			u.So(t, writeAppConfigCallCount, gc.ShouldEqual, 1)
@@ -148,7 +148,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "supports creating new app when providing a project name that is returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -173,7 +173,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "supports creating new app when providing a project id that is returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -198,7 +198,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "supports creating new app when provided project name is not returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -226,7 +226,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "supports creating new app when provided project id is not returned in list",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -258,7 +258,7 @@ func TestImportNewApp(t *testing.T) {
 				enterLocation := "US-VA\n"
 				enterDeploymentModel := "GLOBAL\n"
 				mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterProjectName + enterLocation + enterDeploymentModel)
-				importCommand.stitchClient = &tc.StitchClient
+				importCommand.realmClient = &tc.RealmClient
 				importCommand.atlasClient = &tc.AtlasClient
 
 				var writeToDirectoryCallCount int
@@ -280,7 +280,7 @@ func TestImportNewApp(t *testing.T) {
 				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "New app created: My-Test-app-abcdef")
 				u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Successfully imported 'My-Test-app-abcdef'")
 
-				mockClient := importCommand.stitchClient.(*u.MockStitchClient)
+				mockClient := importCommand.realmClient.(*u.MockRealmClient)
 				u.So(t, mockClient.ExportFnCalls, gc.ShouldHaveLength, 1)
 
 				u.So(t, writeToDirectoryCallCount, gc.ShouldEqual, 1)
@@ -289,7 +289,7 @@ func TestImportNewApp(t *testing.T) {
 		}
 
 		t.Run("returns an error when an invalid project name is entered", func(t *testing.T) {
-			stitchClient := u.MockStitchClient{
+			realmClient := u.MockRealmClient{
 				ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 					return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 				},
@@ -319,7 +319,7 @@ func TestImportNewApp(t *testing.T) {
 			enterAppName := "My-Test-app\n"
 			enterProjectName := "group\n"
 			mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterProjectName)
-			importCommand.stitchClient = &stitchClient
+			importCommand.realmClient = &realmClient
 			importCommand.atlasClient = &atlasClient
 
 			var writeToDirectoryCallCount int
@@ -341,7 +341,7 @@ func TestImportNewApp(t *testing.T) {
 
 		//include multi-region
 		t.Run("supports creating app with non-default location and deployment model", func(t *testing.T) {
-			stitchClient := u.MockStitchClient{
+			realmClient := u.MockRealmClient{
 				ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 					return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 				},
@@ -365,19 +365,19 @@ func TestImportNewApp(t *testing.T) {
 			enterDeploymentModel := "LOCAL\n"
 			mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterLocation + enterDeploymentModel)
 
-			origCreateEmptyAppFn := stitchClient.CreateEmptyAppFn
+			origCreateEmptyAppFn := realmClient.CreateEmptyAppFn
 			defer func() {
-				stitchClient.CreateEmptyAppFn = origCreateEmptyAppFn
+				realmClient.CreateEmptyAppFn = origCreateEmptyAppFn
 			}()
 
 			var createAppLocation, createAppDeploymentModelName string
-			stitchClient.CreateEmptyAppFn = func(groupID, appName, locationName, deploymentModelName string) (*models.App, error) {
+			realmClient.CreateEmptyAppFn = func(groupID, appName, locationName, deploymentModelName string) (*models.App, error) {
 				createAppLocation = locationName
 				createAppDeploymentModelName = deploymentModelName
 				return &models.App{Name: appName, ClientAppID: appName + "-abcdef"}, nil
 			}
 
-			importCommand.stitchClient = &stitchClient
+			importCommand.realmClient = &realmClient
 			exitCode := importCommand.Run([]string{"--project-id=59dbcb07127ab4131c54e810", "--path=../testdata/new_app"})
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 
@@ -395,7 +395,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "uses location from config file as suggested default",
 				Args:             []string{"--path=../testdata/simple_app_with_deployment_config"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -417,7 +417,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "uses deployment model from config file as suggested default",
 				Args:             []string{"--path=../testdata/simple_app_with_deployment_config"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -439,7 +439,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "returns an error when an invalid location is entered",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 1,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -461,7 +461,7 @@ func TestImportNewApp(t *testing.T) {
 				Description:      "returns an error when an invalid deployment model is entered",
 				Args:             []string{"--path=../testdata/new_app"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -489,7 +489,7 @@ func TestImportNewApp(t *testing.T) {
 				enterLocation := tc.LocationInput
 				enterDeploymentModel := tc.DeploymentModelInput
 				mockUI.InputReader = strings.NewReader(confirmCreateApp + enterAppName + enterLocation + enterDeploymentModel)
-				importCommand.stitchClient = &tc.StitchClient
+				importCommand.realmClient = &tc.RealmClient
 
 				exitCode := importCommand.Run(append([]string{"--project-id=59dbcb07127ab4131c54e810"}, tc.Args...))
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
@@ -529,11 +529,11 @@ func TestImportCommand(t *testing.T) {
 			ExpectedExitCode int
 			ExpectedError    string
 			WorkingDirectory string
-			StitchClient     u.MockStitchClient
+			RealmClient      u.MockRealmClient
 		}
 
 		t.Run("it does not import if the user does not confirm the diff", func(t *testing.T) {
-			stitchClient := u.MockStitchClient{
+			realmClient := u.MockRealmClient{
 				ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 					return nil
 				},
@@ -552,11 +552,11 @@ func TestImportCommand(t *testing.T) {
 
 			// Mock a "no" response when we prompt the user to confirm the diff
 			mockUI.InputReader = strings.NewReader("n\n")
-			importCommand.stitchClient = &stitchClient
+			importCommand.realmClient = &realmClient
 
 			exitCode := importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
-			mockClient := importCommand.stitchClient.(*u.MockStitchClient)
+			mockClient := importCommand.realmClient.(*u.MockRealmClient)
 
 			u.So(t, exitCode, gc.ShouldEqual, 0)
 			u.So(t, mockUI.ErrorWriter.String(), gc.ShouldBeEmpty)
@@ -565,24 +565,24 @@ func TestImportCommand(t *testing.T) {
 
 		t.Run("it asks the user to discard existing drafts", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			realmClient := mock_api.NewMockRealmClient(ctrl)
 			defer ctrl.Finish()
 
-			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
-			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+			realmClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			realmClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalRealmError(&http.Response{
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
-			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+			realmClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
 				{ID: "draft-id"},
 			}, nil)
-			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+			realmClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
 			}, nil)
 
 			importCommand, mockUI := setup()
 			mockUI.InputReader = strings.NewReader("y\n")
-			importCommand.stitchClient = stitchClient
+			importCommand.realmClient = realmClient
 			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
@@ -590,24 +590,24 @@ func TestImportCommand(t *testing.T) {
 
 		t.Run("it cancels the import if the user doesn't discard draft", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			realmClient := mock_api.NewMockRealmClient(ctrl)
 			defer ctrl.Finish()
 
-			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
-			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+			realmClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			realmClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalRealmError(&http.Response{
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
-			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+			realmClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
 				{ID: "draft-id"},
 			}, nil)
-			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+			realmClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
 			}, nil)
 
 			importCommand, mockUI := setup()
 			mockUI.InputReader = strings.NewReader("y\nn\n")
-			importCommand.stitchClient = stitchClient
+			importCommand.realmClient = realmClient
 			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
@@ -616,31 +616,31 @@ func TestImportCommand(t *testing.T) {
 
 		t.Run("it discards the draft and deploys the new draft", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			realmClient := mock_api.NewMockRealmClient(ctrl)
 			defer ctrl.Finish()
 
-			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
-			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+			realmClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			realmClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalRealmError(&http.Response{
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
-			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+			realmClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
 				{ID: "draft-id"},
 			}, nil)
-			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
+			realmClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{
 				Diffs: []string{"just", "some", "diffs"},
 			}, nil)
-			stitchClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
-			stitchClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
-			stitchClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
+			realmClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
+			realmClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
+			realmClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
 				Status: models.DeploymentStatusSuccessful,
 			}, nil)
-			stitchClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
+			realmClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
 
 			importCommand, mockUI := setup()
 			mockUI.InputReader = strings.NewReader("y\ny\n")
-			importCommand.stitchClient = stitchClient
+			importCommand.realmClient = realmClient
 			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "Would you like to discard these changes?")
@@ -649,29 +649,29 @@ func TestImportCommand(t *testing.T) {
 
 		t.Run("it asks the user to discard empty drafts", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
-			stitchClient := mock_api.NewMockStitchClient(ctrl)
+			realmClient := mock_api.NewMockRealmClient(ctrl)
 			defer ctrl.Finish()
 
-			stitchClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
-			stitchClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalStitchError(&http.Response{
+			realmClient.EXPECT().FetchAppByClientAppID("my-app-abcdef").Return(&models.App{GroupID: "group-id", ID: "app-id"}, nil)
+			realmClient.EXPECT().Diff("group-id", "app-id", gomock.Any(), gomock.Any()).Return([]string{"changes"}, nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(nil, api.UnmarshalRealmError(&http.Response{
 				Body: u.NewResponseBody(strings.NewReader(`{ "error_code": "DraftAlreadyExists" }`)),
 			}))
-			stitchClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
+			realmClient.EXPECT().GetDrafts("group-id", "app-id").Return([]models.AppDraft{
 				{ID: "draft-id"},
 			}, nil)
-			stitchClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{}, nil) // empty diff
-			stitchClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
-			stitchClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
-			stitchClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
-			stitchClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
+			realmClient.EXPECT().DraftDiff("group-id", "app-id", "draft-id").Return(&models.DraftDiff{}, nil) // empty diff
+			realmClient.EXPECT().DiscardDraft("group-id", "app-id", "draft-id").Return(nil)
+			realmClient.EXPECT().CreateDraft("group-id", "app-id").Return(&models.AppDraft{ID: "draft-id-2"}, nil)
+			realmClient.EXPECT().Import("group-id", "app-id", gomock.Any(), gomock.Any()).Return(nil)
+			realmClient.EXPECT().DeployDraft("group-id", "app-id", "draft-id-2").Return(&models.Deployment{
 				Status: models.DeploymentStatusSuccessful,
 			}, nil)
-			stitchClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
+			realmClient.EXPECT().Export("group-id", "app-id", api.ExportStrategyNone).Return("", u.NewResponseBody(bytes.NewReader([]byte{})), nil)
 
 			importCommand, mockUI := setup()
 			mockUI.InputReader = strings.NewReader("y\ny\n")
-			importCommand.stitchClient = stitchClient
+			importCommand.realmClient = realmClient
 			importCommand.Run(append([]string{"--path=../testdata/full_app"}, validArgs...))
 
 			u.So(t, mockUI.OutputWriter.String(), gc.ShouldContainSubstring, "An empty draft already exists for your app, would you like to discard it first?")
@@ -688,7 +688,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if given a valid flagAppPath",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -711,7 +711,7 @@ func TestImportCommand(t *testing.T) {
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,
 				ExpectedError:    "oh no failed to fetch app",
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
@@ -727,10 +727,10 @@ func TestImportCommand(t *testing.T) {
 				},
 			},
 			{
-				Description:      "successfully imports even if the stitch.json file is empty",
-				Args:             append([]string{"--path=../testdata/simple_app_empty_stitch_json"}, validArgs...),
+				Description:      "successfully imports even if the config.json file is empty",
+				Args:             append([]string{"--path=../testdata/simple_app_empty_config_json"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
@@ -753,7 +753,7 @@ func TestImportCommand(t *testing.T) {
 				Args:             append([]string{"--path=../testdata/simple_app"}, validArgs...),
 				ExpectedExitCode: 1,
 				ExpectedError:    "oh noes",
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ImportFn: func(groupID, appID string, appData []byte, strategy string) error {
 						return fmt.Errorf("oh noes")
 					},
@@ -772,7 +772,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if it can grab instance data from the app config file at the provided path",
 				Args:             []string{"--path=../testdata/simple_app_with_instance_data"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
@@ -794,7 +794,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if using a specific project-id",
 				Args:             []string{"--path=../testdata/simple_app_with_instance_data", "--project-id=myprojectid"},
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
@@ -820,7 +820,7 @@ func TestImportCommand(t *testing.T) {
 				Args:             []string{},
 				ExpectedExitCode: 0,
 				WorkingDirectory: "../testdata/simple_app_with_instance_data",
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(strings.NewReader("export response")), nil
 					},
@@ -843,7 +843,7 @@ func TestImportCommand(t *testing.T) {
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 1,
 				ExpectedError:    "failed to sync app",
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", nil, fmt.Errorf("oh no")
 					},
@@ -867,7 +867,7 @@ func TestImportCommand(t *testing.T) {
 
 				// Mock a "yes" response when we prompt the user to confirm the diff
 				mockUI.InputReader = strings.NewReader("y\n")
-				importCommand.stitchClient = &tc.StitchClient
+				importCommand.realmClient = &tc.RealmClient
 				importCommand.workingDirectory = tc.WorkingDirectory
 
 				exitCode := importCommand.Run(tc.Args)
@@ -882,7 +882,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if given a valid flagAppPath and flagIncludeHosting",
 				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -907,7 +907,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if given a valid flagAppPath, flagIncludeHosting, and flagResetCDNCache",
 				Args:             append([]string{"--path=../testdata/full_app", "--include-hosting", "--reset-cdn-cache"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -937,10 +937,10 @@ func TestImportCommand(t *testing.T) {
 
 				// Mock a "yes" response when we prompt the user to confirm the diff
 				mockUI.InputReader = strings.NewReader("y\n")
-				importCommand.stitchClient = &tc.StitchClient
+				importCommand.realmClient = &tc.RealmClient
 				importCommand.workingDirectory = tc.WorkingDirectory
 
-				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/stitch.json"))
+				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/config.json"))
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
 				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
 
@@ -966,7 +966,7 @@ func TestImportCommand(t *testing.T) {
 				Description:      "it succeeds if given a valid flagAppPath and flagIncludeDependencies",
 				Args:             append([]string{"--path=../testdata/full_app", "--include-dependencies"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 						return "", u.NewResponseBody(bytes.NewReader([]byte{})), nil
 					},
@@ -990,10 +990,10 @@ func TestImportCommand(t *testing.T) {
 
 				// Mock a "yes" response when we prompt the user to confirm the diff
 				mockUI.InputReader = strings.NewReader("y\n")
-				importCommand.stitchClient = &tc.StitchClient
+				importCommand.realmClient = &tc.RealmClient
 				importCommand.workingDirectory = tc.WorkingDirectory
 
-				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/stitch.json"))
+				exitCode := importCommand.Run(append(tc.Args, "--config-path=../testdata/configs/tmp/config.json"))
 				u.So(t, exitCode, gc.ShouldEqual, tc.ExpectedExitCode)
 				u.So(t, mockUI.ErrorWriter.String(), gc.ShouldContainSubstring, tc.ExpectedError)
 			})
@@ -1037,7 +1037,7 @@ func TestImportCommand(t *testing.T) {
 						mockUI.InputReader = strings.NewReader("y\n")
 						importCommand.workingDirectory = tc.workingDirectory
 						var exportStrategy api.ExportStrategy
-						mockStitchClient := &u.MockStitchClient{
+						mockRealmClient := &u.MockRealmClient{
 							ExportFn: func(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 								exportStrategy = strategy
 								return "", u.NewResponseBody(strings.NewReader("export response")), nil
@@ -1055,7 +1055,7 @@ func TestImportCommand(t *testing.T) {
 								}, nil
 							},
 						}
-						importCommand.stitchClient = mockStitchClient
+						importCommand.realmClient = mockRealmClient
 
 						destinationDirectory := ""
 						writeContent := ""

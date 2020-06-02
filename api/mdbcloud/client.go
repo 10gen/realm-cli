@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/edaniels/digest"
 )
@@ -162,7 +162,7 @@ func (client *simpleClient) do(
 		req.Header.Add("Content-Type", string(utils.MediaTypeJSON))
 	}
 
-	req.Header.Add("User-Agent", "MongoDB-Stitch-CLI")
+	req.Header.Add("User-Agent", "MongoDB-BaaS-CLI")
 
 	cl := http.Client{}
 	cl.Timeout = time.Second * 20

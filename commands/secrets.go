@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/secrets"
-	u "github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/secrets"
+	u "github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
 	"github.com/mitchellh/cli"
 )
 
@@ -23,14 +23,14 @@ func NewSecretsCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// SecretsCommand is used to run CRUD operations on a Stitch App's secrets
+// SecretsCommand is used to run CRUD operations on a Realm App's secrets
 type SecretsCommand struct {
 	*BaseCommand
 }
 
 // Synopsis returns a one-liner description for this command
 func (sc *SecretsCommand) Synopsis() string {
-	return "Add or remove secrets for your Stitch App."
+	return "Add or remove secrets for your Realm App."
 }
 
 // Help returns long-form help information for this command
@@ -81,7 +81,7 @@ func (sbc *SecretsBaseCommand) Help() string {
 OPTIONAL:
   --app-id [string]
 	The App ID for your app (i.e. the name of your app followed by a unique suffix, like "my-app-nysja").
-	Required if not being run from within a stitch project directory.` +
+	Required if not being run from within a realm project directory.` +
 		sbc.ProjectCommand.Help()
 }
 
@@ -123,19 +123,19 @@ func (sbc *SecretsBaseCommand) resolveApp() (*models.App, error) {
 		appID = appInstanceData.AppID()
 	}
 
-	stitchClient, err := sbc.StitchClient()
+	realmClient, err := sbc.RealmClient()
 	if err != nil {
 		return nil, err
 	}
 
 	var app *models.App
 	if sbc.flagProjectID == "" {
-		app, err = stitchClient.FetchAppByClientAppID(appID)
+		app, err = realmClient.FetchAppByClientAppID(appID)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		app, err = stitchClient.FetchAppByGroupIDAndClientAppID(sbc.flagProjectID, appID)
+		app, err = realmClient.FetchAppByGroupIDAndClientAppID(sbc.flagProjectID, appID)
 		if err != nil {
 			return nil, err
 		}
@@ -158,21 +158,21 @@ func NewSecretsListCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// SecretsListCommand is used to list secrets from a Stitch app
+// SecretsListCommand is used to list secrets from a Realm app
 type SecretsListCommand struct {
 	*SecretsBaseCommand
 }
 
 // Synopsis returns a one-liner description for this command
 func (slc *SecretsListCommand) Synopsis() string {
-	return "List secrets from your Stitch App."
+	return "List secrets from your Realm App."
 }
 
 // Help returns long-form help information for this command
 func (slc *SecretsListCommand) Help() string {
-	return `List secrets from your Stitch Application.
+	return `List secrets from your Realm Application.
 
-Usage: stitch-cli secrets list [options]
+Usage: realm-cli secrets list [options]
 ` +
 		slc.SecretsBaseCommand.Help()
 }
@@ -209,12 +209,12 @@ func (slc *SecretsListCommand) listSecrets() ([]secrets.Secret, error) {
 		return nil, err
 	}
 
-	stitchClient, err := slc.StitchClient()
+	realmClient, err := slc.RealmClient()
 	if err != nil {
 		return nil, err
 	}
 
-	return stitchClient.ListSecrets(app.GroupID, app.ID)
+	return realmClient.ListSecrets(app.GroupID, app.ID)
 }
 
 // NewSecretsAddCommandFactory returns a new cli.CommandFactory given a cli.Ui
@@ -231,7 +231,7 @@ func NewSecretsAddCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// SecretsAddCommand is used to add secrets to a Stitch app
+// SecretsAddCommand is used to add secrets to a Realm app
 type SecretsAddCommand struct {
 	*SecretsBaseCommand
 
@@ -241,14 +241,14 @@ type SecretsAddCommand struct {
 
 // Synopsis returns a one-liner description for this command
 func (sac *SecretsAddCommand) Synopsis() string {
-	return "Add a secret to your Stitch App."
+	return "Add a secret to your Realm App."
 }
 
 // Help returns long-form help information for this command
 func (sac *SecretsAddCommand) Help() string {
-	return `Add a secret to your Stitch Application.
+	return `Add a secret to your Realm Application.
 
-Usage: stitch-cli secrets add --name [string] --value [string] [options]
+Usage: realm-cli secrets add --name [string] --value [string] [options]
 
 REQUIRED:
   --name [string]
@@ -294,12 +294,12 @@ func (sac *SecretsAddCommand) addSecret() error {
 		return err
 	}
 
-	stitchClient, err := sac.StitchClient()
+	realmClient, err := sac.RealmClient()
 	if err != nil {
 		return err
 	}
 
-	if addErr := stitchClient.AddSecret(app.GroupID, app.ID, secrets.Secret{
+	if addErr := realmClient.AddSecret(app.GroupID, app.ID, secrets.Secret{
 		Name:  sac.flagSecretName,
 		Value: sac.flagSecretValue,
 	}); addErr != nil {
@@ -324,7 +324,7 @@ func NewSecretsUpdateCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// SecretsUpdateCommand is used to update a secret from a Stitch app
+// SecretsUpdateCommand is used to update a secret from a Realm app
 type SecretsUpdateCommand struct {
 	*SecretsBaseCommand
 
@@ -335,16 +335,16 @@ type SecretsUpdateCommand struct {
 
 // Synopsis returns a one-liner description for this command
 func (suc *SecretsUpdateCommand) Synopsis() string {
-	return "Update a secret for your Stitch App."
+	return "Update a secret for your Realm App."
 }
 
 // Help returns long-form help information for this command
 func (suc *SecretsUpdateCommand) Help() string {
-	return `Update a secret for your Stitch Application.
+	return `Update a secret for your Realm Application.
 
 Usage:
-  stitch-cli secrets update --name [string] --value [string] [options]
-  stitch-cli secrets update --id [string] --value [string] [options]
+  realm-cli secrets update --name [string] --value [string] [options]
+  realm-cli secrets update --id [string] --value [string] [options]
 
 REQUIRED:
   --name [string] OR --id [string]
@@ -389,18 +389,18 @@ func (suc *SecretsUpdateCommand) updateSecret() error {
 		return err
 	}
 
-	stitchClient, err := suc.StitchClient()
+	realmClient, err := suc.RealmClient()
 	if err != nil {
 		return err
 	}
 
 	if suc.flagSecretID != "" {
-		if updateErr := stitchClient.UpdateSecretByID(app.GroupID, app.ID, suc.flagSecretID, suc.flagSecretValue); updateErr != nil {
+		if updateErr := realmClient.UpdateSecretByID(app.GroupID, app.ID, suc.flagSecretID, suc.flagSecretValue); updateErr != nil {
 			return updateErr
 		}
 		suc.UI.Info(fmt.Sprintf("Secret updated: %s", suc.flagSecretID))
 	} else {
-		if updateErr := stitchClient.UpdateSecretByName(app.GroupID, app.ID, suc.flagSecretName, suc.flagSecretValue); updateErr != nil {
+		if updateErr := realmClient.UpdateSecretByName(app.GroupID, app.ID, suc.flagSecretName, suc.flagSecretValue); updateErr != nil {
 			return updateErr
 		}
 		suc.UI.Info(fmt.Sprintf("Secret updated: %s", suc.flagSecretName))
@@ -423,7 +423,7 @@ func NewSecretsRemoveCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// SecretsRemoveCommand is used to remove secrets from a Stitch app
+// SecretsRemoveCommand is used to remove secrets from a Realm app
 type SecretsRemoveCommand struct {
 	*SecretsBaseCommand
 
@@ -433,16 +433,16 @@ type SecretsRemoveCommand struct {
 
 // Synopsis returns a one-liner description for this command
 func (src *SecretsRemoveCommand) Synopsis() string {
-	return "Remove a secret from your Stitch App."
+	return "Remove a secret from your Realm App."
 }
 
 // Help returns long-form help information for this command
 func (src *SecretsRemoveCommand) Help() string {
-	return `Remove a secret from your Stitch Application.
+	return `Remove a secret from your Realm Application.
 
 Usage:
-  stitch-cli secrets remove --name [string] [options]
-  stitch-cli secrets remove --id [string] [options]
+  realm-cli secrets remove --name [string] [options]
+  realm-cli secrets remove --id [string] [options]
 
 REQUIRED:
   --name [string] OR --id [string]
@@ -483,18 +483,18 @@ func (src *SecretsRemoveCommand) removeSecret() error {
 		return err
 	}
 
-	stitchClient, err := src.StitchClient()
+	realmClient, err := src.RealmClient()
 	if err != nil {
 		return err
 	}
 
 	if src.flagSecretID != "" {
-		if removeErr := stitchClient.RemoveSecretByID(app.GroupID, app.ID, src.flagSecretID); removeErr != nil {
+		if removeErr := realmClient.RemoveSecretByID(app.GroupID, app.ID, src.flagSecretID); removeErr != nil {
 			return removeErr
 		}
 		src.UI.Info(fmt.Sprintf("Secret removed: %s", src.flagSecretID))
 	} else {
-		if removeErr := stitchClient.RemoveSecretByName(app.GroupID, app.ID, src.flagSecretName); removeErr != nil {
+		if removeErr := realmClient.RemoveSecretByName(app.GroupID, app.ID, src.flagSecretName); removeErr != nil {
 			return removeErr
 		}
 		src.UI.Info(fmt.Sprintf("Secret removed: %s", src.flagSecretName))

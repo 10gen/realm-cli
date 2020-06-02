@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	u "github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	u "github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/mitchellh/cli"
 )
@@ -31,7 +31,7 @@ const (
 	importFlagIncludeDependencies = "include-dependencies"
 )
 
-// Set of location and deployment model options supported by Stitch backend
+// Set of location and deployment model options supported by Realm backend
 var (
 	locationOptions        = []string{"US-VA", "US-OR", "IE", "AU"}
 	deploymentModelOptions = []string{"GLOBAL", "LOCAL"}
@@ -71,7 +71,7 @@ func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// ImportCommand is used to import a Stitch App
+// ImportCommand is used to import a Realm App
 type ImportCommand struct {
 	*BaseCommand
 
@@ -91,7 +91,7 @@ type ImportCommand struct {
 
 // Help returns long-form help information for this command
 func (ic *ImportCommand) Help() string {
-	return `Import and deploy a stitch application from a local directory.
+	return `Import and deploy a realm application from a local directory.
 
 REQUIRED:
   --app-id [string]
@@ -109,7 +109,7 @@ OPTIONS:
 
   --strategy [merge|replace]
 	How your app should be imported.
-	merge - import and overwrite existing entities while preserving those that exist on Stitch. Secrets missing will not be lost.
+	merge - import and overwrite existing entities while preserving those that exist on Realm. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
 
 
@@ -129,7 +129,7 @@ OPTIONS:
 
 // Synopsis returns a one-liner description for this command
 func (ic *ImportCommand) Synopsis() string {
-	return `Import and deploy a stitch application from a local directory.`
+	return `Import and deploy a realm application from a local directory.`
 }
 
 // Run executes the command
@@ -196,7 +196,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		return err
 	}
 
-	stitchClient, err := ic.StitchClient()
+	realmClient, err := ic.RealmClient()
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		ic.flagStrategy = importStrategyReplace
 
 		var wantedNewApp bool
-		app, wantedNewApp, err = ic.askCreateEmptyApp(err.Error(), appInstanceData.AppName(), appInstanceData.AppLocation(), appInstanceData.AppDeploymentModel(), stitchClient)
+		app, wantedNewApp, err = ic.askCreateEmptyApp(err.Error(), appInstanceData.AppName(), appInstanceData.AppLocation(), appInstanceData.AppDeploymentModel(), realmClient)
 		if err != nil {
 			return err
 		}
@@ -280,7 +280,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			}
 		}
 
-		remoteAssetMetadata, rAMErr := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
+		remoteAssetMetadata, rAMErr := realmClient.ListAssetsForAppID(app.GroupID, app.ID)
 		if rAMErr != nil {
 			return errIncludeHosting(fmt.Errorf("error retrieving remote assets: %s", rAMErr))
 		}
@@ -290,7 +290,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 	// Diff changes unless -y flag has been provided or if this is a new app
 	if !ic.flagYes && !skipDiff {
-		diffs, diffErr := stitchClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
+		diffs, diffErr := realmClient.Diff(app.GroupID, app.ID, appData, ic.flagStrategy)
 		if diffErr != nil {
 			return fmt.Errorf("failed to diff app with currently deployed instance: %s", diffErr)
 		}
@@ -328,18 +328,18 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 	}
 
 	ic.UI.Info("Creating draft for app...")
-	draft, err := stitchClient.CreateDraft(app.GroupID, app.ID)
+	draft, err := realmClient.CreateDraft(app.GroupID, app.ID)
 	if err != nil {
-		if e, ok := err.(api.ErrStitchResponse); !ok || e.ErrorCode() != "DraftAlreadyExists" {
+		if e, ok := err.(api.ErrRealmResponse); !ok || e.ErrorCode() != "DraftAlreadyExists" {
 			return fmt.Errorf("failed to create draft for import: %s", err)
 		}
 
-		drafts, draftErr := stitchClient.GetDrafts(app.GroupID, app.ID)
+		drafts, draftErr := realmClient.GetDrafts(app.GroupID, app.ID)
 		if draftErr != nil || len(drafts) != 1 {
 			return fmt.Errorf("failed to fetch existing draft: %s", draftErr)
 		}
 
-		appDraftDiff, diffErr := stitchClient.DraftDiff(app.GroupID, app.ID, drafts[0].ID)
+		appDraftDiff, diffErr := realmClient.DraftDiff(app.GroupID, app.ID, drafts[0].ID)
 		if diffErr != nil {
 			return fmt.Errorf("failed to fetch existing draft diff: %s", diffErr)
 		}
@@ -367,12 +367,12 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 		if discardDraft || ic.flagYes {
 			ic.UI.Info("Discarding existing draft...")
-			err = stitchClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
+			err = realmClient.DiscardDraft(app.GroupID, app.ID, drafts[0].ID)
 			if err != nil {
 				return fmt.Errorf("failed to discard existing draft: %s", err)
 			}
 
-			draft, err = stitchClient.CreateDraft(app.GroupID, app.ID)
+			draft, err = realmClient.CreateDraft(app.GroupID, app.ID)
 			if err != nil {
 				return fmt.Errorf("failed to create draft for import: %s", err)
 			}
@@ -384,13 +384,13 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 	ic.UI.Info("Draft created successfully...")
 	ic.UI.Info("Importing app...")
-	if importErr := stitchClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
+	if importErr := realmClient.Import(app.GroupID, app.ID, appData, ic.flagStrategy); importErr != nil {
 		ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
 		return fmt.Errorf("failed to import app: %s", importErr)
 	}
 
 	ic.UI.Info("Deploying app...")
-	deployment, err := stitchClient.DeployDraft(app.GroupID, app.ID, draft.ID)
+	deployment, err := realmClient.DeployDraft(app.GroupID, app.ID, draft.ID)
 	if err != nil {
 		ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
 		return fmt.Errorf("failed to deploy draft: %s", err)
@@ -400,7 +400,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		time.Sleep(time.Second * 1)
 		ic.UI.Info("Deploying app...")
 
-		deployment, err = stitchClient.GetDeployment(app.GroupID, app.ID, deployment.ID)
+		deployment, err = realmClient.GetDeployment(app.GroupID, app.ID, deployment.ID)
 		if err != nil {
 			ic.discardDraftAndWarnOnFailure(app.GroupID, app.ID, draft.ID)
 			return fmt.Errorf("failed to deploy draft: %s", err)
@@ -411,7 +411,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 	if ic.flagIncludeHosting && assetMetadataDiffs != nil {
 		ic.UI.Info("Importing hosting assets...")
-		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, assetMetadataDiffs, ic.flagResetCDNCache, stitchClient, ic.UI); hostingImportErr != nil {
+		if hostingImportErr := ImportHosting(app.GroupID, app.ID, rootDir, assetMetadataDiffs, ic.flagResetCDNCache, realmClient, ic.UI); hostingImportErr != nil {
 			return fmt.Errorf("failed to import hosting assets %s", hostingImportErr)
 		}
 		ic.UI.Info("Done.")
@@ -423,7 +423,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 			return dirErr
 		}
 
-		importErr := ImportDependencies(ic.UI, app.GroupID, app.ID, functionsDir, stitchClient)
+		importErr := ImportDependencies(ic.UI, app.GroupID, app.ID, functionsDir, realmClient)
 		if importErr != nil {
 			return importErr
 		}
@@ -435,7 +435,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 		exportStrategy = api.ExportStrategyTemplate
 	}
 
-	_, body, err := stitchClient.Export(app.GroupID, app.ID, exportStrategy)
+	_, body, err := realmClient.Export(app.GroupID, app.ID, exportStrategy)
 	if err != nil {
 		return errImportAppSyncFailure(err)
 	}
@@ -452,16 +452,16 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 }
 
 func (ic *ImportCommand) fetchAppByClientAppID(clientAppID string) (*models.App, error) {
-	stitchClient, err := ic.StitchClient()
+	realmClient, err := ic.RealmClient()
 	if err != nil {
 		return nil, err
 	}
 
 	if ic.flagGroupID == "" {
-		return stitchClient.FetchAppByClientAppID(clientAppID)
+		return realmClient.FetchAppByClientAppID(clientAppID)
 	}
 
-	return stitchClient.FetchAppByGroupIDAndClientAppID(ic.flagGroupID, clientAppID)
+	return realmClient.FetchAppByGroupIDAndClientAppID(ic.flagGroupID, clientAppID)
 }
 
 func (ic *ImportCommand) resolveGroupID() (string, error) {
@@ -527,7 +527,7 @@ func (ic *ImportCommand) resolveGroupID() (string, error) {
 	return groupID, nil
 }
 
-func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocation, defaultDeploymentModel string, stitchClient api.StitchClient) (*models.App, bool, error) {
+func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocation, defaultDeploymentModel string, realmClient api.RealmClient) (*models.App, bool, error) {
 	if ic.flagAppName != "" {
 		defaultAppName = ic.flagAppName
 	}
@@ -551,7 +551,7 @@ func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocatio
 		return nil, false, err
 	}
 
-	apps, err := stitchClient.FetchAppsByGroupID(groupID)
+	apps, err := realmClient.FetchAppsByGroupID(groupID)
 	if err != nil {
 		return nil, false, err
 	}
@@ -572,7 +572,7 @@ func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocatio
 		return nil, false, err
 	}
 
-	app, err := stitchClient.CreateEmptyApp(groupID, appName, location, deploymentModel)
+	app, err := realmClient.CreateEmptyApp(groupID, appName, location, deploymentModel)
 	if err != nil {
 		return nil, false, err
 	}
@@ -582,7 +582,7 @@ func (ic *ImportCommand) askCreateEmptyApp(query, defaultAppName, defaultLocatio
 }
 
 func (ic *ImportCommand) discardDraftAndWarnOnFailure(groupID, appID, draftID string) {
-	err := ic.stitchClient.DiscardDraft(groupID, appID, draftID)
+	err := ic.realmClient.DiscardDraft(groupID, appID, draftID)
 	if err != nil {
 		ic.UI.Warn("We failed to discard the draft we created for your deployment.")
 	}

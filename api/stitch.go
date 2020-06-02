@@ -16,34 +16,34 @@ func (eanf ErrAppNotFound) Error() string {
 	return fmt.Sprintf("Unable to find app with ID: %q", eanf.ClientAppID)
 }
 
-// ErrStitchResponse represents a response from a Stitch API call
-type ErrStitchResponse struct {
-	data errStitchResponseData
+// ErrRealmResponse represents a response from a Realm API call
+type ErrRealmResponse struct {
+	data errRealmResponseData
 }
 
 // Error returns a stringified error message
-func (esr ErrStitchResponse) Error() string {
+func (esr ErrRealmResponse) Error() string {
 	return fmt.Sprintf("error: %s", esr.data.Error)
 }
 
 // ErrorCode returns this ErrorCode on the error
-func (esr ErrStitchResponse) ErrorCode() string {
+func (esr ErrRealmResponse) ErrorCode() string {
 	return esr.data.ErrorCode
 }
 
-// UnmarshalJSON unmarshals JSON data into an ErrStitchResponse
-func (esr *ErrStitchResponse) UnmarshalJSON(data []byte) error {
+// UnmarshalJSON unmarshals JSON data into an ErrRealmResponse
+func (esr *ErrRealmResponse) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &esr.data)
 }
 
-type errStitchResponseData struct {
+type errRealmResponseData struct {
 	Error     string `json:"error"`
 	ErrorCode string `json:"error_code"`
 }
 
-// UnmarshalStitchError unmarshals an *http.Response into an ErrStitchResponse. If the Body does not
+// UnmarshalRealmError unmarshals an *http.Response into an ErrRealmResponse. If the Body does not
 // contain content it uses the provided Status
-func UnmarshalStitchError(res *http.Response) error {
+func UnmarshalRealmError(res *http.Response) error {
 	var buf bytes.Buffer
 	if _, err := buf.ReadFrom(res.Body); err != nil {
 		return err
@@ -51,17 +51,17 @@ func UnmarshalStitchError(res *http.Response) error {
 
 	str := buf.String()
 	if str == "" {
-		return ErrStitchResponse{
-			data: errStitchResponseData{
+		return ErrRealmResponse{
+			data: errRealmResponseData{
 				Error: res.Status,
 			},
 		}
 	}
 
-	var stitchResponse ErrStitchResponse
-	if err := json.NewDecoder(&buf).Decode(&stitchResponse); err != nil {
-		stitchResponse.data.Error = str
+	var realmResponse ErrRealmResponse
+	if err := json.NewDecoder(&buf).Decode(&realmResponse); err != nil {
+		realmResponse.data.Error = str
 	}
 
-	return stitchResponse
+	return realmResponse
 }

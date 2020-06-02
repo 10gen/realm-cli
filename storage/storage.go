@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/realm-cli/user"
 
 	"gopkg.in/yaml.v2"
 )

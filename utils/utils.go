@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/stitch-cli/models"
+	"github.com/10gen/realm-cli/models"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -25,7 +25,7 @@ const (
 	jsonExt              = ".json"
 	jsExt                = ".js"
 	authProvidersName    = "auth_providers"
-	appConfigName        = "stitch"
+	appConfigName        = "config"
 	configName           = "config"
 	triggersName         = "triggers"
 	incomingWebhooksName = "incoming_webhooks"
@@ -49,12 +49,12 @@ var (
 	// HostingCacheFileName is the file that stores the cached hosting asset data
 	HostingCacheFileName = ".asset-cache.json"
 
-	errAppNotFound = errors.New("could not find stitch app")
+	errAppNotFound = errors.New("could not find realm app")
 )
 
 const maxDirectoryContainSearchDepth = 8
 
-// GetDirectoryContainingFile searches upwards for a valid Stitch app directory
+// GetDirectoryContainingFile searches upwards for a valid Realm app directory
 func GetDirectoryContainingFile(wd, filename string) (string, error) {
 	wd, err := filepath.Abs(wd)
 	if err != nil {
@@ -158,7 +158,7 @@ func processFile(path string, zipFile *zip.File) error {
 	return nil
 }
 
-// UnmarshalFromDir unmarshals a Stitch app from the given directory into a map[string]interface{}
+// UnmarshalFromDir unmarshals a Realm app from the given directory into a map[string]interface{}
 func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 	app := map[string]interface{}{}
 
@@ -449,7 +449,7 @@ func ResolveAppDirectory(appPath, workingDirectory string) (string, error) {
 	return GetDirectoryContainingFile(workingDirectory, models.AppConfigFileName)
 }
 
-// ResolveAppInstanceData loads data for an app from a stitch.json file located in the provided directory path,
+// ResolveAppInstanceData loads data for an app from a config.json file located in the provided directory path,
 // merging in any overridden parameters from command line flags
 func ResolveAppInstanceData(appID, path string) (models.AppInstanceData, error) {
 	appInstanceDataFromFile := models.AppInstanceData{}

@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
@@ -23,8 +23,8 @@ func checkErrs(errChan <-chan error, errDoneChan chan<- struct{}, ui cli.Ui, err
 	errDoneChan <- struct{}{}
 }
 
-// ImportHosting will push local Stitch hosting assets to the server
-func ImportHosting(groupID, appID, rootDir string, assetMetadataDiffs *hosting.AssetMetadataDiffs, resetCache bool, client api.StitchClient, ui cli.Ui) error {
+// ImportHosting will push local Realm hosting assets to the server
+func ImportHosting(groupID, appID, rootDir string, assetMetadataDiffs *hosting.AssetMetadataDiffs, resetCache bool, client api.RealmClient, ui cli.Ui) error {
 	// build a channel of hosting operations
 	var opWG sync.WaitGroup
 	opChan := make(chan hostingOp)
@@ -87,7 +87,7 @@ type baseHostingOp struct {
 	groupID string
 	appID   string
 	rootDir string
-	client  api.StitchClient
+	client  api.RealmClient
 }
 
 // hostingOp represents an import operation done with hosting assets
@@ -149,7 +149,7 @@ func (op *modifyOp) Do() error {
 	return nil
 }
 
-func doUpload(groupID, appID, rootDir string, client api.StitchClient, am hosting.AssetMetadata) error {
+func doUpload(groupID, appID, rootDir string, client api.RealmClient, am hosting.AssetMetadata) error {
 	errStrF := "uploading '%s' failed => %s"
 
 	body, bodyErr := os.Open(filepath.Join(rootDir, am.FilePath))
@@ -176,7 +176,7 @@ func getAssetCachePath(configPath string) (string, error) {
 		if dirErr != nil {
 			return "", dirErr
 		}
-		cachePath = filepath.Join(home, ".config", "stitch")
+		cachePath = filepath.Join(home, ".config", "realm")
 	} else {
 		cachePath = filepath.Dir(cachePath)
 	}

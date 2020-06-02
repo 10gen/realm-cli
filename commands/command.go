@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/api/mdbcloud"
-	"github.com/10gen/stitch-cli/storage"
-	"github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/api/mdbcloud"
+	"github.com/10gen/realm-cli/storage"
+	"github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/cli"
@@ -39,11 +39,11 @@ type BaseCommand struct {
 	CLI *cli.CLI
 	UI  cli.Ui
 
-	client       api.Client
-	atlasClient  mdbcloud.Client
-	stitchClient api.StitchClient
-	user         *user.User
-	storage      *storage.Storage
+	client      api.Client
+	atlasClient mdbcloud.Client
+	realmClient api.RealmClient
+	user        *user.User
+	storage     *storage.Storage
 
 	flagConfigPath    string
 	flagColorDisabled bool
@@ -132,10 +132,10 @@ func (c *BaseCommand) AuthClient() (api.Client, error) {
 	return authClient, nil
 }
 
-// StitchClient returns an api.StitchClient for use in calling the API
-func (c *BaseCommand) StitchClient() (api.StitchClient, error) {
-	if c.stitchClient != nil {
-		return c.stitchClient, nil
+// RealmClient returns an api.RealmClient for use in calling the API
+func (c *BaseCommand) RealmClient() (api.RealmClient, error) {
+	if c.realmClient != nil {
+		return c.realmClient, nil
 	}
 
 	authClient, err := c.AuthClient()
@@ -143,9 +143,9 @@ func (c *BaseCommand) StitchClient() (api.StitchClient, error) {
 		return nil, err
 	}
 
-	c.stitchClient = api.NewStitchClient(authClient)
+	c.realmClient = api.NewRealmClient(authClient)
 
-	return c.stitchClient, nil
+	return c.realmClient, nil
 }
 
 // User returns the current user. It loads the user from storage if it is not available in memory
@@ -198,7 +198,7 @@ func (c *BaseCommand) run(args []string) error {
 			if dirErr != nil {
 				return dirErr
 			}
-			path = filepath.Join(home, ".config", "stitch", "stitch")
+			path = filepath.Join(home, ".config", "realm", "realm")
 		}
 
 		fileStrategy, err := storage.NewFileStrategy(path)
@@ -327,7 +327,7 @@ func (c *BaseCommand) Help() string {
 	return `
 
   --config-path [string]
-	File to write user configuration data to (defaults to ~/.config/stitch/stitch)
+	File to write user configuration data to (defaults to ~/.config/realm/realm)
 
   --disable-color
 	Disable the use of colors in terminal output.

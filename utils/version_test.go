@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/utils"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/utils"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 

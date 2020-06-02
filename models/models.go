@@ -12,7 +12,7 @@ import (
 type DeploymentStatus string
 
 // AppConfigFileName is the name of top-level config file describing the app
-const AppConfigFileName string = "stitch.json"
+const AppConfigFileName string = "config.json"
 
 // Default deployment settings
 const (
@@ -45,7 +45,7 @@ const (
 	prettyPrintIndent = "    "
 )
 
-// AppInstanceData defines data pertaining to a specific deployment of a Stitch application
+// AppInstanceData defines data pertaining to a specific deployment of a Realm application
 type AppInstanceData map[string]interface{}
 
 // UnmarshalFile unmarshals data from a local config file into an AppInstanceData
@@ -143,7 +143,7 @@ type role struct {
 	GroupID string `json:"group_id"`
 }
 
-// App represents basic Stitch App data
+// App represents basic Realm App data
 type App struct {
 	ID          string `json:"_id"`
 	GroupID     string `json:"group_id"`
@@ -151,12 +151,12 @@ type App struct {
 	Name        string `json:"name"`
 }
 
-// AppDraft represents a Stitch App Draft
+// AppDraft represents a Realm App Draft
 type AppDraft struct {
 	ID string `json:"_id"`
 }
 
-// Deployment represents a Stitch Deployment
+// Deployment represents a Realm Deployment
 type Deployment struct {
 	ID     string           `json:"_id"`
 	Status DeploymentStatus `json:"status"`

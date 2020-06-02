@@ -1,3 +1,5 @@
+github.com/10gen/stitch-cli v1.13.0 h1:Y3JmYKMVsyC+xBoWgo0rOjjG1ayFeePB7QHOK6g1Vgc=
+github.com/10gen/stitch-cli v1.13.0/go.mod h1:C64Ntfaid5LE+IQzY0ifTybYuzFLYWhxw7PTM58I29A=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OpenPeeDeeP/depguard v1.0.0 h1:k9QF73nrHT3nPLz3lu6G5s+3Hi8Je36ODr1F5gjAXXM=

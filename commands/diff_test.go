@@ -4,9 +4,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/user"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/user"
+	u "github.com/10gen/realm-cli/utils/test"
 	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
 )
@@ -27,7 +27,7 @@ func setUpBasicDiffCommand() (*DiffCommand, *cli.MockUi) {
 		return nil
 	}
 
-	mockStitchClient := &u.MockStitchClient{
+	mockRealmClient := &u.MockRealmClient{
 		DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
 			return []string{"sample-diff-contents"}, nil
 		},
@@ -38,7 +38,7 @@ func setUpBasicDiffCommand() (*DiffCommand, *cli.MockUi) {
 			}, nil
 		},
 	}
-	diffCommand.stitchClient = mockStitchClient
+	diffCommand.realmClient = mockRealmClient
 	return diffCommand, mockUI
 }
 
@@ -71,7 +71,7 @@ func TestDiffCommand(t *testing.T) {
 			ExpectedExitCode int
 			ExpectedError    string
 			WorkingDirectory string
-			StitchClient     u.MockStitchClient
+			RealmClient      u.MockRealmClient
 		}
 
 		for _, tc := range []testCase{
@@ -85,7 +85,7 @@ func TestDiffCommand(t *testing.T) {
 				Description:      "it succeeds if given a valid flagAppPath",
 				Args:             append([]string{"--path=../testdata/full_app"}, validArgs...),
 				ExpectedExitCode: 0,
-				StitchClient: u.MockStitchClient{
+				RealmClient: u.MockRealmClient{
 					DiffFn: func(groupID, appID string, appData []byte, strategy string) ([]string, error) {
 						return []string{"sample-diff-contents"}, nil
 					},
@@ -101,7 +101,7 @@ func TestDiffCommand(t *testing.T) {
 			t.Run(tc.Description, func(t *testing.T) {
 				diffCommand, mockUI := setup()
 
-				diffCommand.stitchClient = &tc.StitchClient
+				diffCommand.realmClient = &tc.RealmClient
 				diffCommand.workingDirectory = tc.WorkingDirectory
 
 				exitCode := diffCommand.Run(tc.Args)

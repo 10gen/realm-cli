@@ -1,14 +1,14 @@
 {
-  "name": "mongodb-stitch-cli",
-  "version": "1.13.0",
-  "description": "The MongoDB Stitch Command Line Interface",
+  "name": "mongodb-realm-cli",
+  "version": "1.0.0",
+  "description": "The MongoDB Realm Command Line Interface",
   "repository": {
     "type": "git",
-    "url": "https://github.com/10gen/stitch-cli.git"
+    "url": "https://github.com/10gen/realm-cli.git"
   },
   "license": "Apache-2.0",
   "bin": {
-    "stitch-cli": "./wrapper.js",
+    "realm-cli": "./wrapper.js",
     "transpiler": "./wrapper-transpiler.js"
   },
   "scripts": {
@@ -16,7 +16,7 @@
   },
   "keywords": [
     "mongodb",
-    "stitch"
+    "realm"
   ],
   "author": "",
   "dependencies": {
