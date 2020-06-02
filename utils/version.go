@@ -16,7 +16,7 @@ var (
 	// binary based on the user's OS
 	CLIOSArch string
 
-	versionManifestURLFormat = "https://s3.amazonaws.com/stitch-clis/versions/%s/CURRENT"
+	versionManifestURLFormat = "https://s3.amazonaws.com/realm-clis/versions/%s/CURRENT"
 	cliBuildEnv              = "cloud-prod"
 )
 

@@ -1,5 +1,5 @@
 {
-    "config_version": 20180302,
+    "config_version": 20200603,
     "name": "simple-app",
     "location": "IE",
     "deployment_model": "LOCAL",

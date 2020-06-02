@@ -16,7 +16,7 @@ function onExit(childProcess) {
 }
 
 const binaryPath =
-  process.platform === 'win32' ? path.join(__dirname, 'stitch-cli.exe') : path.join(__dirname, 'stitch-cli');
+  process.platform === 'win32' ? path.join(__dirname, 'realm-cli.exe') : path.join(__dirname, 'realm-cli');
 const args = process.argv.slice(2);
 
 const childProcess = spawn(binaryPath, args, { stdio: [process.stdin, process.stdout, process.stderr] });

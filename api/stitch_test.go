@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
 
-	u "github.com/10gen/stitch-cli/utils/test"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
@@ -29,16 +29,16 @@ const (
 	pathParam = "path"
 )
 
-func TestErrStitchResponse(t *testing.T) {
+func TestErrRealmResponse(t *testing.T) {
 	t.Run("with a non-JSON response should return the original content", func(t *testing.T) {
-		err := api.UnmarshalStitchError(&http.Response{
+		err := api.UnmarshalRealmError(&http.Response{
 			Body: u.NewResponseBody(strings.NewReader("not-json")),
 		})
 		u.So(t, err, gc.ShouldBeError, "error: not-json")
 	})
 
 	t.Run("with an empty non-JSON response should respond with the status", func(t *testing.T) {
-		err := api.UnmarshalStitchError(&http.Response{
+		err := api.UnmarshalRealmError(&http.Response{
 			Status: "418 Toot toot",
 			Body:   u.NewResponseBody(strings.NewReader("")),
 		})
@@ -46,7 +46,7 @@ func TestErrStitchResponse(t *testing.T) {
 	})
 
 	t.Run("with a JSON response should decode the error content", func(t *testing.T) {
-		err := api.UnmarshalStitchError(&http.Response{
+		err := api.UnmarshalRealmError(&http.Response{
 			Body: u.NewResponseBody(strings.NewReader(`{ "error": "something went horribly, horribly wrong" }`)),
 		})
 		u.So(t, err, gc.ShouldBeError, "error: something went horribly, horribly wrong")
@@ -110,7 +110,7 @@ func TestUploadAsset(t *testing.T) {
 
 		path, hash, size := "/test", md5Sum(testContents), int64(len(testContents))
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		testClient.UploadAsset(
 			groupID,
 			appID,
@@ -169,7 +169,7 @@ func TestListAssetsForAppID(t *testing.T) {
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		assetMetadatas, err := testClient.ListAssetsForAppID(groupID, appID)
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, len(assetMetadatas), gc.ShouldEqual, 2)
@@ -211,7 +211,7 @@ func TestSetAssetAttributes(t *testing.T) {
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 		path := "/foo"
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		err := testClient.SetAssetAttributes(groupID, appID, path, testContents...)
 		u.So(t, err, gc.ShouldBeNil)
 	})
@@ -243,7 +243,7 @@ func TestPostAsset(t *testing.T) {
 		w.WriteHeader(http.StatusNoContent)
 	}
 	testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-	testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+	testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 	fromPath := "/foo"
 	toPath := "/bar"
 
@@ -272,7 +272,7 @@ func TestDeleteAsset(t *testing.T) {
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 		path := "/foo"
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		err := testClient.DeleteAsset(groupID, appID, path)
 		u.So(t, err, gc.ShouldBeNil)
 	})
@@ -304,7 +304,7 @@ func TestInvalidateCache(t *testing.T) {
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 		path := "foo"
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		err := testClient.InvalidateCache(groupID, appID, path)
 		u.So(t, err, gc.ShouldBeNil)
 	})
@@ -313,7 +313,7 @@ func TestInvalidateCache(t *testing.T) {
 func TestRequestOrigin(t *testing.T) {
 	t.Run("the request origin header should be set", func(t *testing.T) {
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get(api.StitchRequestOriginHeader) != api.StitchCLIHeaderValue {
+			if r.Header.Get(api.RealmRequestOriginHeader) != api.RealmCLIHeaderValue {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -330,8 +330,8 @@ func TestRequestOrigin(t *testing.T) {
 
 func TestFetchAppByGroupIDAndClientAppID(t *testing.T) {
 	groupID := "group-id"
-	atlasAppID := "triggers-stitchapp-abcde"
-	standardAppID := "standard-stitchapp-abcde"
+	atlasAppID := "triggers-realmapp-abcde"
+	standardAppID := "standard-realmapp-abcde"
 	resultTemplate := func(resultAppId string) string {
 		return fmt.Sprintf(`[{ "client_app_id": "%v" }]`, resultAppId)
 	}
@@ -345,8 +345,8 @@ func TestFetchAppByGroupIDAndClientAppID(t *testing.T) {
 		w.Write([]byte(resultTemplate(standardAppID)))
 	}
 	testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-	testClient := api.NewStitchClient(api.NewClient(testServer.URL))
-	t.Run("Should fetch stitch apps", func(t *testing.T) {
+	testClient := api.NewRealmClient(api.NewClient(testServer.URL))
+	t.Run("Should fetch realm apps", func(t *testing.T) {
 		app, err := testClient.FetchAppByGroupIDAndClientAppID(groupID, standardAppID)
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, app.ClientAppID, gc.ShouldEqual, standardAppID)
@@ -367,7 +367,7 @@ func TestCreateDraft(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		draft, err := testClient.CreateDraft(groupID, appID)
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, draft, gc.ShouldNotBeNil)
@@ -384,7 +384,7 @@ func TestDeployDraft(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		deploy, err := testClient.DeployDraft(groupID, appID, "123")
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, deploy, gc.ShouldNotBeNil)
@@ -401,7 +401,7 @@ func TestDiscardDraft(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		err := testClient.DiscardDraft(groupID, appID, "123")
 		u.So(t, err, gc.ShouldBeNil)
 	})
@@ -416,7 +416,7 @@ func TestGetDeployment(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		deploy, err := testClient.GetDeployment(groupID, appID, "123")
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, deploy, gc.ShouldNotBeNil)
@@ -434,7 +434,7 @@ func TestGetDrafts(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		drafts, err := testClient.GetDrafts(groupID, appID)
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, drafts, gc.ShouldNotBeNil)
@@ -452,7 +452,7 @@ func TestDraftDiff(t *testing.T) {
 		}
 
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		diff, err := testClient.DraftDiff(groupID, appID, "123")
 		u.So(t, err, gc.ShouldBeNil)
 		u.So(t, diff, gc.ShouldNotBeNil)
@@ -489,7 +489,7 @@ func TestUploadDependencies(t *testing.T) {
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
 
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		err := testClient.UploadDependencies(groupID, appID, path)
 		u.So(t, err, gc.ShouldBeNil)
 

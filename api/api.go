@@ -6,12 +6,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/10gen/stitch-cli/auth"
-	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/realm-cli/auth"
+	"github.com/10gen/realm-cli/user"
 )
 
-// DefaultBaseURL is the default prod base url for Stitch apps
-const DefaultBaseURL = "https://stitch.mongodb.com"
+// DefaultBaseURL is the default prod base url for Realm apps
+const DefaultBaseURL = "https://realm.mongodb.com"
 
 // DefaultAtlasBaseURL is the default atlas prod base url
 const DefaultAtlasBaseURL = "https://cloud.mongodb.com"
@@ -37,13 +37,13 @@ type basicAPIClient struct {
 }
 
 const (
-	// StitchRequestOriginHeader is the name of the header for where the api request
+	// RealmRequestOriginHeader is the name of the header for where the api request
 	// is coming from (UI, CLI, ADMIN API)
-	StitchRequestOriginHeader = "X-STITCH-Request-Origin"
+	RealmRequestOriginHeader = "X-BAAS-Request-Origin"
 
-	// StitchCLIHeaderValue is the value of the StitchRequestOriginHeader if the request
+	// RealmCLIHeaderValue is the value of the RealmRequestOriginHeader if the request
 	// is from the CLI
-	StitchCLIHeaderValue = "mongodb-stitch-cli"
+	RealmCLIHeaderValue = "mongodb-baas-cli"
 )
 
 // ExecuteRequest makes an HTTP request to the provided path
@@ -57,7 +57,7 @@ func (apiClient *basicAPIClient) ExecuteRequest(method, path string, options Req
 	if req.Header == nil {
 		req.Header = http.Header{}
 	}
-	req.Header.Set(StitchRequestOriginHeader, StitchCLIHeaderValue)
+	req.Header.Set(RealmRequestOriginHeader, RealmCLIHeaderValue)
 
 	client := &http.Client{}
 	return client.Do(req)

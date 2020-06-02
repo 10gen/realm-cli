@@ -1,6 +1,9 @@
 {
-  "config_version": 20180301,
+  "config_version": 20200603,
   "name": "simple-app",
+  "custom_user_data_config": {
+    "enabled": false
+  },
   "security": {
     "allowed_request_origins": []
   },

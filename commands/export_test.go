@@ -9,12 +9,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
@@ -195,7 +195,7 @@ func TestExportCommand(t *testing.T) {
 
 					var fetchAppByClientAppID, fetchAppByGroupIDAndClientAppID int
 
-					mockStitchClient := u.MockStitchClient{
+					mockRealmClient := u.MockRealmClient{
 						FetchAppByGroupIDAndClientAppIDFn: func(groupID, clientAppID string) (*models.App, error) {
 							fetchAppByGroupIDAndClientAppID++
 
@@ -226,7 +226,7 @@ func TestExportCommand(t *testing.T) {
 						},
 					}
 
-					exportCommand.stitchClient = &mockStitchClient
+					exportCommand.realmClient = &mockRealmClient
 					exportCommand.user = &user.User{
 						APIKey:      "my-api-key",
 						AccessToken: u.GenerateValidAccessToken(),
@@ -284,9 +284,9 @@ func TestExportCommand(t *testing.T) {
 		})
 
 		t.Run("--for-source-control", func(t *testing.T) {
-			t.Run("calls StitchClient.Export properly", func(t *testing.T) {
+			t.Run("calls RealmClient.Export properly", func(t *testing.T) {
 				exportCommand, _ := setup()
-				exportCommand.stitchClient = &u.MockStitchClient{
+				exportCommand.realmClient = &u.MockRealmClient{
 					FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 						return &models.App{
 							ClientAppID: clientAppID,
@@ -308,7 +308,7 @@ func TestExportCommand(t *testing.T) {
 		t.Run("returns an error when the response from the API is unexpected", func(t *testing.T) {
 			exportCommand, mockUI := setup()
 
-			mockStitchClient := u.MockStitchClient{
+			mockRealmClient := u.MockRealmClient{
 				FetchAppByClientAppIDFn: func(clientAppID string) (*models.App, error) {
 					return &models.App{
 						ClientAppID: clientAppID,
@@ -321,7 +321,7 @@ func TestExportCommand(t *testing.T) {
 				},
 			}
 
-			exportCommand.stitchClient = &mockStitchClient
+			exportCommand.realmClient = &mockRealmClient
 			exportCommand.user = &user.User{
 				APIKey:      "my-api-key",
 				AccessToken: u.GenerateValidAccessToken(),

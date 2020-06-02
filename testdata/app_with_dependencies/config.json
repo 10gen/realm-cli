@@ -1,6 +1,6 @@
 {
-  "config_version": 20180301,
-  "name": "app-with-too-many-deps",
+  "config_version": 20200603,
+  "name": "app-with-dependencies",
   "security": {
     "allowed_request_origins": []
   },

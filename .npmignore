@@ -8,4 +8,4 @@
 .Gopkg*
 main.go
 
-stitch-cli*
+realm-cli*

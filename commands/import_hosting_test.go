@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
@@ -51,7 +51,7 @@ func TestImportHosting(t *testing.T) {
 			w.WriteHeader(http.StatusNoContent)
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 		u.So(t, ImportHosting("groupID", "appID", rootDir, assetMetadataDiffs, false, testClient, cli.NewMockUi()), gc.ShouldBeNil)
 	})
 
@@ -60,7 +60,7 @@ func TestImportHosting(t *testing.T) {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-		testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+		testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 		mockUI := cli.NewMockUi()
 		importErr := ImportHosting("groupID", "appID", rootDir, assetMetadataDiffs, false, testClient, mockUI)
@@ -102,7 +102,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			add.client = testClient
 			u.So(t, add.Do(), gc.ShouldNotBeNil)
@@ -113,7 +113,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			add.client = testClient
 			u.So(t, add.Do(), gc.ShouldBeNil)
@@ -134,7 +134,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			delete.client = testClient
 			u.So(t, delete.Do(), gc.ShouldNotBeNil)
@@ -145,7 +145,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			delete.client = testClient
 			u.So(t, delete.Do(), gc.ShouldBeNil)
@@ -187,7 +187,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			bodyModifyOp.client = testClient
 			u.So(t, bodyModifyOp.Do(), gc.ShouldNotBeNil)
@@ -198,7 +198,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			bodyModifyOp.client = testClient
 			u.So(t, bodyModifyOp.Do(), gc.ShouldBeNil)
@@ -222,7 +222,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			attrModifyOp.client = testClient
 			u.So(t, attrModifyOp.Do(), gc.ShouldNotBeNil)
@@ -233,7 +233,7 @@ func TestHostingOp(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			}
 			testServer := httptest.NewServer(http.HandlerFunc(testHandler))
-			testClient := api.NewStitchClient(api.NewClient(testServer.URL))
+			testClient := api.NewRealmClient(api.NewClient(testServer.URL))
 
 			attrModifyOp.client = testClient
 			u.So(t, attrModifyOp.Do(), gc.ShouldBeNil)

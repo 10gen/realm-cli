@@ -1,5 +1,6 @@
 .DS_Store
-stitch-cli*
+realm-cli*
+transpiler
 node_modules/
 .idea
 vendor

@@ -10,10 +10,10 @@ import (
 	"path"
 	"sync"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/utils"
 )
 
 func getAssetAtURL(url string) (io.ReadCloser, error) {
@@ -28,8 +28,8 @@ func getAssetAtURL(url string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func exportStaticHostingAssets(stitchClient api.StitchClient, ec *ExportCommand, appPath string, app *models.App) error {
-	assetMetadatas, err := stitchClient.ListAssetsForAppID(app.GroupID, app.ID)
+func exportStaticHostingAssets(realmClient api.RealmClient, ec *ExportCommand, appPath string, app *models.App) error {
+	assetMetadatas, err := realmClient.ListAssetsForAppID(app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}

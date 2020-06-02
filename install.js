@@ -4,10 +4,10 @@ const request = require('request');
 
 const versionMetadata = require('./version');
 
-const basedownloadURL = `https://s3.amazonaws.com/stitch-clis/${versionMetadata.baseDirectory}`;
-const linuxdownloadURL = `${basedownloadURL}/linux-amd64/stitch-cli`;
-const macdownloadURL = `${basedownloadURL}/macos-amd64/stitch-cli`;
-const windowsdownloadURL = `${basedownloadURL}/windows-amd64/stitch-cli.exe`;
+const basedownloadURL = `https://s3.amazonaws.com/realm-clis/${versionMetadata.baseDirectory}`;
+const linuxdownloadURL = `${basedownloadURL}/linux-amd64/realm-cli`;
+const macdownloadURL = `${basedownloadURL}/macos-amd64/realm-cli`;
+const windowsdownloadURL = `${basedownloadURL}/windows-amd64/realm-cli.exe`;
 // transpiler downloads
 const linuxTranspilerdownloadURL = `${basedownloadURL}/linux-amd64/transpiler`;
 const macTranspilerdownloadURL = `${basedownloadURL}/macos-amd64/transpiler`;
@@ -98,12 +98,12 @@ let downloadURL;
 try {
   downloadURL = getdownloadURL(true);
 } catch (err) {
-  console.error('Stitch CLI installation failed:', err);
+  console.error('Realm CLI installation failed:', err);
   process.exit(1);
 }
 
-requstBinary(downloadURL, 'stitch-cli').catch(err => {
-  console.error('failed to download Stitch CLI:', err);
+requstBinary(downloadURL, 'realm-cli').catch(err => {
+  console.error('failed to download Realm CLI:', err);
   process.exit(1);
 });
 
@@ -111,11 +111,11 @@ let transpilerdownloadURL;
 try {
   transpilerdownloadURL = getdownloadURL(false);
 } catch (err) {
-  console.error('Stitch CLI installation failed:', err);
+  console.error('Realm CLI installation failed:', err);
   process.exit(1);
 }
 
 requstBinary(transpilerdownloadURL, 'transpiler').catch(err => {
-  console.error('failed to download Stitch CLI:', err);
+  console.error('failed to download Realm CLI:', err);
   process.exit(1);
 });

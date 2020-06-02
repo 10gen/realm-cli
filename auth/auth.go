@@ -7,9 +7,9 @@ import (
 
 // Errors related to auth
 var (
-	ErrInvalidAPIKey       = errors.New("stitch: invalid API key")
-	ErrInvalidPublicAPIKey = errors.New("stitch: invalid username or public API key")
-	ErrInvalidPassword     = errors.New("stitch: invalid password")
+	ErrInvalidAPIKey       = errors.New("realm: invalid API key")
+	ErrInvalidPublicAPIKey = errors.New("realm: invalid username or public API key")
+	ErrInvalidPassword     = errors.New("realm: invalid password")
 )
 
 // ProviderType represents available types of auth providers

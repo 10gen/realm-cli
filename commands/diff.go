@@ -4,8 +4,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/utils"
 	"github.com/mitchellh/cli"
 )
 
@@ -31,7 +31,7 @@ func NewDiffCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// DiffCommand is used to view the changes you would make to the Stitch App
+// DiffCommand is used to view the changes you would make to the Realm App
 type DiffCommand struct {
 	*BaseCommand
 

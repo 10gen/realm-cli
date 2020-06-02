@@ -1,5 +1,5 @@
 {
-    "config_version": 20180301,
+    "config_version": 20200603,
     "name": "simple-app",
     "location": "US-VA",
     "custom_user_data_config": {

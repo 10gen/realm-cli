@@ -1,12 +1,12 @@
-// Stitch is a tool for command-line administration of MongoDB Stitch applications.
+// Realm is a tool for command-line administration of MongoDB Realm applications.
 package main
 
 import (
 	"os"
 	"path/filepath"
 
-	"github.com/10gen/stitch-cli/commands"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/commands"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/mitchellh/cli"
 )
