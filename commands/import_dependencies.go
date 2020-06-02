@@ -10,13 +10,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/dependency/transpiler"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/dependency/transpiler"
+	"github.com/10gen/realm-cli/utils"
 	"github.com/mitchellh/cli"
 )
 
-func ImportDependencies(ui cli.Ui, groupID, appID, dir string, client api.StitchClient) error {
+func ImportDependencies(ui cli.Ui, groupID, appID, dir string, client api.RealmClient) error {
 	fullPath, err := findDependenciesLocation(dir)
 	if err != nil {
 		return err

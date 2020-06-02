@@ -13,17 +13,20 @@ import (
 	"os"
 	"strings"
 
-	"github.com/10gen/stitch-cli/auth"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/secrets"
+	"github.com/10gen/realm-cli/auth"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/secrets"
 )
 
 // ExportStrategy is the enumeration of possible strategies which can be used
-// when exporting a stitch application
+// when exporting a realm application
 type ExportStrategy string
 
 const (
+	// default to the current realm config version
+	configVersion = "20200603"
+
 	// ExportStrategyNone will result in no extra configuration into the call to Export
 	ExportStrategyNone ExportStrategy = "none"
 	// ExportStrategyTemplate will result in the `template` querystring parameter getting added to the call to Export
@@ -87,8 +90,8 @@ type invalidateCachePayload struct {
 	Path       string `json:"path"`
 }
 
-// StitchClient represents a Client that can be used to call the Stitch Admin API
-type StitchClient interface {
+// RealmClient represents a Client that can be used to call the Realm Admin API
+type RealmClient interface {
 	AddSecret(groupID, appID string, secret secrets.Secret) error
 	Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error)
 	CopyAsset(groupID, appID, fromPath, toPath string) error
@@ -120,19 +123,19 @@ type StitchClient interface {
 	UploadDependencies(groupID, appID, fullPath string) error
 }
 
-// NewStitchClient returns a new StitchClient to be used for making calls to the Stitch Admin API
-func NewStitchClient(client Client) StitchClient {
-	return &basicStitchClient{
+// NewRealmClient returns a new RealmClient to be used for making calls to the Realm Admin API
+func NewRealmClient(client Client) RealmClient {
+	return &basicRealmClient{
 		Client: client,
 	}
 }
 
-type basicStitchClient struct {
+type basicRealmClient struct {
 	Client
 }
 
 // Authenticate will authenticate a user given an api key and username
-func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
+func (sc *basicRealmClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
 	body, err := json.Marshal(authProvider.Payload())
 	if err != nil {
 		return nil, err
@@ -150,7 +153,7 @@ func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, UnmarshalStitchError(res))
+		return nil, fmt.Errorf("%s: failed to authenticate: %s", res.Status, UnmarshalRealmError(res))
 	}
 
 	decoder := json.NewDecoder(res.Body)
@@ -163,14 +166,15 @@ func (sc *basicStitchClient) Authenticate(authProvider auth.AuthenticationProvid
 	return &authResponse, nil
 }
 
-// Export will download a Stitch app as a .zip
-func (sc *basicStitchClient) Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error) {
-	url := fmt.Sprintf(appExportRoute, groupID, appID, "")
+// Export will download a Realm app as a .zip
+func (sc *basicRealmClient) Export(groupID, appID string, strategy ExportStrategy) (string, io.ReadCloser, error) {
+	queryParams := []string{fmt.Sprintf("version=%s", configVersion)}
 	if strategy == ExportStrategyTemplate {
-		url = fmt.Sprintf(appExportRoute, groupID, appID, "template=true")
+		queryParams = append(queryParams, "template=true")
 	} else if strategy == ExportStrategySourceControl {
-		url = fmt.Sprintf(appExportRoute, groupID, appID, "source_control=true")
+		queryParams = append(queryParams, "source_control=true")
 	}
+	url := fmt.Sprintf(appExportRoute, groupID, appID, strings.Join(queryParams, "&"))
 
 	res, err := sc.ExecuteRequest(http.MethodGet, url, RequestOptions{})
 	if err != nil {
@@ -179,7 +183,7 @@ func (sc *basicStitchClient) Export(groupID, appID string, strategy ExportStrate
 
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		return "", nil, UnmarshalStitchError(res)
+		return "", nil, UnmarshalRealmError(res)
 	}
 
 	_, params, err := mime.ParseMediaType(res.Header.Get(hosting.AttributeContentDisposition))
@@ -198,7 +202,7 @@ func (sc *basicStitchClient) Export(groupID, appID string, strategy ExportStrate
 }
 
 // Export will download the installed dependencies as a zip
-func (sc *basicStitchClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+func (sc *basicRealmClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
 	url := fmt.Sprintf(dependenciesExportArchiveRoute, groupID, appID)
 
 	res, err := sc.ExecuteRequest(http.MethodGet, url, RequestOptions{})
@@ -208,7 +212,7 @@ func (sc *basicStitchClient) ExportDependencies(groupID, appID string) (string, 
 
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		return "", nil, UnmarshalStitchError(res)
+		return "", nil, UnmarshalRealmError(res)
 	}
 
 	contentDisposition := res.Header.Get("Content-Disposition")
@@ -228,7 +232,7 @@ func (sc *basicStitchClient) ExportDependencies(groupID, appID string) (string, 
 }
 
 // Diff will execute a dry-run of an import, returning a diff of proposed changes
-func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+func (sc *basicRealmClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
 	res, err := sc.invokeImportRoute(groupID, appID, appData, strategy, true)
 	if err != nil {
 		return nil, err
@@ -237,7 +241,7 @@ func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte, strateg
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	var diffs []string
@@ -248,8 +252,8 @@ func (sc *basicStitchClient) Diff(groupID, appID string, appData []byte, strateg
 	return diffs, nil
 }
 
-// Import will push a local Stitch app to the server
-func (sc *basicStitchClient) Import(groupID, appID string, appData []byte, strategy string) error {
+// Import will push a local Realm app to the server
+func (sc *basicRealmClient) Import(groupID, appID string, appData []byte, strategy string) error {
 	res, err := sc.invokeImportRoute(groupID, appID, appData, strategy, false)
 	if err != nil {
 		return err
@@ -258,13 +262,13 @@ func (sc *basicStitchClient) Import(groupID, appID string, appData []byte, strat
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusNoContent {
-		return UnmarshalStitchError(res)
+		return UnmarshalRealmError(res)
 	}
 
 	return nil
 }
 
-func (sc *basicStitchClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
+func (sc *basicRealmClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
 	res, err := sc.ExecuteRequest(http.MethodPost, fmt.Sprintf(draftsRoute, groupID, appID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -273,7 +277,7 @@ func (sc *basicStitchClient) CreateDraft(groupID, appID string) (*models.AppDraf
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
@@ -290,7 +294,7 @@ func (sc *basicStitchClient) CreateDraft(groupID, appID string) (*models.AppDraf
 	return &draft, nil
 }
 
-func (sc *basicStitchClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
+func (sc *basicRealmClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
 	res, err := sc.ExecuteRequest(http.MethodPost, fmt.Sprintf(deployDraftRoute, groupID, appID, draftID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -299,7 +303,7 @@ func (sc *basicStitchClient) DeployDraft(groupID, appID, draftID string) (*model
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
@@ -316,7 +320,7 @@ func (sc *basicStitchClient) DeployDraft(groupID, appID, draftID string) (*model
 	return &deployment, nil
 }
 
-func (sc *basicStitchClient) DiscardDraft(groupID, appID, draftID string) error {
+func (sc *basicRealmClient) DiscardDraft(groupID, appID, draftID string) error {
 	res, err := sc.ExecuteRequest(http.MethodDelete, fmt.Sprintf(draftByIDRoute, groupID, appID, draftID), RequestOptions{})
 	if err != nil {
 		return nil
@@ -325,13 +329,13 @@ func (sc *basicStitchClient) DiscardDraft(groupID, appID, draftID string) error 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusNoContent {
-		return UnmarshalStitchError(res)
+		return UnmarshalRealmError(res)
 	}
 
 	return nil
 }
 
-func (sc *basicStitchClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
+func (sc *basicRealmClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(deploymentByIDRoute, groupID, appID, deploymentID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -340,7 +344,7 @@ func (sc *basicStitchClient) GetDeployment(groupID, appID, deploymentID string) 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
@@ -357,7 +361,7 @@ func (sc *basicStitchClient) GetDeployment(groupID, appID, deploymentID string) 
 	return &deployment, nil
 }
 
-func (sc *basicStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
+func (sc *basicRealmClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(draftsRoute, groupID, appID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -366,7 +370,7 @@ func (sc *basicStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
@@ -383,7 +387,7 @@ func (sc *basicStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft
 	return drafts, nil
 }
 
-func (sc *basicStitchClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
+func (sc *basicRealmClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(diffDraftRoute, groupID, appID, draftID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -392,7 +396,7 @@ func (sc *basicStitchClient) DraftDiff(groupID, appID, draftID string) (*models.
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
@@ -409,7 +413,7 @@ func (sc *basicStitchClient) DraftDiff(groupID, appID, draftID string) (*models.
 	return &diff, nil
 }
 
-func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []byte, strategy string, diff bool) (*http.Response, error) {
+func (sc *basicRealmClient) invokeImportRoute(groupID, appID string, appData []byte, strategy string, diff bool) (*http.Response, error) {
 	url := fmt.Sprintf(appImportRoute, groupID, appID)
 
 	url += fmt.Sprintf("?strategy=%s", strategy)
@@ -420,21 +424,21 @@ func (sc *basicStitchClient) invokeImportRoute(groupID, appID string, appData []
 	return sc.ExecuteRequest(http.MethodPost, url, RequestOptions{Body: bytes.NewReader(appData)})
 }
 
-func (sc *basicStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
+func (sc *basicRealmClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
 	return sc.fetchAppsByGropuIDFromEndpoint(groupID, appsByGroupIDRoute)
 }
 
-func (sc *basicStitchClient) FetchAtlasAppsByGroupID(groupID string) ([]*models.App, error) {
+func (sc *basicRealmClient) FetchAtlasAppsByGroupID(groupID string) ([]*models.App, error) {
 	return sc.fetchAppsByGropuIDFromEndpoint(groupID, atlasAppsByGroupIDRoute)
 }
 
-// FetchAppByGroupIDAndClientAppID fetches a Stitch app given a groupID and clientAppID
-func (sc *basicStitchClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
+// FetchAppByGroupIDAndClientAppID fetches a Realm app given a groupID and clientAppID
+func (sc *basicRealmClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
 	return sc.findProjectAppByClientAppID([]string{groupID}, clientAppID)
 }
 
-// FetchAppByClientAppID fetches a Stitch app given a clientAppID
-func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
+// FetchAppByClientAppID fetches a Realm app given a clientAppID
+func (sc *basicRealmClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, userProfileRoute, RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -443,7 +447,7 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -456,7 +460,7 @@ func (sc *basicStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 }
 
 // UploadAsset creates a pipe and writes the asset to an http.POST along with its metadata
-func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+func (sc *basicRealmClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
 	// The upload request consists of a multipart body with two parts:
 	// 1) the metadata, as json, and 2) the file data itself.
 
@@ -524,7 +528,7 @@ func (sc *basicStitchClient) UploadAsset(groupID, appID, path, hash string, size
 }
 
 // SetAssetAttributes sets the asset at the given path to have the provided AssetAttributes
-func (sc *basicStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
+func (sc *basicRealmClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
 	attrs, err := json.Marshal(setAttributesPayload{attributes})
 	if err != nil {
 		return err
@@ -541,7 +545,7 @@ func (sc *basicStitchClient) SetAssetAttributes(groupID, appID, path string, att
 }
 
 // CopyAsset moves an asset from location fromPath to location toPath
-func (sc *basicStitchClient) CopyAsset(groupID, appID, fromPath, toPath string) error {
+func (sc *basicRealmClient) CopyAsset(groupID, appID, fromPath, toPath string) error {
 	payload, err := json.Marshal(copyPayload{fromPath, toPath})
 	if err != nil {
 		return err
@@ -552,7 +556,7 @@ func (sc *basicStitchClient) CopyAsset(groupID, appID, fromPath, toPath string) 
 }
 
 // MoveAsset moves an asset from location fromPath to location toPath
-func (sc *basicStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
+func (sc *basicRealmClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
 	payload, err := json.Marshal(movePayload{fromPath, toPath})
 	if err != nil {
 		return err
@@ -562,7 +566,7 @@ func (sc *basicStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) 
 	return checkStatusNoContent(res, err, "failed to move asset")
 }
 
-func (sc *basicStitchClient) invokePostRoute(groupID, appID string, payload io.Reader) (*http.Response, error) {
+func (sc *basicRealmClient) invokePostRoute(groupID, appID string, payload io.Reader) (*http.Response, error) {
 	return sc.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf(hostingAssetsRoute, groupID, appID),
@@ -573,7 +577,7 @@ func (sc *basicStitchClient) invokePostRoute(groupID, appID string, payload io.R
 }
 
 // DeleteAsset deletes the asset at the given path
-func (sc *basicStitchClient) DeleteAsset(groupID, appID, path string) error {
+func (sc *basicRealmClient) DeleteAsset(groupID, appID, path string) error {
 	res, err := sc.ExecuteRequest(
 		http.MethodDelete,
 		fmt.Sprintf(hostingAssetRoute+"?%s=%s", groupID, appID, pathParam, path),
@@ -582,7 +586,7 @@ func (sc *basicStitchClient) DeleteAsset(groupID, appID, path string) error {
 	return checkStatusNoContent(res, err, "failed to delete asset")
 }
 
-func (sc *basicStitchClient) findProjectAppByClientAppID(groupIDs []string, clientAppID string) (*models.App, error) {
+func (sc *basicRealmClient) findProjectAppByClientAppID(groupIDs []string, clientAppID string) (*models.App, error) {
 	for _, groupID := range groupIDs {
 		apps, err := sc.FetchAppsByGroupID(groupID)
 		if err != nil && err != errGroupNotFound {
@@ -607,7 +611,7 @@ func (sc *basicStitchClient) findProjectAppByClientAppID(groupIDs []string, clie
 	return nil, ErrAppNotFound{clientAppID}
 }
 
-func (sc *basicStitchClient) CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error) {
+func (sc *basicRealmClient) CreateEmptyApp(groupID, appName, location, deploymentModel string) (*models.App, error) {
 	res, err := sc.ExecuteRequest(
 		http.MethodPost,
 		fmt.Sprintf(appsByGroupIDRoute, groupID),
@@ -620,7 +624,7 @@ func (sc *basicStitchClient) CreateEmptyApp(groupID, appName, location, deployme
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -632,7 +636,7 @@ func (sc *basicStitchClient) CreateEmptyApp(groupID, appName, location, deployme
 	return &app, nil
 }
 
-func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
+func (sc *basicRealmClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
 	res, err := sc.ExecuteRequest(
 		http.MethodGet,
 		fmt.Sprintf(hostingAssetsRoute+"?recursive=true", groupID, appID),
@@ -645,7 +649,7 @@ func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]hostin
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -659,7 +663,7 @@ func (sc *basicStitchClient) ListAssetsForAppID(groupID, appID string) ([]hostin
 
 // InvalidateCache requests cache invalidation for the resource at the given
 // path in the app's CloudFront distribution
-func (sc *basicStitchClient) InvalidateCache(groupID, appID, path string) error {
+func (sc *basicRealmClient) InvalidateCache(groupID, appID, path string) error {
 	payload, err := json.Marshal(invalidateCachePayload{Invalidate: true, Path: path})
 	if err != nil {
 		return err
@@ -676,7 +680,7 @@ func (sc *basicStitchClient) InvalidateCache(groupID, appID, path string) error 
 }
 
 // ListSecrets list secrets for the app
-func (sc *basicStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
+func (sc *basicRealmClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
 	res, err := sc.ExecuteRequest(
 		http.MethodGet,
 		fmt.Sprintf(secretsRoute, groupID, appID),
@@ -688,7 +692,7 @@ func (sc *basicStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secre
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
@@ -701,7 +705,7 @@ func (sc *basicStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secre
 }
 
 // AddSecret creates a secret for the app
-func (sc *basicStitchClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
+func (sc *basicRealmClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
 	payload, err := json.Marshal(secret)
 	if err != nil {
 		return err
@@ -720,14 +724,14 @@ func (sc *basicStitchClient) AddSecret(groupID, appID string, secret secrets.Sec
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
-		return UnmarshalStitchError(res)
+		return UnmarshalRealmError(res)
 	}
 
 	return nil
 }
 
 // UpdateSecretByID updates a secret's value from the app
-func (sc *basicStitchClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
+func (sc *basicRealmClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
 	appSecrets, err := sc.ListSecrets(groupID, appID)
 	if err != nil {
 		return err
@@ -766,7 +770,7 @@ func (sc *basicStitchClient) UpdateSecretByID(groupID, appID, secretID, secretVa
 }
 
 // UpdateSecretByName updates a secret's value from the app
-func (sc *basicStitchClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
+func (sc *basicRealmClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
 	appSecrets, err := sc.ListSecrets(groupID, appID)
 	if err != nil {
 		return err
@@ -805,7 +809,7 @@ func (sc *basicStitchClient) UpdateSecretByName(groupID, appID, secretName, secr
 }
 
 // RemoveSecretByID deletes a secret from the app
-func (sc *basicStitchClient) RemoveSecretByID(groupID, appID, secretID string) error {
+func (sc *basicRealmClient) RemoveSecretByID(groupID, appID, secretID string) error {
 	res, err := sc.ExecuteRequest(
 		http.MethodDelete,
 		fmt.Sprintf(secretRoute, groupID, appID, secretID),
@@ -819,7 +823,7 @@ func (sc *basicStitchClient) RemoveSecretByID(groupID, appID, secretID string) e
 }
 
 // RemoveSecretByName deletes a secret from the app
-func (sc *basicStitchClient) RemoveSecretByName(groupID, appID, secretName string) error {
+func (sc *basicRealmClient) RemoveSecretByName(groupID, appID, secretName string) error {
 	secrets, err := sc.ListSecrets(groupID, appID)
 	if err != nil {
 		return err
@@ -845,7 +849,7 @@ func checkStatusNoContent(res *http.Response, requestErr error, errMessage strin
 		return requestErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("%s: %s: %s", res.Status, errMessage, UnmarshalStitchError(res))
+		return fmt.Errorf("%s: %s: %s", res.Status, errMessage, UnmarshalRealmError(res))
 	}
 	return nil
 }
@@ -860,7 +864,7 @@ func findAppByClientAppID(apps []*models.App, clientAppID string) *models.App {
 	return nil
 }
 
-func (sc *basicStitchClient) UploadDependencies(groupID, appID, fullPath string) error {
+func (sc *basicRealmClient) UploadDependencies(groupID, appID, fullPath string) error {
 	body, formatDataContentType, err := newMultipartMessage(fullPath)
 	if err != nil {
 		return err
@@ -880,7 +884,7 @@ func (sc *basicStitchClient) UploadDependencies(groupID, appID, fullPath string)
 	}
 
 	if res.StatusCode != http.StatusNoContent {
-		return UnmarshalStitchError(res)
+		return UnmarshalRealmError(res)
 	}
 	return nil
 }
@@ -912,7 +916,7 @@ func newMultipartMessage(fullPath string) (io.Reader, string, error) {
 	return body, writer.FormDataContentType(), nil
 }
 
-func (sc *basicStitchClient) fetchAppsByGropuIDFromEndpoint(groupID string, endpoint string) ([]*models.App, error) {
+func (sc *basicRealmClient) fetchAppsByGropuIDFromEndpoint(groupID string, endpoint string) ([]*models.App, error) {
 	res, err := sc.ExecuteRequest(http.MethodGet, fmt.Sprintf(endpoint, groupID), RequestOptions{})
 	if err != nil {
 		return nil, err
@@ -924,7 +928,7 @@ func (sc *basicStitchClient) fetchAppsByGropuIDFromEndpoint(groupID string, endp
 		if res.StatusCode == http.StatusNotFound {
 			return nil, errGroupNotFound
 		}
-		return nil, UnmarshalStitchError(res)
+		return nil, UnmarshalRealmError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)

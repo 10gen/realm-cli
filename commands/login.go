@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/auth"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/auth"
 
 	"github.com/mitchellh/cli"
 )
@@ -169,7 +169,7 @@ func (lc *LoginCommand) logIn() error {
 		return err
 	}
 
-	authResponse, err := api.NewStitchClient(client).Authenticate(authProvider)
+	authResponse, err := api.NewRealmClient(client).Authenticate(authProvider)
 	if err != nil {
 		return err
 	}

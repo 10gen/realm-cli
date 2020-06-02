@@ -13,14 +13,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/api/mdbcloud"
-	"github.com/10gen/stitch-cli/auth"
-	"github.com/10gen/stitch-cli/hosting"
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/secrets"
-	"github.com/10gen/stitch-cli/storage"
-	"github.com/10gen/stitch-cli/user"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/api/mdbcloud"
+	"github.com/10gen/realm-cli/auth"
+	"github.com/10gen/realm-cli/hosting"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/secrets"
+	"github.com/10gen/realm-cli/storage"
+	"github.com/10gen/realm-cli/user"
 
 	"github.com/smartystreets/goconvey/convey/gotest"
 	"gopkg.in/yaml.v2"
@@ -199,8 +199,8 @@ func GenerateValidAccessToken() string {
 	return fmt.Sprintf("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.%s.RuF0KMEBAalfnsdMeozpQLQ_2hK27l9omxtTp8eF1yI", tokenString)
 }
 
-// MockStitchClient satisfies an api.StitchClient
-type MockStitchClient struct {
+// MockRealmClient satisfies an api.RealmClient
+type MockRealmClient struct {
 	CreateEmptyAppFn                  func(groupID, appName, locationName, deploymentModelName string) (*models.App, error)
 	FetchAppByGroupIDAndClientAppIDFn func(groupID, clientAppID string) (*models.App, error)
 	FetchAppByClientAppIDFn           func(clientAppID string) (*models.App, error)
@@ -227,15 +227,15 @@ type MockStitchClient struct {
 	UploadDependenciesFn              func(groupID, appID, fullPath string) error
 }
 
-var _ api.StitchClient = (*MockStitchClient)(nil)
+var _ api.RealmClient = (*MockRealmClient)(nil)
 
 // Authenticate will authenticate a user given an auth.AuthenticationProvider
-func (msc *MockStitchClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
+func (msc *MockRealmClient) Authenticate(authProvider auth.AuthenticationProvider) (*auth.Response, error) {
 	return nil, nil
 }
 
-// Export will download a Stitch app as a .zip
-func (msc *MockStitchClient) Export(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
+// Export will download a Realm app as a .zip
+func (msc *MockRealmClient) Export(groupID, appID string, strategy api.ExportStrategy) (string, io.ReadCloser, error) {
 	if msc.ExportFn != nil {
 		msc.ExportFnCalls = append(msc.ExportFnCalls, []string{groupID, appID, string(strategy)})
 		return msc.ExportFn(groupID, appID, strategy)
@@ -244,8 +244,8 @@ func (msc *MockStitchClient) Export(groupID, appID string, strategy api.ExportSt
 	return "", nil, nil
 }
 
-// Export will download a Stitch app's dependencies
-func (msc *MockStitchClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+// Export will download a Realm app's dependencies
+func (msc *MockRealmClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
 	if msc.ExportDependencyFn != nil {
 		return msc.ExportDependencyFn(groupID, appID)
 	}
@@ -254,37 +254,37 @@ func (msc *MockStitchClient) ExportDependencies(groupID, appID string) (string, 
 }
 
 // CreateDraft returns a mock AppDraft
-func (msc *MockStitchClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
+func (msc *MockRealmClient) CreateDraft(groupID, appID string) (*models.AppDraft, error) {
 	return &models.AppDraft{ID: "draft-id"}, nil
 }
 
 // DeployDraft returns a mock Deployment
-func (msc *MockStitchClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
+func (msc *MockRealmClient) DeployDraft(groupID, appID, draftID string) (*models.Deployment, error) {
 	return &models.Deployment{ID: "deployment-id"}, nil
 }
 
 // DiscardDraft does nothing
-func (msc *MockStitchClient) DiscardDraft(groupID, appID, draftID string) error {
+func (msc *MockRealmClient) DiscardDraft(groupID, appID, draftID string) error {
 	return nil
 }
 
 // DraftDiff returns an empty DraftDiff
-func (msc *MockStitchClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
+func (msc *MockRealmClient) DraftDiff(groupID, appID, draftID string) (*models.DraftDiff, error) {
 	return &models.DraftDiff{}, nil
 }
 
 // GetDeployment returns a mock Deployment
-func (msc *MockStitchClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
+func (msc *MockRealmClient) GetDeployment(groupID, appID, deploymentID string) (*models.Deployment, error) {
 	return &models.Deployment{ID: "deployment-id"}, nil
 }
 
 // GetDrafts returns an empty list of AppDrafts
-func (msc *MockStitchClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
+func (msc *MockRealmClient) GetDrafts(groupID, appID string) ([]models.AppDraft, error) {
 	return []models.AppDraft{}, nil
 }
 
 // Diff will execute a dry-run of an import, returning a diff of proposed changes
-func (msc *MockStitchClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
+func (msc *MockRealmClient) Diff(groupID, appID string, appData []byte, strategy string) ([]string, error) {
 	if msc.DiffFn != nil {
 		return msc.DiffFn(groupID, appID, appData, strategy)
 	}
@@ -293,7 +293,7 @@ func (msc *MockStitchClient) Diff(groupID, appID string, appData []byte, strateg
 }
 
 // FetchAppsByGroupID does nothing
-func (msc *MockStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
+func (msc *MockRealmClient) FetchAppsByGroupID(groupID string) ([]*models.App, error) {
 	if msc.FetchAppsByGroupIDFn != nil {
 		return msc.FetchAppsByGroupIDFn(groupID)
 	}
@@ -302,7 +302,7 @@ func (msc *MockStitchClient) FetchAppsByGroupID(groupID string) ([]*models.App, 
 }
 
 // CreateEmptyApp does nothing
-func (msc *MockStitchClient) CreateEmptyApp(groupID, appName, locationName, deploymentModelName string) (*models.App, error) {
+func (msc *MockRealmClient) CreateEmptyApp(groupID, appName, locationName, deploymentModelName string) (*models.App, error) {
 	if msc.CreateEmptyAppFn != nil {
 		return msc.CreateEmptyAppFn(groupID, appName, locationName, deploymentModelName)
 	}
@@ -310,8 +310,8 @@ func (msc *MockStitchClient) CreateEmptyApp(groupID, appName, locationName, depl
 	return nil, errors.New("someone should test me")
 }
 
-// Import will push a local Stitch app to the server
-func (msc *MockStitchClient) Import(groupID, appID string, appData []byte, strategy string) error {
+// Import will push a local Realm app to the server
+func (msc *MockRealmClient) Import(groupID, appID string, appData []byte, strategy string) error {
 	if msc.ImportFn != nil {
 		msc.ImportFnCalls = append(msc.ImportFnCalls, []string{groupID, appID})
 		return msc.ImportFn(groupID, appID, appData, strategy)
@@ -319,8 +319,8 @@ func (msc *MockStitchClient) Import(groupID, appID string, appData []byte, strat
 	return nil
 }
 
-// FetchAppByGroupIDAndClientAppID fetches a Stitch app given a groupID and clientAppID
-func (msc *MockStitchClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
+// FetchAppByGroupIDAndClientAppID fetches a Realm app given a groupID and clientAppID
+func (msc *MockRealmClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppID string) (*models.App, error) {
 	if msc.FetchAppByGroupIDAndClientAppIDFn != nil {
 		return msc.FetchAppByGroupIDAndClientAppIDFn(groupID, clientAppID)
 	}
@@ -328,8 +328,8 @@ func (msc *MockStitchClient) FetchAppByGroupIDAndClientAppID(groupID, clientAppI
 	return nil, api.ErrAppNotFound{clientAppID}
 }
 
-// FetchAppByClientAppID fetches a Stitch app given a clientAppID
-func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
+// FetchAppByClientAppID fetches a Realm app given a clientAppID
+func (msc *MockRealmClient) FetchAppByClientAppID(clientAppID string) (*models.App, error) {
 	if msc.FetchAppByClientAppIDFn != nil {
 		return msc.FetchAppByClientAppIDFn(clientAppID)
 	}
@@ -338,7 +338,7 @@ func (msc *MockStitchClient) FetchAppByClientAppID(clientAppID string) (*models.
 }
 
 // UploadAsset uploads an asset
-func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
+func (msc *MockRealmClient) UploadAsset(groupID, appID, path, hash string, size int64, body io.Reader, attributes ...hosting.AssetAttribute) error {
 	if msc.UploadAssetFn != nil {
 		return msc.UploadAssetFn(groupID, appID, path, hash, size, body, attributes...)
 	}
@@ -347,7 +347,7 @@ func (msc *MockStitchClient) UploadAsset(groupID, appID, path, hash string, size
 }
 
 // CopyAsset copies an asset
-func (msc *MockStitchClient) CopyAsset(groupID, appID, fromPath, toPath string) error {
+func (msc *MockRealmClient) CopyAsset(groupID, appID, fromPath, toPath string) error {
 	if msc.CopyAssetFn != nil {
 		return msc.CopyAssetFn(groupID, appID, fromPath, toPath)
 	}
@@ -356,7 +356,7 @@ func (msc *MockStitchClient) CopyAsset(groupID, appID, fromPath, toPath string) 
 }
 
 // MoveAsset moves an asset
-func (msc *MockStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
+func (msc *MockRealmClient) MoveAsset(groupID, appID, fromPath, toPath string) error {
 	if msc.MoveAssetFn != nil {
 		return msc.MoveAssetFn(groupID, appID, fromPath, toPath)
 	}
@@ -365,7 +365,7 @@ func (msc *MockStitchClient) MoveAsset(groupID, appID, fromPath, toPath string) 
 }
 
 // DeleteAsset deletes an asset
-func (msc *MockStitchClient) DeleteAsset(groupID, appID, path string) error {
+func (msc *MockRealmClient) DeleteAsset(groupID, appID, path string) error {
 	if msc.DeleteAssetFn != nil {
 		return msc.DeleteAssetFn(groupID, appID, path)
 	}
@@ -374,7 +374,7 @@ func (msc *MockStitchClient) DeleteAsset(groupID, appID, path string) error {
 }
 
 // SetAssetAttributes sets an asset's attributes
-func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
+func (msc *MockRealmClient) SetAssetAttributes(groupID, appID, path string, attributes ...hosting.AssetAttribute) error {
 	if msc.SetAssetAttributesFn != nil {
 		return msc.SetAssetAttributesFn(groupID, appID, path, attributes...)
 	}
@@ -382,8 +382,8 @@ func (msc *MockStitchClient) SetAssetAttributes(groupID, appID, path string, att
 	return nil
 }
 
-// ListAssetsForAppID fetches a Stitch app given a clientAppID
-func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
+// ListAssetsForAppID fetches a Realm app given a clientAppID
+func (msc *MockRealmClient) ListAssetsForAppID(groupID, appID string) ([]hosting.AssetMetadata, error) {
 	assetMetadata := []hosting.AssetMetadata{
 		{
 			FilePath: "/bar/shouldRemainSame.txt",
@@ -437,7 +437,7 @@ func (msc *MockStitchClient) ListAssetsForAppID(groupID, appID string) ([]hostin
 }
 
 // InvalidateCache requests cache invalidation for the asset at the argued path
-func (msc *MockStitchClient) InvalidateCache(groupID, appID, path string) error {
+func (msc *MockRealmClient) InvalidateCache(groupID, appID, path string) error {
 	if msc.InvalidateCacheFn != nil {
 		return msc.InvalidateCacheFn(groupID, appID, path)
 	}
@@ -446,7 +446,7 @@ func (msc *MockStitchClient) InvalidateCache(groupID, appID, path string) error 
 }
 
 // ListSecrets lists the secrets of an app
-func (msc *MockStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
+func (msc *MockRealmClient) ListSecrets(groupID, appID string) ([]secrets.Secret, error) {
 	if msc.ListSecretsFn != nil {
 		return msc.ListSecretsFn(groupID, appID)
 	}
@@ -455,7 +455,7 @@ func (msc *MockStitchClient) ListSecrets(groupID, appID string) ([]secrets.Secre
 }
 
 // AddSecret adds a secret to the app
-func (msc *MockStitchClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
+func (msc *MockRealmClient) AddSecret(groupID, appID string, secret secrets.Secret) error {
 	if msc.AddSecretFn != nil {
 		return msc.AddSecretFn(groupID, appID, secret)
 	}
@@ -464,7 +464,7 @@ func (msc *MockStitchClient) AddSecret(groupID, appID string, secret secrets.Sec
 }
 
 // UpdateSecretByID updates a secret from the app
-func (msc *MockStitchClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
+func (msc *MockRealmClient) UpdateSecretByID(groupID, appID, secretID, secretValue string) error {
 	if msc.UpdateSecretByIDFn != nil {
 		return msc.UpdateSecretByIDFn(groupID, appID, secretID, secretValue)
 	}
@@ -473,7 +473,7 @@ func (msc *MockStitchClient) UpdateSecretByID(groupID, appID, secretID, secretVa
 }
 
 // UpdateSecretByName updates a secret from the app
-func (msc *MockStitchClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
+func (msc *MockRealmClient) UpdateSecretByName(groupID, appID, secretName, secretValue string) error {
 	if msc.UpdateSecretByNameFn != nil {
 		return msc.UpdateSecretByNameFn(groupID, appID, secretName, secretValue)
 	}
@@ -482,7 +482,7 @@ func (msc *MockStitchClient) UpdateSecretByName(groupID, appID, secretName, secr
 }
 
 // RemoveSecretByID removes a secret from the app
-func (msc *MockStitchClient) RemoveSecretByID(groupID, appID, secretID string) error {
+func (msc *MockRealmClient) RemoveSecretByID(groupID, appID, secretID string) error {
 	if msc.RemoveSecretByIDFn != nil {
 		return msc.RemoveSecretByIDFn(groupID, appID, secretID)
 	}
@@ -491,7 +491,7 @@ func (msc *MockStitchClient) RemoveSecretByID(groupID, appID, secretID string) e
 }
 
 // RemoveSecretByName removes a secret from the app
-func (msc *MockStitchClient) RemoveSecretByName(groupID, appID, secretName string) error {
+func (msc *MockRealmClient) RemoveSecretByName(groupID, appID, secretName string) error {
 	if msc.RemoveSecretByNameFn != nil {
 		return msc.RemoveSecretByNameFn(groupID, appID, secretName)
 	}
@@ -499,7 +499,7 @@ func (msc *MockStitchClient) RemoveSecretByName(groupID, appID, secretName strin
 	return nil
 }
 
-func (msc *MockStitchClient) UploadDependencies(groupID, appID, fullPath string) error {
+func (msc *MockRealmClient) UploadDependencies(groupID, appID, fullPath string) error {
 	if msc.UploadDependenciesFn != nil {
 		return msc.UploadDependenciesFn(groupID, appID, fullPath)
 	}
@@ -545,47 +545,47 @@ func (mmc *MockMDBClient) DeleteDatabaseUser(groupID, username string) error {
 
 // MongoDBCloudEnv represents ENV variables required for running tests against cloud
 type MongoDBCloudEnv struct {
-	CloudAPIBaseURL     string
-	StitchServerBaseURL string
-	APIKey              string
-	Username            string
-	AdminUsername       string
-	AdminAPIKey         string
-	GroupID             string
+	CloudAPIBaseURL    string
+	RealmServerBaseURL string
+	APIKey             string
+	Username           string
+	AdminUsername      string
+	AdminAPIKey        string
+	GroupID            string
 }
 
 // ENV returns the current MongoDBCloudEnv configuration
 func ENV() MongoDBCloudEnv {
 	defaultServerURL := "http://localhost:9090"
 
-	cloudAPIBaseURL := os.Getenv("STITCH_MONGODB_CLOUD_API_BASE_URL")
+	cloudAPIBaseURL := os.Getenv("REALM_MONGODB_CLOUD_API_BASE_URL")
 	if cloudAPIBaseURL == "" {
 		cloudAPIBaseURL = defaultServerURL
 	}
 
-	stitchServerBaseURL := os.Getenv("STITCH_SERVER_BASE_URL")
-	if stitchServerBaseURL == "" {
-		stitchServerBaseURL = defaultServerURL
+	realmServerBaseURL := os.Getenv("REALM_SERVER_BASE_URL")
+	if realmServerBaseURL == "" {
+		realmServerBaseURL = defaultServerURL
 	}
 
 	return MongoDBCloudEnv{
-		CloudAPIBaseURL:     cloudAPIBaseURL,
-		StitchServerBaseURL: stitchServerBaseURL,
-		APIKey:              os.Getenv("STITCH_MONGODB_CLOUD_API_KEY"),
-		Username:            os.Getenv("STITCH_MONGODB_CLOUD_USERNAME"),
-		GroupID:             os.Getenv("STITCH_MONGODB_CLOUD_GROUP_ID"),
-		AdminUsername:       os.Getenv("STITCH_MONGODB_CLOUD_ADMIN_USERNAME"),
-		AdminAPIKey:         os.Getenv("STITCH_MONGODB_CLOUD_ADMIN_API_KEY"),
+		CloudAPIBaseURL:    cloudAPIBaseURL,
+		RealmServerBaseURL: realmServerBaseURL,
+		APIKey:             os.Getenv("REALM_MONGODB_CLOUD_API_KEY"),
+		Username:           os.Getenv("REALM_MONGODB_CLOUD_USERNAME"),
+		GroupID:            os.Getenv("REALM_MONGODB_CLOUD_GROUP_ID"),
+		AdminUsername:      os.Getenv("REALM_MONGODB_CLOUD_ADMIN_USERNAME"),
+		AdminAPIKey:        os.Getenv("REALM_MONGODB_CLOUD_ADMIN_API_KEY"),
 	}
 }
 
 var mongoDBCloudNotRunning = false
 
-// MustSkipf skips a test suite, but panics if STITCH_NO_SKIP_TEST is set, indicating
+// MustSkipf skips a test suite, but panics if REALM_NO_SKIP_TEST is set, indicating
 // that skipping is not permitted.
 func MustSkipf(t *testing.T, format string, args ...interface{}) {
-	if len(os.Getenv("STITCH_NO_SKIP_TEST")) > 0 {
-		panic("test was skipped, but STITCH_NO_SKIP_TEST is set.")
+	if len(os.Getenv("REALM_NO_SKIP_TEST")) > 0 {
+		panic("test was skipped, but REALM_NO_SKIP_TEST is set.")
 	}
 	t.Skipf(format, args...)
 }

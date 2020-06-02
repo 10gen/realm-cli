@@ -36,7 +36,7 @@ functions:
   "setup_project":
     - command: git.get_project
       params:
-        directory: stitch-cli
+        directory: realm-cli
 
   "setup_mongod":
       - command: shell.exec
@@ -79,9 +79,9 @@ functions:
             export NVM_DIR="$ROOT_DIR/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm use ${node_version}
-            cd stitch-cli/etc/transpiler
+            cd realm-cli/etc/transpiler
             yarn && yarn run build -t ${transpiler_target}
-  "setup_stitch_server":
+  "setup_baas_server":
     - command: shell.exec
       params:
         shell: "bash"
@@ -101,7 +101,7 @@ functions:
           cd baas
           mkdir -p etc/dylib
           cd etc/dylib
-          curl -s "${server_stitch_lib_url}" | tar xvfz - --strip-components=1
+          curl -s "${server_baas_lib_url}" | tar xvfz - --strip-components=1
     - command: shell.exec
       params:
         shell: "bash"
@@ -140,8 +140,8 @@ functions:
                   "type": "mongodb-cloud",
                   "config": {
                       "baseUrl": "https://cloud-dev.mongodb.com",
-                      "adminUsername": "${stitch_mongodb_cloud_atlas_admin_username}",
-                      "adminAPIKey": "${stitch_mongodb_cloud_atlas_admin_api_key}"
+                      "adminUsername": "${baas_mongodb_cloud_atlas_admin_username}",
+                      "adminAPIKey": "${baas_mongodb_cloud_atlas_admin_api_key}"
                     },
                     "metadataFields": [{ "name": "name", "required": false}]
                 }
@@ -149,13 +149,13 @@ functions:
             }
           }
           EOF
-          go run cmd/server/main.go --configFile $ROOT_DIR/stitch-cli/testdata/configs/stitch_server_test_config.json --configFile ./atlas_config.json
+          go run cmd/server/main.go --configFile $ROOT_DIR/realm-cli/testdata/configs/baas_server_test_config.json --configFile ./atlas_config.json
     - command: shell.exec
       params:
         shell: "bash"
         script: |
           counter=0
-          until $(curl --output /dev/null --silent --head --fail ${stitchServerURL}); do
+          until $(curl --output /dev/null --silent --head --fail ${baasServerURL}); do
             echo "checking for API server to be up..."
             sleep 1
             let counter++
@@ -180,18 +180,18 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
-            export PATH=$PATH:$ROOT_DIR/stitch-cli/etc/transpiler/bin/
+            export PATH=$PATH:$ROOT_DIR/realm-cli/etc/transpiler/bin/
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
-            cd $ROOT_DIR/stitch-cli
-            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/stitch-cli/...) > $ROOT_DIR/stitch-cli.suite
+            cd $ROOT_DIR/realm-cli
+            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/realm-cli/...) > $ROOT_DIR/realm-cli.suite
       - command: s3.put
         params:
           aws_key: ${test_aws_key}
           aws_secret: ${test_aws_secret}
           local_file: cover.out
           remote_file: ${task_id}/cover.out
-          bucket: stitch-test-artifacts
+          bucket: realm-test-artifacts
           content_type: text/plain
           permissions: public-read
 
@@ -203,7 +203,7 @@ tasks:
       - func: "setup_project"
       - func: "setup_transpiler"
       - func: "setup_mongod"
-      - func: "setup_stitch_server"
+      - func: "setup_baas_server"
       - func: "start_server"
       - command: shell.exec
         params:
@@ -213,25 +213,26 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
-            export PATH=$PATH:$ROOT_DIR/stitch-cli/etc/transpiler/bin/
+            export PATH=$PATH:$ROOT_DIR/realm-cli/etc/transpiler/bin/
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
-            export STITCH_MONGODB_CLOUD_GROUP_ID="${stitch_mongodb_cloud_group_id}"
-            export STITCH_MONGODB_CLOUD_USERNAME="${stitch_mongodb_cloud_username}"
-            export STITCH_MONGODB_CLOUD_API_KEY="${stitch_mongodb_cloud_api_key}"
-            export STITCH_MONGODB_CLOUD_ADMIN_USERNAME="${stitch_mongodb_cloud_admin_username}"
-            export STITCH_MONGODB_CLOUD_ADMIN_API_KEY="${stitch_mongodb_cloud_admin_api_key}"
-            export STITCH_MONGODB_CLOUD_API_BASE_URL="${mongoDBCloudURL}"
-            export STITCH_SERVER_BASE_URL="${stitchServerURL}"
-            cd $ROOT_DIR/stitch-cli
-            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/stitch-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $ROOT_DIR/stitch-cli.suite
+            export REALM_NO_SKIP_TEST=1
+            export REALM_MONGODB_CLOUD_GROUP_ID="${baas_mongodb_cloud_group_id}"
+            export REALM_MONGODB_CLOUD_USERNAME="${baas_mongodb_cloud_username}"
+            export REALM_MONGODB_CLOUD_API_KEY="${baas_mongodb_cloud_api_key}"
+            export REALM_MONGODB_CLOUD_ADMIN_USERNAME="${baas_mongodb_cloud_admin_username}"
+            export REALM_MONGODB_CLOUD_ADMIN_API_KEY="${baas_mongodb_cloud_admin_api_key}"
+            export REALM_MONGODB_CLOUD_API_BASE_URL="${mongoDBCloudURL}"
+            export REALM_SERVER_BASE_URL="${baasServerURL}"
+            cd $ROOT_DIR/realm-cli
+            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/realm-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $ROOT_DIR/realm-cli.suite
       - command: s3.put
         params:
           aws_key: ${test_aws_key}
           aws_secret: ${test_aws_secret}
           local_file: cover.out
           remote_file: ${task_id}/cover.out
-          bucket: stitch-test-artifacts
+          bucket: realm-test-artifacts
           content_type: text/plain
           permissions: public-read
 
@@ -246,7 +247,7 @@ tasks:
             export ROOT_DIR=`pwd`
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
-            cd $ROOT_DIR/stitch-cli
+            cd $ROOT_DIR/realm-cli
             go run github.com/golangci/golangci-lint/cmd/golangci-lint run ./...
 
   - name: build_publish_clis
@@ -275,24 +276,24 @@ tasks:
             export NVM_DIR="$ROOT_DIR/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-            cd $ROOT_DIR/stitch-cli
+            cd $ROOT_DIR/realm-cli
             export VERSION="${version}"
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
-            echo "Building stitch-cli for $GOOS on $GOARCH"
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
-            eval go build $REPLACE_VARS -o stitch-cli-linux-amd64 main.go
+            echo "Building realm-cli for $GOOS on $GOARCH"
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            eval go build $REPLACE_VARS -o realm-cli-linux-amd64 main.go
             export GOOS=darwin
             export OSARCH=macos-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
-            echo "Building stitch-cli for $GOOS on $GOARCH"
-            eval go build $REPLACE_VARS -o stitch-cli-macos-amd64 main.go
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            echo "Building realm-cli for $GOOS on $GOARCH"
+            eval go build $REPLACE_VARS -o realm-cli-macos-amd64 main.go
             export GOOS=windows
             export OSARCH=windows-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/stitch-cli/utils.CLIVersion=$VERSION -X github.com/10gen/stitch-cli/utils.cliOSArch=$OSARCH\""
-            echo "Building stitch-cli for $GOOS on $GOARCH"
-            eval go build $REPLACE_VARS -o stitch-cli-windows-amd64 main.go
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            echo "Building realm-cli for $GOOS on $GOARCH"
+            eval go build $REPLACE_VARS -o realm-cli-windows-amd64 main.go
 
 
             # build transpilers
@@ -312,27 +313,27 @@ tasks:
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/stitch-cli-linux-amd64
-          remote_file: ${build_id}/linux-amd64/stitch-cli
-          bucket: stitch-clis
+          local_file: realm-cli/realm-cli-linux-amd64
+          remote_file: ${build_id}/linux-amd64/realm-cli
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/stitch-cli-macos-amd64
-          remote_file: ${build_id}/macos-amd64/stitch-cli
-          bucket: stitch-clis
+          local_file: realm-cli/realm-cli-macos-amd64
+          remote_file: ${build_id}/macos-amd64/realm-cli
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/stitch-cli-windows-amd64
-          remote_file: ${build_id}/windows-amd64/stitch-cli.exe
-          bucket: stitch-clis
+          local_file: realm-cli/realm-cli-windows-amd64
+          remote_file: ${build_id}/windows-amd64/realm-cli.exe
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
       # transpilers
@@ -340,27 +341,27 @@ tasks:
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/transpiler/bin/transpiler-linux-x64
+          local_file: realm-cli/etc/transpiler/bin/transpiler-linux-x64
           remote_file: ${build_id}/linux-amd64/transpiler
-          bucket: stitch-clis
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/transpiler/bin/transpiler-macos-x64
+          local_file: realm-cli/etc/transpiler/bin/transpiler-macos-x64
           remote_file: ${build_id}/macos-amd64/transpiler
-          bucket: stitch-clis
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
           aws_secret: ${artifacts_aws_secret}
-          local_file: stitch-cli/etc/transpiler/bin/transpiler-win-x64
+          local_file: realm-cli/etc/transpiler/bin/transpiler-win-x64
           remote_file: ${build_id}/windows-amd64/transpiler.exe
-          bucket: stitch-clis
+          bucket: realm-clis
           content_type: application/octet-stream
           permissions: public-read
 
@@ -376,15 +377,15 @@ buildvariants:
     - rhel70
   expansions:
     go_url: "https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz"
-    server_stitch_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/enterprise-rhel-70-64-bit/18ca0d551818d6c8274358b8e6444640bec93c88/stitch-support-4.3.0-120-g18ca0d5.tgz'
+    server_baas_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/enterprise-rhel-70-64-bit/18ca0d551818d6c8274358b8e6444640bec93c88/stitch-support-4.3.0-120-g18ca0d5.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
     node_version: 12.16.2
     transpiler_target: node8-linux
     libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_880e9e39c40bf9fbbdf9e8e771f6186450441046_5e91e60b0305b91b1cbbfa53_20_04_11_15_45_16/libmongo.so'
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
     mongoDBCloudURL: https://cloud-dev.mongodb.com
-    stitchServerURL: http://localhost:8080
-    version: 1.13.0
+    baasServerURL: http://localhost:8080
+    version: 1.0.0
   tasks:
   - name: test_unit
   - name: tests-with-cloud

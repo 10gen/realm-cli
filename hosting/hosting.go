@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/utils"
 )
 
 // ListLocalAssetMetadata walks all files from the rootDirectory

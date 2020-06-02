@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	u "github.com/10gen/stitch-cli/utils/test"
+	u "github.com/10gen/realm-cli/utils/test"
 	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
 )
@@ -16,7 +16,7 @@ func TestImportDependencies(t *testing.T) {
 		expectedAppID := "app-id"
 		dir := "../testdata/app_with_dependencies/functions"
 
-		stitchClient := &u.MockStitchClient{
+		realmClient := &u.MockRealmClient{
 			UploadDependenciesFn: func(groupID, appID, fullPath string) error {
 				u.So(t, groupID, gc.ShouldEqual, expectedGroupID)
 				u.So(t, appID, gc.ShouldEqual, expectedAppID)
@@ -26,7 +26,7 @@ func TestImportDependencies(t *testing.T) {
 		}
 
 		mockUI := cli.NewMockUi()
-		err := ImportDependencies(mockUI, expectedGroupID, expectedAppID, dir, stitchClient)
+		err := ImportDependencies(mockUI, expectedGroupID, expectedAppID, dir, realmClient)
 		u.So(t, err, gc.ShouldBeNil)
 	})
 

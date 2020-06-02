@@ -1,4 +1,4 @@
-module github.com/10gen/stitch-cli
+module github.com/10gen/realm-cli
 
 go 1.13
 

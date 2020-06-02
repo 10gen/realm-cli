@@ -4,10 +4,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/10gen/stitch-cli/models"
-	"github.com/10gen/stitch-cli/secrets"
-	"github.com/10gen/stitch-cli/user"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/models"
+	"github.com/10gen/realm-cli/secrets"
+	"github.com/10gen/realm-cli/user"
+	u "github.com/10gen/realm-cli/utils/test"
 
 	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
@@ -32,7 +32,7 @@ func setUpBasicSecretsCommand(
 		mcf = &mockClientFunctions{}
 	}
 
-	mockStitchClient := &u.MockStitchClient{
+	mockRealmClient := &u.MockRealmClient{
 		ListSecretsFn:        mcf.listSecretsFn,
 		AddSecretFn:          mcf.addSecretFn,
 		UpdateSecretByIDFn:   mcf.updateSecretByIDFn,
@@ -46,7 +46,7 @@ func setUpBasicSecretsCommand(
 			}, nil
 		},
 	}
-	baseCommand.stitchClient = mockStitchClient
+	baseCommand.realmClient = mockRealmClient
 }
 
 func TestSecretsCommand(t *testing.T) {

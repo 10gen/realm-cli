@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/stitch-cli/api/mdbcloud"
-	u "github.com/10gen/stitch-cli/utils/test"
+	"github.com/10gen/realm-cli/api/mdbcloud"
+	u "github.com/10gen/realm-cli/utils/test"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
@@ -25,7 +25,7 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		cloudEnv.StitchServerBaseURL,
+		cloudEnv.RealmServerBaseURL,
 		"--username",
 		cloudEnv.Username,
 		"--api-key",
@@ -48,7 +48,7 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		cloudEnv.StitchServerBaseURL,
+		cloudEnv.RealmServerBaseURL,
 		"--path",
 		"../testdata/simple_app_with_cluster",
 		"--project-id",
@@ -80,7 +80,7 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		cloudEnv.StitchServerBaseURL,
+		cloudEnv.RealmServerBaseURL,
 		"--app-id",
 		appID,
 		"-o",
@@ -90,13 +90,13 @@ func TestCloudCommands(t *testing.T) {
 	err = exec.Command("go", exportArgs...).Run()
 	u.So(t, err, gc.ShouldBeNil)
 
-	out, _ = exec.Command("cat", "../exported_app/stitch.json").CombinedOutput()
+	out, _ = exec.Command("cat", "../exported_app/config.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 	diffFiles(
 		t,
-		"../testdata/simple_app_with_cluster/stitch.json",
-		"../exported_app/stitch.json",
+		"../testdata/simple_app_with_cluster/config.json",
+		"../exported_app/config.json",
 	)
 
 	out, _ = exec.Command("cat", "../exported_app/services/mongodb-atlas/config.json").CombinedOutput()
@@ -116,7 +116,7 @@ func TestCloudCommands(t *testing.T) {
 		"--config-path",
 		"../cli_conf",
 		"--base-url",
-		cloudEnv.StitchServerBaseURL,
+		cloudEnv.RealmServerBaseURL,
 		"--app-id",
 		appID,
 		"-o",
@@ -127,14 +127,14 @@ func TestCloudCommands(t *testing.T) {
 	err = exec.Command("go", exportTemplateArgs...).Run()
 	u.So(t, err, gc.ShouldBeNil)
 
-	out, _ = exec.Command("cat", "../exported_tmpl/stitch.json").CombinedOutput()
+	out, _ = exec.Command("cat", "../exported_tmpl/config.json").CombinedOutput()
 	u.So(t, string(out), gc.ShouldNotContainSubstring, "\"app_id\":")
 	u.So(t, string(out), gc.ShouldContainSubstring, "\"name\":")
 
 	diffFiles(
 		t,
-		"../testdata/template_app_with_cluster/stitch.json",
-		"../exported_tmpl/stitch.json",
+		"../testdata/template_app_with_cluster/config.json",
+		"../exported_tmpl/config.json",
 	)
 
 	out, _ = exec.Command("cat", "../exported_tmpl/services/mongodb-atlas/config.json").CombinedOutput()

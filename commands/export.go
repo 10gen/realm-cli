@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/stitch-cli/api"
-	"github.com/10gen/stitch-cli/models"
-	u "github.com/10gen/stitch-cli/user"
-	"github.com/10gen/stitch-cli/utils"
+	"github.com/10gen/realm-cli/api"
+	"github.com/10gen/realm-cli/models"
+	u "github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils"
 
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
@@ -39,7 +39,7 @@ func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 	}
 }
 
-// ExportCommand is used to export a Stitch App
+// ExportCommand is used to export a Realm App
 type ExportCommand struct {
 	*BaseCommand
 
@@ -59,7 +59,7 @@ type ExportCommand struct {
 
 // Help returns long-form help information for this command
 func (ec *ExportCommand) Help() string {
-	return `Export a stitch application to a local directory.
+	return `Export a realm application to a local directory.
 
 REQUIRED:
   --app-id [string]
@@ -88,7 +88,7 @@ OPTIONS:
 
 // Synopsis returns a one-liner description for this command
 func (ec *ExportCommand) Synopsis() string {
-	return `Export a stitch application to a local directory.`
+	return `Export a realm application to a local directory.`
 }
 
 // Run executes the command
@@ -135,19 +135,19 @@ func (ec *ExportCommand) run() error {
 		return fmt.Errorf("cannot export within config directory %q", dir)
 	}
 
-	stitchClient, err := ec.StitchClient()
+	realmClient, err := ec.RealmClient()
 	if err != nil {
 		return err
 	}
 
 	var app *models.App
 	if ec.flagProjectID == "" {
-		app, err = stitchClient.FetchAppByClientAppID(ec.flagAppID)
+		app, err = realmClient.FetchAppByClientAppID(ec.flagAppID)
 		if err != nil {
 			return err
 		}
 	} else {
-		app, err = stitchClient.FetchAppByGroupIDAndClientAppID(ec.flagProjectID, ec.flagAppID)
+		app, err = realmClient.FetchAppByGroupIDAndClientAppID(ec.flagProjectID, ec.flagAppID)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (ec *ExportCommand) run() error {
 		exportStrategy = api.ExportStrategySourceControl
 	}
 
-	filename, body, err := stitchClient.Export(app.GroupID, app.ID, exportStrategy)
+	filename, body, err := realmClient.Export(app.GroupID, app.ID, exportStrategy)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (ec *ExportCommand) run() error {
 	}
 
 	if ec.flagIncludeDependencies {
-		depArchive, depBody, err := stitchClient.ExportDependencies(app.GroupID, app.ID)
+		depArchive, depBody, err := realmClient.ExportDependencies(app.GroupID, app.ID)
 		if err != nil {
 			return err
 		}
@@ -194,7 +194,7 @@ func (ec *ExportCommand) run() error {
 	}
 
 	if ec.flagIncludeHosting {
-		if err := exportStaticHostingAssets(stitchClient, ec, filename, app); err != nil {
+		if err := exportStaticHostingAssets(realmClient, ec, filename, app); err != nil {
 			return err
 		}
 	}

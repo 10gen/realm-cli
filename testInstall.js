@@ -69,7 +69,7 @@ function sleep(milliseconds) {
   }
 }
 
-const tempInstallPath = path.resolve(os.tmpdir(), 'stitch-cli-test');
+const tempInstallPath = path.resolve(os.tmpdir(), 'realm-cli-test');
 if (directoryExists(tempInstallPath)) {
   console.log(`Deleting directory '${tempInstallPath}'.`);
   removeFolder(tempInstallPath);
@@ -87,20 +87,20 @@ if (process.platform === 'win32') {
 const executable = path.resolve(
   tempInstallPath,
   'node_modules',
-  'mongodb-stitch-cli',
-  `stitch-cli${os.platform() === 'win32' ? '.exe' : ''}`
+  'mongodb-realm-cli',
+  `realm-cli${os.platform() === 'win32' ? '.exe' : ''}`
 );
 if (fileExists(executable)) {
-  console.log(`Stitch CLI installed fine.`);
+  console.log(`Realm CLI installed fine.`);
 } else {
-  console.error(`STITCH CLI did not install correctly, file '${executable}' was not found.`);
+  console.error(`REALM CLI did not install correctly, file '${executable}' was not found.`);
   process.exit(2);
 }
 
 const executableTranspiler = path.resolve(
   tempInstallPath,
   'node_modules',
-  'mongodb-stitch-cli',
+  'mongodb-realm-cli',
   `transpiler${os.platform() === 'win32' ? '.exe' : ''}`
 );
 if (fileExists(executableTranspiler)) {
