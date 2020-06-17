@@ -377,7 +377,7 @@ buildvariants:
     - rhel70
   expansions:
     go_url: "https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz"
-    server_baas_lib_url: 'https://s3.amazonaws.com/mciuploads/mongodb-mongo-master/stitch-support/enterprise-rhel-70-64-bit/18ca0d551818d6c8274358b8e6444640bec93c88/stitch-support-4.3.0-120-g18ca0d5.tgz'
+    server_baas_lib_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
     node_version: 12.16.2
     transpiler_target: node8-linux
