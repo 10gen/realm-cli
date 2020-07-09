@@ -290,14 +290,26 @@ func unmarshalFunctionDirectories(path string, ignoreDirErr bool) ([]interface{}
 	return directories, nil
 }
 
-func unmarshalGraphQLDirectories(path string, ignoreDirErr bool) (map[string][]interface{}, error) {
+func unmarshalGraphQLDirectories(path string, ignoreDirErr bool) (map[string]interface{}, error) {
 	fileInfos, err := ioutil.ReadDir(path)
 	if err != nil && !ignoreDirErr {
-		return map[string][]interface{}{}, err
+		return map[string]interface{}{}, err
 	}
 
-	gqlServices := map[string][]interface{}{}
+	gqlServices := map[string]interface{}{}
+	gqlServices[customResolversName] = []interface{}{}
+	gqlConfigFilename := configName+jsonExt
 
+	// find the graphql config file
+	for _, fi := range fileInfos {
+		if fi.Name() == gqlConfigFilename {
+			var config map[string]interface{}
+			if err := readAndUnmarshalJSONInto(filepath.Join(path, fi.Name()), &config); err != nil {
+				return map[string]interface{}{}, err
+			}
+			gqlServices[configName] = config
+		}
+	}
 	err = iterDirectories(func(info os.FileInfo, path string) error {
 		gqlSvcFileInfos, err := ioutil.ReadDir(path)
 		if err != nil {
@@ -312,7 +324,9 @@ func unmarshalGraphQLDirectories(path string, ignoreDirErr bool) (map[string][]i
 
 			// As we add graphql-related services we can expand this to unmarshal each one accordingly
 			if strings.Contains(path, customResolversName) {
-				gqlServices[customResolversName] = append(gqlServices[customResolversName], config)
+				if customResolvers, ok := gqlServices[customResolversName].([]interface{}); ok {
+					gqlServices[customResolversName] = append(customResolvers, config)
+				}
 			}
 		}
 
