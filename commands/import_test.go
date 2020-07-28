@@ -1025,11 +1025,11 @@ func TestImportCommand(t *testing.T) {
 						expectedExportStrategy: api.ExportStrategyNone,
 					},
 					{
-						description:            "it uses the 'template' export strategy when importing using the 'replace-by-name' import strategy",
+						description:            "it uses the 'source_control' export strategy when importing using the 'replace-by-name' import strategy",
 						args:                   append([]string{"--path=../testdata/simple_app", "--strategy=replace-by-name"}, validArgs...),
 						workingDirectory:       "",
 						expectedDirectory:      abs("../testdata/simple_app"),
-						expectedExportStrategy: api.ExportStrategyTemplate,
+						expectedExportStrategy: api.ExportStrategySourceControl,
 					},
 				} {
 					t.Run(tc.description, func(t *testing.T) {
