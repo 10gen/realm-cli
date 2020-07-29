@@ -107,11 +107,11 @@ OPTIONS:
   --project-id [string]
 	The Atlas Project ID.
 
-  --strategy [merge|replace]
+  --strategy [merge|replace|replace-by-name] (default: merge, recommended: replace-by-name)
 	How your app should be imported.
 	merge - import and overwrite existing entities while preserving those that exist on Realm. Secrets missing will not be lost.
 	replace - like merge but does not preserve entities missing from the local directory's app configuration.
-
+	replace-by-name - like replace, but uses resource names instead of _id's for identity resolution
 
   --include-hosting
 	Upload static assets from "/hosting" directory.
@@ -432,7 +432,7 @@ func (ic *ImportCommand) importApp(dryRun bool) error {
 
 	exportStrategy := api.ExportStrategyNone
 	if ic.flagStrategy == importStrategyReplaceByName {
-		exportStrategy = api.ExportStrategyTemplate
+		exportStrategy = api.ExportStrategySourceControl
 	}
 
 	_, body, err := realmClient.Export(app.GroupID, app.ID, exportStrategy)
