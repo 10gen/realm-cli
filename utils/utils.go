@@ -298,7 +298,7 @@ func unmarshalGraphQLDirectories(path string, ignoreDirErr bool) (map[string]int
 
 	gqlServices := map[string]interface{}{}
 	gqlServices[customResolversName] = []interface{}{}
-	gqlConfigFilename := configName+jsonExt
+	gqlConfigFilename := configName + jsonExt
 
 	// find the graphql config file
 	for _, fi := range fileInfos {
