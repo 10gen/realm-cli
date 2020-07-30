@@ -37,18 +37,18 @@ func TestAppLoadFromDirectory(t *testing.T) {
 			u.So(t, trgger.(map[string]interface{}), gc.ShouldNotBeEmpty)
 		}
 
-		gqlServices, _ := app["graphql"].(map[string]interface{})
+		gqlServices, ok := app["graphql"].(map[string]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
 
-		conf, ok := gqlServices["config"]
-		c, ok := conf.(map[string]interface{})
-		u.So(t, ok, gc.ShouldEqual, true)
+		c, ok := gqlServices["config"].(map[string]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
 
 		useNatPluralization, ok := c["use_natural_pluralization"]
-		u.So(t, ok, gc.ShouldEqual, true)
+		u.So(t, ok, gc.ShouldBeTrue)
 		u.So(t, useNatPluralization, gc.ShouldEqual, true)
 
 		customResolvers, ok := gqlServices["custom_resolvers"].([]interface{})
-		u.So(t, ok, gc.ShouldEqual, true)
+		u.So(t, ok, gc.ShouldBeTrue)
 		u.So(t, customResolvers, gc.ShouldHaveLength, 1)
 
 		for _, customResolver := range customResolvers {
