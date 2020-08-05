@@ -376,12 +376,12 @@ buildvariants:
   run_on:
     - rhel70
   expansions:
-    go_url: "https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz"
+    go_url: "https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz"
     server_baas_lib_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz'
     mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
     node_version: 12.16.2
     transpiler_target: node8-linux
-    libmongo_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_880e9e39c40bf9fbbdf9e8e771f6186450441046_5e91e60b0305b91b1cbbfa53_20_04_11_15_45_16/libmongo.so'
+    libmongo_url: 'https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_78ec5014fcea180f85c7b64c005477b75359677e_5f232dfde3c3310adaaa6290_20_07_30_20_31_06/libmongo.so'
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
     mongoDBCloudURL: https://cloud-dev.mongodb.com
     baasServerURL: http://localhost:8080
