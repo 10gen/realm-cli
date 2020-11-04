@@ -1,6 +1,7 @@
+# macOS
 .DS_Store
-realm-cli*
-transpiler
-node_modules/
+
+# IDEA
 .idea
-vendor
+
+realm-cli*
