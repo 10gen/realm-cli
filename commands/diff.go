@@ -81,6 +81,7 @@ func (dc *DiffCommand) Run(args []string) int {
 	flags.StringVar(&dc.flagAppPath, importFlagPath, "", "")
 	flags.StringVar(&dc.flagGroupID, flagProjectIDName, "", "")
 	flags.BoolVar(&dc.flagIncludeHosting, importFlagIncludeHosting, false, "")
+	flags.StringVar(&dc.flagStrategy, importFlagStrategy, importStrategyMerge, "")
 
 	if err := dc.BaseCommand.run(args); err != nil {
 		dc.UI.Error(err.Error())
