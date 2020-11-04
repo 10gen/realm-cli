@@ -30,139 +30,13 @@ functions:
             git clone https://github.com/nvm-sh/nvm.git "$NVM_DIR"
             cd "$NVM_DIR"
             git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
-          fi 
+          fi
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm install ${node_version}
   "setup_project":
     - command: git.get_project
       params:
         directory: realm-cli
-
-  "setup_mongod":
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -v
-            curl --silent ${mongodb_url} | tar xvz
-      - command: shell.exec
-        params:
-          shell: "bash"
-          background: true
-          script: |
-            set -v
-            cd mongodb-*
-            echo "starting mongod..."
-            mkdir db_files
-            ./bin/mongod --dbpath ./db_files --port 26000 --replSet "test" &
-            echo "waiting for mongod to start up"
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -e
-            cd mongodb-*
-            echo "waiting for mongod to start up"
-            ./bin/mongo --nodb --eval 'assert.soon(function(x){try{var d = new Mongo("localhost:26000"); return true}catch(e){return false}}, "timed out connecting")'
-            ./bin/mongo --port 26000 --eval 'rs.initiate()'
-            echo "mongod is up."
-  "setup_transpiler": &setup_transpiler
-      - *setup_node
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -e
-            set -v
-            export ROOT_DIR=`pwd`
-            export PATH="$ROOT_DIR/yarn/bin:$PATH"
-            export NVM_DIR="$ROOT_DIR/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm use ${node_version}
-            cd realm-cli/etc/transpiler
-            yarn && yarn run build -t ${transpiler_target}
-  "setup_baas_server":
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          wget --quiet "${libmongo_url}"
-          chmod +x libmongo.so
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          git clone git@github.com:10gen/baas.git
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          set -e
-          cd baas
-          mkdir -p etc/dylib
-          cd etc/dylib
-          curl -s "${server_baas_lib_url}" | tar xvfz - --strip-components=1
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          set -e
-          export ROOT_DIR=`pwd`
-          export PATH="$ROOT_DIR/yarn/bin:$PATH"
-          export NVM_DIR="$ROOT_DIR/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm use ${node_version}
-          cd baas/etc/transpiler
-          curl --silent -OL ${yarn_url}
-          tar zvxf latest.tar.gz
-          mv yarn-* yarn
-          yarn install && yarn run build -t ${transpiler_target}
-  "start_server":
-    - command: shell.exec
-      params:
-        shell: "bash"
-        background: true
-        script: |
-          export ROOT_DIR=`pwd`
-          export PATH="$ROOT_DIR:$PATH"
-          export GOROOT=$ROOT_DIR/go
-          export PATH=$GOROOT/bin:$PATH
-          cd $ROOT_DIR/baas
-          export PATH="$ROOT_DIR/baas/etc/transpiler/bin:$PATH"
-          export LD_LIBRARY_PATH="$ROOT_DIR/baas/etc/dylib/lib"
-          which transpiler
-          cat > atlas_config.json <<EOF
-          {
-            "admin": {
-              "authProviders": [
-                {
-                  "name": "mongodb-cloud",
-                  "type": "mongodb-cloud",
-                  "config": {
-                      "baseUrl": "https://cloud-dev.mongodb.com",
-                      "adminUsername": "${baas_mongodb_cloud_atlas_admin_username}",
-                      "adminAPIKey": "${baas_mongodb_cloud_atlas_admin_api_key}"
-                    },
-                    "metadataFields": [{ "name": "name", "required": false}]
-                }
-              ]
-            }
-          }
-          EOF
-          go run cmd/server/main.go --configFile $ROOT_DIR/realm-cli/testdata/configs/baas_server_test_config.json --configFile ./atlas_config.json
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          counter=0
-          until $(curl --output /dev/null --silent --head --fail ${baasServerURL}); do
-            echo "checking for API server to be up..."
-            sleep 1
-            let counter++
-            if [ $counter -gt 100 ]; then
-              exit 1
-            fi
-          done
 
 tasks:
   - name: test_unit
@@ -171,7 +45,6 @@ tasks:
       - func: "fetch_go113"
       - func: "fetch_yarn"
       - func: "setup_project"
-      - func: "setup_transpiler"
       - command: shell.exec
         params:
           shell: "bash"
@@ -180,7 +53,6 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
-            export PATH=$PATH:$ROOT_DIR/realm-cli/etc/transpiler/bin/
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             cd $ROOT_DIR/realm-cli
@@ -195,46 +67,6 @@ tasks:
           content_type: text/plain
           permissions: public-read
 
-  - name: tests-with-cloud
-    exec_timeout_secs: 3600
-    commands:
-      - func: "fetch_go113"
-      - func: "fetch_yarn"
-      - func: "setup_project"
-      - func: "setup_transpiler"
-      - func: "setup_mongod"
-      - func: "setup_baas_server"
-      - func: "start_server"
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -v
-            set -e
-            export ROOT_DIR=`pwd`
-            export PATH="$ROOT_DIR:$PATH"
-            export PATH=$PATH:$ROOT_DIR/realm-cli/etc/transpiler/bin/
-            export GOROOT=$ROOT_DIR/go
-            export PATH=$GOROOT/bin:$PATH
-            export REALM_NO_SKIP_TEST=1
-            export REALM_MONGODB_CLOUD_GROUP_ID="${baas_mongodb_cloud_group_id}"
-            export REALM_MONGODB_CLOUD_USERNAME="${baas_mongodb_cloud_username}"
-            export REALM_MONGODB_CLOUD_API_KEY="${baas_mongodb_cloud_api_key}"
-            export REALM_MONGODB_CLOUD_ADMIN_USERNAME="${baas_mongodb_cloud_admin_username}"
-            export REALM_MONGODB_CLOUD_ADMIN_API_KEY="${baas_mongodb_cloud_admin_api_key}"
-            export REALM_MONGODB_CLOUD_API_BASE_URL="${mongoDBCloudURL}"
-            export REALM_SERVER_BASE_URL="${baasServerURL}"
-            cd $ROOT_DIR/realm-cli
-            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/realm-cli/${cloud_dependent_pkg}/...) -timeout 25m  -run TestCloud > $ROOT_DIR/realm-cli.suite
-      - command: s3.put
-        params:
-          aws_key: ${test_aws_key}
-          aws_secret: ${test_aws_secret}
-          local_file: cover.out
-          remote_file: ${task_id}/cover.out
-          bucket: baas-test-artifacts
-          content_type: text/plain
-          permissions: public-read
 
   - name: lint
     commands:
@@ -250,120 +82,6 @@ tasks:
             cd $ROOT_DIR/realm-cli
             go run github.com/golangci/golangci-lint/cmd/golangci-lint run ./...
 
-  - name: build_publish_clis
-    depends_on:
-      - name: test_unit
-      - name: lint
-    patchable: false
-    commands:
-      - func: "fetch_go113"
-      - func: "setup_project"
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -v
-            set -e
-            export ROOT_DIR=`pwd`
-            export PATH="$ROOT_DIR:$PATH"
-            export GOROOT=$ROOT_DIR/go
-            export PATH=$GOROOT/bin:$PATH
-
-            curl --silent -OL ${yarn_url}
-            tar zvxf latest.tar.gz
-            mv yarn-* yarn
-            export PATH="$ROOT_DIR/yarn/bin:$PATH"
-            export NVM_DIR="$ROOT_DIR/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-            cd $ROOT_DIR/realm-cli
-            export VERSION="${version}"
-            export GOARCH=amd64
-            export GOOS=linux
-            export OSARCH=linux-amd64
-            echo "Building realm-cli for $GOOS on $GOARCH"
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
-            eval go build $REPLACE_VARS -o realm-cli-linux-amd64 main.go
-            export GOOS=darwin
-            export OSARCH=macos-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
-            echo "Building realm-cli for $GOOS on $GOARCH"
-            eval go build $REPLACE_VARS -o realm-cli-macos-amd64 main.go
-            export GOOS=windows
-            export OSARCH=windows-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
-            echo "Building realm-cli for $GOOS on $GOARCH"
-            eval go build $REPLACE_VARS -o realm-cli-windows-amd64 main.go
-
-
-            # build transpilers
-            cd etc/transpiler
-            yarn install 
-            # linux 
-            yarn run build -t node8-linux-x64
-            mv bin/transpiler bin/transpiler-linux-x64
-            # mac 
-            yarn run build -t node8-macos-x64
-            mv bin/transpiler bin/transpiler-macos-x64
-            # win 
-            yarn run build -t node8-win-x64 
-            mv bin/transpiler.exe bin/transpiler-win-x64
-
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/realm-cli-linux-amd64
-          remote_file: ${build_id}/linux-amd64/realm-cli
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/realm-cli-macos-amd64
-          remote_file: ${build_id}/macos-amd64/realm-cli
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/realm-cli-windows-amd64
-          remote_file: ${build_id}/windows-amd64/realm-cli.exe
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
-      # transpilers
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/etc/transpiler/bin/transpiler-linux-x64
-          remote_file: ${build_id}/linux-amd64/transpiler
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/etc/transpiler/bin/transpiler-macos-x64
-          remote_file: ${build_id}/macos-amd64/transpiler
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
-      - command: s3.put
-        params:
-          aws_key: ${artifacts_aws_key}
-          aws_secret: ${artifacts_aws_secret}
-          local_file: realm-cli/etc/transpiler/bin/transpiler-win-x64
-          remote_file: ${build_id}/windows-amd64/transpiler.exe
-          bucket: realm-clis
-          content_type: application/octet-stream
-          permissions: public-read
 
 post:
   - command: gotest.parse_files
@@ -377,17 +95,9 @@ buildvariants:
     - rhel70
   expansions:
     go_url: "https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz"
-    server_baas_lib_url: 'https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz'
-    mongodb_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz
-    node_version: 12.16.2
-    transpiler_target: node8-linux
-    libmongo_url: 'https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_b1c679a26ecb975372de41238ea44e4719b8fbf0_5f3d91c10ae6066889184912_20_08_19_20_57_17/libmongo.so'
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
-    mongoDBCloudURL: https://cloud-dev.mongodb.com
-    baasServerURL: http://localhost:8080
-    version: 1.1.0
+    node_version: 12.16.2
+    version: 0.0.0
   tasks:
   - name: test_unit
-  - name: tests-with-cloud
   - name: lint
-  - name: build_publish_clis
