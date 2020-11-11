@@ -1,34 +1,39 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"log"
 )
 
-// NewErr creates a new CLI error
-func NewErr(message string) Err {
+// HandleErr handles any CLI error
+// TODO(REALMC-7340): build this out
+func HandleErr(err error) {
+	if err == nil {
+		return
+	}
+	log.Fatal(err)
+}
+
+// New creates a new CLI error
+func New(message string) Err {
 	return Err{message: message}
 }
 
-// NewErrw creates a new CLI error with the wrapped cause's details
+// NewWrapped creates a new CLI error with the wrapped cause's details
 // hidden from the resulting error message
-func NewErrw(message string, err error) Err {
+func NewWrapped(message string, err error) Err {
 	return Err{message: message, cause: err}
 }
 
-// NewPrivilegedErr creates a new CLI error with the wrapped cause's details
+// NewPrivileged creates a new CLI error with the wrapped cause's details
 // exposed in the resulting error message
-func NewPrivilegedErr(message string, err error) PrivilegedErr {
-	return PrivilegedErr{NewErrw(message, err)}
-}
-
-// WrappedErr is an error that can be unwrapped
-type WrappedErr interface {
-	Unwrap() error
+func NewPrivileged(message string, err error) PrivilegedErr {
+	return PrivilegedErr{NewWrapped(message, err)}
 }
 
 // Err is a CLI error
 type Err struct {
-	WrappedErr
 	message string
 	cause   error
 }
@@ -63,10 +68,8 @@ func (err PrivilegedErr) Error() string {
 }
 
 func findRootCause(err error) error {
-	switch e := err.(type) {
-	case WrappedErr:
-		return findRootCause(e.Unwrap())
-	default:
-		return e
+	if cause := errors.Unwrap(err); cause != nil {
+		return findRootCause(cause)
 	}
+	return err
 }
