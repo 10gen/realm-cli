@@ -15,8 +15,9 @@ import (
 func LoginCommand() CommandDefinition {
 	return CommandDefinition{
 		Command:     &loginCommand{},
-		Usage:       "Authenticate with an Atlas programmatic API Key",
-		Description: "login", // TODO(REALMC-7429): add help text description
+		Use:         "login",
+		Description: "Authenticate with an Atlas programmatic API Key",
+		Help:        "login", // TODO(REALMC-7429): add help text description
 	}
 }
 
