@@ -8,8 +8,9 @@ import (
 func LogoutCommand() CommandDefinition {
 	return CommandDefinition{
 		Command:     &logoutCommand{},
-		Usage:       "Terminate the current user’s session",
-		Description: "logout", // TODO(REALMC-7429): add help text description
+		Use:         "logout",
+		Description: "Terminate the current user’s session",
+		Help:        "logout", // TODO(REALMC-7429): add help text description
 	}
 }
 

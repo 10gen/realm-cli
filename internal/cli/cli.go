@@ -18,13 +18,17 @@ type Command interface {
 type CommandDefinition struct {
 	Command Command
 
-	// Description is the short description shown in the command's help text
-	// This value maps 1:1 to Cobra's `short` property
+	// Description is the short command description shown in the 'help' output
+	// This value maps 1:1 to Cobra's `Short` property
 	Description string
 
-	// Usage is the one-line usage message
-	// This value maps 1:1 to Cobra's `use` property
-	Usage string
+	// Help is the long message shown in the 'help <this-command>' output
+	// This value maps 1:1 to Cobra's `Long` property
+	Help string
+
+	// Use defines how the command is used
+	// This value maps 1:1 to Cobra's `Use` property
+	Use string
 }
 
 // CommandFactory is a command factory
@@ -38,8 +42,9 @@ func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Co
 	cmdDef := provider()
 
 	cmd := cobra.Command{
-		Use:   cmdDef.Usage,
+		Use:   cmdDef.Use,
 		Short: cmdDef.Description,
+		Long:  cmdDef.Help,
 		RunE: func(c *cobra.Command, a []string) error {
 			return cmdDef.Command.Handler(
 				factory.Profile,

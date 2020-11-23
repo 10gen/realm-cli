@@ -8,8 +8,9 @@ import (
 func WhoamiCommand() CommandDefinition {
 	return CommandDefinition{
 		Command:     &whoamiCommand{},
-		Usage:       "Display the current user's details",
-		Description: "whoami", // TODO(REALMC-7429): add help text description
+		Use:         "whoami",
+		Description: "Display the current user's details",
+		Help:        "whoami", // TODO(REALMC-7429): add help text description
 	}
 }
 
