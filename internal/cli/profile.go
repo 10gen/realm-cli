@@ -33,7 +33,7 @@ func NewDefaultProfile() (*Profile, error) {
 func NewProfile(name string) (*Profile, error) {
 	dir, dirErr := homeDir()
 	if dirErr != nil {
-		return nil, dirErr
+		return nil, fmt.Errorf("failed to create CLI profile: %s", dirErr)
 	}
 
 	return &Profile{
@@ -76,7 +76,7 @@ func (p Profile) Load() error {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			return nil // proceed if profile doesn't exist
 		}
-		return fmt.Errorf("failed to read CLI profile: %s", err)
+		return fmt.Errorf("failed to load CLI profile: %s", err)
 	}
 	return nil
 }
@@ -85,15 +85,19 @@ func (p Profile) Load() error {
 func (p *Profile) Save() error {
 	exists, existsErr := afero.DirExists(p.fs, p.dir)
 	if existsErr != nil {
-		return existsErr
+		return fmt.Errorf("failed to save CLI profile: %s", existsErr)
 	}
 
 	if !exists {
 		if err := p.fs.MkdirAll(p.dir, 0700); err != nil {
-			return err
+			return fmt.Errorf("failed to save CLI profile: %s", err)
 		}
 	}
-	return viper.WriteConfigAs(p.path())
+
+	if err := viper.WriteConfigAs(p.path()); err != nil {
+		return fmt.Errorf("failed to save CLI profile: %s", err)
+	}
+	return nil
 }
 
 func (p Profile) path() string {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/flags"
@@ -25,14 +26,24 @@ var (
 
 // Execute runs the CLI
 func Execute() {
-	cli.HandleErr(rootCmd.Execute())
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func init() {
-	profile, profileErr := cli.NewDefaultProfile()
-	cli.HandleErr(profileErr)
-
 	var config cli.Config
+
+	profile, profileErr := cli.NewDefaultProfile()
+	if profileErr != nil {
+		log.Fatal(profileErr)
+	}
+
+	loadProfile := func() {
+		if err := profile.Load(); err != nil {
+			log.Fatal(err)
+		}
+	}
 
 	rootCmd.PersistentFlags().StringVarP(&profile.Name, flags.Profile, flags.ProfileShort, cli.DefaultProfile, flags.ProfileUsage)
 	rootCmd.PersistentFlags().BoolVar(&config.UI.DisableColors, flags.DisableColors, false, flags.DisableColorsUsage)
@@ -41,11 +52,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&config.Command.RealmBaseURL, flags.RealmBaseURL, flags.DefaultRealmBaseURL, flags.RealmBaseURLUsage)
 
 	factory := cli.CommandFactory{profile, config}
-
 	rootCmd.AddCommand(factory.Build(cli.LoginCommand))
 	rootCmd.AddCommand(factory.Build(cli.LogoutCommand))
 	rootCmd.AddCommand(factory.Build(cli.WhoamiCommand))
 
 	// pass a list of functions to be run before each command's Execute function
-	cobra.OnInitialize(func() { cli.HandleErr(profile.Load()) })
+	cobra.OnInitialize(loadProfile)
 }
