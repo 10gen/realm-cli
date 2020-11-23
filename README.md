@@ -38,11 +38,11 @@ If you want to actually see the output headed to your "pseudo-terminal", you jus
 
 ```go
 out, outErr := mock.FileWriter(t)
-u.MustMatch(t, cmp.Diff(nil, outErr))
+assert.Nil(t, outErr)
 defer out.Close()
 
 c, err := expect.NewConsole(expect.WithStdout(out))
-u.MustMatch(t, cmp.Diff(nil, err))
+assert.Nil(t, err)
 defer c.Close()
 ```
 
@@ -57,7 +57,7 @@ func TestWhoamiE2E(t *testing.T) {
 
 	out := new(bytes.Buffer)
 	c, err := expect.NewConsole(expect.WithStdout(out))
-	u.MustMatch(t, cmp.Diff(nil, err))
+	assert.Nil(t, err)
 	defer c.Close()
 
 	go func() {

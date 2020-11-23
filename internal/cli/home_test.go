@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	u "github.com/10gen/realm-cli/internal/utils/test"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestHomeDir(t *testing.T) {
@@ -15,7 +14,7 @@ func TestHomeDir(t *testing.T) {
 
 	t.Run("Should return the home dir properly", func(t *testing.T) {
 		home, err := homeDir()
-		u.MustMatch(t, cmp.Diff(nil, err))
-		u.MustMatch(t, cmp.Diff(fmt.Sprintf("./%s", profileDir), home))
+		assert.Nil(t, err)
+		assert.Equal(t, fmt.Sprintf("./%s", profileDir), home)
 	})
 }

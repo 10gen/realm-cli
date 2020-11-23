@@ -3,51 +3,51 @@ package cli
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	u "github.com/10gen/realm-cli/internal/utils/test"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestProfile(t *testing.T) {
 	tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
-	u.MustMatch(t, cmp.Diff(nil, tmpDirErr))
+	assert.Nil(t, tmpDirErr)
 	defer teardownTmpDir()
 
 	_, teardownHomeDir := u.SetupHomeDir(tmpDir)
 	defer teardownHomeDir()
 
 	profile, profileErr := NewDefaultProfile()
-	u.MustMatch(t, cmp.Diff(nil, profileErr))
+	assert.Nil(t, profileErr)
 
 	t.Run("Should initialize as an empty, default profile", func(t *testing.T) {
-		u.MustMatch(t, cmp.Diff(DefaultProfile, profile.Name))
-		u.MustMatch(t, cmp.Diff(fmt.Sprintf("%s/%s", tmpDir, profileDir), profile.dir))
-		u.MustNotBeNil(t, profile.fs)
+		assert.Equal(t, DefaultProfile, profile.Name)
+		assert.Equal(t, fmt.Sprintf("%s/%s", tmpDir, profileDir), profile.dir)
+		assert.NotNil(t, profile.fs)
 	})
 
 	t.Run("Should load a config that does not exist without error", func(t *testing.T) {
-		u.MustMatch(t, cmp.Diff(nil, profile.Load()))
+		assert.Nil(t, profile.Load())
 	})
 
 	t.Run("Should set config values properly", func(t *testing.T) {
 		profile.SetString("a", "ayyy")
 		profile.SetString("b", "be")
 
-		u.MustMatch(t, cmp.Diff(profile.GetString("a"), "ayyy"))
-		u.MustMatch(t, cmp.Diff(profile.GetString("b"), "be"))
+		assert.Equal(t, profile.GetString("a"), "ayyy")
+		assert.Equal(t, profile.GetString("b"), "be")
 	})
 
 	t.Run("Should save a config properly", func(t *testing.T) {
-		u.MustMatch(t, cmp.Diff(nil, profile.Save()))
+		assert.Nil(t, profile.Save())
 
 		config, err := ioutil.ReadFile(profile.path())
-		u.MustMatch(t, cmp.Diff(nil, err))
-		u.MustContainSubstring(t, string(config), `default:
+		assert.Nil(t, err)
+		assert.True(t, strings.Contains(string(config), `default:
   a: ayyy
   b: be
-`)
+`), "config must contain the expected contents")
 	})
 }
 
@@ -81,7 +81,7 @@ func TestUser(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				user := User{PrivateAPIKey: tc.privateAPIKey}
-				u.MustMatch(t, cmp.Diff(tc.display, user.RedactedPrivateAPIKey()))
+				assert.Equal(t, tc.display, user.RedactedPrivateAPIKey())
 			})
 		}
 	})
