@@ -37,3 +37,5 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 	honnef.co/go/tools v0.0.1-2020.1.6
 )
+
+replace github.com/edaniels/golinters => github.com/mongodb-forks/golinters v0.0.4
