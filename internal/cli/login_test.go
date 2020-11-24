@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/realm"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
@@ -124,7 +124,7 @@ func TestLoginHandler(t *testing.T) {
 		u.MustMatch(t, cmp.Diff(true, os.IsNotExist(statErr)))
 
 		realmClient := mock.RealmClient{}
-		realmClient.LoginFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
+		realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
 			return realm.AuthResponse{
 				AccessToken:  "accessToken",
 				RefreshToken: "refreshToken",
@@ -165,7 +165,7 @@ func TestLoginHandler(t *testing.T) {
 			u.MustMatch(t, cmp.Diff(nil, profile.Save()))
 
 			realmClient := mock.RealmClient{}
-			realmClient.LoginFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
+			realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
 				return realm.AuthResponse{
 					AccessToken:  "newAccessToken",
 					RefreshToken: "newRefreshToken",

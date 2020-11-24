@@ -3,8 +3,8 @@ package cli
 import (
 	"fmt"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/flags"
-	"github.com/10gen/realm-cli/internal/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/AlecAivazis/survey/v2"
 
@@ -83,12 +83,12 @@ func (cmd *loginCommand) Handler(profile *Profile, ui terminal.UI, args []string
 
 	profile.SetUser(cmd.publicAPIKey, cmd.privateAPIKey)
 
-	res, loginErr := cmd.realmClient.Login(cmd.publicAPIKey, cmd.privateAPIKey)
-	if loginErr != nil {
-		return loginErr
+	auth, authErr := cmd.realmClient.Authenticate(cmd.publicAPIKey, cmd.privateAPIKey)
+	if authErr != nil {
+		return authErr
 	}
 
-	profile.SetSession(res.AccessToken, res.RefreshToken)
+	profile.SetSession(auth.AccessToken, auth.RefreshToken)
 	return profile.Save()
 }
 

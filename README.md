@@ -14,6 +14,22 @@ TODO
 
 ## Testing
 
+### Integration Tests with Realm Server
+
+To run integration tests against a Realm server locally, run `baas` with the `local_cloud_dev_config.json` server config via:
+
+```cmd
+go run -exec="env LD_LIBRARY_PATH=$LD_LIBRARY_PATH" cmd/server/main.go --configFile etc/configs/local_cloud_dev_config.json
+```
+
+Then, from the `realm-cli` project root, simply run:
+
+```cmd
+REALM_SERVER_BASE_URL=http://localhost:8080 REALM_MONGODB_CLOUD_ADMIN_USERNAME=${cloud_username} REALM_MONGODB_CLOUD_ADMIN_API_KEY=${cloud_api_key} go test -v -tags debug github.com/10gen/realm-cli/internal/cloud/realm -run 'Test'
+```
+
+> NOTE: with the above, you'll need to substitute both `${cloud_username}` and `${cloud_api_key}` with valid credentials of your own from `https://cloud-dev.mongodb.com`
+
 ### Debugging an Interactive Test
 
 Have a test that relies on prompts to the user for input?  The `go-expect` framework handles those interactions and relies on "expected" output to wait for until proceeding with further instruction.  Often times, this can result in a test hanging indefinitely if the expected output doesn't match.  Unfortunately, in this case only a `Ctrl+C` (or timeout) ends the test and you are left without any output to inspect in order to determine a root cause.
