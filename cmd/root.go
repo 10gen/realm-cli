@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/flags"
 
 	"github.com/spf13/cobra"
@@ -32,7 +33,7 @@ func Execute() {
 }
 
 func init() {
-	var config cli.Config
+	config := new(cli.Config)
 
 	profile, profileErr := cli.NewDefaultProfile()
 	if profileErr != nil {
@@ -47,9 +48,9 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&profile.Name, flags.Profile, flags.ProfileShort, cli.DefaultProfile, flags.ProfileUsage)
 	rootCmd.PersistentFlags().BoolVar(&config.UI.DisableColors, flags.DisableColors, false, flags.DisableColorsUsage)
-	rootCmd.PersistentFlags().StringVar(&config.UI.OutputFormat, flags.OutputFormat, flags.DefaultOutputFormat, flags.OutputFormatUsage)
+	rootCmd.PersistentFlags().Var(&config.UI.OutputFormat, flags.OutputFormat, flags.OutputFormatUsage)
 	rootCmd.PersistentFlags().StringVar(&config.UI.OutputTarget, flags.OutputTarget, "", flags.OutputTargetUsage)
-	rootCmd.PersistentFlags().StringVar(&config.Command.RealmBaseURL, flags.RealmBaseURL, flags.DefaultRealmBaseURL, flags.RealmBaseURLUsage)
+	rootCmd.PersistentFlags().StringVar(&config.Command.RealmBaseURL, flags.RealmBaseURL, realm.DefaultBaseURL, flags.RealmBaseURLUsage)
 
 	factory := cli.CommandFactory{profile, config}
 	rootCmd.AddCommand(factory.Build(cli.LoginCommand))

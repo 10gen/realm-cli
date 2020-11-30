@@ -15,6 +15,7 @@ require (
 	github.com/google/go-cmp v0.5.2
 	github.com/gordonklaus/ineffassign v0.0.0-20201107091007-3b93a8888063 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180616224451-1954e6464174
+	github.com/iancoleman/orderedmap v0.1.0
 	github.com/jgautheron/goconst v0.0.0-20201108215931-f8e4fe8351cd // indirect
 	github.com/kr/pretty v0.1.0
 	github.com/mdempsky/maligned v0.0.0-20201101000000-d73c43cb16d0 // indirect

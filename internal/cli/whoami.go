@@ -26,29 +26,25 @@ func (cmd *whoamiCommand) Feedback(profile *Profile, ui terminal.UI) error {
 	session := profile.GetSession()
 
 	if user.PublicAPIKey == "" {
-		return ui.Print(terminal.TextMessage{"No user is currently logged in."})
+		return ui.Print(terminal.NewTextLog("No user is currently logged in."))
 	}
 
-	// TODO(REALMC-7339): print details as table, remove TitledJSONDocument once implemented
+	// TODO(REALMC-7339): print details as table, remove titledJSONDocument once implemented
 	// kept it around for "bold text" pattern, which will now be used for table headers
 	return ui.Print(
-		terminal.TitledJSONDocument{
-			Title: "User Credentials",
-			JSONDocument: terminal.JSONDocument{
-				Data: map[string]interface{}{
-					"API Key":         user.PublicAPIKey,
-					"Private API Key": user.RedactedPrivateAPIKey(),
-				},
+		terminal.NewTitledJSONLog(
+			"User Credentials",
+			map[string]interface{}{
+				"API Key":         user.PublicAPIKey,
+				"Private API Key": user.RedactedPrivateAPIKey(),
 			},
-		},
-		terminal.TitledJSONDocument{
-			Title: "Session Info",
-			JSONDocument: terminal.JSONDocument{
-				Data: map[string]interface{}{
-					"Access Token":  session.AccessToken,
-					"Refresh Token": session.RefreshToken,
-				},
+		),
+		terminal.NewTitledJSONLog(
+			"Session Info",
+			map[string]interface{}{
+				"Access Token":  session.AccessToken,
+				"Refresh Token": session.RefreshToken,
 			},
-		},
+		),
 	)
 }

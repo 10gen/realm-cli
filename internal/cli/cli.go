@@ -40,7 +40,18 @@ type CommandDefinition struct {
 // CommandFactory is a command factory
 type CommandFactory struct {
 	Profile *Profile
-	Config  Config
+	Config  *Config
+}
+
+// Config is the global CLI config
+type Config struct {
+	Command CommandConfig
+	UI      terminal.UIConfig
+}
+
+// CommandConfig holds the global config for a CLI command
+type CommandConfig struct {
+	RealmBaseURL string
 }
 
 // Build builds a Cobra command from the specified CommandDefinition
@@ -57,14 +68,13 @@ func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Co
 		Short: cmdDef.Description,
 		Long:  cmdDef.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			err := cmdDef.Command.Handler(
-				factory.Profile,
-				newCobraUI(factory.Config.UI, c),
-				a,
-			)
+			ui := newUI(factory.Config.UI, c)
 
+			err := cmdDef.Command.Handler(factory.Profile, ui, a)
 			if err != nil {
-				return fmt.Errorf("%s failed: %w", display, err)
+				return ui.Print(terminal.NewErrorLog(
+					fmt.Errorf("%s failed: %w", display, err),
+				))
 			}
 			return nil
 		},
@@ -72,14 +82,13 @@ func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Co
 
 	if preparer, ok := cmdDef.Command.(CommandPreparer); ok {
 		cmd.PreRunE = func(c *cobra.Command, a []string) error {
-			err := preparer.Setup(
-				factory.Profile,
-				newCobraUI(factory.Config.UI, c),
-				factory.Config.Command,
-			)
+			ui := newUI(factory.Config.UI, c)
 
+			err := preparer.Setup(factory.Profile, ui, factory.Config.Command)
 			if err != nil {
-				return fmt.Errorf("%s failed: an error occurred during initialization: %w", display, err)
+				return ui.Print(terminal.NewErrorLog(
+					fmt.Errorf("%s failed: an error occurred during initialization: %w", display, err),
+				))
 			}
 			return nil
 		}
@@ -87,13 +96,13 @@ func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Co
 
 	if responder, ok := cmdDef.Command.(CommandResponder); ok {
 		cmd.PostRunE = func(c *cobra.Command, a []string) error {
-			err := responder.Feedback(
-				factory.Profile,
-				newCobraUI(factory.Config.UI, c),
-			)
+			ui := newUI(factory.Config.UI, c)
 
+			err := responder.Feedback(factory.Profile, ui)
 			if err != nil {
-				return fmt.Errorf("%s completed successfully, but an error occurred while displaying results: %w", display, err)
+				return ui.Print(terminal.NewErrorLog(
+					fmt.Errorf("%s completed successfully, but an error occurred while displaying results: %w", display, err),
+				))
 			}
 			return nil
 		}
@@ -123,17 +132,6 @@ type CommandFlagger interface {
 	RegisterFlags(fs *pflag.FlagSet)
 }
 
-// Config is the global CLI config
-type Config struct {
-	Command CommandConfig
-	UI      terminal.UIConfig
-}
-
-// CommandConfig holds the global config for a CLI command
-type CommandConfig struct {
-	RealmBaseURL string
-}
-
-func newCobraUI(config terminal.UIConfig, cmd *cobra.Command) terminal.UI {
+func newUI(config terminal.UIConfig, cmd *cobra.Command) terminal.UI {
 	return terminal.NewUI(config, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
 }

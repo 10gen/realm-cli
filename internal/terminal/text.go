@@ -1,11 +1,21 @@
 package terminal
 
-// TextMessage is a text message to display in the UI
-type TextMessage struct {
-	Contents string
+const (
+	logFieldMessage = "message"
+)
+
+var (
+	textMessageFields = []string{logFieldMessage}
+)
+
+type textMessage string
+
+func (t textMessage) Message() (string, error) {
+	return string(t), nil
 }
 
-// Message returns a text message
-func (t TextMessage) Message() (string, error) {
-	return t.Contents, nil
+func (t textMessage) Payload() ([]string, map[string]interface{}, error) {
+	return textMessageFields, map[string]interface{}{
+		logFieldMessage: t,
+	}, nil
 }

@@ -29,7 +29,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			{
 				description: "with no user logged in",
 				test: func(t *testing.T, output string) {
-					assert.Equal(t, "No user is currently logged in.\n", output)
+					assert.Equal(t, "INFO  01:23:45: No user is currently logged in.\n", output)
 				},
 			},
 			{
