@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
 	expect "github.com/Netflix/go-expect"
-	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -26,9 +27,8 @@ func TestLoginSetup(t *testing.T) {
 		}
 
 		err := cmd.Setup(nil, nil, config)
-		u.MustMatch(t, cmp.Diff(nil, err))
-
-		u.MustNotBeNil(t, cmd.realmClient)
+		assert.Nil(t, err)
+		assert.NotNil(t, cmd.realmClient)
 	})
 
 	for _, tc := range []struct {
@@ -46,7 +46,7 @@ func TestLoginSetup(t *testing.T) {
 				c.SendLine("username")
 			},
 			test: func(t *testing.T, cmd *loginCommand) {
-				u.MustMatch(t, cmp.Diff("username", cmd.publicAPIKey))
+				assert.Equal(t, "username", cmd.publicAPIKey)
 			},
 		},
 		{
@@ -58,7 +58,7 @@ func TestLoginSetup(t *testing.T) {
 				c.ExpectEOF()
 			},
 			test: func(t *testing.T, cmd *loginCommand) {
-				u.MustMatch(t, cmp.Diff("password", cmd.privateAPIKey))
+				assert.Equal(t, "password", cmd.privateAPIKey)
 			},
 		},
 		{
@@ -71,19 +71,19 @@ func TestLoginSetup(t *testing.T) {
 				c.ExpectEOF()
 			},
 			test: func(t *testing.T, cmd *loginCommand) {
-				u.MustMatch(t, cmp.Diff("username", cmd.publicAPIKey))
-				u.MustMatch(t, cmp.Diff("password", cmd.privateAPIKey))
+				assert.Equal(t, "username", cmd.publicAPIKey)
+				assert.Equal(t, "password", cmd.privateAPIKey)
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			out := new(bytes.Buffer)
 			console, _, ui, consoleErr := mock.NewVT10XConsole(mock.UIOptions{}, out)
-			u.MustMatch(t, cmp.Diff(nil, consoleErr))
+			assert.Nil(t, consoleErr)
 			defer console.Close()
 
 			profile, profileErr := NewProfile(primitive.NewObjectID().Hex())
-			u.MustMatch(t, cmp.Diff(nil, profileErr))
+			assert.Nil(t, profileErr)
 
 			cmd := &loginCommand{
 				publicAPIKey:  tc.publicAPIKey,
@@ -97,7 +97,7 @@ func TestLoginSetup(t *testing.T) {
 			}()
 
 			err := cmd.Setup(profile, ui, CommandConfig{})
-			u.MustMatch(t, cmp.Diff(nil, err))
+			assert.Nil(t, err)
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -110,18 +110,18 @@ func TestLoginSetup(t *testing.T) {
 func TestLoginHandler(t *testing.T) {
 	t.Run("With no existing credentials handler should save new credentials", func(t *testing.T) {
 		tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
-		u.MustMatch(t, cmp.Diff(nil, tmpDirErr))
+		assert.Nil(t, tmpDirErr)
 		defer teardownTmpDir()
 
 		_, teardownHomeDir := u.SetupHomeDir(tmpDir)
 		defer teardownHomeDir()
 
 		profile, profileErr := NewProfile(primitive.NewObjectID().Hex())
-		u.MustMatch(t, cmp.Diff(nil, profileErr))
+		assert.Nil(t, profileErr)
 
 		_, statErr := os.Stat(profile.path())
-		u.MustNotBeNil(t, statErr)
-		u.MustMatch(t, cmp.Diff(true, os.IsNotExist(statErr)))
+		assert.NotNil(t, statErr)
+		assert.True(t, os.IsNotExist(statErr), "profile must not exist")
 
 		realmClient := mock.RealmClient{}
 		realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
@@ -140,29 +140,29 @@ func TestLoginHandler(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUI(mock.UIOptions{}, out)
 
-		u.MustMatch(t, cmp.Diff(nil, cmd.Handler(profile, ui, nil)))
+		assert.Nil(t, cmd.Handler(profile, ui, nil))
 
 		expectedUser := User{"publicAPIKey", "privateAPIKey"}
 		expectedSession := Session{"accessToken", "refreshToken"}
 
-		u.MustMatch(t, cmp.Diff(expectedUser, profile.GetUser()))
-		u.MustMatch(t, cmp.Diff(expectedSession, profile.GetSession()))
+		assert.Match(t, expectedUser, profile.GetUser())
+		assert.Match(t, expectedSession, profile.GetSession())
 		ensureProfileContents(t, profile, expectedUser, expectedSession)
 	})
 
 	t.Run("With existing credentials", func(t *testing.T) {
 		setup := func(t *testing.T) (*Profile, realm.Client, func()) {
 			tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
-			u.MustMatch(t, cmp.Diff(nil, tmpDirErr))
+			assert.Nil(t, tmpDirErr)
 
 			_, teardownHomeDir := u.SetupHomeDir(tmpDir)
 
 			profile, profileErr := NewProfile(primitive.NewObjectID().Hex())
-			u.MustMatch(t, cmp.Diff(nil, profileErr))
+			assert.Nil(t, profileErr)
 
 			profile.SetUser("existingUser", "existing-password")
 			profile.SetSession("existingAccessToken", "existingRefreshToken")
-			u.MustMatch(t, cmp.Diff(nil, profile.Save()))
+			assert.Nil(t, profile.Save())
 
 			realmClient := mock.RealmClient{}
 			realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
@@ -191,13 +191,13 @@ func TestLoginHandler(t *testing.T) {
 			out := new(bytes.Buffer)
 			ui := mock.NewUI(mock.UIOptions{}, out)
 
-			u.MustMatch(t, cmp.Diff(nil, cmd.Handler(profile, ui, nil)))
+			assert.Nil(t, cmd.Handler(profile, ui, nil))
 
 			expectedUser := User{"existingUser", "existing-password"}
 			expectedSession := Session{"newAccessToken", "newRefreshToken"}
 
-			u.MustMatch(t, cmp.Diff(expectedUser, profile.GetUser()))
-			u.MustMatch(t, cmp.Diff(expectedSession, profile.GetSession()))
+			assert.Match(t, expectedUser, profile.GetUser())
+			assert.Match(t, expectedSession, profile.GetSession())
 			ensureProfileContents(t, profile, expectedUser, expectedSession)
 		})
 
@@ -233,7 +233,7 @@ func TestLoginHandler(t *testing.T) {
 
 					out := new(bytes.Buffer)
 					console, _, ui, consoleErr := mock.NewVT10XConsole(mock.UIOptions{}, out)
-					u.MustMatch(t, cmp.Diff(nil, consoleErr))
+					assert.Nil(t, consoleErr)
 
 					doneCh := make(chan (struct{}))
 					go func() {
@@ -244,13 +244,13 @@ func TestLoginHandler(t *testing.T) {
 					}()
 
 					err := cmd.Handler(profile, ui, nil)
-					u.MustMatch(t, cmp.Diff(nil, err))
+					assert.Nil(t, err)
 
-					u.MustMatch(t, cmp.Diff(nil, console.Tty().Close()))
+					assert.Nil(t, console.Tty().Close())
 					<-doneCh
 
-					u.MustMatch(t, cmp.Diff(tc.expectedUser, profile.GetUser()))
-					u.MustMatch(t, cmp.Diff(tc.expectedSession, profile.GetSession()))
+					assert.Match(t, tc.expectedUser, profile.GetUser())
+					assert.Match(t, tc.expectedSession, profile.GetSession())
 					ensureProfileContents(t, profile, tc.expectedUser, tc.expectedSession)
 				})
 			}
@@ -266,20 +266,19 @@ func TestLoginFeedback(t *testing.T) {
 		cmd := &loginCommand{}
 
 		err := cmd.Feedback(nil, ui)
-		u.MustMatch(t, cmp.Diff(nil, err))
+		assert.Nil(t, err)
 
-		u.MustMatch(t, cmp.Diff("Successfully logged in.\n", out.String()))
+		assert.Equal(t, "Successfully logged in.\n", out.String())
 	})
 }
 
 func ensureProfileContents(t *testing.T, profile *Profile, user User, session Session) {
-	t.Log("ensure profile has the expected contents")
 	contents, err := ioutil.ReadFile(profile.path())
-	u.MustMatch(t, cmp.Diff(nil, err))
-	u.MustContainSubstring(t, string(contents), fmt.Sprintf(`%s:
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(string(contents), fmt.Sprintf(`%s:
   access_token: %s
   private_api_key: %s
   public_api_key: %s
   refresh_token: %s
-`, profile.Name, session.AccessToken, user.PrivateAPIKey, user.PublicAPIKey, session.RefreshToken))
+`, profile.Name, session.AccessToken, user.PrivateAPIKey, user.PublicAPIKey, session.RefreshToken)), "profile must contain the expected contents")
 }

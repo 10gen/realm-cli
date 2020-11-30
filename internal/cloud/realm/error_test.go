@@ -7,9 +7,7 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
-	u "github.com/10gen/realm-cli/internal/utils/test"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestServerError(t *testing.T) {
@@ -17,8 +15,7 @@ func TestServerError(t *testing.T) {
 		err := realm.UnmarshalServerError(&http.Response{
 			Body: ioutil.NopCloser(strings.NewReader("something bad happened")),
 		})
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff("something bad happened", err.Error()))
+		assert.Equal(t, realm.ServerError{Message: "something bad happened"}, err)
 	})
 
 	t.Run("Should unmarshal an empty response with its status", func(t *testing.T) {
@@ -26,23 +23,20 @@ func TestServerError(t *testing.T) {
 			Status: "something bad happened",
 			Body:   ioutil.NopCloser(strings.NewReader("")),
 		})
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff("something bad happened", err.Error()))
+		assert.Equal(t, realm.ServerError{Message: "something bad happened"}, err)
 	})
 
 	t.Run("Should unmarshal a server error payload without an error code successfully", func(t *testing.T) {
 		err := realm.UnmarshalServerError(&http.Response{
 			Body: ioutil.NopCloser(strings.NewReader(`{"error": "something bad happened"}`)),
 		})
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff("something bad happened", err.Error()))
+		assert.Equal(t, realm.ServerError{Message: "something bad happened"}, err)
 	})
 
 	t.Run("Should unmarshal a server error payload with an error code successfully", func(t *testing.T) {
 		err := realm.UnmarshalServerError(&http.Response{
 			Body: ioutil.NopCloser(strings.NewReader(`{"error": "something bad happened","error_code": "AnErrorCode"}`)),
 		})
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff("something bad happened", err.Error()))
+		assert.Equal(t, realm.ServerError{Code: "AnErrorCode", Message: "something bad happened"}, err)
 	})
 }

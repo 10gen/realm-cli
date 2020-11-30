@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"testing"
 
-	u "github.com/10gen/realm-cli/internal/utils/test"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
-	"github.com/google/go-cmp/cmp"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -16,7 +15,7 @@ func TestWhoamiHandler(t *testing.T) {
 		cmd := &whoamiCommand{}
 
 		err := cmd.Handler(nil, nil, nil)
-		u.MustMatch(t, cmp.Diff(nil, err))
+		assert.Nil(t, err)
 	})
 }
 
@@ -30,7 +29,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			{
 				description: "with no user logged in",
 				test: func(t *testing.T, output string) {
-					u.MustMatch(t, cmp.Diff("No user is currently logged in.\n", output))
+					assert.Equal(t, "No user is currently logged in.\n", output)
 				},
 			},
 			{
@@ -46,7 +45,7 @@ func TestWhoamiFeedback(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				profile, profileErr := NewProfile(primitive.NewObjectID().Hex())
-				u.MustMatch(t, cmp.Diff(nil, profileErr))
+				assert.Nil(t, profileErr)
 
 				if tc.setup != nil {
 					tc.setup(t, profile)
@@ -57,7 +56,7 @@ func TestWhoamiFeedback(t *testing.T) {
 
 				cmd := &whoamiCommand{}
 				err := cmd.Feedback(profile, ui)
-				u.MustMatch(t, cmp.Diff(nil, err))
+				assert.Nil(t, err)
 
 				tc.test(t, buf.String())
 			})

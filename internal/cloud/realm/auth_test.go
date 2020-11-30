@@ -5,8 +5,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestClientAuthenticate(t *testing.T) {
@@ -16,18 +15,16 @@ func TestClientAuthenticate(t *testing.T) {
 
 	t.Run("Should fail with invalid credentials", func(t *testing.T) {
 		_, err := client.Authenticate("username", "apiKey")
-
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff(
-			"failed to authenticate with MongoDB Cloud API: You are not authorized for this resource.",
-			err.Error(),
-		))
+		assert.Equal(t,
+			realm.ServerError{Message: "failed to authenticate with MongoDB Cloud API: You are not authorized for this resource."},
+			err,
+		)
 	})
 
 	t.Run("Should return session details with valid credentials", func(t *testing.T) {
 		auth, err := client.Authenticate(u.CloudAdminUsername(), u.CloudAdminAPIKey())
-		u.MustMatch(t, cmp.Diff(nil, err))
-		u.MustNotBeBlank(t, auth.AccessToken)
-		u.MustNotBeBlank(t, auth.RefreshToken)
+		assert.Nil(t, err)
+		assert.NotEqual(t, "", auth.AccessToken, "access token must not be blank")
+		assert.NotEqual(t, "", auth.RefreshToken, "refresh token must not be blank")
 	})
 }

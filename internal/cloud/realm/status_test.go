@@ -5,8 +5,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
-
-	"github.com/google/go-cmp/cmp"
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestClientStatusSuccess(t *testing.T) {
@@ -15,7 +14,7 @@ func TestClientStatusSuccess(t *testing.T) {
 
 	t.Run("Should return no error if the server is running", func(t *testing.T) {
 		err := client.Status()
-		u.MustMatch(t, cmp.Diff(nil, err))
+		assert.Nil(t, err)
 	})
 }
 
@@ -25,7 +24,6 @@ func TestClientStatusFailure(t *testing.T) {
 
 	t.Run("Should return an error if the server is not running", func(t *testing.T) {
 		err := client.Status()
-		u.MustNotBeNil(t, err)
-		u.MustMatch(t, cmp.Diff(realm.ErrServerNotRunning(baseURL).Error(), err.Error()))
+		assert.Equal(t, realm.ErrServerNotRunning(baseURL), err)
 	})
 }
