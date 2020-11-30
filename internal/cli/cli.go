@@ -2,11 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"log"
+	"os"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/flags"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	flag "github.com/spf13/pflag"
 )
 
 // Command is an executable CLI command
@@ -18,7 +22,7 @@ type Command interface {
 // CommandDefinition is a command's definition that the CommandFactory
 // can build a *cobra.Command from
 type CommandDefinition struct {
-	Command Command
+	Command
 
 	// Description is the short command description shown in the 'help' output
 	// This value maps 1:1 to Cobra's `Short` property
@@ -38,15 +42,28 @@ type CommandDefinition struct {
 }
 
 // CommandFactory is a command factory
-type CommandFactory struct {
-	Profile *Profile
-	Config  *Config
+type CommandFactory interface {
+	Build(func() CommandDefinition) *cobra.Command
+	Close()
+	Setup()
+	Run(cmd *cobra.Command)
+	SetGlobalFlags(fs *flag.FlagSet)
+}
+
+type commandFactory struct {
+	config    *Config
+	profile   *Profile
+	ui        terminal.UI
+	inReader  *os.File
+	outWriter *os.File
+	errWriter *os.File
+	errLogger *log.Logger
 }
 
 // Config is the global CLI config
 type Config struct {
-	Command CommandConfig
-	UI      terminal.UIConfig
+	CommandConfig
+	terminal.UIConfig
 }
 
 // CommandConfig holds the global config for a CLI command
@@ -54,65 +71,150 @@ type CommandConfig struct {
 	RealmBaseURL string
 }
 
-// Build builds a Cobra command from the specified CommandDefinition
-func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Command {
-	cmdDef := provider()
+// NewCommandFactory creates a new command factory
+func NewCommandFactory() CommandFactory {
+	errLogger := log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
 
-	display := cmdDef.Display
+	config := new(Config)
+
+	profile, profileErr := NewDefaultProfile()
+	if profileErr != nil {
+		errLogger.Fatal(profileErr)
+	}
+
+	return &commandFactory{
+		config:    config,
+		profile:   profile,
+		errLogger: errLogger,
+	}
+}
+
+func (factory *commandFactory) Setup() {
+	if err := factory.profile.Load(); err != nil {
+		factory.errLogger.Fatal(err)
+	}
+
+	if filepath := factory.config.OutputTarget; filepath != "" {
+		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
+		if err != nil {
+			factory.errLogger.Fatal(fmt.Errorf("failed to open target file: %w", err))
+		}
+		factory.outWriter = f
+	}
+}
+
+func (factory *commandFactory) Close() {
+	if factory.config.OutputTarget != "" {
+		factory.outWriter.Close()
+	}
+}
+
+type suppressUsageError struct {
+	error
+}
+
+func (factory *commandFactory) Run(cmd *cobra.Command) {
+	if err := cmd.Execute(); err != nil {
+		if _, ok := err.(suppressUsageError); !ok {
+			fmt.Println(cmd.UsageString())
+		}
+
+		if factory.ui == nil {
+			factory.errLogger.Fatal(err)
+		}
+
+		if printErr := factory.ui.Print(terminal.NewErrorLog(err)); printErr != nil {
+			factory.errLogger.Fatal(err) // log the original failure
+		}
+
+		os.Exit(1)
+	}
+}
+
+// Build builds a Cobra command from the specified CommandDefinition
+func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.Command {
+	command := provider()
+
+	display := command.Display
 	if display == "" {
-		display = cmdDef.Use
+		display = command.Use
 	}
 
 	cmd := cobra.Command{
-		Use:   cmdDef.Use,
-		Short: cmdDef.Description,
-		Long:  cmdDef.Help,
+		Use:   command.Use,
+		Short: command.Description,
+		Long:  command.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			ui := newUI(factory.Config.UI, c)
-
-			err := cmdDef.Command.Handler(factory.Profile, ui, a)
+			err := command.Handler(factory.profile, factory.ui, a)
 			if err != nil {
-				return ui.Print(terminal.NewErrorLog(
-					fmt.Errorf("%s failed: %w", display, err),
-				))
+				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
 			}
 			return nil
 		},
 	}
 
-	if preparer, ok := cmdDef.Command.(CommandPreparer); ok {
+	cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
+		factory.ensureUI()
+		cmd.SetIn(factory.inReader)
+		cmd.SetOut(factory.outWriter)
+		cmd.SetErr(factory.errWriter)
+	}
+
+	if command, ok := command.Command.(CommandPreparer); ok {
 		cmd.PreRunE = func(c *cobra.Command, a []string) error {
-			ui := newUI(factory.Config.UI, c)
-
-			err := preparer.Setup(factory.Profile, ui, factory.Config.Command)
+			err := command.Setup(factory.profile, factory.ui, factory.config.CommandConfig)
 			if err != nil {
-				return ui.Print(terminal.NewErrorLog(
-					fmt.Errorf("%s failed: an error occurred during initialization: %w", display, err),
-				))
+				return fmt.Errorf("%s setup failed: %w", display, err)
 			}
 			return nil
 		}
 	}
 
-	if responder, ok := cmdDef.Command.(CommandResponder); ok {
+	if command, ok := command.Command.(CommandResponder); ok {
 		cmd.PostRunE = func(c *cobra.Command, a []string) error {
-			ui := newUI(factory.Config.UI, c)
-
-			err := responder.Feedback(factory.Profile, ui)
+			err := command.Feedback(factory.profile, factory.ui)
 			if err != nil {
-				return ui.Print(terminal.NewErrorLog(
-					fmt.Errorf("%s completed successfully, but an error occurred while displaying results: %w", display, err),
-				))
+				return suppressUsageError{fmt.Errorf("%s completed, but displaying results failed: %w", display, err)}
 			}
 			return nil
 		}
 	}
 
-	if flagger, ok := cmdDef.Command.(CommandFlagger); ok {
-		flagger.RegisterFlags(cmd.Flags())
+	if command, ok := command.Command.(CommandFlagger); ok {
+		command.RegisterFlags(cmd.Flags())
 	}
 
 	return &cmd
+}
+
+func (factory *commandFactory) SetGlobalFlags(fs *flag.FlagSet) {
+	fs.StringVarP(&factory.profile.Name, flags.Profile, flags.ProfileShort, DefaultProfile, flags.ProfileUsage)
+	fs.BoolVar(&factory.config.DisableColors, flags.DisableColors, false, flags.DisableColorsUsage)
+	fs.VarP(&factory.config.OutputFormat, flags.OutputFormat, flags.OutputFormatShort, flags.OutputFormatUsage)
+	fs.StringVarP(&factory.config.OutputTarget, flags.OutputTarget, flags.OutputTargetShort, "", flags.OutputTargetUsage)
+	fs.StringVar(&factory.config.RealmBaseURL, flags.RealmBaseURL, realm.DefaultBaseURL, flags.RealmBaseURLUsage)
+}
+
+func (factory *commandFactory) ensureUI() {
+	if factory.inReader == nil {
+		factory.inReader = os.Stdin
+	}
+
+	if factory.outWriter == nil {
+		factory.outWriter = os.Stdout
+	}
+
+	if factory.errWriter == nil {
+		if factory.config.OutputTarget != "" {
+			factory.errWriter = factory.outWriter
+		} else {
+			factory.errWriter = os.Stderr
+		}
+	}
+
+	if factory.ui == nil {
+		factory.ui = terminal.NewUI(factory.config.UIConfig, factory.inReader, factory.outWriter, factory.errWriter)
+	}
 }
 
 // CommandPreparer handles the command setup phase
@@ -129,9 +231,5 @@ type CommandResponder interface {
 
 // CommandFlagger is a hook for commands to register local flags to be parsed
 type CommandFlagger interface {
-	RegisterFlags(fs *pflag.FlagSet)
-}
-
-func newUI(config terminal.UIConfig, cmd *cobra.Command) terminal.UI {
-	return terminal.NewUI(config, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr())
+	RegisterFlags(fs *flag.FlagSet)
 }

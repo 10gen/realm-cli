@@ -65,42 +65,42 @@ func TestLogMessage(t *testing.T) {
 			level: LogLevelInfo,
 			data:  textMessage("this is a test log"),
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: "INFO  07:54:00: this is a test log",
-				OutputFormatJSON: `{"level":"info","time":"1989-06-22T07:54:00Z","message":"this is a test log"}`,
+				OutputFormatText: "07:54:00 UTC INFO  this is a test log",
+				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","message":"this is a test log"}`,
 			},
 		},
 		{
 			level: LogLevelInfo,
 			data:  jsonDocument{map[string]interface{}{"a": true, "b": 1, "c": "sea"}},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: `INFO  07:54:00: {
+				OutputFormatText: `07:54:00 UTC INFO  {
   "a": true,
   "b": 1,
   "c": "sea"
 }`,
-				OutputFormatJSON: `{"level":"info","time":"1989-06-22T07:54:00Z","doc":{"a":true,"b":1,"c":"sea"}}`,
+				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","doc":{"a":true,"b":1,"c":"sea"}}`,
 			},
 		},
 		{
 			level: LogLevelInfo,
 			data:  titledJSONDocument{"Test Title", jsonDocument{map[string]interface{}{"a": true, "b": 1, "c": "sea"}}},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: `INFO  07:54:00: Test Title
+				OutputFormatText: `07:54:00 UTC INFO  Test Title
 ---
 {
   "a": true,
   "b": 1,
   "c": "sea"
 }`,
-				OutputFormatJSON: `{"level":"info","time":"1989-06-22T07:54:00Z","title":"Test Title","doc":{"a":true,"b":1,"c":"sea"}}`,
+				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","title":"Test Title","doc":{"a":true,"b":1,"c":"sea"}}`,
 			},
 		},
 		{
 			level: LogLevelError,
 			data:  errorMessage{errors.New("something bad happened")},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: "ERROR 07:54:00: something bad happened",
-				OutputFormatJSON: `{"level":"error","time":"1989-06-22T07:54:00Z","err":"something bad happened"}`,
+				OutputFormatText: "07:54:00 UTC ERROR something bad happened",
+				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"error","err":"something bad happened"}`,
 			},
 		},
 	} {

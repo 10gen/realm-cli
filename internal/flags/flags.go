@@ -2,20 +2,26 @@ package flags
 
 // set of supported flags
 const (
+	// globals
+	AutoConfirm   = "yes"
+	DisableColors = "disable-colors"
+	OutputFormat  = "output-format"
+	OutputTarget  = "output-target"
+	Profile       = "profile"
+
+	// global shorthands
+	OutputTargetShort = "o"
+	ProfileShort      = "p"
+	OutputFormatShort = "t"
+	AutoConfirmShort  = "y"
+
+	// auth
 	PublicAPIKey  = "api-key"
 	PrivateAPIKey = "private-api-key"
 
-	Profile      = "profile"
-	ProfileShort = "p"
-
+	// external
 	RealmBaseURL = "base-url"
 	CloudBaseURL = "cloud-base-url"
-
-	AutoConfirm      = "yes"
-	AutoConfirmShort = "y"
-	DisableColors    = "disable-colors"
-	OutputFormat     = "output-format"
-	OutputTarget     = "output-target"
 )
 
 // set of supported flags' usages
@@ -26,11 +32,11 @@ const (
 
 	ProfileUsage = "this is the --profile, -p usage"
 
-	RealmBaseURLUsage = "this is the --base-url usage"
-	CloudBaseURLUsage = "this is the --cloud-base-url usage"
+	RealmBaseURLUsage = "specify the base Realm server URL"
+	CloudBaseURLUsage = "specify the base Atlas server URL"
 
-	AutoConfirmUsage   = "this is the --yes, -y usage"
-	DisableColorsUsage = "this is the --disable-colors usage"
-	OutputFormatUsage  = "formats the output specified by type"
-	OutputTargetUsage  = "this is the --output-target usage"
+	AutoConfirmUsage   = "set to automatically proceed through command confirmations"
+	DisableColorsUsage = "disable output styling"
+	OutputFormatUsage  = `set the output format, available options: [json]`
+	OutputTargetUsage  = "write output to the specified filepath"
 )

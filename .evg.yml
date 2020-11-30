@@ -261,7 +261,7 @@ buildvariants:
   expansions:
     atlas_server_url: "https://cloud-dev.mongodb.com"
     baas_supportlib_url: "https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz"
-    go_url: "https://dl.google.com/go/go1.13.6.linux-amd64.tar.gz"
+    go_url: "https://dl.google.com/go/go1.14.12.linux-amd64.tar.gz"
     libmongo_url: "https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_b1c679a26ecb975372de41238ea44e4719b8fbf0_5f3d91c10ae6066889184912_20_08_19_20_57_17/libmongo.so"
     mongodb_url: "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz"
     realm_server_url: "http://localhost:8080"
