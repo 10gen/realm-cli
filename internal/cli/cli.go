@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/cobra"
@@ -29,6 +31,10 @@ type CommandDefinition struct {
 	// Use defines how the command is used
 	// This value maps 1:1 to Cobra's `Use` property
 	Use string
+
+	// Display controls how the command is described in output
+	// If left blank, the command's Use value will be used instead
+	Display string
 }
 
 // CommandFactory is a command factory
@@ -41,26 +47,41 @@ type CommandFactory struct {
 func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Command {
 	cmdDef := provider()
 
+	display := cmdDef.Display
+	if display == "" {
+		display = cmdDef.Use
+	}
+
 	cmd := cobra.Command{
 		Use:   cmdDef.Use,
 		Short: cmdDef.Description,
 		Long:  cmdDef.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			return cmdDef.Command.Handler(
+			err := cmdDef.Command.Handler(
 				factory.Profile,
 				newCobraUI(factory.Config.UI, c),
 				a,
 			)
+
+			if err != nil {
+				return fmt.Errorf("%s failed: %w", display, err)
+			}
+			return nil
 		},
 	}
 
 	if preparer, ok := cmdDef.Command.(CommandPreparer); ok {
 		cmd.PreRunE = func(c *cobra.Command, a []string) error {
-			return preparer.Setup(
+			err := preparer.Setup(
 				factory.Profile,
 				newCobraUI(factory.Config.UI, c),
 				factory.Config.Command,
 			)
+
+			if err != nil {
+				return fmt.Errorf("%s failed: an error occurred during initialization: %w", display, err)
+			}
+			return nil
 		}
 	}
 
@@ -70,8 +91,9 @@ func (factory CommandFactory) Build(provider func() CommandDefinition) *cobra.Co
 				factory.Profile,
 				newCobraUI(factory.Config.UI, c),
 			)
+
 			if err != nil {
-				return err // TODO(REALMC-7340): handle this error gracefully
+				return fmt.Errorf("%s completed successfully, but an error occurred while displaying results: %w", display, err)
 			}
 			return nil
 		}
