@@ -58,14 +58,14 @@ func TestLogoutHandler(t *testing.T) {
 
 func TestLogoutFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that logout was successful", func(t *testing.T) {
-		buf := new(bytes.Buffer)
-		ui := mock.NewUI(mock.UIOptions{}, buf)
+		out := new(bytes.Buffer)
+		ui := mock.NewUI(mock.UIOptions{}, out)
 
 		cmd := &logoutCommand{}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)
 
-		assert.Equal(t, "Successfully logged out.\n", buf.String())
+		assert.Equal(t, "INFO  01:23:45: Successfully logged out.\n", out.String())
 	})
 }

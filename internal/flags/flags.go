@@ -18,14 +18,19 @@ const (
 	OutputTarget     = "output-target"
 )
 
-// set of default flag values
+// set of supported flags' usages
+// TODO(REALMC-7429): fill out the flag usages
 const (
-	DefaultOutputFormat = OutputFormatText
-	DefaultRealmBaseURL = "https://realm.mongodb.com"
-)
+	PublicAPIKeyUsage  = "this is the --api-key usage"
+	PrivateAPIKeyUsage = "this is the --private-api-key usage"
 
-// set of supported output formats
-const (
-	OutputFormatJSON = "json"
-	OutputFormatText = "text"
+	ProfileUsage = "this is the --profile, -p usage"
+
+	RealmBaseURLUsage = "this is the --base-url usage"
+	CloudBaseURLUsage = "this is the --cloud-base-url usage"
+
+	AutoConfirmUsage   = "this is the --yes, -y usage"
+	DisableColorsUsage = "this is the --disable-colors usage"
+	OutputFormatUsage  = "formats the output specified by type"
+	OutputTargetUsage  = "this is the --output-target usage"
 )

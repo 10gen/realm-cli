@@ -7,44 +7,52 @@ import (
 	"github.com/fatih/color"
 )
 
-// JSONDocument is a JSON document message to display in the UI
-type JSONDocument struct {
-	Data          interface{}
-	NoPrettyPrint bool
+const (
+	logFieldTitle = "title"
+	logFieldDoc   = "doc"
+)
+
+var (
+	jsonDocumentFields       = []string{logFieldDoc}
+	titledJSONDocumentFields = []string{logFieldTitle, logFieldDoc}
+)
+
+type jsonDocument struct {
+	data interface{}
 }
 
-func (j JSONDocument) marshal() ([]byte, error) {
-	if j.NoPrettyPrint {
-		return json.Marshal(j.Data)
-	}
-	return json.MarshalIndent(j.Data, "", "  ")
-}
-
-// Message returns a JSON document message, or any error that occurred
-// while marshalling the document
-func (j JSONDocument) Message() (string, error) {
-	data, err := j.marshal()
+func (j jsonDocument) Message() (string, error) {
+	data, err := json.MarshalIndent(j.data, "", "  ")
 	if err != nil {
 		return "", nil
 	}
 	return string(data), nil
 }
 
-// TitledJSONDocument is a JSON document message with a title to display in the UI
-type TitledJSONDocument struct {
-	JSONDocument
-	Title string
+func (j jsonDocument) Payload() ([]string, map[string]interface{}, error) {
+	return jsonDocumentFields, map[string]interface{}{
+		logFieldDoc: j.data,
+	}, nil
 }
 
-// Message returns a titled JSON document menssage, or any error that occurred
-// while marshalling the document
-func (tj TitledJSONDocument) Message() (string, error) {
-	doc, err := tj.JSONDocument.Message()
+type titledJSONDocument struct {
+	title string
+	jsonDocument
+}
+
+func (tj titledJSONDocument) Message() (string, error) {
+	doc, err := tj.jsonDocument.Message()
 	if err != nil {
 		return "", err
 	}
 
-	title := color.New(color.Bold).SprintFunc()(tj.Title)
-
+	title := color.New(color.Bold).SprintFunc()(tj.title)
 	return fmt.Sprintf("%s\n---\n%s", title, doc), nil
+}
+
+func (tj titledJSONDocument) Payload() ([]string, map[string]interface{}, error) {
+	return titledJSONDocumentFields, map[string]interface{}{
+		logFieldTitle: tj.title,
+		logFieldDoc:   tj.jsonDocument.data,
+	}, nil
 }

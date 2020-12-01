@@ -268,7 +268,7 @@ func TestLoginFeedback(t *testing.T) {
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)
 
-		assert.Equal(t, "Successfully logged in.\n", out.String())
+		assert.Equal(t, "INFO  01:23:45: Successfully logged in.\n", out.String())
 	})
 }
 

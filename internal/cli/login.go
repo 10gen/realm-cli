@@ -93,5 +93,5 @@ func (cmd *loginCommand) Handler(profile *Profile, ui terminal.UI, args []string
 }
 
 func (cmd *loginCommand) Feedback(profile *Profile, ui terminal.UI) error {
-	return ui.Print(terminal.TextMessage{"Successfully logged in."})
+	return ui.Print(terminal.NewTextLog("Successfully logged in."))
 }

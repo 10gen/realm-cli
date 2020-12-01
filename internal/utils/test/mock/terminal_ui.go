@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/10gen/realm-cli/internal/flags"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/Netflix/go-expect"
@@ -21,9 +21,9 @@ type UIOptions struct {
 }
 
 func newUIConfig(options UIOptions) terminal.UIConfig {
-	outputFormat := flags.OutputFormatText
+	outputFormat := terminal.OutputFormatText
 	if options.UseJSON {
-		outputFormat = flags.OutputFormatJSON
+		outputFormat = terminal.OutputFormatJSON
 	}
 
 	return terminal.UIConfig{
@@ -32,14 +32,30 @@ func newUIConfig(options UIOptions) terminal.UIConfig {
 	}
 }
 
+var (
+	// StaticTime represents a time.Time that displays the clock as 01:23:45.678
+	StaticTime = time.Date(1989, 6, 22, 1, 23, 45, 0, time.UTC)
+)
+
+type ui struct {
+	terminal.UI
+}
+
+func (ui ui) Print(logs ...terminal.Log) error {
+	for i := range logs {
+		logs[i].Time = StaticTime
+	}
+	return ui.UI.Print(logs...)
+}
+
 // NewUI creates a new mock terminal UI
 func NewUI(options UIOptions, writer io.Writer) terminal.UI {
-	return terminal.NewUI(
+	return ui{terminal.NewUI(
 		newUIConfig(options),
 		nil,
 		writer,
 		writer,
-	)
+	)}
 }
 
 // NewConsole creates a new *expect.Console along with its corresponding mock terminal UI
@@ -49,12 +65,12 @@ func NewConsole(options UIOptions, writers ...io.Writer) (*expect.Console, termi
 		return nil, nil, err
 	}
 
-	ui := terminal.NewUI(
+	ui := ui{terminal.NewUI(
 		newUIConfig(options),
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
-	)
+	)}
 
 	return console, ui, nil
 }
@@ -66,12 +82,12 @@ func NewVT10XConsole(options UIOptions, writers ...io.Writer) (*expect.Console, 
 		return nil, nil, nil, err
 	}
 
-	ui := terminal.NewUI(
+	ui := ui{terminal.NewUI(
 		newUIConfig(options),
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
-	)
+	)}
 
 	return console, state, ui, nil
 }

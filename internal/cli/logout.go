@@ -23,5 +23,5 @@ func (cmd *logoutCommand) Handler(profile *Profile, ui terminal.UI, args []strin
 }
 
 func (cmd *logoutCommand) Feedback(profile *Profile, ui terminal.UI) error {
-	return ui.Print(terminal.TextMessage{"Successfully logged out."})
+	return ui.Print(terminal.NewTextLog("Successfully logged out."))
 }

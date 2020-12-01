@@ -31,7 +31,12 @@ func RegisterOpts(t reflect.Type, opts ...cmp.Option) {
 // and fails with the test if not
 func Equal(t testing.TB, x, y interface{}) {
 	t.Helper()
-	Equalf(t, x, y, "expected %T{%v} to equal %T{%v}", y, y, x, x)
+	switch x.(type) {
+	case string:
+		Equalf(t, x, y, "expected %q to equal %q", y, x)
+	default:
+		Equalf(t, x, y, "expected %T{%v} to equal %T{%v}", y, y, x, x)
+	}
 }
 
 // Equalf compares x and y for equality
@@ -121,11 +126,9 @@ func NotNilf(t testing.TB, o interface{}, format string, args ...interface{}) {
 }
 
 func getCmpOpts(o interface{}) cmp.Options {
-	opts, ok := cmpOpts.Load(reflect.TypeOf(o))
-	if ok {
+	if opts, ok := cmpOpts.Load(reflect.TypeOf(o)); ok {
 		return opts.(cmp.Options)
 	}
-
 	if _, ok := o.(error); ok {
 		return errorCompareOpts
 	}
