@@ -21,12 +21,12 @@ func TestUIPrint(t *testing.T) {
 			{
 				description: "Should use the default writer while printing an INFO log",
 				log:         terminal.NewTextLog("test log"),
-				expectedOut: "INFO  01:23:45: test log\n",
+				expectedOut: "01:23:45 UTC INFO  test log\n",
 			},
 			{
 				description: "Should use the error writer while printing an ERROR log",
 				log:         terminal.NewErrorLog(errors.New("something bad happened")),
-				expectedErr: "ERROR 01:23:45: something bad happened\n",
+				expectedErr: "01:23:45 UTC ERROR something bad happened\n",
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {

@@ -1,1 +1,2 @@
 (io.Closer).Close
+(*os.File).Close

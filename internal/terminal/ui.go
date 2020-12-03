@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/fatih/color"
 )
 
@@ -24,35 +23,26 @@ func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
 	color.NoColor = noColor
 
 	return &ui{
-		config: config,
-		err:    err,
-		in:     in,
-		out:    out,
+		config,
+		fdReader{in},
+		fdWriter{out},
+		err,
 	}
 }
 
 type ui struct {
 	config UIConfig
+	in     fdReader
+	out    fdWriter
 	err    io.Writer
-	in     io.Reader
-	out    io.Writer
-}
-
-// UIConfig holds the global config for the CLI ui
-type UIConfig struct {
-	DisableColors bool
-	OutputFormat  OutputFormat
-	OutputTarget  string
 }
 
 func (ui *ui) AskOne(prompt survey.Prompt, answer interface{}) error {
-	stdio, stdioErr := ui.toStdio()
-	if stdioErr != nil {
-		return stdioErr
-	}
-
-	opts := survey.WithStdio(stdio.In, stdio.Out, stdio.Err)
-	return survey.AskOne(prompt, answer, opts)
+	return survey.AskOne(
+		prompt,
+		answer,
+		survey.WithStdio(ui.in, ui.out, ui.err),
+	)
 }
 
 func (ui *ui) Print(logs ...Log) error {
@@ -77,34 +67,40 @@ func (ui *ui) Print(logs ...Log) error {
 	return nil
 }
 
-func (ui *ui) toStdio() (terminal.Stdio, error) {
-	in, inOK := ui.in.(terminal.FileReader)
-	if !inOK {
-		in = noopFdReader{ui.in}
-	}
-	out, outOK := ui.out.(terminal.FileWriter)
-	if !outOK {
-		out = noopFdWriter{ui.out}
-	}
-	return terminal.Stdio{
-		In:  in,
-		Out: out,
-		Err: ui.err,
-	}, nil
+// UIConfig holds the global config for the CLI ui
+type UIConfig struct {
+	DisableColors bool
+	OutputFormat  OutputFormat
+	OutputTarget  string
 }
 
-type noopFdReader struct {
+// FileDescriptor is a file descriptor
+type FileDescriptor interface {
+	Fd() uintptr
+}
+
+// fdReader wraps an io.Reader and exposes the FileDesriptor interface on it
+// the underlying io.Reader's Fd() implementation will be used if it exists
+type fdReader struct {
 	io.Reader
 }
 
-func (r noopFdReader) Fd() uintptr {
+func (r fdReader) Fd() uintptr {
+	if fd, ok := r.Reader.(FileDescriptor); ok {
+		return fd.Fd()
+	}
 	return 0
 }
 
-type noopFdWriter struct {
+// fdWriter wraps an io.Writer and exposes the FileDesriptor interface on it
+// the underlying io.Writer's Fd() implementation will be used if it exists
+type fdWriter struct {
 	io.Writer
 }
 
-func (r noopFdWriter) Fd() uintptr {
+func (w fdWriter) Fd() uintptr {
+	if fd, ok := w.Writer.(FileDescriptor); ok {
+		return fd.Fd()
+	}
 	return 0
 }

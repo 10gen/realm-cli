@@ -84,9 +84,9 @@ func (l Log) textLog() (string, error) {
 	}
 
 	return fmt.Sprintf(
-		fmt.Sprintf("%%-%ds", len(longestLogLevel)+1)+"%s: %s",
-		strings.ToUpper(string(l.Level)),
+		fmt.Sprintf("%%s UTC %%-%ds %%s", len(longestLogLevel)),
 		l.Time.In(time.UTC).Format("15:04:05"),
+		strings.ToUpper(string(l.Level)),
 		message,
 	), nil
 }
@@ -98,8 +98,8 @@ const (
 
 func (l Log) jsonOutput() (string, error) {
 	out := orderedmap.New()
-	out.Set(logFieldLevel, l.Level)
 	out.Set(logFieldTime, l.Time)
+	out.Set(logFieldLevel, l.Level)
 
 	keys, payload, err := l.Data.Payload()
 	if err != nil {
