@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+// set of supported telemetry flags
+const (
+	FlagMode      = "telemetry"
+	FlagModeShort = "m"
+	FlagModeUsage = `enable or disable telemetry (this setting is remembered), available options: ["off", "on"]`
+)
+
 // Mode is the Telemetry Mode
 type Mode string
 

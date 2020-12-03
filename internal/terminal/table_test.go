@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -11,12 +12,11 @@ import (
 
 func TestNewTable(t *testing.T) {
 	for _, tc := range []struct {
-		description    string
-		header         []string
-		data           []map[string]interface{}
-		expectedHeader []string
-		expectedData   []map[string]string
-		expectedWidths map[string]int
+		description   string
+		message       string
+		header        []string
+		data          []map[string]interface{}
+		expectedTable table
 	}{
 		{
 			description: "Should return empty table if there is nil for the header",
@@ -27,19 +27,24 @@ func TestNewTable(t *testing.T) {
 			header:      []string{},
 		},
 		{
-			description:    "Should return a table with only headers if there is one and no data",
-			header:         []string{"should", "show", "up", "only"},
-			expectedHeader: []string{"should", "show", "up", "only"},
-			expectedData:   make([]map[string]string, 0),
-			expectedWidths: map[string]int{
-				"should": 6,
-				"show":   4,
-				"up":     2,
-				"only":   4,
+			description: "Should return a table with only headers if there is one and no data",
+			message:     "a table message",
+			header:      []string{"should", "show", "up", "only"},
+			expectedTable: table{
+				"a table message",
+				[]string{"should", "show", "up", "only"},
+				make([]map[string]string, 0),
+				map[string]int{
+					"should": 6,
+					"show":   4,
+					"up":     2,
+					"only":   4,
+				},
 			},
 		},
 		{
 			description: "Should return a table if there is both a header and data",
+			message:     "a table message",
 			header:      []string{"test"},
 			data: []map[string]interface{}{
 				{
@@ -51,29 +56,28 @@ func TestNewTable(t *testing.T) {
 					"nil":    nil,
 				},
 			},
-			expectedHeader: []string{"test"},
-			expectedData: []map[string]string{
-				{
+			expectedTable: table{
+				"a table message",
+				[]string{"test"},
+				[]map[string]string{{
 					"test": "should show up",
+				}},
+				map[string]int{
+					"test": 14,
 				},
-			},
-			expectedWidths: map[string]int{
-				"test": 14,
 			},
 		},
 	} {
 		t.Run(tc.description, func(*testing.T) {
-			table := newTable(tc.header, tc.data)
-			assert.Equal(t, tc.expectedWidths, table.columnWidths)
-			assert.Equal(t, tc.expectedData, table.data)
-			assert.Equal(t, tc.expectedHeader, table.headers)
+			table := newTable(tc.message, tc.header, tc.data)
+			assert.Equal(t, tc.expectedTable, table)
 		})
 	}
 }
 
 func TestTableMessage(t *testing.T) {
 	t.Run("Should return an empty string and an error if the table has no headers", func(t *testing.T) {
-		table := newTable(nil, nil)
+		table := newTable("", nil, nil)
 		message, err := table.Message()
 		assert.Equal(t, message, "")
 		assert.Equal(t, err.Error(), "cannot create a table without headers")
@@ -81,27 +85,31 @@ func TestTableMessage(t *testing.T) {
 
 	for _, tc := range []struct {
 		description     string
+		message         string
 		header          []string
 		data            []map[string]interface{}
 		expectedMessage string
 	}{
 		{
 			description: "Should print only a header for a table with no data",
+			message:     "a table message",
 			header:      []string{"header", "only", "no", "data"},
-			expectedMessage: "\n" + fmt.Sprintf("%s  %s  %s  %s",
+			expectedMessage: fmt.Sprintf(`a table message
+%s  %s  %s  %s
+------  ----  --  ----
+`,
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("header"),
 					color.New(color.Bold).SprintFunc()("only"),
 					color.New(color.Bold).SprintFunc()("no"),
 					color.New(color.Bold).SprintFunc()("data"),
 				}...,
-			) + `
-------  ----  --  ----
-`,
+			),
 		},
 
 		{
 			description: "Should return correctly formatted values in the table, not create new columns, and not print empty rows",
+			message:     "a table message",
 			header:      []string{"arrays", "floats", "ints", "maps/objects", "strings", "sparse"},
 			data: []map[string]interface{}{
 				{
@@ -138,7 +146,15 @@ func TestTableMessage(t *testing.T) {
 				},
 				{},
 			},
-			expectedMessage: "\n" + fmt.Sprintf("%s                  %s  %s  %s               %s        %s",
+			expectedMessage: fmt.Sprintf(
+				strings.Join([]string{
+					"a table message",
+					"%s                  %s  %s  %s               %s        %s",
+					"----------------------  ------  ----  -------------------------  -------------  ------",
+					"[1 test this]           12.34   1     {1234 12.345}              tester string        ",
+					"[1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
+					"[1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
+				}, "\n"),
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("arrays"),
 					color.New(color.Bold).SprintFunc()("floats"),
@@ -147,15 +163,11 @@ func TestTableMessage(t *testing.T) {
 					color.New(color.Bold).SprintFunc()("strings"),
 					color.New(color.Bold).SprintFunc()("sparse"),
 				}...,
-			) + `
-----------------------  ------  ----  -------------------------  -------------  ------
-[1 test this]           12.34   1     {1234 12.345}              tester string        
-[1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello 
-[1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                `,
+			),
 		},
 	} {
 		t.Run(tc.description, func(*testing.T) {
-			table := newTable(tc.header, tc.data)
+			table := newTable(tc.message, tc.header, tc.data)
 			message, err := table.Message()
 			assert.Nil(t, err)
 			assert.Equal(t, message, tc.expectedMessage)
@@ -166,14 +178,16 @@ func TestTableMessage(t *testing.T) {
 func TestTableMessageNoBold(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
+		message         string
 		header          []string
 		data            []map[string]interface{}
 		expectedMessage string
 	}{
 		{
 			description: "Should not bold the headers if color is off",
+			message:     "a table message",
 			header:      []string{"should", "not", "be", "bold"},
-			expectedMessage: `
+			expectedMessage: `a table message
 should  not  be  bold
 ------  ---  --  ----
 `,
@@ -181,13 +195,14 @@ should  not  be  bold
 		{
 			description: "Should not bold the headers if color is off even if there is data",
 			header:      []string{"should", "not", "be", "bold"},
+			message:     "a table message",
 			data: []map[string]interface{}{
 				{
 					"should": 123,
 					"be":     "not bold!",
 				},
 			},
-			expectedMessage: `
+			expectedMessage: `a table message
 should  not  be         bold
 ------  ---  ---------  ----
 123          not bold!      `,
@@ -197,7 +212,7 @@ should  not  be         bold
 			color.NoColor = true
 			defer func() { color.NoColor = false }()
 
-			table := newTable(tc.header, tc.data)
+			table := newTable(tc.message, tc.header, tc.data)
 			message, err := table.Message()
 			assert.Nil(t, err)
 			assert.Equal(t, message, tc.expectedMessage)
@@ -207,7 +222,7 @@ should  not  be         bold
 
 func TestTablePayload(t *testing.T) {
 	t.Run("Payload should return an error with a table without a header", func(t *testing.T) {
-		table := newTable(nil, nil)
+		table := newTable("", nil, nil)
 		payloadKeys, payloadData, err := table.Payload()
 		assert.Nil(t, payloadKeys)
 		assert.Nil(t, payloadData)
@@ -215,23 +230,29 @@ func TestTablePayload(t *testing.T) {
 	})
 
 	t.Run("Payload should work with a valid table", func(t *testing.T) {
-		header := []string{"test", "this", "data"}
-		data := []map[string]interface{}{
-			{"test": 123, "this": "456", "data": []string{"7", "8 9", "10!"}},
-		}
-		table := newTable(header, data)
+		message := "a table message"
+		headers := []string{"test", "this", "data"}
+
+		table := newTable(message, headers, []map[string]interface{}{{
+			"test": 123,
+			"this": "456",
+			"data": []string{"7", "8 9", "10!"},
+		}})
+
 		payloadKeys, payloadData, err := table.Payload()
 		assert.Nil(t, err)
-		assert.Equal(t, payloadKeys, []string{logFieldData, logFieldHeaders})
-		assert.Equal(t, payloadData[logFieldHeaders], header)
+		assert.Equal(t, tableFields, payloadKeys)
 
-		expectedData := []map[string]string{
+		data := []map[string]string{
 			{
 				"test": "123",
 				"this": "456",
 				"data": "[7 8 9 10!]",
 			},
 		}
-		assert.Equal(t, expectedData, payloadData[logFieldData])
+
+		assert.Equal(t, message, payloadData[logFieldMessage])
+		assert.Equal(t, headers, payloadData[logFieldHeaders])
+		assert.Equal(t, data, payloadData[logFieldData])
 	})
 }

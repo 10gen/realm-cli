@@ -1,4 +1,4 @@
-package app
+package list
 
 import (
 	"errors"
@@ -13,15 +13,15 @@ import (
 
 func TestAppListSetup(t *testing.T) {
 	t.Run("Setup creates a realm client with a session", func(t *testing.T) {
-		config := cli.CommandConfig{RealmBaseURL: "http://localhost:8080"}
-		cmd := &appListCommand{}
+		ctx := cli.Context{RealmBaseURL: "http://localhost:8080"}
+		cmd := &command{}
 
 		profile, profileErr := cli.NewProfile(primitive.NewObjectID().Hex())
 		assert.Nil(t, profileErr)
 
 		profile.SetSession("authToken", "refreshToken")
 
-		err := cmd.Setup(profile, nil, config)
+		err := cmd.Setup(profile, nil, ctx)
 		assert.Nil(t, err)
 		assert.NotNil(t, &cmd.realmClient)
 	})
@@ -77,7 +77,7 @@ func TestAppListHandler(t *testing.T) {
 	}
 
 	t.Run("Returns all apps for all projects if no app or project flags present", func(t *testing.T) {
-		cmd := &appListCommand{
+		cmd := &command{
 			realmClient: realmClient,
 		}
 		cmd.Handler(nil, nil, nil)
@@ -85,7 +85,7 @@ func TestAppListHandler(t *testing.T) {
 	})
 
 	t.Run("Returns all apps for specified projects if project flag present", func(t *testing.T) {
-		cmd := &appListCommand{
+		cmd := &command{
 			project:     project2,
 			realmClient: realmClient,
 		}
@@ -96,7 +96,7 @@ func TestAppListHandler(t *testing.T) {
 	//TODO REALMC-7547 uncomment and reimplement these tests once app flag is supported
 
 	// t.Run("Returns single app if app flag present", func(t *testing.T) {
-	// 	cmd := &appListCommand{
+	// 	cmd := &command{
 	// 		app:         appName3,
 	// 		realmClient: realmClient,
 	// 	}
@@ -106,7 +106,7 @@ func TestAppListHandler(t *testing.T) {
 	// })
 
 	// t.Run("Returns correct app if app and project flags present", func(t *testing.T) {
-	// 	cmd := &appListCommand{
+	// 	cmd := &command{
 	// 		app:         appName3,
 	// 		project:     project2,
 	// 		realmClient: realmClient,
@@ -120,7 +120,7 @@ func TestAppListHandler(t *testing.T) {
 		realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
 			return nil, nil
 		}
-		cmd := &appListCommand{
+		cmd := &command{
 			realmClient: realmClient,
 		}
 		err := cmd.Handler(nil, nil, nil)
@@ -149,7 +149,7 @@ func TestAppListHandler(t *testing.T) {
 // 			Name:        "app2",
 // 		}
 
-// 		cmd := &appListCommand{
+// 		cmd := &command{
 // 			appListResult: []realm.App{testApp1, testApp2},
 // 		}
 

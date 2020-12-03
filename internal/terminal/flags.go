@@ -5,6 +5,20 @@ import (
 	"strings"
 )
 
+// set of supported terminal flags
+const (
+	FlagDisableColors      = "disable-colors"
+	FlagDisableColorsUsage = "disable output styling"
+
+	FlagOutputFormat      = "output-format"
+	FlagOutputFormatShort = "f"
+	FlagOutputFormatUsage = "set the output format, available options: [json]"
+
+	FlagOutputTarget      = "output-target"
+	FlagOutputTargetShort = "o"
+	FlagOutputTargetUsage = "write output to the specified filepath"
+)
+
 // OutputFormat is the terminal output format
 type OutputFormat string
 

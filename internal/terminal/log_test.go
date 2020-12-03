@@ -13,7 +13,7 @@ import (
 
 func TestLogConstructor(t *testing.T) {
 	assert.RegisterOpts(reflect.TypeOf(jsonDocument{}), cmp.AllowUnexported(jsonDocument{}))
-	assert.RegisterOpts(reflect.TypeOf(titledJSONDocument{}), cmp.AllowUnexported(titledJSONDocument{}), cmp.AllowUnexported(jsonDocument{}))
+	assert.RegisterOpts(reflect.TypeOf(table{}), cmp.AllowUnexported(table{}))
 
 	for _, tc := range []struct {
 		ctor          string
@@ -29,15 +29,15 @@ func TestLogConstructor(t *testing.T) {
 		},
 		{
 			ctor:          "NewJSONLog",
-			log:           NewJSONLog(map[string]interface{}{"a": "ayyy"}),
+			log:           NewJSONLog("a json message", map[string]interface{}{"a": "ayyy"}),
 			expectedLevel: LogLevelInfo,
-			expectedData:  jsonDocument{map[string]interface{}{"a": "ayyy"}},
+			expectedData:  jsonDocument{"a json message", map[string]interface{}{"a": "ayyy"}},
 		},
 		{
-			ctor:          "NewTitledJSONLog",
-			log:           NewTitledJSONLog("Test Title", map[string]interface{}{"a": "ayyy"}),
+			ctor:          "NewTableLog",
+			log:           NewTableLog("a table message", []string{"a"}, map[string]interface{}{"a": "ayyy"}),
 			expectedLevel: LogLevelInfo,
-			expectedData:  titledJSONDocument{"Test Title", jsonDocument{map[string]interface{}{"a": "ayyy"}}},
+			expectedData:  table{"a table message", []string{"a"}, []map[string]string{{"a": "ayyy"}}, map[string]int{"a": 4}},
 		},
 		{
 			ctor:          "NewErrorLog",
@@ -71,28 +71,15 @@ func TestLogMessage(t *testing.T) {
 		},
 		{
 			level: LogLevelInfo,
-			data:  jsonDocument{map[string]interface{}{"a": true, "b": 1, "c": "sea"}},
+			data:  jsonDocument{"a json document", map[string]interface{}{"a": true, "b": 1, "c": "sea"}},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: `07:54:00 UTC INFO  {
-  "a": true,
-  "b": 1,
-  "c": "sea"
-}`,
-				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","doc":{"a":true,"b":1,"c":"sea"}}`,
-			},
-		},
-		{
-			level: LogLevelInfo,
-			data:  titledJSONDocument{"Test Title", jsonDocument{map[string]interface{}{"a": true, "b": 1, "c": "sea"}}},
-			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: `07:54:00 UTC INFO  Test Title
----
+				OutputFormatText: `07:54:00 UTC INFO  a json document
 {
   "a": true,
   "b": 1,
   "c": "sea"
 }`,
-				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","title":"Test Title","doc":{"a":true,"b":1,"c":"sea"}}`,
+				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","message":"a json document","doc":{"a":true,"b":1,"c":"sea"}}`,
 			},
 		},
 		{

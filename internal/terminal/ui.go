@@ -10,7 +10,8 @@ import (
 
 // UI is a terminal UI
 type UI interface {
-	AskOne(prompt survey.Prompt, answer interface{}) error
+	Ask(answer interface{}, questions ...*survey.Question) error
+	AskOne(answer interface{}, prompt survey.Prompt) error
 	Print(logs ...Log) error
 }
 
@@ -37,7 +38,15 @@ type ui struct {
 	err    io.Writer
 }
 
-func (ui *ui) AskOne(prompt survey.Prompt, answer interface{}) error {
+func (ui *ui) Ask(answer interface{}, questions ...*survey.Question) error {
+	return survey.Ask(
+		questions,
+		answer,
+		survey.WithStdio(ui.in, ui.out, ui.err),
+	)
+}
+
+func (ui *ui) AskOne(answer interface{}, prompt survey.Prompt) error {
 	return survey.AskOne(
 		prompt,
 		answer,
