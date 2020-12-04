@@ -8,12 +8,14 @@ const (
 	OutputFormat  = "output-format"
 	OutputTarget  = "output-target"
 	Profile       = "profile"
+	TelemetryType = "telemetry"
 
 	// global shorthands
-	OutputTargetShort = "o"
-	ProfileShort      = "p"
-	OutputFormatShort = "t"
-	AutoConfirmShort  = "y"
+	OutputTargetShort  = "o"
+	ProfileShort       = "p"
+	OutputFormatShort  = "t"
+	AutoConfirmShort   = "y"
+	TelemetryTypeShort = "m"
 
 	// auth
 	PublicAPIKey  = "api-key"
@@ -39,4 +41,5 @@ const (
 	DisableColorsUsage = "disable output styling"
 	OutputFormatUsage  = `set the output format, available options: [json]`
 	OutputTargetUsage  = "write output to the specified filepath"
+	TelemetryTypeUsage = `set the telemetry settings. This setting is sticky. Available options: ["", "off", "stdout"]`
 )

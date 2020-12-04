@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/flags"
+	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -58,6 +61,7 @@ type commandFactory struct {
 	outWriter *os.File
 	errWriter *os.File
 	errLogger *log.Logger
+	tracker   telemetry.Tracker
 }
 
 // Config is the global CLI config
@@ -68,7 +72,8 @@ type Config struct {
 
 // CommandConfig holds the global config for a CLI command
 type CommandConfig struct {
-	RealmBaseURL string
+	RealmBaseURL  string
+	TelemetryType string
 }
 
 // NewCommandFactory creates a new command factory
@@ -86,6 +91,7 @@ func NewCommandFactory() CommandFactory {
 		config:    config,
 		profile:   profile,
 		errLogger: errLogger,
+		tracker:   nil,
 	}
 }
 
@@ -114,7 +120,19 @@ type suppressUsageError struct {
 }
 
 func (factory *commandFactory) Run(cmd *cobra.Command) {
+	var err error = nil
+	fmt.Println("telemetry=", factory.profile.GetString("telemetry"))
+	factory.tracker, err = telemetry.NewTracker(factory.profile.GetString("telemetry"), factory.config.TelemetryType)
+	factory.profile.SetString("telemetry", string(telemetry.GetTrackerConfig()))
+	factory.profile.Save()
+	if err != nil {
+		factory.errLogger.Fatal(fmt.Errorf("failed to set up telemetry: %w", err))
+	}
+
+	factory.tracker.Track(telemetry.Event{primitive.NewObjectID(), telemetry.EventTypeCommandStart, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
 	if err := cmd.Execute(); err != nil {
+
+		factory.tracker.Track(telemetry.Event{primitive.NewObjectID(), telemetry.EventTypeCommandError, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
 		if _, ok := err.(suppressUsageError); !ok {
 			fmt.Println(cmd.UsageString())
 		}
@@ -129,6 +147,7 @@ func (factory *commandFactory) Run(cmd *cobra.Command) {
 
 		os.Exit(1)
 	}
+	factory.tracker.Track(telemetry.Event{primitive.NewObjectID(), telemetry.EventTypeCommandFinishSuccessfully, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
 }
 
 // Build builds a Cobra command from the specified CommandDefinition
@@ -193,6 +212,7 @@ func (factory *commandFactory) SetGlobalFlags(fs *flag.FlagSet) {
 	fs.VarP(&factory.config.OutputFormat, flags.OutputFormat, flags.OutputFormatShort, flags.OutputFormatUsage)
 	fs.StringVarP(&factory.config.OutputTarget, flags.OutputTarget, flags.OutputTargetShort, "", flags.OutputTargetUsage)
 	fs.StringVar(&factory.config.RealmBaseURL, flags.RealmBaseURL, realm.DefaultBaseURL, flags.RealmBaseURLUsage)
+	fs.StringVarP(&factory.config.TelemetryType, flags.TelemetryType, flags.TelemetryTypeShort, realm.DefaultTelemetryType, flags.TelemetryTypeUsage)
 }
 
 func (factory *commandFactory) ensureUI() {
