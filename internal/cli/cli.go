@@ -41,6 +41,10 @@ type CommandDefinition struct {
 	// Display controls how the command is described in output
 	// If left blank, the command's Use value will be used instead
 	Display string
+
+	// Use defines aliases for the command
+	// This value maps 1:1 to Cobra's `Aliases` property
+	Aliases []string
 }
 
 // CommandFactory is a command factory
@@ -149,9 +153,10 @@ func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.C
 	}
 
 	cmd := cobra.Command{
-		Use:   command.Use,
-		Short: command.Description,
-		Long:  command.Help,
+		Use:     command.Use,
+		Short:   command.Description,
+		Long:    command.Help,
+		Aliases: command.Aliases,
 		RunE: func(c *cobra.Command, a []string) error {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 			err := command.Handler(factory.profile, factory.ui, a)
