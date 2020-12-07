@@ -4,51 +4,22 @@ import (
 	"fmt"
 )
 
+// Tracker logs events
 type Tracker interface {
 	Track(event Event)
 }
 
-type TrackerType string
-
-const (
-	//TrackerTypeViperKey used to get the trackertype from viper
-	TrackerTypeViperKey string = "trackerType"
-	//User deliberately selects this option
-	OnSelected TrackerType = ""
-	//User does not select an option
-	OnDefault TrackerType = "OnDefault"
-	//User selects stdout
-	STDOut TrackerType = "stdout"
-	//User disables tracking
-	Off TrackerType = "off"
-)
-
-var (
-	trackerType TrackerType
-)
-
 // NewTracker constructs a new tracking service
-func NewTracker(profileString string, configString string) (Tracker, error) {
-	trackerType = TrackerType(profileString)
-	if TrackerType(configString) != OnDefault {
-		trackerType = TrackerType(configString)
-	}
-	switch trackerType {
+func NewTracker(mode Mode) Tracker {
+	switch mode {
 	case OnSelected:
-		return &segmentTracker{}, nil
+		return &segmentTracker{}
 	case OnDefault:
-		return &segmentTracker{}, nil
+		return &segmentTracker{}
 	case STDOut:
-		return &stdoutTracker{}, nil
-	case Off:
-		return &noopTracker{}, nil
+		return &stdoutTracker{}
 	}
-	return nil, fmt.Errorf("%q is not a recognized tracking config type", trackerType)
-}
-
-// GetTrackerConfig gets the current tracker config.
-func GetTrackerConfig() TrackerType {
-	return trackerType
+	return &noopTracker{}
 }
 
 type noopTracker struct{}
@@ -58,11 +29,11 @@ func (tracker *noopTracker) Track(event Event) {}
 type stdoutTracker struct{}
 
 func (tracker *stdoutTracker) Track(event Event) {
-	fmt.Printf("tracking: %v", event)
+	fmt.Sprintf("tracking: %v\n", event)
 }
 
 type segmentTracker struct{}
 
 func (tracker *segmentTracker) Track(event Event) {
-	fmt.Printf("tracking: %v", event)
+	fmt.Printf("tracking: %v\n", event)
 }

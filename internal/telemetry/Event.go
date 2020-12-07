@@ -2,16 +2,14 @@ package telemetry
 
 import (
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Event is a cli event
 type Event struct {
-	ID     primitive.ObjectID
+	ID     string
 	Type   EventType
-	UserID string
-	Time   time.Time
+	UserID string    //public api key
+	Time   time.Time //uint64
 	Data   map[DataKey]interface{}
 }
 
@@ -20,9 +18,9 @@ type EventType string
 
 // set of supported cli event types
 const (
-	EventTypeCommandStart              EventType = "CommandStart"
-	EventTypeCommandFinishSuccessfully EventType = "CommandFinishSuccessfully"
-	EventTypeCommandError              EventType = "CommandError"
+	EventTypeCommandStart    EventType = "COMMAND_START"
+	EventTypeCommandComplete EventType = "COMMAND_COMPLETE"
+	EventTypeCommandError    EventType = "COMMAND_ERROR"
 )
 
 // DataKey used to pass data into the Event.Data map
@@ -30,7 +28,8 @@ type DataKey string
 
 // set of Data Keys
 const (
-	CommandKey     DataKey = "CommandKey"
-	ExecutionIDKey DataKey = "ExecutionIDKey"
-	ErrKey         DataKey = "ErrKey"
+	DataKeyCommand     DataKey = "command"
+	DataKeyExecutionID DataKey = "execution_id" //new object id
+	DataKeyErr         DataKey = "err"
+	//DataKey
 )

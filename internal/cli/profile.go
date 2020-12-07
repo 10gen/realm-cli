@@ -110,6 +110,7 @@ const (
 	keyPrivateAPIKey = "private_api_key"
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
+	keyTelemetryMode = "telemetry_mode"
 )
 
 // User is the CLI profile user

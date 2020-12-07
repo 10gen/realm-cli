@@ -41,5 +41,5 @@ const (
 	DisableColorsUsage = "disable output styling"
 	OutputFormatUsage  = `set the output format, available options: [json]`
 	OutputTargetUsage  = "write output to the specified filepath"
-	TelemetryTypeUsage = `set the telemetry settings. This setting is sticky. Available options: ["", "off", "stdout"]`
+	TelemetryTypeUsage = `set the telemetry settings. This setting is sticky. Available options: ["on", "off", "stdout"]`
 )
