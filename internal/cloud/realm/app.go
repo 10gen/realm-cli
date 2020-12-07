@@ -35,9 +35,6 @@ func (c *client) GetAppsForUser() ([]App, error) {
 	var appArr []App
 	appArr = make([]App, 0)
 	for _, groupID := range groupIDs {
-		if groupID == "" {
-			continue
-		}
 		apps, err := c.GetApps(groupID)
 		if err != nil {
 			// Request will fail if any GetApps call fails

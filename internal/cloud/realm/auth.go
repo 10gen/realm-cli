@@ -34,6 +34,9 @@ func (pd UserProfile) AllGroupIDs() []string {
 	set := make(map[string]bool)
 	for _, role := range pd.Roles {
 		if !set[role.GroupID] {
+			if role.GroupID == "" {
+				continue
+			}
 			groupIDs = append(groupIDs, role.GroupID)
 			set[role.GroupID] = true
 		}
