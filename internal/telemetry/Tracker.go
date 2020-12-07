@@ -6,7 +6,7 @@ import (
 
 // Tracker logs events
 type Tracker interface {
-	Track(event Event)
+	Track(event *Event)
 }
 
 // NewTracker constructs a new tracking service
@@ -24,16 +24,16 @@ func NewTracker(mode Mode) Tracker {
 
 type noopTracker struct{}
 
-func (tracker *noopTracker) Track(event Event) {}
+func (tracker *noopTracker) Track(event *Event) {}
 
 type stdoutTracker struct{}
 
-func (tracker *stdoutTracker) Track(event Event) {
-	fmt.Sprintf("tracking: %v\n", event)
+func (tracker *stdoutTracker) Track(event *Event) {
+	fmt.Printf("tracking: %v\n", event)
 }
 
 type segmentTracker struct{}
 
-func (tracker *segmentTracker) Track(event Event) {
+func (tracker *segmentTracker) Track(event *Event) {
 	fmt.Printf("tracking: %v\n", event)
 }

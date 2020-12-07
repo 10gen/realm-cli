@@ -23,7 +23,6 @@ func (m *Mode) Set(val string) error {
 
 	if !isValidMode(mode) {
 		allModes := []string{OnSelected.String(),
-			OnDefault.String(),
 			STDOut.String(),
 			Off.String()}
 		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allModes, ", "))

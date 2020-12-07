@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/flags"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -108,7 +106,10 @@ func (factory *commandFactory) Setup() {
 	}
 	factory.tracker = telemetry.NewTracker(telemetryMode)
 	factory.profile.SetString(keyTelemetryMode, string(telemetryMode))
-	factory.profile.Save()
+	err := factory.profile.Save()
+	if err != nil {
+		factory.errLogger.Fatal(err)
+	}
 
 	if filepath := factory.config.OutputTarget; filepath != "" {
 		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
@@ -161,13 +162,14 @@ func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.C
 		Short: command.Description,
 		Long:  command.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			factory.tracker.Track(telemetry.Event{"id_1", telemetry.EventTypeCommandStart, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
+			publicAPIKey := factory.profile.GetString(keyPublicAPIKey)
+			factory.tracker.Track(telemetry.NewCommandStartEvent(publicAPIKey, "idk how to get the cmd string"))
 			err := command.Handler(factory.profile, factory.ui, a)
 			if err != nil {
-				factory.tracker.Track(telemetry.Event{primitive.NewObjectID().String(), telemetry.EventTypeCommandError, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
-				return suppressUsageError{fmt.Errorf("id_1", display, err)}
+				factory.tracker.Track(telemetry.NewCommandErrorEvent(publicAPIKey, "idk how to get the cmd string", err))
+				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
 			}
-			factory.tracker.Track(telemetry.Event{"id_1", telemetry.EventTypeCommandComplete, "myuser", time.Now(), make(map[telemetry.DataKey]interface{})})
+			factory.tracker.Track(telemetry.NewCommandCompleteEvent(publicAPIKey, "idk how to get the cmd string"))
 			return nil
 		},
 	}
@@ -212,7 +214,7 @@ func (factory *commandFactory) SetGlobalFlags(fs *flag.FlagSet) {
 	fs.VarP(&factory.config.OutputFormat, flags.OutputFormat, flags.OutputFormatShort, flags.OutputFormatUsage)
 	fs.StringVarP(&factory.config.OutputTarget, flags.OutputTarget, flags.OutputTargetShort, "", flags.OutputTargetUsage)
 	fs.StringVar(&factory.config.RealmBaseURL, flags.RealmBaseURL, realm.DefaultBaseURL, flags.RealmBaseURLUsage)
-	fs.VarP(&factory.config.TelemetryMode, flags.TelemetryType, flags.TelemetryTypeShort, flags.TelemetryTypeUsage)
+	fs.VarP(&factory.config.TelemetryMode, flags.TelemetryMode, flags.TelemetryModeShort, flags.TelemetryModeUsage)
 }
 
 func (factory *commandFactory) ensureUI() {
