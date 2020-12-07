@@ -94,7 +94,7 @@ func (c *client) FindProjectAppByClientAppID(groupIDs []string, appFlag string) 
 				if appElem.Name == appFlag {
 					appArr = append(appArr, *appElem)
 					// Greedily return the first app that matches if --app flag provided
-					// Note: User could have multiple projects with an app of the same name]
+					// Note: User could have multiple projects with an app of the same name
 					return appArr, nil
 				}
 				continue
