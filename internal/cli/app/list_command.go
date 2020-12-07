@@ -38,19 +38,20 @@ func (cmd *appListCommand) RegisterFlags(fs *pflag.FlagSet) {
 
 func (cmd *appListCommand) Setup(profile *cli.Profile, ui terminal.UI, config cli.CommandConfig) error {
 	session := profile.GetSession()
-	cmd.realmClient = realm.NewAuthClient(config.RealmBaseURL, &session)
+	cmd.realmClient = realm.NewAuthClient(config.RealmBaseURL, session)
 	return nil
 }
 
 func (cmd *appListCommand) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
-	userProfile, err := cmd.realmClient.GetUserProfile()
-	if err != nil {
-		return fmt.Errorf("Something unexpected happened: %s", err.Error())
+	var appList []realm.App
+	var err error
+	if cmd.project != "" {
+		appList, err = cmd.realmClient.GetApps(cmd.project)
+	} else {
+		appList, err = cmd.realmClient.GetAppsForUser()
 	}
-
-	appList, err := cmd.realmClient.FindProjectAppByClientAppID(userProfile.FilterGroupIDsFromUserProfile(cmd.project), cmd.app)
 	if err != nil {
-		return fmt.Errorf("Something unexpected happened: %s", err.Error())
+		return fmt.Errorf("something unexpected happened: %s", err.Error())
 	}
 
 	if len(appList) == 0 && len(cmd.app) > 0 {

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -28,6 +29,10 @@ func TestAppListHandler(t *testing.T) {
 	project1 := "project1"
 	project2 := "project2"
 
+	appName1 := "name1"
+	appName2 := "name2"
+	appName3 := "name3"
+
 	role1 := realm.Role{project1}
 	role2 := realm.Role{project2}
 	roleWithDuplicateProject := realm.Role{project2}
@@ -41,29 +46,39 @@ func TestAppListHandler(t *testing.T) {
 
 	testApp1 := realm.App{
 		GroupID: project1,
-		Name:    project1,
+		Name:    appName1,
 	}
 
 	testApp2 := realm.App{
 		GroupID: project2,
-		Name:    project2,
+		Name:    appName2,
 	}
 
-	testAppName := "app"
-	testAppWithAppProjectFlags := realm.App{
+	testApp3 := realm.App{
 		GroupID: project2,
-		Name:    testAppName,
+		Name:    appName3,
 	}
 
-	realmClient.FindProjectAppByClientAppIDFn = func(groupIDs []string, app string) ([]realm.App, error) {
-		var apps = make([]realm.App, len(groupIDs))
-		for index, groupID := range groupIDs {
-			apps[index] = realm.App{
-				GroupID: groupID,
-				Name:    groupID,
-			}
+	realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
+		return []realm.App{
+			testApp1,
+			testApp2,
+			testApp3,
+		}, nil
+	}
+
+	realmClient.GetAppsFn = func(groupID string) ([]realm.App, error) {
+		switch groupID {
+		case project1:
+			return []realm.App{testApp1}, nil
+		case project2:
+			return []realm.App{
+				testApp2,
+				testApp3,
+			}, nil
+		default:
+			return nil, errors.New("test error")
 		}
-		return apps, nil
 	}
 
 	t.Run("Returns all apps for all projects if no app or project flags present", func(t *testing.T) {
@@ -71,8 +86,8 @@ func TestAppListHandler(t *testing.T) {
 			realmClient: realmClient,
 		}
 		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 2, len(cmd.appListResult))
-		assert.Equal(t, []realm.App{testApp1, testApp2}, cmd.appListResult)
+		assert.Equal(t, 3, len(cmd.appListResult))
+		assert.Equal(t, []realm.App{testApp1, testApp2, testApp3}, cmd.appListResult)
 	})
 
 	t.Run("Returns all apps for specified projects if project flag present", func(t *testing.T) {
@@ -81,49 +96,35 @@ func TestAppListHandler(t *testing.T) {
 			realmClient: realmClient,
 		}
 		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 1, len(cmd.appListResult))
-		assert.Equal(t, []realm.App{testApp2}, cmd.appListResult)
+		assert.Equal(t, 2, len(cmd.appListResult))
+		assert.Equal(t, []realm.App{testApp2, testApp3}, cmd.appListResult)
 	})
 
-	t.Run("Returns single app if app flag present", func(t *testing.T) {
-		realmClient.FindProjectAppByClientAppIDFn = func(groupIDs []string, app string) ([]realm.App, error) {
-			return []realm.App{
-				realm.App{
-					GroupID: project2,
-					Name:    app,
-				},
-			}, nil
-		}
-		cmd := &appListCommand{
-			app:         testAppName,
-			realmClient: realmClient,
-		}
-		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 1, len(cmd.appListResult))
-		assert.Equal(t, []realm.App{testAppWithAppProjectFlags}, cmd.appListResult)
-	})
+	//TODO REALMC-7156 uncomment and reimplement these tests once app flag is supported
 
-	t.Run("Returns correct app if app and project flags present", func(t *testing.T) {
-		realmClient.FindProjectAppByClientAppIDFn = func(groupIDs []string, app string) ([]realm.App, error) {
-			return []realm.App{
-				realm.App{
-					GroupID: project2,
-					Name:    app,
-				},
-			}, nil
-		}
-		cmd := &appListCommand{
-			app:         testAppName,
-			project:     project2,
-			realmClient: realmClient,
-		}
-		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 1, len(cmd.appListResult))
-		assert.Equal(t, []realm.App{testAppWithAppProjectFlags}, cmd.appListResult)
-	})
+	// t.Run("Returns single app if app flag present", func(t *testing.T) {
+	// 	cmd := &appListCommand{
+	// 		app:         appName3,
+	// 		realmClient: realmClient,
+	// 	}
+	// 	cmd.Handler(nil, nil, nil)
+	// 	assert.Equal(t, 1, len(cmd.appListResult))
+	// 	assert.Equal(t, []realm.App{testApp3}, cmd.appListResult)
+	// })
+
+	// t.Run("Returns correct app if app and project flags present", func(t *testing.T) {
+	// 	cmd := &appListCommand{
+	// 		app:         appName3,
+	// 		project:     project2,
+	// 		realmClient: realmClient,
+	// 	}
+	// 	cmd.Handler(nil, nil, nil)
+	// 	assert.Equal(t, 1, len(cmd.appListResult))
+	// 	assert.Equal(t, []realm.App{testApp3}, cmd.appListResult)
+	// })
 
 	t.Run("Returns no apps if user has no apps and no app flag provided", func(t *testing.T) {
-		realmClient.FindProjectAppByClientAppIDFn = func(groupIDs []string, app string) ([]realm.App, error) {
+		realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
 			return nil, nil
 		}
 		cmd := &appListCommand{
@@ -135,7 +136,7 @@ func TestAppListHandler(t *testing.T) {
 	})
 
 	t.Run("Returns error if user has no apps and app flag provided", func(t *testing.T) {
-		realmClient.FindProjectAppByClientAppIDFn = func(groupIDs []string, app string) ([]realm.App, error) {
+		realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
 			return nil, nil
 		}
 		cmd := &appListCommand{

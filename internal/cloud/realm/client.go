@@ -1,6 +1,8 @@
 package realm
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 
@@ -17,9 +19,10 @@ const (
 
 // Client is a Realm client
 type Client interface {
-	Authenticate(publicAPIKey, privateAPIKey string) (AuthResponse, error)
+	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 	GetUserProfile() (UserProfile, error)
-	FindProjectAppByClientAppID(groupIDs []string, app string) ([]App, error)
+	GetAppsForUser() ([]App, error)
+	GetApps(groupID string) ([]App, error)
 	Status() error
 }
 
@@ -29,20 +32,24 @@ func NewClient(baseURL string) Client {
 }
 
 // NewAuthClient creates a new Realm client with a session used for Authorization
-func NewAuthClient(baseURL string, session *Session) Client {
-	// TODO: REALMC-7156 should we return an error here?
+func NewAuthClient(baseURL string, session Session) Client {
 	return &client{baseURL, session}
 }
 
 type client struct {
 	baseURL string
-	session *Session
+	session Session
 }
 
-// Session is the CLI profile session TODO REALMC-7156 figure out this approach i.e. moving Session to here
-type Session struct {
-	AccessToken  string
-	RefreshToken string
+func (c *client) doJSON(method, path string, payload interface{}, options api.RequestOptions) (*http.Response, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	options.Body = bytes.NewReader(body)
+	options.ContentType = api.MediaTypeApplicationJSON
+
+	return c.do(method, path, options)
 }
 
 func (c *client) do(method, path string, options api.RequestOptions) (*http.Response, error) {
@@ -51,20 +58,36 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
-	req.Header = options.Header
-	if req.Header == nil {
-		req.Header = http.Header{}
-	}
+	req.Header = http.Header{}
 	req.Header.Set(requestOriginHeader, cliHeaderValue)
 
-	// TODO REALMC-7156 How do we want to handle refresh tokens here
-	if c.session != nil {
-		if len(c.session.AccessToken) == 0 {
-			return nil, errors.New("the current session is invalid. This can happen if you have not yet logged in or if your refresh token has expired")
-		}
-		req.Header.Add("Authorization", "Bearer "+c.session.AccessToken)
+	if options.ContentType != "" {
+		req.Header.Set(api.HeaderContentType, options.ContentType)
 	}
 
+	if auth, err := c.getAuth(options); err != nil {
+		return nil, err
+	} else if auth != "" {
+		req.Header.Set(api.HeaderAuthorization, "Bearer "+c.session.AccessToken)
+	}
 	client := &http.Client{}
 	return client.Do(req)
+}
+
+func (c *client) getAuth(options api.RequestOptions) (string, error) {
+	if options.UseAuth {
+		if c.session.AccessToken == "" {
+			return "", errors.New("required access token is blank")
+		}
+		return c.session.AccessToken, nil
+	}
+
+	if options.RefreshAuth {
+		if c.session.RefreshToken == "" {
+			return "", errors.New("required refresh token is blank")
+		}
+		return c.session.RefreshToken, nil
+	}
+
+	return "", nil
 }
