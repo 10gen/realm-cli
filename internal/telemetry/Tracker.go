@@ -12,11 +12,9 @@ type Tracker interface {
 // NewTracker constructs a new tracking service
 func NewTracker(mode Mode) Tracker {
 	switch mode {
-	case OnSelected:
+	case ModeOn, ModeNil:
 		return &segmentTracker{}
-	case OnDefault:
-		return &segmentTracker{}
-	case STDOut:
+	case ModeStdout:
 		return &stdoutTracker{}
 	}
 	return &noopTracker{}

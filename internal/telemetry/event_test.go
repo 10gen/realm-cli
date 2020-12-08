@@ -20,6 +20,8 @@ func TestEventConstructor(t *testing.T) {
 			return x.Error() == y.Error()
 		}))
 
+	ConfigureEvents("user")
+
 	for _, tc := range []struct {
 		ctor          string
 		event         *Event
@@ -27,7 +29,7 @@ func TestEventConstructor(t *testing.T) {
 	}{
 		{
 			ctor:  "NewCommandStartEvent",
-			event: NewCommandStartEvent("user", "command"),
+			event: NewCommandStartEvent("command"),
 			expectedEvent: &Event{
 				Type:   EventTypeCommandStart,
 				UserID: "user",
@@ -39,7 +41,7 @@ func TestEventConstructor(t *testing.T) {
 		},
 		{
 			ctor:  "NewCommandCompleteEvent",
-			event: NewCommandCompleteEvent("user", "command"),
+			event: NewCommandCompleteEvent("command"),
 			expectedEvent: &Event{
 				Type:   EventTypeCommandStart,
 				UserID: "user",
@@ -51,7 +53,7 @@ func TestEventConstructor(t *testing.T) {
 		},
 		{
 			ctor:  "NewCommandErrorEvent",
-			event: NewCommandErrorEvent("user", "command", fmt.Errorf("error")),
+			event: NewCommandErrorEvent("command", fmt.Errorf("error")),
 			expectedEvent: &Event{
 				Type:   EventTypeCommandStart,
 				UserID: "user",

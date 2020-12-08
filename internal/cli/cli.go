@@ -89,25 +89,26 @@ func NewCommandFactory() CommandFactory {
 		config:    config,
 		profile:   profile,
 		errLogger: errLogger,
-		tracker:   nil,
 	}
+}
+
+func (factory *commandFactory) configureTelemetry() error {
+	telemetry.ConfigureEvents(factory.profile.GetUser().PublicAPIKey)
+	telemetryMode := factory.config.TelemetryMode
+	if telemetryMode == telemetry.ModeNil {
+		telemetryMode = factory.profile.GetTelemetryMode()
+	}
+	factory.tracker = telemetry.NewTracker(telemetryMode)
+	factory.profile.SetTelemetryMode(telemetryMode)
+	return factory.profile.Save()
 }
 
 func (factory *commandFactory) Setup() {
 	if err := factory.profile.Load(); err != nil {
 		factory.errLogger.Fatal(err)
 	}
-	telemetryMode := factory.config.TelemetryMode
-	if telemetryMode == telemetry.OnDefault {
-		err := telemetryMode.Set(factory.profile.GetString(keyTelemetryMode))
-		if err != nil {
-			telemetryMode = telemetry.OnDefault
-		}
-	}
-	factory.tracker = telemetry.NewTracker(telemetryMode)
-	factory.profile.SetString(keyTelemetryMode, string(telemetryMode))
-	err := factory.profile.Save()
-	if err != nil {
+
+	if err := factory.configureTelemetry(); err != nil {
 		factory.errLogger.Fatal(err)
 	}
 
@@ -162,14 +163,13 @@ func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.C
 		Short: command.Description,
 		Long:  command.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			publicAPIKey := factory.profile.GetString(keyPublicAPIKey)
-			factory.tracker.Track(telemetry.NewCommandStartEvent(publicAPIKey, "idk how to get the cmd string"))
+			factory.tracker.Track(telemetry.NewCommandStartEvent(display))
 			err := command.Handler(factory.profile, factory.ui, a)
 			if err != nil {
-				factory.tracker.Track(telemetry.NewCommandErrorEvent(publicAPIKey, "idk how to get the cmd string", err))
+				factory.tracker.Track(telemetry.NewCommandErrorEvent(display, err))
 				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
 			}
-			factory.tracker.Track(telemetry.NewCommandCompleteEvent(publicAPIKey, "idk how to get the cmd string"))
+			factory.tracker.Track(telemetry.NewCommandCompleteEvent(display))
 			return nil
 		},
 	}

@@ -8,11 +8,17 @@ import (
 // Mode is the Telemetry Mode
 type Mode string
 
-// String returns the string representation
-func (m Mode) String() string {
-	val := string(m)
-	return val
+// NewMode creates a new Mode from the modeString or returns ModeNil
+func NewMode(modeString string) Mode {
+	mode := Mode(modeString)
+	if !isValidMode(mode) {
+		return ModeNil
+	}
+	return mode
 }
+
+// String returns the string representation
+func (m Mode) String() string { return string(m) }
 
 // Type returns the Mode type
 func (m Mode) Type() string { return "string" }
@@ -22,9 +28,7 @@ func (m *Mode) Set(val string) error {
 	mode := Mode(val)
 
 	if !isValidMode(mode) {
-		allModes := []string{OnSelected.String(),
-			STDOut.String(),
-			Off.String()}
+		allModes := []string{ModeOn.String(), ModeStdout.String(), ModeOff.String()}
 		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allModes, ", "))
 	}
 
@@ -34,23 +38,19 @@ func (m *Mode) Set(val string) error {
 
 // set of supported telemetry modes
 const (
-	//User does not select an option
-	OnDefault Mode = "" // zero-valued to be flag's default
-	//User deliberately selects this option
-	OnSelected Mode = "on"
-	//User selects stdout
-	STDOut Mode = "stdout"
-	//User disables tracking
-	Off Mode = "off"
+	ModeNil    Mode = "" // zero-valued to be flag's default
+	ModeOn     Mode = "on"
+	ModeStdout Mode = "stdout"
+	ModeOff    Mode = "off"
 )
 
 func isValidMode(mode Mode) bool {
 	switch mode {
 	case
-		OnSelected,
-		OnDefault,
-		STDOut,
-		Off:
+		ModeOn,
+		ModeNil,
+		ModeStdout,
+		ModeOff:
 		return true
 	}
 	return false

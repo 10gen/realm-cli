@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )
@@ -182,4 +183,14 @@ func (p Profile) GetSession() Session {
 func (p Profile) SetSession(accessToken, refreshToken string) {
 	p.SetString(keyAccessToken, accessToken)
 	p.SetString(keyRefreshToken, refreshToken)
+}
+
+// GetTelemetryMode gets the Telemetry Mode
+func (p Profile) GetTelemetryMode() telemetry.Mode {
+	return telemetry.NewMode(p.GetString(keyTelemetryMode))
+}
+
+// SetTelemetryMode sets the Telemetry Mode
+func (p Profile) SetTelemetryMode(mode telemetry.Mode) {
+	p.SetString(keyTelemetryMode, mode.String())
 }

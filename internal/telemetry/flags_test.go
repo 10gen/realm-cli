@@ -11,10 +11,10 @@ import (
 func TestMode(t *testing.T) {
 	for _, tc := range []Mode{
 		// add all modes here
-		OnSelected,
-		OnDefault,
-		STDOut,
-		Off,
+		ModeOn,
+		ModeNil,
+		ModeStdout,
+		ModeOff,
 	} {
 		t.Run(fmt.Sprintf("%s should be valid", tc), func(t *testing.T) {
 			assert.True(t, isValidMode(tc), "must be valid mode")
@@ -22,7 +22,7 @@ func TestMode(t *testing.T) {
 	}
 
 	t.Run("Should have the correct type representation", func(t *testing.T) {
-		assert.Equal(t, "string", OnSelected.Type())
+		assert.Equal(t, "string", ModeOn.Type())
 	})
 
 	t.Run("Should set its value correctly with a valid output format", func(t *testing.T) {
