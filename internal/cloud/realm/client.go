@@ -20,7 +20,7 @@ const (
 // Client is a Realm client
 type Client interface {
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
-	GetUserProfile() (UserProfile, error)
+	GetAuthProfile() (AuthProfile, error)
 	GetAppsForUser() ([]App, error)
 	GetApps(groupID string) ([]App, error)
 	Status() error
@@ -68,7 +68,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	if auth, err := c.getAuth(options); err != nil {
 		return nil, err
 	} else if auth != "" {
-		req.Header.Set(api.HeaderAuthorization, "Bearer "+c.session.AccessToken)
+		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
 	}
 	client := &http.Client{}
 	return client.Do(req)

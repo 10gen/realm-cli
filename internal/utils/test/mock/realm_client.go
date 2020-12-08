@@ -8,7 +8,7 @@ import (
 type RealmClient struct {
 	realm.Client
 	AuthenticateFn   func(publicAPIKey, privateAPIKey string) (realm.Session, error)
-	GetUserProfileFn func() (realm.UserProfile, error)
+	GetAuthProfileFn func() (realm.AuthProfile, error)
 	GetAppsForUserFn func() ([]realm.App, error)
 	GetAppsFn        func(groupID string) ([]realm.App, error)
 }
@@ -23,14 +23,14 @@ func (rc RealmClient) Authenticate(publicAPIKey, privateAPIKey string) (realm.Se
 	return rc.Client.Authenticate(publicAPIKey, privateAPIKey)
 }
 
-// GetUserProfile calls the mocked GetUserProfile implementation if provided,
+// GetAuthProfile calls the mocked GetAuthProfile implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) GetUserProfile() (realm.UserProfile, error) {
-	if rc.GetUserProfileFn != nil {
-		return rc.GetUserProfileFn()
+func (rc RealmClient) GetAuthProfile() (realm.AuthProfile, error) {
+	if rc.GetAuthProfileFn != nil {
+		return rc.GetAuthProfileFn()
 	}
-	return rc.Client.GetUserProfile()
+	return rc.Client.GetAuthProfile()
 }
 
 // GetAppsForUser calls the mocked GetAppsForUser implementation if provided,

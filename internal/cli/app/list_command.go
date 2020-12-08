@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -15,11 +14,11 @@ import (
 // ListCommand creates the 'app list' subcommand
 func ListCommand() cli.CommandDefinition {
 	return cli.CommandDefinition{
-		Aliases:     []string{"ls"},
-		Command:     &appListCommand{},
 		Use:         "list",
+		Aliases:     []string{"ls"},
 		Description: "List the apps of an Atlas project the current user has access to",
 		Help:        "list help", // TODO(REALMC-7429): add help text description
+		Command:     &appListCommand{},
 	}
 }
 
@@ -37,8 +36,7 @@ func (cmd *appListCommand) RegisterFlags(fs *pflag.FlagSet) {
 }
 
 func (cmd *appListCommand) Setup(profile *cli.Profile, ui terminal.UI, config cli.CommandConfig) error {
-	session := profile.GetSession()
-	cmd.realmClient = realm.NewAuthClient(config.RealmBaseURL, session)
+	cmd.realmClient = realm.NewAuthClient(config.RealmBaseURL, profile.GetSession())
 	return nil
 }
 
@@ -51,11 +49,7 @@ func (cmd *appListCommand) Handler(profile *cli.Profile, ui terminal.UI, args []
 		appList, err = cmd.realmClient.GetAppsForUser()
 	}
 	if err != nil {
-		return fmt.Errorf("something unexpected happened: %s", err.Error())
-	}
-
-	if len(appList) == 0 && len(cmd.app) > 0 {
-		return errors.New("Found no matches, try changing the --app input")
+		return fmt.Errorf("failed to get apps: %s", err)
 	}
 
 	cmd.appListResult = appList

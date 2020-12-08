@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -29,7 +30,7 @@ func TestLogoutHandler(t *testing.T) {
 		profile.SetSession("accessToken", "refreshToken")
 		assert.Nil(t, profile.Save())
 
-		assert.Match(t, Session{"accessToken", "refreshToken"}, profile.GetSession())
+		assert.Match(t, realm.Session{"accessToken", "refreshToken"}, profile.GetSession())
 
 		out, err := ioutil.ReadFile(profile.path())
 		assert.Nil(t, err)
@@ -45,7 +46,7 @@ func TestLogoutHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, nil))
 
-		assert.Match(t, Session{}, profile.GetSession())
+		assert.Match(t, realm.Session{}, profile.GetSession())
 
 		out, err = ioutil.ReadFile(profile.path())
 		assert.Nil(t, err)

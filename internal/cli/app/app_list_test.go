@@ -4,21 +4,25 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cloud/realm"
-
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestAppListSetup(t *testing.T) {
 	t.Run("Setup creates a realm client with a session", func(t *testing.T) {
 		config := cli.CommandConfig{RealmBaseURL: "http://localhost:8080"}
 		cmd := &appListCommand{}
+
 		authToken := "authToken"
 		refreshToken := "refreshToken"
-		profile := &cli.Profile{}
+		profile, profileErr := cli.NewProfile(primitive.NewObjectID().Hex())
+		assert.Nil(t, profileErr)
+
 		profile.SetSession(authToken, refreshToken)
+
 		err := cmd.Setup(profile, nil, config)
 		assert.Nil(t, err)
 		assert.NotNil(t, &cmd.realmClient)
@@ -38,8 +42,8 @@ func TestAppListHandler(t *testing.T) {
 	roleWithDuplicateProject := realm.Role{project2}
 	roles := []realm.Role{role1, role2, roleWithDuplicateProject}
 	realmClient := mock.RealmClient{}
-	realmClient.GetUserProfileFn = func() (realm.UserProfile, error) {
-		return realm.UserProfile{
+	realmClient.GetAuthProfileFn = func() (realm.AuthProfile, error) {
+		return realm.AuthProfile{
 			Roles: roles,
 		}, nil
 	}
@@ -86,7 +90,6 @@ func TestAppListHandler(t *testing.T) {
 			realmClient: realmClient,
 		}
 		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 3, len(cmd.appListResult))
 		assert.Equal(t, []realm.App{testApp1, testApp2, testApp3}, cmd.appListResult)
 	})
 
@@ -96,11 +99,10 @@ func TestAppListHandler(t *testing.T) {
 			realmClient: realmClient,
 		}
 		cmd.Handler(nil, nil, nil)
-		assert.Equal(t, 2, len(cmd.appListResult))
 		assert.Equal(t, []realm.App{testApp2, testApp3}, cmd.appListResult)
 	})
 
-	//TODO REALMC-7156 uncomment and reimplement these tests once app flag is supported
+	//TODO REALMC-7547 uncomment and reimplement these tests once app flag is supported
 
 	// t.Run("Returns single app if app flag present", func(t *testing.T) {
 	// 	cmd := &appListCommand{

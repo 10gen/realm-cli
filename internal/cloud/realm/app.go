@@ -22,12 +22,11 @@ var (
 )
 
 var (
-	appsByGroupIDEndpoint = adminAPI + "/groups/%s/apps"
-	userProfileEndpoint   = adminAPI + "/auth/profile"
+	appsPathPattern = adminAPI + "/groups/%s/apps"
 )
 
 func (c *client) GetAppsForUser() ([]App, error) {
-	profile, err := c.GetUserProfile()
+	profile, err := c.GetAuthProfile()
 	if err != nil {
 		return nil, err
 	}
@@ -53,22 +52,20 @@ func (c *client) GetAppsForUser() ([]App, error) {
 
 // GetApps fetches all Realm Apps associated with the given groupID
 func (c *client) GetApps(groupID string) ([]App, error) {
-	res, err := c.do(http.MethodGet, fmt.Sprintf(appsByGroupIDEndpoint, groupID), api.RequestOptions{UseAuth: true})
-
-	if err != nil {
-		return nil, err
+	res, fetchAppsErr := c.do(http.MethodGet, fmt.Sprintf(appsPathPattern, groupID), api.RequestOptions{UseAuth: true})
+	if fetchAppsErr != nil {
+		return nil, fetchAppsErr
 	}
-
-	defer res.Body.Close()
-
+	if res.StatusCode == http.StatusNotFound {
+		return nil, errGroupNotFound
+	}
 	if res.StatusCode != http.StatusOK {
-		if res.StatusCode == http.StatusNotFound {
-			return nil, errGroupNotFound
-		}
 		return nil, fmt.Errorf("HTTP status error: %v", res.StatusCode)
 	}
 
 	dec := json.NewDecoder(res.Body)
+	defer res.Body.Close()
+
 	var apps []App
 	if err := dec.Decode(&apps); err != nil {
 		return nil, err

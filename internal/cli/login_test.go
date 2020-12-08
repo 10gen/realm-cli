@@ -124,8 +124,8 @@ func TestLoginHandler(t *testing.T) {
 		assert.True(t, os.IsNotExist(statErr), "profile must not exist")
 
 		realmClient := mock.RealmClient{}
-		realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
-			return realm.AuthResponse{
+		realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.Session, error) {
+			return realm.Session{
 				AccessToken:  "accessToken",
 				RefreshToken: "refreshToken",
 			}, nil
@@ -143,7 +143,7 @@ func TestLoginHandler(t *testing.T) {
 		assert.Nil(t, cmd.Handler(profile, ui, nil))
 
 		expectedUser := User{"publicAPIKey", "privateAPIKey"}
-		expectedSession := Session{"accessToken", "refreshToken"}
+		expectedSession := realm.Session{"accessToken", "refreshToken"}
 
 		assert.Match(t, expectedUser, profile.GetUser())
 		assert.Match(t, expectedSession, profile.GetSession())
@@ -165,8 +165,8 @@ func TestLoginHandler(t *testing.T) {
 			assert.Nil(t, profile.Save())
 
 			realmClient := mock.RealmClient{}
-			realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.AuthResponse, error) {
-				return realm.AuthResponse{
+			realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.Session, error) {
+				return realm.Session{
 					AccessToken:  "newAccessToken",
 					RefreshToken: "newRefreshToken",
 				}, nil
@@ -194,7 +194,7 @@ func TestLoginHandler(t *testing.T) {
 			assert.Nil(t, cmd.Handler(profile, ui, nil))
 
 			expectedUser := User{"existingUser", "existing-password"}
-			expectedSession := Session{"newAccessToken", "newRefreshToken"}
+			expectedSession := realm.Session{"newAccessToken", "newRefreshToken"}
 
 			assert.Match(t, expectedUser, profile.GetUser())
 			assert.Match(t, expectedSession, profile.GetSession())
@@ -206,19 +206,19 @@ func TestLoginHandler(t *testing.T) {
 				description     string
 				confirmAnswer   string
 				expectedUser    User
-				expectedSession Session
+				expectedSession realm.Session
 			}{
 				{
 					description:     "And do nothing if the user does not want to proceed",
 					confirmAnswer:   "n",
 					expectedUser:    User{"existingUser", "existing-password"},
-					expectedSession: Session{"existingAccessToken", "existingRefreshToken"},
+					expectedSession: realm.Session{"existingAccessToken", "existingRefreshToken"},
 				},
 				{
 					description:     "And save a new session if the user does want to proceed",
 					confirmAnswer:   "y",
 					expectedUser:    User{"newUser", "new-password"},
-					expectedSession: Session{"newAccessToken", "newRefreshToken"},
+					expectedSession: realm.Session{"newAccessToken", "newRefreshToken"},
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -272,7 +272,7 @@ func TestLoginFeedback(t *testing.T) {
 	})
 }
 
-func ensureProfileContents(t *testing.T, profile *Profile, user User, session Session) {
+func ensureProfileContents(t *testing.T, profile *Profile, user User, session realm.Session) {
 	contents, err := ioutil.ReadFile(profile.path())
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(string(contents), fmt.Sprintf(`%s:
