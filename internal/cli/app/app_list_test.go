@@ -136,19 +136,6 @@ func TestAppListHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(cmd.appListResult))
 	})
-
-	t.Run("Returns error if user has no apps and app flag provided", func(t *testing.T) {
-		realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
-			return nil, nil
-		}
-		cmd := &appListCommand{
-			app:         "random",
-			realmClient: realmClient,
-		}
-		err := cmd.Handler(nil, nil, nil)
-		assert.NotNil(t, err)
-		assert.Equal(t, "Found no matches, try changing the --app input", err.Error())
-	})
 }
 
 // TODO: REALMC-7156 pretty print into table
