@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+
 	"github.com/google/go-cmp/cmp"
 )
 

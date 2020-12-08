@@ -29,10 +29,10 @@ func TestMode(t *testing.T) {
 		tc := newMode()
 
 		assert.Nil(t, tc.m.Set("on"))
-		assert.Equal(t, "on", tc.m.String())
+		assert.Equal(t, ModeOn, tc.m)
 
 		assert.Nil(t, tc.m.Set(""))
-		assert.Equal(t, "", tc.m.String())
+		assert.Equal(t, ModeNil, tc.m)
 	})
 
 	t.Run("Should return an error when setting its value with an invalid output format", func(t *testing.T) {
@@ -42,10 +42,10 @@ func TestMode(t *testing.T) {
 }
 
 type modeHolder struct {
-	m *Mode
+	m Mode
 }
 
 func newMode() modeHolder {
 	var m Mode
-	return modeHolder{&m}
+	return modeHolder{m}
 }
