@@ -188,10 +188,10 @@ func (p Profile) SetSession(accessToken, refreshToken string) {
 
 // GetTelemetryMode gets the telemetry mode
 func (p Profile) GetTelemetryMode() telemetry.Mode {
-	return telemetry.NewMode(p.GetString(keyTelemetryMode))
+	return telemetry.Mode(p.GetString(keyTelemetryMode))
 }
 
 // SetTelemetryMode sets the telemetry mode
 func (p Profile) SetTelemetryMode(mode telemetry.Mode) {
-	p.SetString(keyTelemetryMode, mode.String())
+	p.SetString(keyTelemetryMode, string(mode))
 }

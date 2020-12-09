@@ -11,7 +11,6 @@ import (
 )
 
 func TestEventConstructor(t *testing.T) {
-	//I agree, we should clean this up :/
 	assert.RegisterOpts(
 		reflect.TypeOf(map[DataKey]interface{}{}),
 		cmp.Comparer(func(x, y error) bool {
@@ -21,55 +20,46 @@ func TestEventConstructor(t *testing.T) {
 			return x.Error() == y.Error()
 		}))
 
-	ConfigureEvents("user")
-
 	for _, tc := range []struct {
 		ctor          string
-		event         *Event
-		expectedEvent *Event
+		event         Event
+		expectedEvent Event
 	}{
 		{
 			ctor:  "NewCommandStartEvent",
 			event: NewCommandStartEvent("command"),
-			expectedEvent: &Event{
-				Type:   EventTypeCommandStart,
-				UserID: "user",
-				Data: map[DataKey]interface{}{
-					DataKeyCommand:     "command",
-					DataKeyExecutionID: executionID,
-				},
+			expectedEvent: Event{
+				eventType: EventTypeCommandStart,
+				command:   "command",
+				data:      map[DataKey]interface{}{},
 			},
 		},
 		{
 			ctor:  "NewCommandCompleteEvent",
 			event: NewCommandCompleteEvent("command"),
-			expectedEvent: &Event{
-				Type:   EventTypeCommandStart,
-				UserID: "user",
-				Data: map[DataKey]interface{}{
-					DataKeyCommand:     "command",
-					DataKeyExecutionID: executionID,
-				},
+			expectedEvent: Event{
+				eventType: EventTypeCommandStart,
+				command:   "command",
+				data:      map[DataKey]interface{}{},
 			},
 		},
 		{
 			ctor:  "NewCommandErrorEvent",
 			event: NewCommandErrorEvent("command", fmt.Errorf("error")),
-			expectedEvent: &Event{
-				Type:   EventTypeCommandStart,
-				UserID: "user",
-				Data: map[DataKey]interface{}{
-					DataKeyCommand:     "command",
-					DataKeyExecutionID: executionID,
-					DataKeyErr:         fmt.Errorf("error"),
+			expectedEvent: Event{
+				eventType: EventTypeCommandStart,
+				userID:    "user",
+				command:   "command",
+				data: map[DataKey]interface{}{
+					DataKeyErr: fmt.Errorf("error"),
 				},
 			},
 		},
 	} {
 		t.Run(fmt.Sprintf("%s should create the expected Event", tc.ctor), func(t *testing.T) {
-			assert.Equal(t, tc.expectedEvent.Type, tc.event.Type)
-			assert.Equal(t, tc.expectedEvent.UserID, tc.event.UserID)
-			assert.Equal(t, tc.expectedEvent.Data, tc.event.Data)
+			assert.Equal(t, tc.expectedEvent.eventType, tc.event.eventType)
+			assert.Equal(t, tc.expectedEvent.command, tc.event.command)
+			assert.Equal(t, tc.expectedEvent.data, tc.event.data)
 		})
 	}
 }

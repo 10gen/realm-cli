@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/flags"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
@@ -93,12 +94,14 @@ func NewCommandFactory() CommandFactory {
 }
 
 func (factory *commandFactory) configureTelemetry() error {
-	telemetry.ConfigureEvents(factory.profile.GetUser().PublicAPIKey)
 	telemetryMode := factory.config.TelemetryMode
 	if telemetryMode == telemetry.ModeNil {
 		telemetryMode = factory.profile.GetTelemetryMode()
 	}
-	factory.tracker = telemetry.NewTracker(telemetryMode)
+	factory.tracker = telemetry.NewTracker(
+		telemetryMode,
+		factory.profile.GetUser().PublicAPIKey,
+		primitive.NewObjectID().Hex())
 	factory.profile.SetTelemetryMode(telemetryMode)
 	return factory.profile.Save()
 }
