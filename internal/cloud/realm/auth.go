@@ -42,7 +42,6 @@ func (pd AuthProfile) AllGroupIDs() []string {
 		arr = append(arr, role.GroupID)
 		set[role.GroupID] = struct{}{}
 	}
-
 	return arr
 }
 

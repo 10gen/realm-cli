@@ -18,10 +18,6 @@ type App struct {
 }
 
 var (
-	errGroupNotFound = errors.New("group could not be found")
-)
-
-var (
 	appsPathPattern = adminAPI + "/groups/%s/apps"
 )
 
@@ -31,23 +27,16 @@ func (c *client) GetAppsForUser() ([]App, error) {
 		return nil, err
 	}
 	groupIDs := profile.AllGroupIDs()
-	var appArr []App
-	appArr = make([]App, 0)
+	var arr []App
 	for _, groupID := range groupIDs {
 		apps, err := c.GetApps(groupID)
 		if err != nil {
 			// Request will fail if any GetApps call fails
 			return nil, err
 		}
-		appSet := make(map[string]bool)
-		for _, appElem := range apps {
-			if !appSet[appElem.Name] {
-				appArr = append(appArr, appElem)
-				appSet[appElem.Name] = true
-			}
-		}
+		arr = append(arr, apps...)
 	}
-	return appArr, nil
+	return arr, nil
 }
 
 // GetApps fetches all Realm Apps associated with the given groupID
@@ -57,10 +46,10 @@ func (c *client) GetApps(groupID string) ([]App, error) {
 		return nil, fetchAppsErr
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return nil, errGroupNotFound
+		return nil, errors.New("group could not be found")
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP status error: %v", res.StatusCode)
+		return nil, UnmarshalServerError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)

@@ -16,12 +16,10 @@ func TestAppListSetup(t *testing.T) {
 		config := cli.CommandConfig{RealmBaseURL: "http://localhost:8080"}
 		cmd := &appListCommand{}
 
-		authToken := "authToken"
-		refreshToken := "refreshToken"
 		profile, profileErr := cli.NewProfile(primitive.NewObjectID().Hex())
 		assert.Nil(t, profileErr)
 
-		profile.SetSession(authToken, refreshToken)
+		profile.SetSession("authToken", "refreshToken")
 
 		err := cmd.Setup(profile, nil, config)
 		assert.Nil(t, err)
@@ -32,15 +30,8 @@ func TestAppListSetup(t *testing.T) {
 func TestAppListHandler(t *testing.T) {
 	project1 := "project1"
 	project2 := "project2"
+	roles := []realm.Role{realm.Role{project1}, realm.Role{project2}, realm.Role{project2}}
 
-	appName1 := "name1"
-	appName2 := "name2"
-	appName3 := "name3"
-
-	role1 := realm.Role{project1}
-	role2 := realm.Role{project2}
-	roleWithDuplicateProject := realm.Role{project2}
-	roles := []realm.Role{role1, role2, roleWithDuplicateProject}
 	realmClient := mock.RealmClient{}
 	realmClient.GetAuthProfileFn = func() (realm.AuthProfile, error) {
 		return realm.AuthProfile{
@@ -50,17 +41,17 @@ func TestAppListHandler(t *testing.T) {
 
 	testApp1 := realm.App{
 		GroupID: project1,
-		Name:    appName1,
+		Name:    "name1",
 	}
 
 	testApp2 := realm.App{
 		GroupID: project2,
-		Name:    appName2,
+		Name:    "name2",
 	}
 
 	testApp3 := realm.App{
 		GroupID: project2,
-		Name:    appName3,
+		Name:    "name3",
 	}
 
 	realmClient.GetAppsForUserFn = func() ([]realm.App, error) {
