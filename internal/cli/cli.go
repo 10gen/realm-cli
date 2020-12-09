@@ -9,10 +9,10 @@ import (
 	"github.com/10gen/realm-cli/internal/flags"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Command is an executable CLI command
@@ -53,14 +53,14 @@ type CommandFactory interface {
 }
 
 type commandFactory struct {
-	config    *Config
-	profile   *Profile
-	ui        terminal.UI
-	inReader  *os.File
-	outWriter *os.File
-	errWriter *os.File
-	errLogger *log.Logger
-	tracker   telemetry.Tracker
+	config         *Config
+	profile        *Profile
+	ui             terminal.UI
+	inReader       *os.File
+	outWriter      *os.File
+	errWriter      *os.File
+	errLogger      *log.Logger
+	trackerService telemetry.Service
 }
 
 // Config is the global CLI config
@@ -93,25 +93,8 @@ func NewCommandFactory() CommandFactory {
 	}
 }
 
-func (factory *commandFactory) configureTelemetry() error {
-	telemetryMode := factory.config.TelemetryMode
-	if telemetryMode == telemetry.ModeNil {
-		telemetryMode = factory.profile.GetTelemetryMode()
-	}
-	factory.tracker = telemetry.NewTracker(
-		telemetryMode,
-		factory.profile.GetUser().PublicAPIKey,
-		primitive.NewObjectID().Hex())
-	factory.profile.SetTelemetryMode(telemetryMode)
-	return factory.profile.Save()
-}
-
 func (factory *commandFactory) Setup() {
 	if err := factory.profile.Load(); err != nil {
-		factory.errLogger.Fatal(err)
-	}
-
-	if err := factory.configureTelemetry(); err != nil {
 		factory.errLogger.Fatal(err)
 	}
 
@@ -161,18 +144,24 @@ func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.C
 		display = command.Use
 	}
 
+	if err := factory.configureTelemetry(display); err != nil {
+		factory.errLogger.Fatal(err)
+	}
+
 	cmd := cobra.Command{
 		Use:   command.Use,
 		Short: command.Description,
 		Long:  command.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			factory.tracker.Track(telemetry.NewCommandStartEvent(display))
+			factory.trackerService.TrackEvent(telemetry.EventTypeCommandStart)
 			err := command.Handler(factory.profile, factory.ui, a)
 			if err != nil {
-				factory.tracker.Track(telemetry.NewCommandErrorEvent(display, err))
+				factory.trackerService.TrackEvent(
+					telemetry.EventTypeCommandError,
+					telemetry.EventData{Key: telemetry.EventDataKeyErr, Value: err})
 				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
 			}
-			factory.tracker.Track(telemetry.NewCommandCompleteEvent(display))
+			factory.trackerService.TrackEvent(telemetry.EventTypeCommandComplete)
 			return nil
 		},
 	}
@@ -218,6 +207,29 @@ func (factory *commandFactory) SetGlobalFlags(fs *flag.FlagSet) {
 	fs.StringVarP(&factory.config.OutputTarget, flags.OutputTarget, flags.OutputTargetShort, "", flags.OutputTargetUsage)
 	fs.StringVar(&factory.config.RealmBaseURL, flags.RealmBaseURL, realm.DefaultBaseURL, flags.RealmBaseURLUsage)
 	fs.VarP(&factory.config.TelemetryMode, flags.TelemetryMode, flags.TelemetryModeShort, flags.TelemetryModeUsage)
+}
+
+func (factory *commandFactory) configureTelemetry(command string) error {
+	var telemetryMode telemetry.Mode
+	telemetryModeFromConfig := factory.config.TelemetryMode
+	telemetryModeFromProfile := factory.profile.GetTelemetryMode()
+	if telemetryModeFromConfig == telemetry.ModeNil {
+		telemetryMode = telemetryModeFromProfile
+	} else {
+		telemetryMode = telemetryModeFromConfig
+	}
+	if telemetryMode != telemetryModeFromProfile {
+		factory.profile.SetTelemetryMode(telemetryMode)
+		if err := factory.profile.Save(); err != nil {
+			return err
+		}
+	}
+	factory.trackerService = telemetry.NewService(
+		telemetryMode,
+		factory.profile.GetUser().PublicAPIKey,
+		primitive.NewObjectID().Hex(),
+		command)
+	return nil
 }
 
 func (factory *commandFactory) ensureUI() {

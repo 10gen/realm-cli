@@ -2,55 +2,67 @@ package telemetry
 
 import (
 	"fmt"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Tracker logs events
-type Tracker interface {
-	Track(event Event)
+// Service tracks events
+type Service interface {
+	TrackEvent(eventType EventType, data ...EventData)
 }
 
-type tracker struct {
-	userID          string
-	executionID     string
-	telemetryClient telemetryClient
+type service struct {
+	userID      string
+	executionID string
+	command     string
+	tracker     tracker
 }
 
-// NewTracker creates a new tracker of type mode with userID and executionID appended to each event
-func NewTracker(mode Mode, userID string, executionID string) Tracker {
-	tracker := tracker{userID: userID, executionID: executionID}
+// NewService creates a new service of type mode with userID and
+// executionID appended to each event it tracks
+func NewService(mode Mode, userID string, executionID string, command string) Service {
+	service := service{userID: userID, executionID: executionID, command: command}
 	switch mode {
 	case ModeOn, ModeNil:
-		tracker.telemetryClient = &segmentClient{}
+		service.tracker = &segmentTracker{}
 	case ModeStdout:
-		tracker.telemetryClient = &stdoutClient{}
+		service.tracker = &stdoutTracker{}
 	default:
-		tracker.telemetryClient = &noopClient{}
+		service.tracker = &noopTracker{}
 	}
-	return &tracker
+	return &service
 }
 
-func (tracker *tracker) Track(event Event) {
-	event.userID = tracker.userID
-	event.executionID = tracker.executionID
-	tracker.telemetryClient.track(event)
+// TrackEvents tracks events
+func (service *service) TrackEvent(eventType EventType, data ...EventData) {
+	service.tracker.track(event{
+		id:          primitive.NewObjectID().Hex(),
+		eventType:   eventType,
+		userID:      service.userID,
+		time:        time.Now(),
+		executionID: service.executionID,
+		command:     service.command,
+		data:        data,
+	})
 }
 
-type telemetryClient interface {
-	track(event Event)
+type tracker interface {
+	track(event event)
 }
 
-type noopClient struct{}
+type noopTracker struct{}
 
-func (client *noopClient) track(event Event) {}
+func (tracker *noopTracker) track(event event) {}
 
-type stdoutClient struct{}
+type stdoutTracker struct{}
 
-func (client *stdoutClient) track(event Event) {
+func (tracker *stdoutTracker) track(event event) {
 	fmt.Printf("tracking: %v\n", event)
 }
 
-type segmentClient struct{}
+type segmentTracker struct{}
 
-func (client *segmentClient) track(event Event) {
+func (tracker *segmentTracker) track(event event) {
 	fmt.Printf("tracking: %v\n", event)
 }
