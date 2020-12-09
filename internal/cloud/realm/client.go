@@ -58,7 +58,6 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
-	req.Header = http.Header{}
 	req.Header.Set(requestOriginHeader, cliHeaderValue)
 
 	if options.ContentType != "" {
