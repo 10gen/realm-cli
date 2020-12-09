@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/10gen/realm-cli/internal/telemetry"
+
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
 )
@@ -110,6 +112,7 @@ const (
 	keyPrivateAPIKey = "private_api_key"
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
+	keyTelemetryMode = "telemetry_mode"
 )
 
 // User is the CLI profile user
@@ -181,4 +184,14 @@ func (p Profile) GetSession() Session {
 func (p Profile) SetSession(accessToken, refreshToken string) {
 	p.SetString(keyAccessToken, accessToken)
 	p.SetString(keyRefreshToken, refreshToken)
+}
+
+// GetTelemetryMode gets the telemetry mode
+func (p Profile) GetTelemetryMode() telemetry.Mode {
+	return telemetry.Mode(p.GetString(keyTelemetryMode))
+}
+
+// SetTelemetryMode sets the telemetry mode
+func (p Profile) SetTelemetryMode(mode telemetry.Mode) {
+	p.SetString(keyTelemetryMode, string(mode))
 }
