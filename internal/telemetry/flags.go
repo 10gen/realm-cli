@@ -33,6 +33,7 @@ const (
 	ModeOn     Mode = "on"
 	ModeStdout Mode = "stdout"
 	ModeOff    Mode = "off"
+	modeTest   Mode = "test" // note: not valid as a command line flag
 )
 
 func isValidMode(mode Mode) bool {
