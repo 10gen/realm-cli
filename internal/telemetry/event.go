@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// Event is a telemetry event
 type event struct {
 	id          string
 	eventType   EventType
@@ -15,7 +14,7 @@ type event struct {
 	data        []EventData
 }
 
-// EventData holds additional Event information
+// EventData holds additional event information
 type EventData struct {
 	Key   EventDataKey
 	Value interface{}
@@ -34,7 +33,7 @@ const (
 // EventDataKey used to pass data into the Event.data map
 type EventDataKey string
 
-// set of Data Keys
+// set of event data keys
 const (
 	EventDataKeyErr EventDataKey = "err"
 )

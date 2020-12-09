@@ -53,14 +53,14 @@ type CommandFactory interface {
 }
 
 type commandFactory struct {
-	config         *Config
-	profile        *Profile
-	ui             terminal.UI
-	inReader       *os.File
-	outWriter      *os.File
-	errWriter      *os.File
-	errLogger      *log.Logger
-	trackerService telemetry.Service
+	config           *Config
+	profile          *Profile
+	ui               terminal.UI
+	inReader         *os.File
+	outWriter        *os.File
+	errWriter        *os.File
+	errLogger        *log.Logger
+	telemetryService telemetry.Service
 }
 
 // Config is the global CLI config
@@ -153,15 +153,15 @@ func (factory *commandFactory) Build(provider func() CommandDefinition) *cobra.C
 		Short: command.Description,
 		Long:  command.Help,
 		RunE: func(c *cobra.Command, a []string) error {
-			factory.trackerService.TrackEvent(telemetry.EventTypeCommandStart)
+			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 			err := command.Handler(factory.profile, factory.ui, a)
 			if err != nil {
-				factory.trackerService.TrackEvent(
+				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
 					telemetry.EventData{Key: telemetry.EventDataKeyErr, Value: err})
 				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
 			}
-			factory.trackerService.TrackEvent(telemetry.EventTypeCommandComplete)
+			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
 			return nil
 		},
 	}
@@ -210,21 +210,18 @@ func (factory *commandFactory) SetGlobalFlags(fs *flag.FlagSet) {
 }
 
 func (factory *commandFactory) configureTelemetry(command string) error {
-	var telemetryMode telemetry.Mode
-	telemetryModeFromConfig := factory.config.TelemetryMode
-	telemetryModeFromProfile := factory.profile.GetTelemetryMode()
-	if telemetryModeFromConfig == telemetry.ModeNil {
-		telemetryMode = telemetryModeFromProfile
-	} else {
-		telemetryMode = telemetryModeFromConfig
+	telemetryMode := factory.config.TelemetryMode
+	existingTelemetryMode := factory.profile.GetTelemetryMode()
+	if telemetryMode == telemetry.ModeNil {
+		telemetryMode = existingTelemetryMode
 	}
-	if telemetryMode != telemetryModeFromProfile {
+	if telemetryMode != existingTelemetryMode {
 		factory.profile.SetTelemetryMode(telemetryMode)
 		if err := factory.profile.Save(); err != nil {
 			return err
 		}
 	}
-	factory.trackerService = telemetry.NewService(
+	factory.telemetryService = telemetry.NewService(
 		telemetryMode,
 		factory.profile.GetUser().PublicAPIKey,
 		primitive.NewObjectID().Hex(),

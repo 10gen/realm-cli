@@ -28,8 +28,6 @@ func NewService(mode Mode, userID string, executionID string, command string) Se
 		service.tracker = &segmentTracker{}
 	case ModeStdout:
 		service.tracker = &stdoutTracker{}
-	case modeTest:
-		service.tracker = &testTracker{}
 	default:
 		service.tracker = &noopTracker{}
 	}
@@ -67,12 +65,4 @@ type segmentTracker struct{}
 
 func (tracker *segmentTracker) track(event event) {
 	fmt.Printf("tracking: %v\n", event)
-}
-
-type testTracker struct {
-	lastTrackedEvent event
-}
-
-func (tracker *testTracker) track(event event) {
-	tracker.lastTrackedEvent = event
 }

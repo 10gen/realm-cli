@@ -37,7 +37,7 @@ func TestMode(t *testing.T) {
 
 	t.Run("Should return an error when setting its value with an invalid output format", func(t *testing.T) {
 		tc := newMode()
-		assert.Equal(t, errors.New("unsupported value, use one of [on, stdout, off] instead"), tc.m.Set("eggcorn"))
+		assert.Equal(t, errors.New("unsupported value, use one of [on, off] instead"), tc.m.Set("eggcorn"))
 	})
 }
 
