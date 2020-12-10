@@ -22,7 +22,7 @@ func TestClientAuthenticate(t *testing.T) {
 	})
 
 	t.Run("Should return session details with valid credentials", func(t *testing.T) {
-		auth, err := client.Authenticate(u.CloudAdminUsername(), u.CloudAdminAPIKey())
+		auth, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 		assert.Nil(t, err)
 		assert.NotEqual(t, "", auth.AccessToken, "access token must not be blank")
 		assert.NotEqual(t, "", auth.RefreshToken, "refresh token must not be blank")
