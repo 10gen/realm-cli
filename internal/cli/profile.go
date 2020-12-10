@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 
 	"github.com/spf13/afero"
@@ -160,12 +161,6 @@ func (p Profile) SetUser(publicAPIKey, privateAPIKey string) {
 	p.SetString(keyPrivateAPIKey, privateAPIKey)
 }
 
-// Session is the CLI profile session
-type Session struct {
-	AccessToken  string
-	RefreshToken string
-}
-
 // ClearSession clears the CLI profile session
 func (p Profile) ClearSession() {
 	p.Clear(keyAccessToken)
@@ -173,8 +168,8 @@ func (p Profile) ClearSession() {
 }
 
 // GetSession gets the CLI profile session
-func (p Profile) GetSession() Session {
-	return Session{
+func (p Profile) GetSession() realm.Session {
+	return realm.Session{
 		p.GetString(keyAccessToken),
 		p.GetString(keyRefreshToken),
 	}

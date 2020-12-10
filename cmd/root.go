@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/app"
 
 	"github.com/spf13/cobra"
 	"honnef.co/go/tools/version"
@@ -33,6 +34,10 @@ func Run() {
 	cmd.AddCommand(factory.Build(cli.LoginCommand))
 	cmd.AddCommand(factory.Build(cli.LogoutCommand))
 	cmd.AddCommand(factory.Build(cli.WhoamiCommand))
+
+	appCommand := factory.Build(app.Command)
+	appCommand.AddCommand(factory.Build(app.ListCommand))
+	cmd.AddCommand(appCommand)
 
 	factory.Run(cmd)
 }

@@ -18,6 +18,9 @@ const (
 	TelemetryModeShort = "m"
 
 	// auth
+	App     = "app"
+	Project = "project"
+
 	PublicAPIKey  = "api-key"
 	PrivateAPIKey = "private-api-key"
 
@@ -31,6 +34,9 @@ const (
 const (
 	PublicAPIKeyUsage  = "this is the --api-key usage"
 	PrivateAPIKeyUsage = "this is the --private-api-key usage"
+
+	AppUsage      = "this is the --app usage"
+	ProjectUseage = "this is the --project usage"
 
 	ProfileUsage = "this is the --profile, -p usage"
 

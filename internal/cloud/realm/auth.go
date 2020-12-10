@@ -12,35 +12,81 @@ type loginPayload struct {
 	PrivateAPIKey string `json:"apiKey"`
 }
 
-// AuthResponse is the Realm login response
-type AuthResponse struct {
+// Session is the Realm session
+type Session struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
 
-func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (AuthResponse, error) {
-	path := adminAPI + "/auth/providers/mongodb-cloud/login"
+// AuthProfile contains all of the roles associated with a user
+type AuthProfile struct {
+	Roles []Role `json:"roles"`
+}
 
-	opts, optsErr := api.JSONRequestOptions(loginPayload{publicAPIKey, privateAPIKey})
-	if optsErr != nil {
-		return AuthResponse{}, optsErr
+// Role contains a GrouID field that maps to a project ID
+type Role struct {
+	GroupID string `json:"group_id"`
+}
+
+// AllGroupIDs returns all available group ids for a given user
+func (pd AuthProfile) AllGroupIDs() []string {
+	var arr []string
+	set := map[string]struct{}{}
+	for _, role := range pd.Roles {
+		if role.GroupID == "" {
+			continue
+		}
+		if _, ok := set[role.GroupID]; ok {
+			continue
+		}
+		arr = append(arr, role.GroupID)
+		set[role.GroupID] = struct{}{}
 	}
+	return arr
+}
 
-	res, resErr := c.do(http.MethodPost, path, opts)
+var (
+	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
+	authProfilePath  = adminAPI + "/auth/profile"
+)
+
+func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
+	res, resErr := c.doJSON(http.MethodPost, authenticatePath, loginPayload{publicAPIKey, privateAPIKey}, api.RequestOptions{})
 	if resErr != nil {
-		return AuthResponse{}, resErr
+		return Session{}, resErr
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return AuthResponse{}, UnmarshalServerError(res)
+		return Session{}, UnmarshalServerError(res)
 	}
 
 	dec := json.NewDecoder(res.Body)
 	defer res.Body.Close()
 
-	var auth AuthResponse
-	if err := dec.Decode(&auth); err != nil {
-		return AuthResponse{}, err
+	var session Session
+	if err := dec.Decode(&session); err != nil {
+		return Session{}, err
 	}
-	return auth, nil
+	return session, nil
+}
+
+func (c *client) GetAuthProfile() (AuthProfile, error) {
+	res, resErr := c.do(http.MethodGet, authProfilePath, api.RequestOptions{UseAuth: true})
+	if resErr != nil {
+		return AuthProfile{}, resErr
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return AuthProfile{}, UnmarshalServerError(res)
+	}
+
+	dec := json.NewDecoder(res.Body)
+	defer res.Body.Close()
+
+	var profile AuthProfile
+	if err := dec.Decode(&profile); err != nil {
+		return AuthProfile{}, err
+	}
+
+	return profile, nil
 }

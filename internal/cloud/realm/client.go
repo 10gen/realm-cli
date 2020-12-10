@@ -1,6 +1,9 @@
 package realm
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
@@ -16,17 +19,37 @@ const (
 
 // Client is a Realm client
 type Client interface {
-	Authenticate(publicAPIKey, privateAPIKey string) (AuthResponse, error)
+	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
+	GetAuthProfile() (AuthProfile, error)
+	GetAppsForUser() ([]App, error)
+	GetApps(groupID string) ([]App, error)
 	Status() error
 }
 
 // NewClient creates a new Realm client
 func NewClient(baseURL string) Client {
-	return &client{baseURL}
+	return &client{baseURL: baseURL}
+}
+
+// NewAuthClient creates a new Realm client with a session used for Authorization
+func NewAuthClient(baseURL string, session Session) Client {
+	return &client{baseURL, session}
 }
 
 type client struct {
 	baseURL string
+	session Session
+}
+
+func (c *client) doJSON(method, path string, payload interface{}, options api.RequestOptions) (*http.Response, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	options.Body = bytes.NewReader(body)
+	options.ContentType = api.MediaTypeApplicationJSON
+
+	return c.do(method, path, options)
 }
 
 func (c *client) do(method, path string, options api.RequestOptions) (*http.Response, error) {
@@ -35,12 +58,35 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
-	req.Header = options.Header
-	if req.Header == nil {
-		req.Header = http.Header{}
-	}
 	req.Header.Set(requestOriginHeader, cliHeaderValue)
 
+	if options.ContentType != "" {
+		req.Header.Set(api.HeaderContentType, options.ContentType)
+	}
+
+	if auth, err := c.getAuth(options); err != nil {
+		return nil, err
+	} else if auth != "" {
+		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
+	}
 	client := &http.Client{}
 	return client.Do(req)
+}
+
+func (c *client) getAuth(options api.RequestOptions) (string, error) {
+	if options.UseAuth {
+		if c.session.AccessToken == "" {
+			return "", errors.New("required access token is blank")
+		}
+		return c.session.AccessToken, nil
+	}
+
+	if options.RefreshAuth {
+		if c.session.RefreshToken == "" {
+			return "", errors.New("required refresh token is blank")
+		}
+		return c.session.RefreshToken, nil
+	}
+
+	return "", nil
 }
