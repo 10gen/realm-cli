@@ -14,25 +14,27 @@ const (
 )
 
 var (
+	tableFields = []string{logFieldMessage, logFieldData, logFieldHeaders}
+
 	// gutter is the gap between table columns
 	gutter = strings.Repeat(" ", 2)
-
-	tableFields = []string{logFieldData, logFieldHeaders}
 )
 
 type table struct {
+	message      string
 	headers      []string
 	data         []map[string]string
 	columnWidths map[string]int
 }
 
-func newTable(headers []string, data []map[string]interface{}) table {
+func newTable(message string, headers []string, data []map[string]interface{}) table {
 	var t table
 
 	if len(headers) == 0 {
 		return t
 	}
 
+	t.message = message
 	t.headers = headers
 	t.data = make([]map[string]string, 0, len(data))
 	t.columnWidths = make(map[string]int, len(headers))
@@ -47,7 +49,6 @@ func newTable(headers []string, data []map[string]interface{}) table {
 		}
 		r := make(map[string]string)
 		for _, header := range t.headers {
-			// convert the interface data into strings for printing
 			value := parseValue(row[header])
 			if width := len(value); width > t.columnWidths[header] {
 				t.columnWidths[header] = width
@@ -63,10 +64,10 @@ func (t table) Message() (string, error) {
 	if err := t.validate(); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(`
+	return fmt.Sprintf(`%s
 %s
 %s
-%s`, t.headerString(), t.dividerString(), t.dataString()), nil
+%s`, t.message, t.headerString(), t.dividerString(), t.dataString()), nil
 }
 
 func (t table) Payload() ([]string, map[string]interface{}, error) {
@@ -74,31 +75,39 @@ func (t table) Payload() ([]string, map[string]interface{}, error) {
 		return nil, nil, err
 	}
 	return tableFields, map[string]interface{}{
+		logFieldMessage: t.message,
 		logFieldHeaders: t.headers,
 		logFieldData:    t.data,
 	}, nil
 }
 
+func (t table) validate() error {
+	if len(t.headers) == 0 {
+		return errors.New("cannot create a table without headers")
+	}
+	return nil
+}
+
 func (t table) headerString() string {
-	rows := make([]string, len(t.headers))
+	headers := make([]string, len(t.headers))
 	for i, header := range t.headers {
-		rows[i] = fmt.Sprintf("%s%s",
+		headers[i] = fmt.Sprintf("%s%s",
 			color.New(color.Bold).SprintFunc()(header),
 			strings.Repeat(" ", t.columnWidths[header]-len(header)),
 		)
 	}
-	return strings.Join(rows, gutter)
+	return strings.Join(headers, gutter)
 }
 
 func (t table) dataString() string {
 	rows := make([]string, len(t.data))
-	for i, dataMap := range t.data {
+	for i, row := range t.data {
 		cells := make([]string, len(t.headers))
 		for j, header := range t.headers {
 			cells[j] = fmt.Sprintf(
 				"%s%s",
-				dataMap[header],
-				strings.Repeat(" ", t.columnWidths[header]-len(dataMap[header])),
+				row[header],
+				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
 		rows[i] = strings.Join(cells, gutter)
@@ -112,13 +121,6 @@ func (t table) dividerString() string {
 		dashes[i] = strings.Repeat("-", t.columnWidths[header])
 	}
 	return strings.Join(dashes, gutter)
-}
-
-func (t table) validate() error {
-	if len(t.headers) == 0 {
-		return errors.New("cannot create a table without headers")
-	}
-	return nil
 }
 
 func parseValue(value interface{}) string {

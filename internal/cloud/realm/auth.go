@@ -7,7 +7,12 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
-type loginPayload struct {
+var (
+	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
+	authProfilePath  = adminAPI + "/auth/profile"
+)
+
+type authPayload struct {
 	PublicAPIKey  string `json:"username"`
 	PrivateAPIKey string `json:"apiKey"`
 }
@@ -18,40 +23,8 @@ type Session struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-// AuthProfile contains all of the roles associated with a user
-type AuthProfile struct {
-	Roles []Role `json:"roles"`
-}
-
-// Role contains a GrouID field that maps to a project ID
-type Role struct {
-	GroupID string `json:"group_id"`
-}
-
-// AllGroupIDs returns all available group ids for a given user
-func (pd AuthProfile) AllGroupIDs() []string {
-	var arr []string
-	set := map[string]struct{}{}
-	for _, role := range pd.Roles {
-		if role.GroupID == "" {
-			continue
-		}
-		if _, ok := set[role.GroupID]; ok {
-			continue
-		}
-		arr = append(arr, role.GroupID)
-		set[role.GroupID] = struct{}{}
-	}
-	return arr
-}
-
-var (
-	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
-	authProfilePath  = adminAPI + "/auth/profile"
-)
-
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
-	res, resErr := c.doJSON(http.MethodPost, authenticatePath, loginPayload{publicAPIKey, privateAPIKey}, api.RequestOptions{})
+	res, resErr := c.doJSON(http.MethodPost, authenticatePath, authPayload{publicAPIKey, privateAPIKey}, api.RequestOptions{})
 	if resErr != nil {
 		return Session{}, resErr
 	}
@@ -68,6 +41,16 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 		return Session{}, err
 	}
 	return session, nil
+}
+
+// AuthProfile is the user's auth profile
+type AuthProfile struct {
+	Roles []Role `json:"roles"`
+}
+
+// Role is an auth profile role
+type Role struct {
+	GroupID string `json:"group_id"`
 }
 
 func (c *client) GetAuthProfile() (AuthProfile, error) {
@@ -89,4 +72,21 @@ func (c *client) GetAuthProfile() (AuthProfile, error) {
 	}
 
 	return profile, nil
+}
+
+// AllGroupIDs returns all group ids associated with the auth profile
+func (pd AuthProfile) AllGroupIDs() []string {
+	var arr []string
+	set := map[string]struct{}{}
+	for _, role := range pd.Roles {
+		if role.GroupID == "" {
+			continue
+		}
+		if _, ok := set[role.GroupID]; ok {
+			continue
+		}
+		arr = append(arr, role.GroupID)
+		set[role.GroupID] = struct{}{}
+	}
+	return arr
 }

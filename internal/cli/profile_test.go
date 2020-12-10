@@ -42,7 +42,7 @@ func TestProfile(t *testing.T) {
 	t.Run("Should save a config properly", func(t *testing.T) {
 		assert.Nil(t, profile.Save())
 
-		config, err := ioutil.ReadFile(profile.path())
+		config, err := ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
 		assert.True(t, strings.Contains(string(config), `default:
   a: ayyy

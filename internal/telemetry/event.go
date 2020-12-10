@@ -30,7 +30,7 @@ const (
 	EventTypeCommandError    EventType = "COMMAND_ERROR"
 )
 
-// EventDataKey used to pass data into the Event.data map
+// EventDataKey is an event data key
 type EventDataKey string
 
 // set of event data keys

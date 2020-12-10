@@ -46,23 +46,32 @@ type Log struct {
 }
 
 // NewTextLog creates a new log with a text message
-func NewTextLog(message string) Log {
-	return Log{LogLevelInfo, time.Now(), textMessage(message)}
+func NewTextLog(format string, args ...interface{}) Log {
+	message := format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	}
+
+	return newLog(LogLevelInfo, textMessage(message))
 }
 
 // NewJSONLog creates a new log with a JSON document
-func NewJSONLog(data map[string]interface{}) Log {
-	return Log{LogLevelInfo, time.Now(), jsonDocument{data}}
+func NewJSONLog(message string, data map[string]interface{}) Log {
+	return newLog(LogLevelInfo, jsonDocument{message, data})
 }
 
-// NewTitledJSONLog creates a new log with a titled JSON document
-func NewTitledJSONLog(title string, data map[string]interface{}) Log {
-	return Log{LogLevelInfo, time.Now(), titledJSONDocument{title, jsonDocument{data}}}
+// NewTableLog creates a new log with a table
+func NewTableLog(message string, headers []string, data ...map[string]interface{}) Log {
+	return newLog(LogLevelInfo, newTable(message, headers, data))
 }
 
 // NewErrorLog creates a new error log
 func NewErrorLog(err error) Log {
-	return Log{LogLevelError, time.Now(), errorMessage{err}}
+	return newLog(LogLevelError, errorMessage{err})
+}
+
+func newLog(level LogLevel, data LogData) Log {
+	return Log{level, time.Now(), data}
 }
 
 // Print produces the log output based on the specified format

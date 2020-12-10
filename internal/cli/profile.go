@@ -97,13 +97,14 @@ func (p *Profile) Save() error {
 		}
 	}
 
-	if err := viper.WriteConfigAs(p.path()); err != nil {
+	if err := viper.WriteConfigAs(p.Path()); err != nil {
 		return fmt.Errorf("failed to save CLI profile: %s", err)
 	}
 	return nil
 }
 
-func (p Profile) path() string {
+// Path returns the CLI profile filepath
+func (p Profile) Path() string {
 	return fmt.Sprintf("%s/%s.%s", p.dir, p.Name, profileType)
 }
 

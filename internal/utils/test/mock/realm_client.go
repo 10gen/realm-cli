@@ -11,6 +11,7 @@ type RealmClient struct {
 	GetAuthProfileFn func() (realm.AuthProfile, error)
 	GetAppsForUserFn func() ([]realm.App, error)
 	GetAppsFn        func(groupID string) ([]realm.App, error)
+	StatusFn         func() error
 }
 
 // Authenticate calls the mocked Authenticate implementation if provided,
@@ -51,4 +52,14 @@ func (rc RealmClient) GetApps(groupID string) ([]realm.App, error) {
 		return rc.GetAppsFn(groupID)
 	}
 	return rc.Client.GetApps(groupID)
+}
+
+// Status calls the mocked Status implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Status() error {
+	if rc.StatusFn != nil {
+		return rc.Status()
+	}
+	return rc.Client.Status()
 }
