@@ -19,10 +19,14 @@ const (
 
 // Client is a Realm client
 type Client interface {
+	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
-	GetAuthProfile() (AuthProfile, error)
-	GetAppsForUser() ([]App, error)
-	GetApps(groupID string) ([]App, error)
+
+	FindApps(filter AppFilter) ([]App, error)
+
+	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
+	CreateUser(groupID, appID, email, password string) (User, error)
+
 	Status() error
 }
 

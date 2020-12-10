@@ -1,7 +1,6 @@
 package logout
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -14,7 +13,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestHandler(t *testing.T) {
+func TestLogoutHandler(t *testing.T) {
 	t.Run("Handler should clear user and session and save the config", func(t *testing.T) {
 		tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 		assert.Nil(t, tmpDirErr)
@@ -29,8 +28,8 @@ func TestHandler(t *testing.T) {
 		profile.SetSession("accessToken", "refreshToken")
 		assert.Nil(t, profile.Save())
 
-		user := profile.GetUser()
-		session := profile.GetSession()
+		user := profile.User()
+		session := profile.Session()
 		assert.Equal(t, cli.User{"username", "password"}, user)
 		assert.Equal(t, realm.Session{"accessToken", "refreshToken"}, session)
 
@@ -43,15 +42,14 @@ func TestHandler(t *testing.T) {
   refresh_token: refreshToken
 `, profile.Name)), "profile must contain the expected contents")
 
-		buf := new(bytes.Buffer)
-		ui := mock.NewUI(mock.UIOptions{}, buf)
+		_, ui := mock.NewUI()
 
 		cmd := &command{}
 
-		assert.Nil(t, cmd.Handler(profile, ui, nil))
+		assert.Nil(t, cmd.Handler(profile, ui))
 
-		assert.Equal(t, cli.User{PublicAPIKey: "username"}, profile.GetUser())
-		assert.Equal(t, realm.Session{}, profile.GetSession())
+		assert.Equal(t, cli.User{PublicAPIKey: "username"}, profile.User())
+		assert.Equal(t, realm.Session{}, profile.Session())
 
 		out, err = ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
@@ -64,10 +62,9 @@ func TestHandler(t *testing.T) {
 	})
 }
 
-func TestFeedback(t *testing.T) {
+func TestLogoutFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that logout was successful", func(t *testing.T) {
-		out := new(bytes.Buffer)
-		ui := mock.NewUI(mock.UIOptions{}, out)
+		out, ui := mock.NewUI()
 
 		cmd := &command{}
 

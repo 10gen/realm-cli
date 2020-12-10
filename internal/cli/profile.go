@@ -17,11 +17,27 @@ const (
 
 	envPrefix   = "realm"
 	profileType = "yaml"
+
+	flagProfile      = "profile"
+	flagProfileShort = "i"
+	flagProfileUsage = "this is the --profile, -p usage"
+
+	flagAtlasBaseURL      = "atlas-url"
+	flagAtlasBaseURLUsage = "specify the base Atlas server URL"
+
+	flagRealmBaseURL      = "realm-url"
+	flagRealmBaseURLUsage = "specify the base Realm server URL"
+
+	defaultAtlasBaseURL = "https://cloud.mongodb.com"
+	defaultRealmBaseURL = "https://realm.mongodb.com"
 )
 
 // Profile is the CLI profile
 type Profile struct {
-	Name string
+	Name          string
+	atlasBaseURL  string
+	realmBaseURL  string
+	telemetryMode telemetry.Mode
 
 	dir string
 	fs  afero.Fs
@@ -103,6 +119,33 @@ func (p *Profile) Save() error {
 	return nil
 }
 
+func (p Profile) resolveFlags() error {
+	if p.telemetryMode == telemetry.ModeNil {
+		p.telemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
+	}
+	p.SetString(keyTelemetryMode, string(p.telemetryMode))
+
+	if p.realmBaseURL == "" {
+		realmBaseURL := p.GetString(keyRealmBaseURL)
+		if realmBaseURL == "" {
+			realmBaseURL = defaultRealmBaseURL
+		}
+		p.realmBaseURL = realmBaseURL
+	}
+	p.SetRealmBaseURL(p.realmBaseURL)
+
+	if p.atlasBaseURL == "" {
+		atlasBaseURL := p.GetString(keyAtlasBaseURL)
+		if atlasBaseURL == "" {
+			atlasBaseURL = defaultAtlasBaseURL
+		}
+		p.atlasBaseURL = atlasBaseURL
+	}
+	p.SetAtlasBaseURL(p.atlasBaseURL)
+
+	return p.Save()
+}
+
 // Path returns the CLI profile filepath
 func (p Profile) Path() string {
 	return fmt.Sprintf("%s/%s.%s", p.dir, p.Name, profileType)
@@ -114,6 +157,9 @@ const (
 	keyPrivateAPIKey = "private_api_key"
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
+
+	keyRealmBaseURL  = "realm_base_url"
+	keyAtlasBaseURL  = "atlas_base_url"
 	keyTelemetryMode = "telemetry_mode"
 )
 
@@ -148,8 +194,8 @@ func (user User) RedactedPrivateAPIKey() string {
 	}
 }
 
-// GetUser gets the CLI profile user
-func (p Profile) GetUser() User {
+// User gets the CLI profile user
+func (p Profile) User() User {
 	return User{
 		p.GetString(keyPublicAPIKey),
 		p.GetString(keyPrivateAPIKey),
@@ -162,14 +208,8 @@ func (p Profile) SetUser(publicAPIKey, privateAPIKey string) {
 	p.SetString(keyPrivateAPIKey, privateAPIKey)
 }
 
-// ClearSession clears the CLI profile session
-func (p Profile) ClearSession() {
-	p.Clear(keyAccessToken)
-	p.Clear(keyRefreshToken)
-}
-
-// GetSession gets the CLI profile session
-func (p Profile) GetSession() realm.Session {
+// Session gets the CLI profile session
+func (p Profile) Session() realm.Session {
 	return realm.Session{
 		p.GetString(keyAccessToken),
 		p.GetString(keyRefreshToken),
@@ -182,12 +222,28 @@ func (p Profile) SetSession(accessToken, refreshToken string) {
 	p.SetString(keyRefreshToken, refreshToken)
 }
 
-// GetTelemetryMode gets the telemetry mode
-func (p Profile) GetTelemetryMode() telemetry.Mode {
-	return telemetry.Mode(p.GetString(keyTelemetryMode))
+// ClearSession clears the CLI profile session
+func (p Profile) ClearSession() {
+	p.Clear(keyAccessToken)
+	p.Clear(keyRefreshToken)
 }
 
-// SetTelemetryMode sets the telemetry mode
-func (p Profile) SetTelemetryMode(mode telemetry.Mode) {
-	p.SetString(keyTelemetryMode, string(mode))
+// RealmBaseURL gets the CLI profile Realm base url
+func (p Profile) RealmBaseURL() string {
+	return p.GetString(keyRealmBaseURL)
+}
+
+// SetRealmBaseURL sets the CLI profile Realm base url
+func (p Profile) SetRealmBaseURL(realmBaseURL string) {
+	p.SetString(keyRealmBaseURL, realmBaseURL)
+}
+
+// AtlasBaseURL gets the CLI profile Atlas base url
+func (p Profile) AtlasBaseURL() string {
+	return p.GetString(keyAtlasBaseURL)
+}
+
+// SetAtlasBaseURL sets the CLI profile Atlas base url
+func (p Profile) SetAtlasBaseURL(realmBaseURL string) {
+	p.SetString(keyAtlasBaseURL, realmBaseURL)
 }

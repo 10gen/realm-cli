@@ -37,12 +37,12 @@ func CloudGroupID() string {
 
 // Username returns the Cloud username to use for testing
 func CloudUsername() string {
-	return os.Getenv("BAAS_MONGODB_CLOUD_ADMIN_USERNAME")
+	return os.Getenv("BAAS_MONGODB_CLOUD_USERNAME")
 }
 
 // CloudAPIKey returns the Cloud api key to use for testing
 func CloudAPIKey() string {
-	return os.Getenv("BAAS_MONGODB_CLOUD_ADMIN_API_KEY")
+	return os.Getenv("BAAS_MONGODB_CLOUD_API_KEY")
 }
 
 // CloudAdminUsername returns the Cloud admin username

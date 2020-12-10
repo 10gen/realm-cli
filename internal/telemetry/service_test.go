@@ -44,6 +44,6 @@ type testTracker struct {
 	lastTrackedEvent event
 }
 
-func (tracker *testTracker) track(event event) {
+func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
 }

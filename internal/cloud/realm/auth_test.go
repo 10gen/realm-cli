@@ -8,7 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestClientAuthenticate(t *testing.T) {
+func TestRealmAuth(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
 	client := realm.NewClient(u.RealmServerURL())

@@ -1,7 +1,6 @@
 package login
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,14 +17,14 @@ import (
 func TestLoginSetup(t *testing.T) {
 	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
-		ctx := cli.Context{RealmBaseURL: "http://localhost:8080"}
+		profile.SetRealmBaseURL("http://localhost:8080")
 
 		cmd := &command{inputs: inputs{
 			PublicAPIKey:  "publicAPIKey",
 			PrivateAPIKey: "privateAPIKey",
 		}}
 
-		err := cmd.Setup(profile, nil, ctx)
+		err := cmd.Setup(profile, nil, cli.AppData{})
 		assert.Nil(t, err)
 		assert.NotNil(t, cmd.realmClient)
 	})
@@ -62,16 +61,15 @@ func TestLoginHandler(t *testing.T) {
 			},
 		}
 
-		out := new(bytes.Buffer)
-		ui := mock.NewUI(mock.UIOptions{}, out)
+		_, ui := mock.NewUI()
 
-		assert.Nil(t, cmd.Handler(profile, ui, nil))
+		assert.Nil(t, cmd.Handler(profile, ui))
 
 		expectedUser := cli.User{"publicAPIKey", "privateAPIKey"}
 		expectedSession := realm.Session{"accessToken", "refreshToken"}
 
-		assert.Equal(t, expectedUser, profile.GetUser())
-		assert.Equal(t, expectedSession, profile.GetSession())
+		assert.Equal(t, expectedUser, profile.User())
+		assert.Equal(t, expectedSession, profile.Session())
 
 		ensureProfileContents(t, profile, expectedUser, expectedSession)
 	})
@@ -115,16 +113,15 @@ func TestLoginHandler(t *testing.T) {
 				},
 			}
 
-			out := new(bytes.Buffer)
-			ui := mock.NewUI(mock.UIOptions{}, out)
+			_, ui := mock.NewUI()
 
-			assert.Nil(t, cmd.Handler(profile, ui, nil))
+			assert.Nil(t, cmd.Handler(profile, ui))
 
 			expectedUser := cli.User{"existingUser", "existing-password"}
 			expectedSession := realm.Session{"newAccessToken", "newRefreshToken"}
 
-			assert.Equal(t, expectedUser, profile.GetUser())
-			assert.Equal(t, expectedSession, profile.GetSession())
+			assert.Equal(t, expectedUser, profile.User())
+			assert.Equal(t, expectedSession, profile.Session())
 
 			ensureProfileContents(t, profile, expectedUser, expectedSession)
 		})
@@ -161,8 +158,7 @@ func TestLoginHandler(t *testing.T) {
 						},
 					}
 
-					out := new(bytes.Buffer)
-					console, _, ui, consoleErr := mock.NewVT10XConsole(mock.UIOptions{}, out)
+					_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 					assert.Nil(t, consoleErr)
 
 					doneCh := make(chan (struct{}))
@@ -173,14 +169,14 @@ func TestLoginHandler(t *testing.T) {
 						console.ExpectEOF()
 					}()
 
-					err := cmd.Handler(profile, ui, nil)
+					err := cmd.Handler(profile, ui)
 					assert.Nil(t, err)
 
 					assert.Nil(t, console.Tty().Close())
 					<-doneCh
 
-					assert.Equal(t, tc.expectedUser, profile.GetUser())
-					assert.Equal(t, tc.expectedSession, profile.GetSession())
+					assert.Equal(t, tc.expectedUser, profile.User())
+					assert.Equal(t, tc.expectedSession, profile.Session())
 					ensureProfileContents(t, profile, tc.expectedUser, tc.expectedSession)
 				})
 			}
@@ -190,8 +186,7 @@ func TestLoginHandler(t *testing.T) {
 
 func TestLoginFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that login was successful", func(t *testing.T) {
-		out := new(bytes.Buffer)
-		ui := mock.NewUI(mock.UIOptions{}, out)
+		out, ui := mock.NewUI()
 
 		cmd := &command{}
 

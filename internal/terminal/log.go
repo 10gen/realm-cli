@@ -56,7 +56,7 @@ func NewTextLog(format string, args ...interface{}) Log {
 }
 
 // NewJSONLog creates a new log with a JSON document
-func NewJSONLog(message string, data map[string]interface{}) Log {
+func NewJSONLog(message string, data interface{}) Log {
 	return newLog(LogLevelInfo, jsonDocument{message, data})
 }
 

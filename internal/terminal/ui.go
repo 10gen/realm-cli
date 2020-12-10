@@ -12,6 +12,7 @@ import (
 type UI interface {
 	Ask(answer interface{}, questions ...*survey.Question) error
 	AskOne(answer interface{}, prompt survey.Prompt) error
+	Confirm(format string, args ...interface{}) (bool, error)
 	Print(logs ...Log) error
 }
 
@@ -54,6 +55,18 @@ func (ui *ui) AskOne(answer interface{}, prompt survey.Prompt) error {
 	)
 }
 
+func (ui *ui) Confirm(format string, args ...interface{}) (bool, error) {
+	if ui.config.AutoConfirm {
+		return true, nil
+	}
+
+	var proceed bool
+	return proceed, ui.AskOne(
+		&proceed,
+		&survey.Confirm{Message: fmt.Sprintf(format, args...)},
+	)
+}
+
 func (ui *ui) Print(logs ...Log) error {
 	for _, log := range logs {
 		output, outputErr := log.Print(ui.config.OutputFormat)
@@ -78,6 +91,7 @@ func (ui *ui) Print(logs ...Log) error {
 
 // UIConfig holds the global config for the CLI ui
 type UIConfig struct {
+	AutoConfirm   bool
 	DisableColors bool
 	OutputFormat  OutputFormat
 	OutputTarget  string

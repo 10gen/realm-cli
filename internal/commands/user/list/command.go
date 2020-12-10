@@ -15,6 +15,6 @@ var Command = cli.CommandDefinition{
 
 type command struct{}
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
+func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
