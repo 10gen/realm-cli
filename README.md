@@ -25,10 +25,10 @@ go run -exec="env LD_LIBRARY_PATH=$LD_LIBRARY_PATH" cmd/server/main.go --configF
 Then, from the `realm-cli` project root, simply run:
 
 ```cmd
-REALM_SERVER_BASE_URL=http://localhost:8080 REALM_MONGODB_CLOUD_ADMIN_USERNAME=${cloud_username} REALM_MONGODB_CLOUD_ADMIN_API_KEY=${cloud_api_key} go test -v -tags debug github.com/10gen/realm-cli/internal/cloud/realm -run 'Test'
+BAAS_MONGODB_CLOUD_GROUP_ID=${cloud_group_id} BAAS_MONGODB_CLOUD_ADMIN_USERNAME=${cloud_username} BAAS_MONGODB_CLOUD_ADMIN_API_KEY=${cloud_api_key} go test -v -tags debug github.com/10gen/realm-cli/internal/cloud/realm -run 'Test'
 ```
 
-> NOTE: with the above, you'll need to substitute both `${cloud_username}` and `${cloud_api_key}` with valid credentials of your own from `https://cloud-dev.mongodb.com`
+> NOTE: with the above, you'll need to substitute `${cloud_group_id}`, `${cloud_username}`, and `${cloud_api_key}` with valid credentials of your own from `https://cloud-dev.mongodb.com`
 
 ### Debugging an Interactive Test
 
