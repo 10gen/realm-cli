@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
@@ -78,7 +79,7 @@ func TestResolveAppData(t *testing.T) {
 
 		expectedErr := fmt.Errorf(
 			"failed to read app data at %s",
-			filepath.Join(emptyProjectRoot, appConfigJSON),
+			filepath.Join(emptyProjectRoot, realm.FileAppConfig),
 		)
 
 		_, err := resolveAppData(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))

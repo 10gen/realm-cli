@@ -50,8 +50,12 @@ func TestRealmAuthProfile(t *testing.T) {
 }
 
 func newAuthClient(t *testing.T) realm.Client {
+	t.Helper()
+
 	client := realm.NewClient(u.RealmServerURL())
+
 	session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 	assert.Nil(t, err)
+
 	return realm.NewAuthClient(u.RealmServerURL(), session)
 }

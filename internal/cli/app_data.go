@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-)
 
-const (
-	appConfigJSON = "config.json"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
 var (
@@ -33,7 +31,7 @@ func resolveAppData(wd string) (AppData, error) {
 		return AppData{}, nil
 	}
 
-	path := filepath.Join(appDir, appConfigJSON)
+	path := filepath.Join(appDir, realm.FileAppConfig)
 
 	data, readErr := ioutil.ReadFile(path)
 	if readErr != nil {
@@ -60,7 +58,7 @@ func resolveAppDirectory(wd string) (string, bool, error) {
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		path := filepath.Join(wd, appConfigJSON)
+		path := filepath.Join(wd, realm.FileAppConfig)
 		if _, err := os.Stat(path); err == nil {
 			return filepath.Dir(path), true, nil
 		}

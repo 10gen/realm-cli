@@ -1,6 +1,7 @@
 package realm
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"net/http"
@@ -20,6 +21,9 @@ const (
 type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
+
+	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
+	Import(groupID, appID string, req ImportRequest) error
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error
@@ -56,7 +60,7 @@ func (c *client) doJSON(method, path string, payload interface{}, options api.Re
 		return nil, err
 	}
 	options.Body = bytes.NewReader(body)
-	options.ContentType = api.MediaTypeApplicationJSON
+	options.ContentType = api.MediaTypeJSON
 
 	return c.do(method, path, options)
 }

@@ -6,13 +6,15 @@ import (
 
 // set of supported api header keys
 const (
-	HeaderContentType   = "Content-Type"
-	HeaderAuthorization = "Authorization"
+	HeaderAccept             = "Accept"
+	HeaderContentDisposition = "Content-Disposition"
+	HeaderContentType        = "Content-Type"
+	HeaderAuthorization      = "Authorization"
 )
 
 // set of supported api media types
 const (
-	MediaTypeApplicationJSON = "application/json"
+	MediaTypeJSON = "application/json"
 )
 
 // RequestOptions are options to configure an *http.Request

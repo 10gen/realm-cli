@@ -18,23 +18,47 @@ var (
 	ErrInvalidSession = errors.New("invalid session")
 )
 
+// Session is the Realm session
+type Session struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type authenticateRequest struct {
+	PublicAPIKey  string `json:"username"`
+	PrivateAPIKey string `json:"apiKey"`
+}
+
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
-	res, resErr := c.doJSON(http.MethodPost, authenticatePath, authPayload{publicAPIKey, privateAPIKey}, api.RequestOptions{})
+	res, resErr := c.doJSON(
+		http.MethodPost,
+		authenticatePath,
+		authenticateRequest{publicAPIKey, privateAPIKey},
+		api.RequestOptions{},
+	)
 	if resErr != nil {
 		return Session{}, resErr
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return Session{}, UnmarshalServerError(res)
+		return Session{}, unmarshalServerError(res)
 	}
 
-	dec := json.NewDecoder(res.Body)
-	defer res.Body.Close()
-
 	var session Session
-	if err := dec.Decode(&session); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
 		return Session{}, err
 	}
 	return session, nil
+}
+
+// AuthProfile is the user's profile
+type AuthProfile struct {
+	Roles []Role `json:"roles"`
+}
+
+// Role is a user role
+type Role struct {
+	GroupID string `json:"group_id"`
 }
 
 func (c *client) AuthProfile() (AuthProfile, error) {
@@ -42,15 +66,13 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	if resErr != nil {
 		return AuthProfile{}, resErr
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return AuthProfile{}, UnmarshalServerError(res)
+		return AuthProfile{}, unmarshalServerError(res)
 	}
 
-	dec := json.NewDecoder(res.Body)
-	defer res.Body.Close()
-
 	var profile AuthProfile
-	if err := dec.Decode(&profile); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&profile); err != nil {
 		return AuthProfile{}, err
 	}
 	return profile, nil
@@ -72,27 +94,6 @@ func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	}
 
 	return "", nil
-}
-
-// Session is the Realm session
-type Session struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-type authPayload struct {
-	PublicAPIKey  string `json:"username"`
-	PrivateAPIKey string `json:"apiKey"`
-}
-
-// AuthProfile is the user's profile
-type AuthProfile struct {
-	Roles []Role `json:"roles"`
-}
-
-// Role is a user role
-type Role struct {
-	GroupID string `json:"group_id"`
 }
 
 // AllGroupIDs returns all group ids associated with the user's profile
