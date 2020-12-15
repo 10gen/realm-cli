@@ -19,6 +19,7 @@ const (
 type RequestOptions struct {
 	Body        io.Reader
 	ContentType string
+	Query       map[string]string
 	RefreshAuth bool
 	UseAuth     bool
 }

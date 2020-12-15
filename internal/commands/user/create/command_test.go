@@ -33,7 +33,7 @@ func TestUserCreateSetup(t *testing.T) {
 
 func TestUserCreateHandler(t *testing.T) {
 	testApp := realm.App{
-		ID:          primitive.NewObjectID(),
+		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
@@ -177,13 +177,11 @@ func TestUserCreateFeedback(t *testing.T) {
 		{
 			description: "Should print the email password user details when email type is set",
 			userType:    userTypeEmailPassword,
-			outputs: outputs{
-				user: realm.User{
-					ID:   id,
-					Type: "normal",
-					Data: map[string]interface{}{"email": "user@domain.com"},
-				},
-			},
+			outputs: outputs{user: realm.User{
+				ID:   id,
+				Type: "normal",
+				Data: map[string]interface{}{"email": "user@domain.com"},
+			}},
 			expectedOutput: strings.Join([]string{
 				"01:23:45 UTC INFO  Successfully created user",
 				"ID                        Enabled  Email            Type  ",
@@ -194,15 +192,11 @@ func TestUserCreateFeedback(t *testing.T) {
 		{
 			description: "Should print the api key details when apiKey type is set",
 			userType:    userTypeAPIKey,
-			outputs: outputs{
-				apiKey: realm.APIKey{
-					PartialAPIKey: realm.PartialAPIKey{
-						ID:   id,
-						Name: "name",
-					},
-					Key: "key",
-				},
-			},
+			outputs: outputs{apiKey: realm.APIKey{
+				ID:   id,
+				Name: "name",
+				Key:  "key",
+			}},
 			expectedOutput: strings.Join([]string{
 				"01:23:45 UTC INFO  Successfully created api key",
 				"ID                        Enabled  Name  API Key",

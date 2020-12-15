@@ -56,13 +56,13 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 	switch cmd.inputs.UserType {
 	case userTypeAPIKey:
-		apiKey, err := cmd.realmClient.CreateAPIKey(app.GroupID, app.ID.Hex(), cmd.inputs.APIKeyName)
+		apiKey, err := cmd.realmClient.CreateAPIKey(app.GroupID, app.ID, cmd.inputs.APIKeyName)
 		if err != nil {
 			return fmt.Errorf("failed to create api key: %s", err)
 		}
 		cmd.outputs.apiKey = apiKey
 	case userTypeEmailPassword:
-		user, err := cmd.realmClient.CreateUser(app.GroupID, app.ID.Hex(), cmd.inputs.Email, cmd.inputs.Password)
+		user, err := cmd.realmClient.CreateUser(app.GroupID, app.ID, cmd.inputs.Email, cmd.inputs.Password)
 		if err != nil {
 			return fmt.Errorf("failed to create user: %s", err)
 		}

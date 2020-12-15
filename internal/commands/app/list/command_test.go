@@ -27,19 +27,19 @@ func TestAppListSetup(t *testing.T) {
 func TestAppListHandler(t *testing.T) {
 	groupID1, groupID2 := primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()
 	app1 := realm.App{
-		ID:          primitive.NewObjectID(),
+		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     groupID1,
 		ClientAppID: "app1-abcde",
 		Name:        "app1",
 	}
 	app2 := realm.App{
-		ID:          primitive.NewObjectID(),
+		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     groupID1,
 		ClientAppID: "app2-fghij",
 		Name:        "app2",
 	}
 	app3 := realm.App{
-		ID:          primitive.NewObjectID(),
+		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     groupID2,
 		ClientAppID: "app1-abcde",
 		Name:        "app1",

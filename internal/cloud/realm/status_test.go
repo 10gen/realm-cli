@@ -24,6 +24,6 @@ func TestRealmStatusFailure(t *testing.T) {
 
 	t.Run("Should return an error if the server is not running", func(t *testing.T) {
 		err := client.Status()
-		assert.Equal(t, realm.ErrServerNotRunning(baseURL), err)
+		assert.Equal(t, realm.ErrServerUnavailable, err)
 	})
 }

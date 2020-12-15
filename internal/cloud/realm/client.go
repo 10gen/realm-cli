@@ -3,7 +3,6 @@ package realm
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
@@ -22,10 +21,16 @@ type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
+	CreateApp(groupID, name string, meta AppMeta) (App, error)
+	DeleteApp(groupID, appID string) error
 	FindApps(filter AppFilter) ([]App, error)
 
 	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	CreateUser(groupID, appID, email, password string) (User, error)
+	DeleteUser(groupID, appID, userID string) error
+	DisableUser(groupID, appID, userID string) error
+	FindUsers(groupID, appID string, filter UserFilter) ([]User, error)
+	RevokeUserSessions(groupID, appID, userID string) error
 
 	Status() error
 }
@@ -62,6 +67,14 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
+	if len(options.Query) > 0 {
+		query := req.URL.Query()
+		for key, value := range options.Query {
+			query.Add(key, value)
+		}
+		req.URL.RawQuery = query.Encode()
+	}
+
 	req.Header.Set(requestOriginHeader, cliHeaderValue)
 
 	if options.ContentType != "" {
@@ -75,22 +88,4 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	}
 	client := &http.Client{}
 	return client.Do(req)
-}
-
-func (c *client) getAuth(options api.RequestOptions) (string, error) {
-	if options.UseAuth {
-		if c.session.AccessToken == "" {
-			return "", errors.New("required access token is blank")
-		}
-		return c.session.AccessToken, nil
-	}
-
-	if options.RefreshAuth {
-		if c.session.RefreshToken == "" {
-			return "", errors.New("required refresh token is blank")
-		}
-		return c.session.RefreshToken, nil
-	}
-
-	return "", nil
 }
