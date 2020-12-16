@@ -1,7 +1,6 @@
 package whoami
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -9,16 +8,16 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestHandler(t *testing.T) {
+func TestWhoamiHandler(t *testing.T) {
 	t.Run("Handler should run as a noop", func(t *testing.T) {
 		cmd := &command{}
 
-		err := cmd.Handler(nil, nil, nil)
+		err := cmd.Handler(nil, nil)
 		assert.Nil(t, err)
 	})
 }
 
-func TestFeedback(t *testing.T) {
+func TestWhoamiFeedback(t *testing.T) {
 	t.Run("Feedback should print the auth details", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
@@ -58,14 +57,13 @@ func TestFeedback(t *testing.T) {
 					tc.setup(t, profile)
 				}
 
-				buf := new(bytes.Buffer)
-				ui := mock.NewUI(mock.UIOptions{}, buf)
+				out, ui := mock.NewUI()
 
 				cmd := &command{}
 				err := cmd.Feedback(profile, ui)
 				assert.Nil(t, err)
 
-				tc.test(t, buf.String())
+				tc.test(t, out.String())
 			})
 		}
 	})

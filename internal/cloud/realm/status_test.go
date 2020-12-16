@@ -8,7 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestClientStatusSuccess(t *testing.T) {
+func TestRealmStatus(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 	client := realm.NewClient(u.RealmServerURL())
 
@@ -18,7 +18,7 @@ func TestClientStatusSuccess(t *testing.T) {
 	})
 }
 
-func TestClientStatusFailure(t *testing.T) {
+func TestRealmStatusFailure(t *testing.T) {
 	baseURL := "http://localhost:8081"
 	client := realm.NewClient(baseURL)
 

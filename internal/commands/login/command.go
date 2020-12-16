@@ -1,13 +1,10 @@
 package login
 
 import (
-	"fmt"
-
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/pflag"
 )
 
@@ -24,38 +21,32 @@ type command struct {
 	realmClient realm.Client
 }
 
-func (cmd *command) Flag(fs *pflag.FlagSet) {
+func (cmd *command) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.PublicAPIKey, flagPublicAPIKey, flagPublicAPIKeyShort, "", flagPublicAPIKeyUsage)
 	fs.StringVarP(&cmd.inputs.PrivateAPIKey, flagPrivateAPIKey, flagPrivateAPIKeyShort, "", flagPrivateAPIKeyUsage)
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, ctx cli.Context) error {
-	if err := cmd.inputs.resolve(profile, ui); err != nil {
-		return fmt.Errorf("failed to resolve inputs: %w", err)
-	}
+func (cmd *command) Inputs() cli.InputResolver {
+	return &cmd.inputs
+}
 
-	cmd.realmClient = realm.NewClient(ctx.RealmBaseURL)
+func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+	cmd.realmClient = realm.NewClient(profile.RealmBaseURL())
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
-	existingUser := profile.GetUser()
+func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+	existingUser := profile.User()
 
 	if existingUser.PublicAPIKey != "" && existingUser.PublicAPIKey != cmd.inputs.PublicAPIKey {
-		var proceed bool
-
-		err := ui.AskOne(
-			&proceed,
-			&survey.Confirm{Message: fmt.Sprintf(
-				"This action will terminate the existing session for user: %s (%s), would you like to proceed?",
-				existingUser.PublicAPIKey,
-				existingUser.RedactedPrivateAPIKey(),
-			)},
+		proceed, err := ui.Confirm(
+			"This action will terminate the existing session for user: %s (%s), would you like to proceed?",
+			existingUser.PublicAPIKey,
+			existingUser.RedactedPrivateAPIKey(),
 		)
 		if err != nil {
 			return err
 		}
-
 		if !proceed {
 			return nil
 		}

@@ -15,13 +15,13 @@ var Command = cli.CommandDefinition{
 
 type command struct{}
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
+func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil // commands without handlers show help text and usage when ran
 }
 
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	user := profile.GetUser()
-	session := profile.GetSession()
+	user := profile.User()
+	session := profile.Session()
 
 	if user.PublicAPIKey == "" {
 		return ui.Print(terminal.NewTextLog("No user is currently logged in"))

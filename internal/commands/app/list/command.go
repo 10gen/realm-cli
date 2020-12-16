@@ -21,40 +21,31 @@ var Command = cli.CommandDefinition{
 }
 
 type command struct {
-	app           string
-	project       string
-	appListResult []realm.App
-
+	apps        []realm.App
+	inputs      cli.ProjectAppInputs
 	realmClient realm.Client
 }
 
-func (cmd *command) RegisterFlags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.project, flagProject, flagProjectShort, "", flagProjectUsage)
-	fs.StringVarP(&cmd.app, flagApp, flagAppShort, "", flagAppUsage)
+func (cmd *command) Flags(fs *pflag.FlagSet) {
+	cmd.inputs.Flags(fs)
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, ctx cli.Context) error {
-	cmd.realmClient = realm.NewAuthClient(ctx.RealmBaseURL, profile.GetSession())
+func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
-	var appList []realm.App
-	var err error
-	if cmd.project != "" {
-		appList, err = cmd.realmClient.GetApps(cmd.project)
-	} else {
-		appList, err = cmd.realmClient.GetAppsForUser()
-	}
-	if err != nil {
-		return fmt.Errorf("failed to get apps: %s", err)
+func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+	apps, appsErr := cmd.realmClient.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
+	if appsErr != nil {
+		return fmt.Errorf("failed to get apps: %w", appsErr)
 	}
 
-	cmd.appListResult = appList
+	cmd.apps = apps
 	return nil
 }
 
+// TODO(REALMC-7574): print list of apps
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	// REALMC-7156 fix this printing to be formatted
-	return ui.Print(terminal.NewTextLog(fmt.Sprintf("results are: %v", cmd.appListResult)))
+	return ui.Print(terminal.NewTextLog(fmt.Sprintf("results are: %v", cmd.apps)))
 }

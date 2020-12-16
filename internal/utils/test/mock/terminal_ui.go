@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -48,8 +49,14 @@ func (ui ui) Print(logs ...terminal.Log) error {
 	return ui.UI.Print(logs...)
 }
 
-// NewUI creates a new mock terminal UI
-func NewUI(options UIOptions, writer io.Writer) terminal.UI {
+// NewUI returns a new *bytes.Buffer and a mock terminal UI that writes to the buffer
+func NewUI() (*bytes.Buffer, terminal.UI) {
+	out := new(bytes.Buffer)
+	return out, NewUIWithOptions(UIOptions{}, out)
+}
+
+// NewUIWithOptions creates a new mock terminal UI based on the provided options
+func NewUIWithOptions(options UIOptions, writer io.Writer) terminal.UI {
 	return ui{terminal.NewUI(
 		newUIConfig(options),
 		nil,
@@ -58,8 +65,17 @@ func NewUI(options UIOptions, writer io.Writer) terminal.UI {
 	)}
 }
 
-// NewConsole creates a new *expect.Console along with its corresponding mock terminal UI
-func NewConsole(options UIOptions, writers ...io.Writer) (*expect.Console, terminal.UI, error) {
+// NewConsole returns a new *bytes.Buffer and a *expect.Console
+// along with its corresponding mock terminal UI that write to the buffer
+func NewConsole() (*bytes.Buffer, *expect.Console, terminal.UI, error) {
+	out := new(bytes.Buffer)
+	console, ui, err := NewConsoleWithOptions(UIOptions{}, out)
+	return out, console, ui, err
+}
+
+// NewConsoleWithOptions creates a new *expect.Console
+// along with its corresponding mock terminal UI based on the provided options
+func NewConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expect.Console, terminal.UI, error) {
 	console, err := expect.NewConsole(expect.WithStdout(writers...))
 	if err != nil {
 		return nil, nil, err
@@ -75,8 +91,17 @@ func NewConsole(options UIOptions, writers ...io.Writer) (*expect.Console, termi
 	return console, ui, nil
 }
 
-// NewVT10XConsole creates a new *expect.Console along with its corresponding *vt10.State and xmock terminal UI
-func NewVT10XConsole(options UIOptions, writers ...io.Writer) (*expect.Console, *vt10x.State, terminal.UI, error) {
+// NewVT10XConsole returns a new *bytes.Buffer and a *expect.Console
+// along with its corresponding *vt10.State and mock terminal UI that write to the buffer
+func NewVT10XConsole() (*bytes.Buffer, *expect.Console, *vt10x.State, terminal.UI, error) {
+	out := new(bytes.Buffer)
+	console, state, ui, err := NewVT10XConsoleWithOptions(UIOptions{}, out)
+	return out, console, state, ui, err
+}
+
+// NewVT10XConsoleWithOptions creates a new *expect.Console
+// along with its corresponding *vt10.State and mock terminal UI based on the provided options
+func NewVT10XConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expect.Console, *vt10x.State, terminal.UI, error) {
 	console, state, err := vt10x.NewVT10XConsole(expect.WithStdout(writers...))
 	if err != nil {
 		return nil, nil, nil, err

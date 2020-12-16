@@ -6,7 +6,12 @@ import (
 )
 
 // set of supported terminal flags
+// TODO(REALMC-7429): fill out the flag usages
 const (
+	FlagAutoConfirm      = "yes"
+	FlagAutoConfirmShort = "y"
+	FlagAutoConfirmUsage = "set to automatically proceed through command confirmations"
+
 	FlagDisableColors      = "disable-colors"
 	FlagDisableColorsUsage = "disable output styling"
 
@@ -23,10 +28,7 @@ const (
 type OutputFormat string
 
 // String returns the output format display
-func (of OutputFormat) String() string {
-	val := string(of)
-	return val
-}
+func (of OutputFormat) String() string { return string(of) }
 
 // Type returns the OutputFormat type
 func (of OutputFormat) Type() string { return "string" }

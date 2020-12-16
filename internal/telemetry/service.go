@@ -36,7 +36,7 @@ func NewService(mode Mode, userID string, command string) *Service {
 
 // TrackEvent tracks events
 func (service *Service) TrackEvent(eventType EventType, data ...EventData) {
-	service.tracker.track(event{
+	service.tracker.Track(event{
 		id:          primitive.NewObjectID().Hex(),
 		eventType:   eventType,
 		userID:      service.userID,

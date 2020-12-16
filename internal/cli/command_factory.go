@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -15,9 +14,10 @@ import (
 
 // CommandFactory is a command factory
 type CommandFactory struct {
-	config           *Config
+	wd               string
 	profile          *Profile
 	ui               terminal.UI
+	uiConfig         terminal.UIConfig
 	inReader         *os.File
 	outWriter        *os.File
 	errWriter        *os.File
@@ -29,16 +29,19 @@ type CommandFactory struct {
 func NewCommandFactory() *CommandFactory {
 	errLogger := log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
 
-	config := new(Config)
-
 	profile, profileErr := NewDefaultProfile()
 	if profileErr != nil {
 		errLogger.Fatal(profileErr)
 	}
 
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		errLogger.Fatal(wdErr)
+	}
+
 	return &CommandFactory{
-		config:    config,
 		profile:   profile,
+		wd:        wd,
 		errLogger: errLogger,
 	}
 }
@@ -63,7 +66,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 	if command.Command != nil {
 		if command, ok := command.Command.(CommandFlagger); ok {
-			command.Flag(cmd.Flags())
+			command.Flags(cmd.Flags())
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
@@ -72,29 +75,54 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.SetOut(factory.outWriter)
 			cmd.SetErr(factory.errWriter)
 
-			factory.ensureTelemetry(display)
+			if err := factory.profile.resolveFlags(); err != nil {
+				printErr := factory.ui.Print(terminal.NewErrorLog(err))
+				if printErr != nil {
+					factory.errLogger.Fatal(err) // log the original failure
+				}
+				os.Exit(1)
+			}
+
+			factory.telemetryService = telemetry.NewService(
+				factory.profile.telemetryMode,
+				factory.profile.User().PublicAPIKey,
+				display,
+			)
 		}
 
-		if command, ok := command.Command.(CommandPreparer); ok {
-			cmd.PreRunE = func(c *cobra.Command, a []string) error {
-				err := command.Setup(factory.profile, factory.ui, factory.config.Context)
+		cmd.PreRunE = func(c *cobra.Command, a []string) error {
+			appData, appDataErr := resolveAppData(factory.wd)
+			if appDataErr != nil {
+				return fmt.Errorf("failed to resolve app data: %w", appDataErr)
+			}
+
+			if command, ok := command.Command.(CommandInputs); ok {
+				err := command.Inputs().Resolve(factory.profile, factory.ui, appData)
+				if err != nil {
+					return fmt.Errorf("failed to resolve inputs: %w", err)
+				}
+			}
+
+			if command, ok := command.Command.(CommandPreparer); ok {
+				err := command.Setup(factory.profile, factory.ui, appData)
 				if err != nil {
 					return fmt.Errorf("%s setup failed: %w", display, err)
 				}
-				return nil
 			}
+
+			return nil
 		}
 
 		cmd.RunE = func(c *cobra.Command, a []string) error {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
-			err := command.Command.Handler(factory.profile, factory.ui, a)
+			err := command.Command.Handler(factory.profile, factory.ui)
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
 					telemetry.EventData{Key: telemetry.EventDataKeyErr, Value: err},
 				)
-				return suppressUsageError{fmt.Errorf("%s failed: %w", display, err)}
+				return errSupressUsage{fmt.Errorf("%s failed: %w", display, err)}
 			}
 
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
@@ -105,7 +133,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.PostRunE = func(c *cobra.Command, a []string) error {
 				err := command.Feedback(factory.profile, factory.ui)
 				if err != nil {
-					return suppressUsageError{fmt.Errorf("%s completed, but displaying results failed: %w", display, err)}
+					return errSupressUsage{fmt.Errorf("%s completed, but displaying results failed: %w", display, err)}
 				}
 				return nil
 			}
@@ -117,7 +145,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 // Close closes the command factory
 func (factory *CommandFactory) Close() {
-	if factory.config.OutputTarget != "" {
+	if factory.uiConfig.OutputTarget != "" {
 		factory.outWriter.Close()
 	}
 }
@@ -125,7 +153,7 @@ func (factory *CommandFactory) Close() {
 // Run executes the command
 func (factory *CommandFactory) Run(cmd *cobra.Command) {
 	if err := cmd.Execute(); err != nil {
-		if _, ok := err.(suppressUsageError); !ok {
+		if _, ok := err.(errSupressUsage); !ok {
 			fmt.Println(cmd.UsageString())
 		}
 
@@ -141,31 +169,19 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 	}
 }
 
-// TODO(REALMC-7429): fill out the flag usages
-const (
-	flagAutoConfirm      = "yes"
-	flagAutoConfirmShort = "y"
-	flagAutoConfirmUsage = "set to automatically proceed through command confirmations"
-
-	flagProfile      = "profile"
-	flagProfileShort = "i"
-	flagProfileUsage = "this is the --profile, -p usage"
-)
-
 // SetGlobalFlags sets the global flags
 func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 	// cli profile
 	fs.StringVarP(&factory.profile.Name, flagProfile, flagProfileShort, DefaultProfile, flagProfileUsage)
-
-	// cli context
-	fs.BoolVarP(&factory.config.AutoConfirm, flagAutoConfirm, flagAutoConfirmShort, false, flagAutoConfirmUsage)
-	fs.StringVar(&factory.config.RealmBaseURL, realm.FlagBaseURL, realm.DefaultBaseURL, realm.FlagBaseURLUsage)
-	fs.VarP(&factory.config.TelemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
+	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
+	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
+	fs.VarP(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
 
 	// cli ui
-	fs.BoolVar(&factory.config.DisableColors, terminal.FlagDisableColors, false, terminal.FlagDisableColorsUsage)
-	fs.VarP(&factory.config.OutputFormat, terminal.FlagOutputFormat, terminal.FlagOutputFormatShort, terminal.FlagOutputFormatUsage)
-	fs.StringVarP(&factory.config.OutputTarget, terminal.FlagOutputTarget, terminal.FlagOutputTargetShort, "", terminal.FlagOutputTargetUsage)
+	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
+	fs.BoolVar(&factory.uiConfig.DisableColors, terminal.FlagDisableColors, false, terminal.FlagDisableColorsUsage)
+	fs.VarP(&factory.uiConfig.OutputFormat, terminal.FlagOutputFormat, terminal.FlagOutputFormatShort, terminal.FlagOutputFormatUsage)
+	fs.StringVarP(&factory.uiConfig.OutputTarget, terminal.FlagOutputTarget, terminal.FlagOutputTargetShort, "", terminal.FlagOutputTargetUsage)
 }
 
 // Setup initializes the command factory
@@ -174,40 +190,13 @@ func (factory *CommandFactory) Setup() {
 		factory.errLogger.Fatal(err)
 	}
 
-	if filepath := factory.config.OutputTarget; filepath != "" {
+	if filepath := factory.uiConfig.OutputTarget; filepath != "" {
 		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
 		if err != nil {
 			factory.errLogger.Fatal(fmt.Errorf("failed to open target file: %w", err))
 		}
 		factory.outWriter = f
 	}
-}
-
-func (factory *CommandFactory) ensureTelemetry(command string) {
-	telemetryMode := factory.config.TelemetryMode
-	existingTelemetryMode := factory.profile.GetTelemetryMode()
-
-	if telemetryMode == telemetry.ModeNil {
-		telemetryMode = existingTelemetryMode
-	}
-
-	if telemetryMode != existingTelemetryMode {
-		factory.profile.SetTelemetryMode(telemetryMode)
-
-		if err := factory.profile.Save(); err != nil {
-			printErr := factory.ui.Print(terminal.NewErrorLog(err))
-			if printErr != nil {
-				factory.errLogger.Fatal(err) // log the original failure
-			}
-			os.Exit(1)
-		}
-	}
-
-	factory.telemetryService = telemetry.NewService(
-		telemetryMode,
-		factory.profile.GetUser().PublicAPIKey,
-		command,
-	)
 }
 
 func (factory *CommandFactory) ensureUI() {
@@ -220,7 +209,7 @@ func (factory *CommandFactory) ensureUI() {
 	}
 
 	if factory.errWriter == nil {
-		if factory.config.OutputTarget != "" {
+		if factory.uiConfig.OutputTarget != "" {
 			factory.errWriter = factory.outWriter
 		} else {
 			factory.errWriter = os.Stderr
@@ -228,10 +217,6 @@ func (factory *CommandFactory) ensureUI() {
 	}
 
 	if factory.ui == nil {
-		factory.ui = terminal.NewUI(factory.config.UIConfig, factory.inReader, factory.outWriter, factory.errWriter)
+		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter)
 	}
-}
-
-type suppressUsageError struct {
-	error
 }

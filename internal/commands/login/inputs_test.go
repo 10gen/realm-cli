@@ -1,7 +1,6 @@
 package login
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -10,7 +9,7 @@ import (
 	"github.com/Netflix/go-expect"
 )
 
-func TestInputsResolve(t *testing.T) {
+func TestLoginInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         inputs
@@ -92,8 +91,7 @@ func TestInputsResolve(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			out := new(bytes.Buffer)
-			console, _, ui, consoleErr := mock.NewVT10XConsole(mock.UIOptions{}, out)
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 			assert.Nil(t, consoleErr)
 			defer console.Close()
 
@@ -106,7 +104,7 @@ func TestInputsResolve(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			assert.Nil(t, tc.inputs.resolve(profile, ui))
+			assert.Nil(t, tc.inputs.Resolve(profile, ui, cli.AppData{}))
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete

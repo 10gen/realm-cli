@@ -11,6 +11,7 @@ require (
 	github.com/google/go-cmp v0.5.2
 	github.com/hinshun/vt10x v0.0.0-20180616224451-1954e6464174
 	github.com/iancoleman/orderedmap v0.1.0
+	github.com/kr/pretty v0.1.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/afero v1.1.2
 	github.com/spf13/cobra v1.1.1

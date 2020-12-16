@@ -2,25 +2,39 @@ package telemetry
 
 import (
 	"fmt"
+	"time"
 )
 
 // Tracker is a telemetry event tracker
 type Tracker interface {
-	track(event event)
+	Track(event event)
 }
 
 type noopTracker struct{}
 
-func (tracker *noopTracker) track(event event) {}
+func (tracker *noopTracker) Track(event event) {}
 
 type stdoutTracker struct{}
 
-func (tracker *stdoutTracker) track(event event) {
-	fmt.Printf("tracking: %v\n", event)
+func (tracker *stdoutTracker) Track(event event) {
+	fmt.Printf(
+		"%s UTC TELEM %s: %s%v\n",
+		event.time.In(time.UTC).Format("15:04:05"),
+		event.command,
+		event.eventType,
+		event.data,
+	)
 }
 
 type segmentTracker struct{}
 
-func (tracker *segmentTracker) track(event event) {
-	fmt.Printf("tracking: %v\n", event)
+// TODO(REALMC-7243): use Segment sdk to send events through client
+func (tracker *segmentTracker) Track(event event) {
+	fmt.Printf(
+		"%s UTC TELEM %s: %s%v\n",
+		event.time.In(time.UTC).Format("15:04:05"),
+		event.command,
+		event.eventType,
+		event.data,
+	)
 }

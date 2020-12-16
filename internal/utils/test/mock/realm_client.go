@@ -7,11 +7,15 @@ import (
 // RealmClient is a mocked Realm client
 type RealmClient struct {
 	realm.Client
-	AuthenticateFn   func(publicAPIKey, privateAPIKey string) (realm.Session, error)
-	GetAuthProfileFn func() (realm.AuthProfile, error)
-	GetAppsForUserFn func() ([]realm.App, error)
-	GetAppsFn        func(groupID string) ([]realm.App, error)
-	StatusFn         func() error
+	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
+	AuthProfileFn  func() (realm.AuthProfile, error)
+
+	FindAppsFn func(filter realm.AppFilter) ([]realm.App, error)
+
+	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
+	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
+
+	StatusFn func() error
 }
 
 // Authenticate calls the mocked Authenticate implementation if provided,
@@ -24,34 +28,44 @@ func (rc RealmClient) Authenticate(publicAPIKey, privateAPIKey string) (realm.Se
 	return rc.Client.Authenticate(publicAPIKey, privateAPIKey)
 }
 
-// GetAuthProfile calls the mocked GetAuthProfile implementation if provided,
+// AuthProfile calls the mocked AuthProfile implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) GetAuthProfile() (realm.AuthProfile, error) {
-	if rc.GetAuthProfileFn != nil {
-		return rc.GetAuthProfileFn()
+func (rc RealmClient) AuthProfile() (realm.AuthProfile, error) {
+	if rc.AuthProfileFn != nil {
+		return rc.AuthProfileFn()
 	}
-	return rc.Client.GetAuthProfile()
+	return rc.Client.AuthProfile()
 }
 
-// GetAppsForUser calls the mocked GetAppsForUser implementation if provided,
+// FindApps calls the mocked FindApps implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) GetAppsForUser() ([]realm.App, error) {
-	if rc.GetAppsForUserFn != nil {
-		return rc.GetAppsForUserFn()
+func (rc RealmClient) FindApps(filter realm.AppFilter) ([]realm.App, error) {
+	if rc.FindAppsFn != nil {
+		return rc.FindAppsFn(filter)
 	}
-	return rc.Client.GetAppsForUser()
+	return rc.Client.FindApps(filter)
 }
 
-// GetApps calls the mocked GetApps implementation if provided,
+// CreateAPIKey calls the mocked CreateAPIKey implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) GetApps(groupID string) ([]realm.App, error) {
-	if rc.GetAppsFn != nil {
-		return rc.GetAppsFn(groupID)
+func (rc RealmClient) CreateAPIKey(groupID, appID, apiKeyName string) (realm.APIKey, error) {
+	if rc.CreateAPIKeyFn != nil {
+		return rc.CreateAPIKeyFn(groupID, appID, apiKeyName)
 	}
-	return rc.Client.GetApps(groupID)
+	return rc.Client.CreateAPIKey(groupID, appID, apiKeyName)
+}
+
+// CreateUser calls the mocked CreateUser implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) CreateUser(groupID, appID, email, password string) (realm.User, error) {
+	if rc.CreateUserFn != nil {
+		return rc.CreateUserFn(groupID, appID, email, password)
+	}
+	return rc.Client.CreateUser(groupID, appID, email, password)
 }
 
 // Status calls the mocked Status implementation if provided,

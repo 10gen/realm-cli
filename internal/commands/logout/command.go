@@ -15,8 +15,8 @@ var Command = cli.CommandDefinition{
 
 type command struct{}
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI, args []string) error {
-	user := profile.GetUser()
+func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+	user := profile.User()
 	user.PrivateAPIKey = "" // ensures subsequent `login` commands prompt for password
 
 	profile.SetUser(user.PublicAPIKey, user.PrivateAPIKey)

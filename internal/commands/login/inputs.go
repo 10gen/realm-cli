@@ -16,15 +16,15 @@ type inputs struct {
 	PrivateAPIKey string
 }
 
-func (i *inputs) resolve(profile *cli.Profile, ui terminal.UI) error {
-	user := profile.GetUser()
+func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+	user := profile.User()
 	var questions []*survey.Question
 
 	if i.PublicAPIKey == "" {
 		if user.PublicAPIKey == "" {
 			questions = append(questions, &survey.Question{
 				Name:   inputFieldPublicAPIKey,
-				Prompt: &survey.Input{Message: "API Key", Default: profile.GetUser().PublicAPIKey},
+				Prompt: &survey.Input{Message: "API Key", Default: user.PublicAPIKey},
 			})
 		} else {
 			i.PublicAPIKey = user.PublicAPIKey

@@ -12,17 +12,6 @@ var (
 	authProfilePath  = adminAPI + "/auth/profile"
 )
 
-type authPayload struct {
-	PublicAPIKey  string `json:"username"`
-	PrivateAPIKey string `json:"apiKey"`
-}
-
-// Session is the Realm session
-type Session struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
 	res, resErr := c.doJSON(http.MethodPost, authenticatePath, authPayload{publicAPIKey, privateAPIKey}, api.RequestOptions{})
 	if resErr != nil {
@@ -43,17 +32,7 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 	return session, nil
 }
 
-// AuthProfile is the user's auth profile
-type AuthProfile struct {
-	Roles []Role `json:"roles"`
-}
-
-// Role is an auth profile role
-type Role struct {
-	GroupID string `json:"group_id"`
-}
-
-func (c *client) GetAuthProfile() (AuthProfile, error) {
+func (c *client) AuthProfile() (AuthProfile, error) {
 	res, resErr := c.do(http.MethodGet, authProfilePath, api.RequestOptions{UseAuth: true})
 	if resErr != nil {
 		return AuthProfile{}, resErr
@@ -70,23 +49,41 @@ func (c *client) GetAuthProfile() (AuthProfile, error) {
 	if err := dec.Decode(&profile); err != nil {
 		return AuthProfile{}, err
 	}
-
 	return profile, nil
 }
 
-// AllGroupIDs returns all group ids associated with the auth profile
-func (pd AuthProfile) AllGroupIDs() []string {
-	var arr []string
-	set := map[string]struct{}{}
-	for _, role := range pd.Roles {
-		if role.GroupID == "" {
+// Session is the Realm session
+type Session struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type authPayload struct {
+	PublicAPIKey  string `json:"username"`
+	PrivateAPIKey string `json:"apiKey"`
+}
+
+// AuthProfile is the user's profile
+type AuthProfile struct {
+	Roles []Role `json:"roles"`
+}
+
+// Role is a user role
+type Role struct {
+	GroupID string `json:"group_id"`
+}
+
+// AllGroupIDs returns all group ids associated with the user's profile
+func (profile AuthProfile) AllGroupIDs() []string {
+	groupIDSet := map[string]struct{}{"": struct{}{}}
+
+	var groupIDs []string
+	for _, role := range profile.Roles {
+		if _, ok := groupIDSet[role.GroupID]; ok {
 			continue
 		}
-		if _, ok := set[role.GroupID]; ok {
-			continue
-		}
-		arr = append(arr, role.GroupID)
-		set[role.GroupID] = struct{}{}
+		groupIDs = append(groupIDs, role.GroupID)
+		groupIDSet[role.GroupID] = struct{}{}
 	}
-	return arr
+	return groupIDs
 }
