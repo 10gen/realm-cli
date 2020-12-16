@@ -2,14 +2,20 @@ package realm
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
-var (
+const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
+)
+
+// set of supported auth errors
+var (
+	ErrInvalidSession = errors.New("invalid session")
 )
 
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
@@ -17,7 +23,6 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 	if resErr != nil {
 		return Session{}, resErr
 	}
-
 	if res.StatusCode != http.StatusOK {
 		return Session{}, UnmarshalServerError(res)
 	}
@@ -37,7 +42,6 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	if resErr != nil {
 		return AuthProfile{}, resErr
 	}
-
 	if res.StatusCode != http.StatusOK {
 		return AuthProfile{}, UnmarshalServerError(res)
 	}
@@ -50,6 +54,24 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 		return AuthProfile{}, err
 	}
 	return profile, nil
+}
+
+func (c *client) getAuth(options api.RequestOptions) (string, error) {
+	if options.UseAuth {
+		if c.session.AccessToken == "" {
+			return "", ErrInvalidSession
+		}
+		return c.session.AccessToken, nil
+	}
+
+	if options.RefreshAuth {
+		if c.session.RefreshToken == "" {
+			return "", ErrInvalidSession
+		}
+		return c.session.RefreshToken, nil
+	}
+
+	return "", nil
 }
 
 // Session is the Realm session

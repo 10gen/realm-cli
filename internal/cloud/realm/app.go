@@ -8,13 +8,51 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var (
+const (
 	appsPathPattern = adminAPI + "/groups/%s/apps"
+	appPathPattern  = appsPathPattern + "/%s"
 )
+
+func (c *client) CreateApp(groupID, name string, meta AppMeta) (App, error) {
+	res, resErr := c.doJSON(
+		http.MethodPost,
+		fmt.Sprintf(appsPathPattern, groupID),
+		createAppRequest{name, meta},
+		api.RequestOptions{UseAuth: true},
+	)
+	if resErr != nil {
+		return App{}, resErr
+	}
+	if res.StatusCode != http.StatusCreated {
+		return App{}, UnmarshalServerError(res)
+	}
+
+	dec := json.NewDecoder(res.Body)
+	defer res.Body.Close()
+
+	var app App
+	if err := dec.Decode(&app); err != nil {
+		return App{}, err
+	}
+	return app, nil
+}
+
+func (c *client) DeleteApp(groupID, appID string) error {
+	res, resErr := c.do(
+		http.MethodDelete,
+		fmt.Sprintf(appPathPattern, groupID, appID),
+		api.RequestOptions{UseAuth: true},
+	)
+	if resErr != nil {
+		return resErr
+	}
+	if res.StatusCode != http.StatusNoContent {
+		return UnmarshalServerError(res)
+	}
+	return nil
+}
 
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
 	var apps []App
@@ -63,7 +101,11 @@ func (c *client) getAppsForUser() ([]App, error) {
 }
 
 func (c *client) getApps(groupID string) ([]App, error) {
-	res, resErr := c.do(http.MethodGet, fmt.Sprintf(appsPathPattern, groupID), api.RequestOptions{UseAuth: true})
+	res, resErr := c.do(
+		http.MethodGet,
+		fmt.Sprintf(appsPathPattern, groupID),
+		api.RequestOptions{UseAuth: true},
+	)
 	if resErr != nil {
 		return nil, resErr
 	}
@@ -90,18 +132,28 @@ type AppFilter struct {
 	App     string // can be client app id or name
 }
 
+// AppMeta is Realm application metadata
+type AppMeta struct {
+	Location        string `json:"location,omitempty"`
+	DeploymentModel string `json:"deployment_model,omitempty"`
+}
+
 // App is a Realm application
 type App struct {
-	ID              primitive.ObjectID `json:"_id"`
-	ClientAppID     string             `json:"client_app_id"`
-	Name            string             `json:"name"`
-	DomainID        primitive.ObjectID `json:"domain_id"`
-	GroupID         string             `json:"group_id"`
-	Location        string             `json:"location,omitempty"`
-	DeploymentModel string             `json:"deployment_model,omitempty"`
-	LastUsed        int64              `json:"last_used"`
-	LastModified    int64              `json:"last_modified"`
-	Product         string             `json:"product"`
+	AppMeta
+	ID           string `json:"_id"`
+	ClientAppID  string `json:"client_app_id"`
+	Name         string `json:"name"`
+	DomainID     string `json:"domain_id"`
+	GroupID      string `json:"group_id"`
+	LastUsed     int64  `json:"last_used"`
+	LastModified int64  `json:"last_modified"`
+	Product      string `json:"product"`
+}
+
+type createAppRequest struct {
+	Name string `json:"name"`
+	AppMeta
 }
 
 func (app App) String() string {

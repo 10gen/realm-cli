@@ -86,7 +86,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 
 func TestProjectAppInputsResolveApp(t *testing.T) {
 	testApp := realm.App{
-		ID:          primitive.NewObjectID(),
+		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
