@@ -65,8 +65,8 @@ func (t table) Message() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf(`%s
-%s
-%s
+  %s
+  %s
 %s`, t.message, t.headerString(), t.dividerString(), t.dataString()), nil
 }
 
@@ -110,7 +110,7 @@ func (t table) dataString() string {
 				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
-		rows[i] = strings.Join(cells, gutter)
+		rows[i] = "  " + strings.Join(cells, gutter)
 	}
 	return strings.Join(rows, "\n")
 }

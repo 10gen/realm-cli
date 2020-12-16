@@ -2,15 +2,19 @@ package terminal
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 
 	"github.com/fatih/color"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewTable(t *testing.T) {
+	assert.RegisterOpts(reflect.TypeOf(table{}), cmp.AllowUnexported(table{}))
+
 	for _, tc := range []struct {
 		description   string
 		message       string
@@ -95,8 +99,8 @@ func TestTableMessage(t *testing.T) {
 			message:     "a table message",
 			header:      []string{"header", "only", "no", "data"},
 			expectedMessage: fmt.Sprintf(`a table message
-%s  %s  %s  %s
-------  ----  --  ----
+  %s  %s  %s  %s
+  ------  ----  --  ----
 `,
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("header"),
@@ -149,11 +153,11 @@ func TestTableMessage(t *testing.T) {
 			expectedMessage: fmt.Sprintf(
 				strings.Join([]string{
 					"a table message",
-					"%s                  %s  %s  %s               %s        %s",
-					"----------------------  ------  ----  -------------------------  -------------  ------",
-					"[1 test this]           12.34   1     {1234 12.345}              tester string        ",
-					"[1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
-					"[1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
+					"  %s                  %s  %s  %s               %s        %s",
+					"  ----------------------  ------  ----  -------------------------  -------------  ------",
+					"  [1 test this]           12.34   1     {1234 12.345}              tester string        ",
+					"  [1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
+					"  [1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
 				}, "\n"),
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("arrays"),
@@ -188,8 +192,8 @@ func TestTableMessageNoBold(t *testing.T) {
 			message:     "a table message",
 			header:      []string{"should", "not", "be", "bold"},
 			expectedMessage: `a table message
-should  not  be  bold
-------  ---  --  ----
+  should  not  be  bold
+  ------  ---  --  ----
 `,
 		},
 		{
@@ -203,9 +207,9 @@ should  not  be  bold
 				},
 			},
 			expectedMessage: `a table message
-should  not  be         bold
-------  ---  ---------  ----
-123          not bold!      `,
+  should  not  be         bold
+  ------  ---  ---------  ----
+  123          not bold!      `,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
