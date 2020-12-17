@@ -104,7 +104,7 @@ func TestLoginInputs(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			assert.Nil(t, tc.inputs.Resolve(profile, ui, cli.AppData{}))
+			assert.Nil(t, tc.inputs.Resolve(profile, ui))
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete

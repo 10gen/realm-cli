@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -14,7 +15,6 @@ import (
 
 // CommandFactory is a command factory
 type CommandFactory struct {
-	wd               string
 	profile          *Profile
 	ui               terminal.UI
 	uiConfig         terminal.UIConfig
@@ -34,14 +34,8 @@ func NewCommandFactory() *CommandFactory {
 		errLogger.Fatal(profileErr)
 	}
 
-	wd, wdErr := os.Getwd()
-	if wdErr != nil {
-		errLogger.Fatal(wdErr)
-	}
-
 	return &CommandFactory{
 		profile:   profile,
-		wd:        wd,
 		errLogger: errLogger,
 	}
 }
@@ -91,20 +85,15 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		}
 
 		cmd.PreRunE = func(c *cobra.Command, a []string) error {
-			appData, appDataErr := resolveAppData(factory.wd)
-			if appDataErr != nil {
-				return fmt.Errorf("failed to resolve app data: %w", appDataErr)
-			}
-
 			if command, ok := command.Command.(CommandInputs); ok {
-				err := command.Inputs().Resolve(factory.profile, factory.ui, appData)
+				err := command.Inputs().Resolve(factory.profile, factory.ui)
 				if err != nil {
-					return fmt.Errorf("failed to resolve inputs: %w", err)
+					return fmt.Errorf("%s failed to resolve inputs: %w", display, err)
 				}
 			}
 
 			if command, ok := command.Command.(CommandPreparer); ok {
-				err := command.Setup(factory.profile, factory.ui, appData)
+				err := command.Setup(factory.profile, factory.ui)
 				if err != nil {
 					return fmt.Errorf("%s setup failed: %w", display, err)
 				}
@@ -122,7 +111,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 					telemetry.EventTypeCommandError,
 					telemetry.EventData{Key: telemetry.EventDataKeyErr, Value: err},
 				)
-				return errSupressUsage{fmt.Errorf("%s failed: %w", display, err)}
+				return fmt.Errorf("%s failed: %w", display, errDisableUsage{err})
 			}
 
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
@@ -133,7 +122,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.PostRunE = func(c *cobra.Command, a []string) error {
 				err := command.Feedback(factory.profile, factory.ui)
 				if err != nil {
-					return errSupressUsage{fmt.Errorf("%s completed, but displaying results failed: %w", display, err)}
+					return fmt.Errorf("%s completed, but displaying results failed: %w", display, errDisableUsage{err})
 				}
 				return nil
 			}
@@ -153,9 +142,7 @@ func (factory *CommandFactory) Close() {
 // Run executes the command
 func (factory *CommandFactory) Run(cmd *cobra.Command) {
 	if err := cmd.Execute(); err != nil {
-		if _, ok := err.(errSupressUsage); !ok {
-			fmt.Println(cmd.UsageString())
-		}
+		handleUsage(cmd, err)
 
 		if factory.ui == nil {
 			factory.errLogger.Fatal(err)
@@ -219,4 +206,11 @@ func (factory *CommandFactory) ensureUI() {
 	if factory.ui == nil {
 		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter)
 	}
+}
+
+func handleUsage(cmd *cobra.Command, err error) {
+	if _, ok := errors.Unwrap(err).(DisableUsage); ok {
+		return
+	}
+	fmt.Println(cmd.UsageString())
 }

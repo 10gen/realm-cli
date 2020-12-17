@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/commands/app/initialize"
 	"github.com/10gen/realm-cli/internal/commands/app/list"
 )
 
@@ -11,5 +12,5 @@ var Command = cli.CommandDefinition{
 	Aliases:     []string{"apps"},
 	Description: "Manage the apps associated with the current user",
 	Help:        "app help", // TODO(REALMC-7429): add help text description
-	SubCommands: []cli.CommandDefinition{list.Command},
+	SubCommands: []cli.CommandDefinition{initialize.Command, list.Command},
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
@@ -135,6 +134,8 @@ func TestUserCreateInputs(t *testing.T) {
 		},
 	} {
 		t.Run(fmt.Sprintf("%s Setup should prompt for the missing inputs", tc.description), func(t *testing.T) {
+			profile := mock.NewProfile(t)
+
 			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 			assert.Nil(t, consoleErr)
 			defer console.Close()
@@ -146,7 +147,7 @@ func TestUserCreateInputs(t *testing.T) {
 			}()
 
 			tc.inputs.App = "some-app" // avoid app resolution
-			assert.Nil(t, tc.inputs.Resolve(nil, ui, cli.AppData{}))
+			assert.Nil(t, tc.inputs.Resolve(profile, ui))
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete

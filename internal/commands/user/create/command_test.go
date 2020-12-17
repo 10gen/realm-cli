@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -26,7 +25,7 @@ func TestUserCreateSetup(t *testing.T) {
 		}}
 		assert.Nil(t, cmd.realmClient)
 
-		assert.Nil(t, cmd.Setup(profile, nil, cli.AppData{}))
+		assert.Nil(t, cmd.Setup(profile, nil))
 		assert.NotNil(t, cmd.realmClient)
 	})
 }

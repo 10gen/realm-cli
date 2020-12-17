@@ -34,8 +34,7 @@ func (c *client) Export(groupID, appID string, req ExportRequest) (string, *zip.
 	options := api.RequestOptions{
 		UseAuth: true,
 		Query: map[string]string{
-			exportQueryVersion:          DefaultAppConfigVersion.String(),
-			exportQueryForSourceControl: trueVal,
+			exportQueryVersion: DefaultAppConfigVersion.String(),
 		},
 	}
 
@@ -44,6 +43,8 @@ func (c *client) Export(groupID, appID string, req ExportRequest) (string, *zip.
 	}
 	if req.IsTemplated {
 		options.Query[exportQueryIsTemplated] = trueVal
+	} else {
+		options.Query[exportQueryForSourceControl] = trueVal
 	}
 
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(exportPathPattern, groupID, appID), options)

@@ -15,10 +15,10 @@ const (
 	appFieldName = "app"
 
 	flagApp      = "app"
-	flagAppUsage = "this is the --app usage"
+	flagAppUsage = "the Realm app name or id to manage"
 
 	flagProject      = "project"
-	flagProjectUsage = "this is the --project usage"
+	flagProjectUsage = "the MongoDB cloud project id"
 )
 
 // ProjectAppInputs are the project/app inputs for a command
@@ -27,6 +27,9 @@ type ProjectAppInputs struct {
 	App     string
 }
 
+// Filter returns a realm.AppFlter based on the inputs
+func (i ProjectAppInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App} }
+
 // Flags registers the project app input flags to the provided flag set
 func (i *ProjectAppInputs) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
@@ -34,7 +37,12 @@ func (i *ProjectAppInputs) Flags(fs *pflag.FlagSet) {
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
-func (i *ProjectAppInputs) Resolve(ui terminal.UI, appData AppData) error {
+func (i *ProjectAppInputs) Resolve(ui terminal.UI, wd string) error {
+	appData, appDataErr := ResolveAppData(wd)
+	if appDataErr != nil {
+		return appDataErr
+	}
+
 	var questions []*survey.Question
 	if i.App == "" {
 		questions = append(questions, &survey.Question{
@@ -55,16 +63,16 @@ func (i *ProjectAppInputs) Resolve(ui terminal.UI, appData AppData) error {
 	return nil
 }
 
-// ResolveApp will use the provided Realm client to resolve the app specified by the inputs
-func (i ProjectAppInputs) ResolveApp(ui terminal.UI, client realm.Client) (realm.App, error) {
-	apps, err := client.FindApps(realm.AppFilter{i.Project, i.App})
+// ResolveApp will use the provided Realm client to resolve the app specified by the filter
+func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
+	apps, err := client.FindApps(filter)
 	if err != nil {
 		return realm.App{}, err
 	}
 
 	switch len(apps) {
 	case 0:
-		return realm.App{}, fmt.Errorf("failed to find app '%s'", i.App)
+		return realm.App{}, fmt.Errorf("failed to find app '%s'", filter.App)
 	case 1:
 		return apps[0], nil
 	}

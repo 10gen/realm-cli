@@ -30,7 +30,7 @@ func (cmd *command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
 	cmd.realmClient = realm.NewClient(profile.RealmBaseURL())
 	return nil
 }

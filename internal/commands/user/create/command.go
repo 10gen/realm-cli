@@ -43,13 +43,13 @@ func (cmd *command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
 	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
 	return nil
 }
 
 func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cmd.inputs.ResolveApp(ui, cmd.realmClient)
+	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}

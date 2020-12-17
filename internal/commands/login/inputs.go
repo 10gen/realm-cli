@@ -16,7 +16,7 @@ type inputs struct {
 	PrivateAPIKey string
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	user := profile.User()
 	var questions []*survey.Question
 

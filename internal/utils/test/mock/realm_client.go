@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"archive/zip"
+
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
@@ -9,6 +11,9 @@ type RealmClient struct {
 	realm.Client
 	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
+
+	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
+	ImportFn func(groupID, appID string, req realm.ImportRequest) error
 
 	FindAppsFn func(filter realm.AppFilter) ([]realm.App, error)
 
@@ -36,6 +41,26 @@ func (rc RealmClient) AuthProfile() (realm.AuthProfile, error) {
 		return rc.AuthProfileFn()
 	}
 	return rc.Client.AuthProfile()
+}
+
+// Export calls the mocked Export implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Export(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+	if rc.ExportFn != nil {
+		return rc.ExportFn(groupID, appID, req)
+	}
+	return rc.Client.Export(groupID, appID, req)
+}
+
+// Import calls the mocked Import implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Import(groupID, appID string, req realm.ImportRequest) error {
+	if rc.ImportFn != nil {
+		return rc.ImportFn(groupID, appID, req)
+	}
+	return rc.Client.Import(groupID, appID, req)
 }
 
 // FindApps calls the mocked FindApps implementation if provided,

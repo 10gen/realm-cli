@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -41,6 +42,8 @@ type Profile struct {
 
 	dir string
 	fs  afero.Fs
+
+	WorkingDirectory string
 }
 
 // NewDefaultProfile creates a new default CLI profile
@@ -52,13 +55,19 @@ func NewDefaultProfile() (*Profile, error) {
 func NewProfile(name string) (*Profile, error) {
 	dir, dirErr := homeDir()
 	if dirErr != nil {
-		return nil, fmt.Errorf("failed to create CLI profile: %s", dirErr)
+		return nil, fmt.Errorf("failed to create CLI profile: %w", dirErr)
+	}
+
+	wd, wdErr := os.Getwd()
+	if wdErr != nil {
+		return nil, fmt.Errorf("failed to get current working directory: %w", wdErr)
 	}
 
 	return &Profile{
-		Name: name,
-		dir:  dir,
-		fs:   afero.NewOsFs(),
+		Name:             name,
+		dir:              dir,
+		fs:               afero.NewOsFs(),
+		WorkingDirectory: wd,
 	}, nil
 }
 
