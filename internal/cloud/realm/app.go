@@ -15,6 +15,34 @@ const (
 	appPathPattern  = appsPathPattern + "/%s"
 )
 
+// AppMeta is Realm application metadata
+type AppMeta struct {
+	Location        string `json:"location,omitempty"`
+	DeploymentModel string `json:"deployment_model,omitempty"`
+}
+
+// App is a Realm application
+type App struct {
+	AppMeta
+	ID           string `json:"_id"`
+	ClientAppID  string `json:"client_app_id"`
+	Name         string `json:"name"`
+	DomainID     string `json:"domain_id"`
+	GroupID      string `json:"group_id"`
+	LastUsed     int64  `json:"last_used"`
+	LastModified int64  `json:"last_modified"`
+	Product      string `json:"product"`
+}
+
+func (app App) String() string {
+	return fmt.Sprintf("%s (%s)", app.ClientAppID, app.GroupID)
+}
+
+type createAppRequest struct {
+	Name string `json:"name"`
+	AppMeta
+}
+
 func (c *client) CreateApp(groupID, name string, meta AppMeta) (App, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
@@ -25,15 +53,13 @@ func (c *client) CreateApp(groupID, name string, meta AppMeta) (App, error) {
 	if resErr != nil {
 		return App{}, resErr
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return App{}, UnmarshalServerError(res)
+		return App{}, unmarshalServerError(res)
 	}
 
-	dec := json.NewDecoder(res.Body)
-	defer res.Body.Close()
-
 	var app App
-	if err := dec.Decode(&app); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&app); err != nil {
 		return App{}, err
 	}
 	return app, nil
@@ -49,9 +75,16 @@ func (c *client) DeleteApp(groupID, appID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		return UnmarshalServerError(res)
+		defer res.Body.Close()
+		return unmarshalServerError(res)
 	}
 	return nil
+}
+
+// AppFilter represents the optional filter parameters available for lists of apps
+type AppFilter struct {
+	GroupID string
+	App     string // can be client app id or name
 }
 
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
@@ -112,50 +145,14 @@ func (c *client) getApps(groupID string) ([]App, error) {
 	if res.StatusCode == http.StatusNotFound {
 		return nil, errors.New("group could not be found")
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, UnmarshalServerError(res)
+		return nil, unmarshalServerError(res)
 	}
 
-	dec := json.NewDecoder(res.Body)
-	defer res.Body.Close()
-
 	var apps []App
-	if err := dec.Decode(&apps); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&apps); err != nil {
 		return nil, err
 	}
 	return apps, nil
-}
-
-// AppFilter represents the optional filter parameters available for lists of apps
-type AppFilter struct {
-	GroupID string
-	App     string // can be client app id or name
-}
-
-// AppMeta is Realm application metadata
-type AppMeta struct {
-	Location        string `json:"location,omitempty"`
-	DeploymentModel string `json:"deployment_model,omitempty"`
-}
-
-// App is a Realm application
-type App struct {
-	AppMeta
-	ID           string `json:"_id"`
-	ClientAppID  string `json:"client_app_id"`
-	Name         string `json:"name"`
-	DomainID     string `json:"domain_id"`
-	GroupID      string `json:"group_id"`
-	LastUsed     int64  `json:"last_used"`
-	LastModified int64  `json:"last_modified"`
-	Product      string `json:"product"`
-}
-
-type createAppRequest struct {
-	Name string `json:"name"`
-	AppMeta
-}
-
-func (app App) String() string {
-	return fmt.Sprintf("%s (%s)", app.ClientAppID, app.GroupID)
 }
