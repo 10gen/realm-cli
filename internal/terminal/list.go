@@ -26,7 +26,7 @@ func newList(message string, data []interface{}) list {
 }
 
 func (l list) Message() (string, error) {
-	return fmt.Sprintf("%s\n%s\n", l.message, l.dataString()), nil
+	return fmt.Sprintf("%s\n%s", l.message, l.dataString()), nil
 }
 
 func (l list) Payload() ([]string, map[string]interface{}, error) {
@@ -39,7 +39,7 @@ func (l list) Payload() ([]string, map[string]interface{}, error) {
 func (l list) dataString() string {
 	data := make([]string, 0, len(l.data))
 	for _, item := range l.data {
-		data = append(data, "  "+item)
+		data = append(data, gutter+item)
 	}
 	return strings.Join(data, "\n")
 }

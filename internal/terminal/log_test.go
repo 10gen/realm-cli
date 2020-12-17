@@ -14,6 +14,7 @@ import (
 func TestLogConstructor(t *testing.T) {
 	assert.RegisterOpts(reflect.TypeOf(jsonDocument{}), cmp.AllowUnexported(jsonDocument{}))
 	assert.RegisterOpts(reflect.TypeOf(table{}), cmp.AllowUnexported(table{}))
+	assert.RegisterOpts(reflect.TypeOf(list{}), cmp.AllowUnexported(list{}))
 
 	for _, tc := range []struct {
 		ctor          string
@@ -38,6 +39,12 @@ func TestLogConstructor(t *testing.T) {
 			log:           NewTableLog("a table message", []string{"a"}, map[string]interface{}{"a": "ayyy"}),
 			expectedLevel: LogLevelInfo,
 			expectedData:  table{"a table message", []string{"a"}, []map[string]string{{"a": "ayyy"}}, map[string]int{"a": 4}},
+		},
+		{
+			ctor:          "NewListLog",
+			log:           NewListLog("a list message", "ayyy"),
+			expectedLevel: LogLevelInfo,
+			expectedData:  list{"a list message", []string{"ayyy"}},
 		},
 		{
 			ctor:          "NewErrorLog",

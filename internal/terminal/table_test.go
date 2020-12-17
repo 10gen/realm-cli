@@ -260,3 +260,29 @@ func TestTablePayload(t *testing.T) {
 		assert.Equal(t, data, payloadData[logFieldData])
 	})
 }
+
+func TestParseValue(t *testing.T) {
+	t.Run("parseValue should create reasonable string representations", func(t *testing.T) {
+		assert.Equal(t, parseValue(nil), "")
+
+		assert.Equal(t, parseValue(""), "")
+		assert.Equal(t, parseValue("string"), "string")
+
+		assert.Equal(t, parseValue([]interface{}{}), "[]")
+		assert.Equal(t, parseValue([]string{}), "[]")
+		assert.Equal(t, parseValue([]string{"slice", "of", "strings"}), "[slice of strings]")
+		assert.Equal(t, parseValue([]int{1, 2, 3}), "[1 2 3]")
+		assert.Equal(t, parseValue([]interface{}{1, "2", []int{3, 3, 3}}), "[1 2 [3 3 3]]")
+
+		assert.Equal(t, parseValue(map[string]int{"a": 1, "b": 2, "c": 3}), "map[a:1 b:2 c:3]")
+
+		var foo int = 42
+		pointerRepresentation := parseValue(&foo)
+		assert.Equal(t, pointerRepresentation[:2], "0x")
+
+		assert.Equal(t, parseValue(42), "42")
+		assert.Equal(t, parseValue(-42), "-42")
+		assert.Equal(t, parseValue(42.0), "42")
+		assert.Equal(t, parseValue(42.120), "42.12")
+	})
+}

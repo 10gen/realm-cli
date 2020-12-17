@@ -17,7 +17,7 @@ var (
 	tableFields = []string{logFieldMessage, logFieldData, logFieldHeaders}
 
 	// gutter is the gap between table columns
-	gutter = strings.Repeat(" ", 2)
+	gutter = "  "
 )
 
 type table struct {
@@ -65,8 +65,8 @@ func (t table) Message() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf(`%s
-  %s
-  %s
+%s
+%s
 %s`, t.message, t.headerString(), t.dividerString(), t.dataString()), nil
 }
 
@@ -96,7 +96,7 @@ func (t table) headerString() string {
 			strings.Repeat(" ", t.columnWidths[header]-len(header)),
 		)
 	}
-	return strings.Join(headers, gutter)
+	return gutter + strings.Join(headers, gutter)
 }
 
 func (t table) dataString() string {
@@ -110,7 +110,7 @@ func (t table) dataString() string {
 				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
-		rows[i] = "  " + strings.Join(cells, gutter)
+		rows[i] = gutter + strings.Join(cells, gutter)
 	}
 	return strings.Join(rows, "\n")
 }
@@ -120,7 +120,7 @@ func (t table) dividerString() string {
 	for i, header := range t.headers {
 		dashes[i] = strings.Repeat("-", t.columnWidths[header])
 	}
-	return strings.Join(dashes, gutter)
+	return gutter + strings.Join(dashes, gutter)
 }
 
 func parseValue(value interface{}) string {

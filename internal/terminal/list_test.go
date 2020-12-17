@@ -11,17 +11,18 @@ import (
 
 func TestList(t *testing.T) {
 	assert.RegisterOpts(reflect.TypeOf(list{}), cmp.AllowUnexported(list{}))
-	message := "a list message"
-	data := []interface{}{
-		"should show up",
-		1,
-		1.000,
-		1.234567890123,
-		[]string{"1", "2", "3"},
-		nil,
-	}
 
-	t.Run("newList() should work", func(*testing.T) {
+	t.Run("newList should create a list with its data parsed into strings", func(*testing.T) {
+		testMessage := "a list message"
+		testData := []interface{}{
+			"should show up",
+			1,
+			1.000,
+			1.234567890123,
+			[]string{"1", "2", "3"},
+			nil,
+		}
+		testList := newList(testMessage, testData)
 		expectedList := list{
 			"a list message",
 			[]string{
@@ -33,41 +34,38 @@ func TestList(t *testing.T) {
 				"",
 			},
 		}
-		assert.Equal(t, expectedList, newList(message, data))
-	})
+		assert.Equal(t, expectedList, testList)
 
-	t.Run("list.Message() should work", func(*testing.T) {
-		list := newList(message, data)
-		expectedMessage := `a list message
+		t.Run("And Message should display a properly formatted list", func(*testing.T) {
+			message, err := testList.Message()
+			assert.Nil(t, err)
+			expectedMessage := `a list message
   should show up
   1
   1
   1.234567890123
   [1 2 3]
-  
-`
-		message, err := list.Message()
-		assert.Nil(t, err)
-		assert.Equal(t, expectedMessage, message)
-	})
+  `
+			assert.Equal(t, expectedMessage, message)
+		})
 
-	t.Run("list.Payload() should work", func(*testing.T) {
-		list := newList(message, data)
-		expectedPayloadKeys := []string{"message", "data"}
-		expectedPayloadData := map[string]interface{}{
-			"message": message,
-			"data": []string{
-				"should show up",
-				"1",
-				"1",
-				"1.234567890123",
-				"[1 2 3]",
-				"",
-			},
-		}
-		payloadKeys, payloadData, err := list.Payload()
-		assert.Nil(t, err)
-		assert.Equal(t, expectedPayloadKeys, payloadKeys)
-		assert.Equal(t, expectedPayloadData, payloadData)
+		t.Run("And Payload should create a payload representation of the list", func(*testing.T) {
+			payloadKeys, payloadData, err := testList.Payload()
+			assert.Nil(t, err)
+			expectedPayloadKeys := []string{"message", "data"}
+			expectedPayloadData := map[string]interface{}{
+				"message": testMessage,
+				"data": []string{
+					"should show up",
+					"1",
+					"1",
+					"1.234567890123",
+					"[1 2 3]",
+					"",
+				},
+			}
+			assert.Equal(t, expectedPayloadKeys, payloadKeys)
+			assert.Equal(t, expectedPayloadData, payloadData)
+		})
 	})
 }
