@@ -328,8 +328,17 @@ func TestParseValue(t *testing.T) {
 			value:          42.120,
 			expectedString: "42.12",
 		},
+		{
+			description: "structs",
+			value: struct {
+				foo int
+				bar string
+			}{foo: 42, bar: "bar"},
+			expectedString: "{42 bar}",
+		},
 	} {
 		t.Run("parseValue should correctly parse "+tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedString, parseValue(tc.value))
 		})
 	}
 	t.Run("parseValue should correctly parse pointers", func(t *testing.T) {

@@ -45,7 +45,13 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-// TODO(REALMC-7574): print list of apps
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	return ui.Print(terminal.NewTextLog(fmt.Sprintf("results are: %v", cmd.apps)))
+	if len(cmd.apps) == 0 {
+		return ui.Print(terminal.NewTextLog("no available apps to show"))
+	}
+	apps := make([]interface{}, 0, len(cmd.apps))
+	for _, app := range cmd.apps {
+		apps = append(apps, app)
+	}
+	return ui.Print(terminal.NewListLog("available apps", apps...))
 }
