@@ -11,6 +11,7 @@ import (
 const (
 	logFieldHeaders = "headers"
 	logFieldData    = "data"
+
 	// gutter is the gap between table columns
 	gutter = "  "
 	// indent is the indentation used
@@ -133,7 +134,7 @@ func parseValue(value interface{}) string {
 	case fmt.Stringer:
 		parsed = v.String()
 	default:
-		parsed = fmt.Sprintf("%v", v)
+		parsed = fmt.Sprintf("%+v", v)
 	}
 	return parsed
 }

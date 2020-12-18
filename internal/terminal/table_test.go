@@ -155,7 +155,7 @@ func TestTableMessage(t *testing.T) {
 					"a table message",
 					"  %s                  %s  %s  %s               %s        %s",
 					"  ----------------------  ------  ----  -------------------------  -------------  ------",
-					"  [1 test this]           12.34   1     {1234 12.345}              tester string        ",
+					"  [1 test this]           12.34   1     {test:1234 this:12.345}    tester string        ",
 					"  [1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
 					"  [1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
 				}, "\n"),
@@ -262,82 +262,82 @@ func TestTablePayload(t *testing.T) {
 }
 
 func TestParseValue(t *testing.T) {
-
 	for _, tc := range []struct {
 		description    string
 		value          interface{}
 		expectedString string
 	}{
 		{
-			description:    "nil",
+			description:    "a nil value as an empty string",
 			value:          nil,
 			expectedString: "",
 		},
 		{
-			description:    "empty strings",
+			description:    "an empty string as an empty string",
 			value:          "",
 			expectedString: "",
 		},
 		{
-			description:    "strings",
+			description:    "the string 'strings' as 'strings'",
 			value:          "string",
 			expectedString: "string",
 		},
 		{
-			description:    "empty generic slices",
+			description:    "an empty generic slice as '[]'",
 			value:          []interface{}{},
 			expectedString: "[]",
 		},
 		{
-			description:    "empty string slices",
+			description:    "an empty string slice as '[]'",
 			value:          []string{},
 			expectedString: "[]",
 		},
 		{
-			description:    "string slices",
+			description:    "a slice of strings as a non-comma-separated list of strings",
 			value:          []string{"slice", "of", "strings"},
 			expectedString: "[slice of strings]",
 		},
 		{
-			description:    "int slices",
+			description:    "a slice of ints as a non-comma-separated list of ints",
 			value:          []int{1, 2, 3},
 			expectedString: "[1 2 3]",
 		},
 		{
-			description:    "generic slices",
+			description:    "a generic slice as a non-comma-separated list with each value properly parsed",
 			value:          []interface{}{1, "2", []int{3, 3, 3}},
 			expectedString: "[1 2 [3 3 3]]",
 		},
 		{
-			description:    "integers",
+			description:    "the integer 42 as '42'",
 			value:          42,
 			expectedString: "42",
 		},
 		{
-			description:    "negative integers",
+			description:    "the negative integer -42 as '-42'",
 			value:          -42,
 			expectedString: "-42",
 		},
 		{
-			description:    "whole number floats",
+			description:    "the whole number float 42.0 as '42'",
 			value:          42.0,
 			expectedString: "42",
 		},
 		{
-			description:    "floats",
+			description:    "the float 42.120 as '42.12",
 			value:          42.120,
 			expectedString: "42.12",
 		},
 		{
-			description: "structs",
+			description: "a struct with all fields and values shown'",
 			value: struct {
-				foo int
-				bar string
-			}{foo: 42, bar: "bar"},
-			expectedString: "{42 bar}",
+				foo           int
+				bar           string
+				ExportedField string
+			}{foo: 42, bar: "foobar", ExportedField: "exported"},
+			expectedString: "{foo:42 bar:foobar ExportedField:exported}",
 		},
 	} {
-		t.Run("parseValue should correctly parse "+tc.description, func(t *testing.T) {
+		t.Run(fmt.Sprintf("parseValue should parse %s", tc.description), func(t *testing.T) {
 			assert.Equal(t, tc.expectedString, parseValue(tc.value))
 		})
 	}

@@ -47,11 +47,11 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.apps) == 0 {
-		return ui.Print(terminal.NewTextLog("no available apps to show"))
+		return ui.Print(terminal.NewTextLog("No available apps to show"))
 	}
 	apps := make([]interface{}, 0, len(cmd.apps))
 	for _, app := range cmd.apps {
 		apps = append(apps, app)
 	}
-	return ui.Print(terminal.NewListLog("available apps", apps...))
+	return ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d apps", len(apps)), apps...))
 }

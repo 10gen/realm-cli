@@ -99,7 +99,7 @@ func TestAppListFeedback(t *testing.T) {
 	}{
 		{
 			description:    "Should print an empty state message when no apps were found",
-			expectedOutput: "01:23:45 UTC INFO  no available apps to show\n",
+			expectedOutput: "01:23:45 UTC INFO  No available apps to show\n",
 		},
 		{
 			description: "Should print a list of apps that were found",
@@ -123,7 +123,7 @@ func TestAppListFeedback(t *testing.T) {
 					Name:        "app1",
 				},
 			},
-			expectedOutput: fmt.Sprintf(`01:23:45 UTC INFO  available apps
+			expectedOutput: fmt.Sprintf(`01:23:45 UTC INFO  Found 3 apps
   app1-abcde (%s)
   app2-fghij (%s)
   app1-abcde (%s)
