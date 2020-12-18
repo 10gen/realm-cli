@@ -1,6 +1,7 @@
 package list
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -90,18 +91,43 @@ func TestAppListHandler(t *testing.T) {
 }
 
 func TestAppListFeedback(t *testing.T) {
-	t.Skip("TODO(REALMC-7574): test list feedback")
-
+	groupID1, groupID2 := primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()
 	for _, tc := range []struct {
-		description string
-		apps        []realm.App
-		test        func(t *testing.T, output string)
+		description    string
+		apps           []realm.App
+		expectedOutput string
 	}{
 		{
-			description: "Should print an empty state message when no apps were found",
+			description:    "Should print an empty state message when no apps were found",
+			expectedOutput: "01:23:45 UTC INFO  No available apps to show\n",
 		},
 		{
 			description: "Should print a list of apps that were found",
+			apps: []realm.App{
+				{
+					ID:          primitive.NewObjectID().Hex(),
+					GroupID:     groupID1,
+					ClientAppID: "app1-abcde",
+					Name:        "app1",
+				},
+				{
+					ID:          primitive.NewObjectID().Hex(),
+					GroupID:     groupID1,
+					ClientAppID: "app2-fghij",
+					Name:        "app2",
+				},
+				{
+					ID:          primitive.NewObjectID().Hex(),
+					GroupID:     groupID2,
+					ClientAppID: "app1-abcde",
+					Name:        "app1",
+				},
+			},
+			expectedOutput: fmt.Sprintf(`01:23:45 UTC INFO  Found 3 apps
+  app1-abcde (%s)
+  app2-fghij (%s)
+  app1-abcde (%s)
+`, groupID1, groupID1, groupID2),
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -111,7 +137,7 @@ func TestAppListFeedback(t *testing.T) {
 
 			assert.Nil(t, cmd.Feedback(nil, ui))
 
-			tc.test(t, out.String())
+			assert.Equal(t, tc.expectedOutput, out.String())
 		})
 	}
 }

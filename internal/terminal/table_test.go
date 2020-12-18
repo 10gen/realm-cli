@@ -2,15 +2,19 @@ package terminal
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 
 	"github.com/fatih/color"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewTable(t *testing.T) {
+	assert.RegisterOpts(reflect.TypeOf(table{}), cmp.AllowUnexported(table{}))
+
 	for _, tc := range []struct {
 		description   string
 		message       string
@@ -95,8 +99,8 @@ func TestTableMessage(t *testing.T) {
 			message:     "a table message",
 			header:      []string{"header", "only", "no", "data"},
 			expectedMessage: fmt.Sprintf(`a table message
-%s  %s  %s  %s
-------  ----  --  ----
+  %s  %s  %s  %s
+  ------  ----  --  ----
 `,
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("header"),
@@ -149,11 +153,11 @@ func TestTableMessage(t *testing.T) {
 			expectedMessage: fmt.Sprintf(
 				strings.Join([]string{
 					"a table message",
-					"%s                  %s  %s  %s               %s        %s",
-					"----------------------  ------  ----  -------------------------  -------------  ------",
-					"[1 test this]           12.34   1     {1234 12.345}              tester string        ",
-					"[1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
-					"[1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
+					"  %s                  %s  %s  %s               %s        %s",
+					"  ----------------------  ------  ----  -------------------------  -------------  ------",
+					"  [1 test this]           12.34   1     {test:1234 this:12.345}    tester string        ",
+					"  [1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
+					"  [1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
 				}, "\n"),
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("arrays"),
@@ -188,8 +192,8 @@ func TestTableMessageNoBold(t *testing.T) {
 			message:     "a table message",
 			header:      []string{"should", "not", "be", "bold"},
 			expectedMessage: `a table message
-should  not  be  bold
-------  ---  --  ----
+  should  not  be  bold
+  ------  ---  --  ----
 `,
 		},
 		{
@@ -203,9 +207,9 @@ should  not  be  bold
 				},
 			},
 			expectedMessage: `a table message
-should  not  be         bold
-------  ---  ---------  ----
-123          not bold!      `,
+  should  not  be         bold
+  ------  ---  ---------  ----
+  123          not bold!      `,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -254,5 +258,92 @@ func TestTablePayload(t *testing.T) {
 		assert.Equal(t, message, payloadData[logFieldMessage])
 		assert.Equal(t, headers, payloadData[logFieldHeaders])
 		assert.Equal(t, data, payloadData[logFieldData])
+	})
+}
+
+func TestParseValue(t *testing.T) {
+	for _, tc := range []struct {
+		description    string
+		value          interface{}
+		expectedString string
+	}{
+		{
+			description:    "a nil value as an empty string",
+			value:          nil,
+			expectedString: "",
+		},
+		{
+			description:    "an empty string as an empty string",
+			value:          "",
+			expectedString: "",
+		},
+		{
+			description:    "the string 'strings' as 'strings'",
+			value:          "string",
+			expectedString: "string",
+		},
+		{
+			description:    "an empty generic slice as '[]'",
+			value:          []interface{}{},
+			expectedString: "[]",
+		},
+		{
+			description:    "an empty string slice as '[]'",
+			value:          []string{},
+			expectedString: "[]",
+		},
+		{
+			description:    "a slice of strings as a non-comma-separated list of strings",
+			value:          []string{"slice", "of", "strings"},
+			expectedString: "[slice of strings]",
+		},
+		{
+			description:    "a slice of ints as a non-comma-separated list of ints",
+			value:          []int{1, 2, 3},
+			expectedString: "[1 2 3]",
+		},
+		{
+			description:    "a generic slice as a non-comma-separated list with each value properly parsed",
+			value:          []interface{}{1, "2", []int{3, 3, 3}},
+			expectedString: "[1 2 [3 3 3]]",
+		},
+		{
+			description:    "the integer 42 as '42'",
+			value:          42,
+			expectedString: "42",
+		},
+		{
+			description:    "the negative integer -42 as '-42'",
+			value:          -42,
+			expectedString: "-42",
+		},
+		{
+			description:    "the whole number float 42.0 as '42'",
+			value:          42.0,
+			expectedString: "42",
+		},
+		{
+			description:    "the float 42.120 as '42.12",
+			value:          42.120,
+			expectedString: "42.12",
+		},
+		{
+			description: "a struct with all fields and values shown'",
+			value: struct {
+				foo           int
+				bar           string
+				ExportedField string
+			}{foo: 42, bar: "foobar", ExportedField: "exported"},
+			expectedString: "{foo:42 bar:foobar ExportedField:exported}",
+		},
+	} {
+		t.Run(fmt.Sprintf("parseValue should parse %s", tc.description), func(t *testing.T) {
+			assert.Equal(t, tc.expectedString, parseValue(tc.value))
+		})
+	}
+	t.Run("parseValue should correctly parse pointers", func(t *testing.T) {
+		var foo int = 42
+		pointerRepresentation := parseValue(&foo)
+		assert.Equal(t, pointerRepresentation[:2], "0x")
 	})
 }

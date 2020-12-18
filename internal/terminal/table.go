@@ -11,13 +11,15 @@ import (
 const (
 	logFieldHeaders = "headers"
 	logFieldData    = "data"
+
+	// gutter is the gap between table columns
+	gutter = "  "
+	// indent is the indentation used
+	indent = "  "
 )
 
 var (
 	tableFields = []string{logFieldMessage, logFieldData, logFieldHeaders}
-
-	// gutter is the gap between table columns
-	gutter = strings.Repeat(" ", 2)
 )
 
 type table struct {
@@ -96,7 +98,7 @@ func (t table) headerString() string {
 			strings.Repeat(" ", t.columnWidths[header]-len(header)),
 		)
 	}
-	return strings.Join(headers, gutter)
+	return indent + strings.Join(headers, gutter)
 }
 
 func (t table) dataString() string {
@@ -110,7 +112,7 @@ func (t table) dataString() string {
 				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
-		rows[i] = strings.Join(cells, gutter)
+		rows[i] = indent + strings.Join(cells, gutter)
 	}
 	return strings.Join(rows, "\n")
 }
@@ -120,7 +122,7 @@ func (t table) dividerString() string {
 	for i, header := range t.headers {
 		dashes[i] = strings.Repeat("-", t.columnWidths[header])
 	}
-	return strings.Join(dashes, gutter)
+	return indent + strings.Join(dashes, gutter)
 }
 
 func parseValue(value interface{}) string {
@@ -132,7 +134,7 @@ func parseValue(value interface{}) string {
 	case fmt.Stringer:
 		parsed = v.String()
 	default:
-		parsed = fmt.Sprintf("%v", v)
+		parsed = fmt.Sprintf("%+v", v)
 	}
 	return parsed
 }

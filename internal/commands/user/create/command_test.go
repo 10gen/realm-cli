@@ -184,9 +184,9 @@ func TestUserCreateFeedback(t *testing.T) {
 			}},
 			expectedOutput: strings.Join([]string{
 				"01:23:45 UTC INFO  Successfully created user",
-				"ID                        Enabled  Email            Type  ",
-				"------------------------  -------  ---------------  ------",
-				fmt.Sprintf("%s  true     user@domain.com  normal\n", id),
+				"  ID                        Enabled  Email            Type  ",
+				"  ------------------------  -------  ---------------  ------",
+				fmt.Sprintf("  %s  true     user@domain.com  normal\n", id),
 			}, "\n"),
 		},
 		{
@@ -199,9 +199,9 @@ func TestUserCreateFeedback(t *testing.T) {
 			}},
 			expectedOutput: strings.Join([]string{
 				"01:23:45 UTC INFO  Successfully created api key",
-				"ID                        Enabled  Name  API Key",
-				"------------------------  -------  ----  -------",
-				fmt.Sprintf("%s  true     name  key    \n", id),
+				"  ID                        Enabled  Name  API Key",
+				"  ------------------------  -------  ----  -------",
+				fmt.Sprintf("  %s  true     name  key    \n", id),
 			}, "\n"),
 		},
 	} {

@@ -65,6 +65,11 @@ func NewTableLog(message string, headers []string, data ...map[string]interface{
 	return newLog(LogLevelInfo, newTable(message, headers, data))
 }
 
+// NewListLog creates a new log with a list
+func NewListLog(message string, data ...interface{}) Log {
+	return newLog(LogLevelInfo, newList(message, data))
+}
+
 // NewErrorLog creates a new error log
 func NewErrorLog(err error) Log {
 	return newLog(LogLevelError, errorMessage{err})
