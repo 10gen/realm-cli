@@ -11,13 +11,14 @@ import (
 const (
 	logFieldHeaders = "headers"
 	logFieldData    = "data"
+	// gutter is the gap between table columns
+	gutter = "  "
+	// indent is the indentation used
+	indent = "  "
 )
 
 var (
 	tableFields = []string{logFieldMessage, logFieldData, logFieldHeaders}
-
-	// gutter is the gap between table columns
-	gutter = "  "
 )
 
 type table struct {
@@ -96,7 +97,7 @@ func (t table) headerString() string {
 			strings.Repeat(" ", t.columnWidths[header]-len(header)),
 		)
 	}
-	return gutter + strings.Join(headers, gutter)
+	return indent + strings.Join(headers, gutter)
 }
 
 func (t table) dataString() string {
@@ -110,7 +111,7 @@ func (t table) dataString() string {
 				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
-		rows[i] = gutter + strings.Join(cells, gutter)
+		rows[i] = indent + strings.Join(cells, gutter)
 	}
 	return strings.Join(rows, "\n")
 }
@@ -120,7 +121,7 @@ func (t table) dividerString() string {
 	for i, header := range t.headers {
 		dashes[i] = strings.Repeat("-", t.columnWidths[header])
 	}
-	return gutter + strings.Join(dashes, gutter)
+	return indent + strings.Join(dashes, gutter)
 }
 
 func parseValue(value interface{}) string {

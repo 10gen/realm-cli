@@ -262,27 +262,79 @@ func TestTablePayload(t *testing.T) {
 }
 
 func TestParseValue(t *testing.T) {
-	t.Run("parseValue should create reasonable string representations", func(t *testing.T) {
-		assert.Equal(t, parseValue(nil), "")
 
-		assert.Equal(t, parseValue(""), "")
-		assert.Equal(t, parseValue("string"), "string")
-
-		assert.Equal(t, parseValue([]interface{}{}), "[]")
-		assert.Equal(t, parseValue([]string{}), "[]")
-		assert.Equal(t, parseValue([]string{"slice", "of", "strings"}), "[slice of strings]")
-		assert.Equal(t, parseValue([]int{1, 2, 3}), "[1 2 3]")
-		assert.Equal(t, parseValue([]interface{}{1, "2", []int{3, 3, 3}}), "[1 2 [3 3 3]]")
-
-		assert.Equal(t, parseValue(map[string]int{"a": 1, "b": 2, "c": 3}), "map[a:1 b:2 c:3]")
-
+	for _, tc := range []struct {
+		description    string
+		value          interface{}
+		expectedString string
+	}{
+		{
+			description:    "nil",
+			value:          nil,
+			expectedString: "",
+		},
+		{
+			description:    "empty strings",
+			value:          "",
+			expectedString: "",
+		},
+		{
+			description:    "strings",
+			value:          "string",
+			expectedString: "string",
+		},
+		{
+			description:    "empty generic slices",
+			value:          []interface{}{},
+			expectedString: "[]",
+		},
+		{
+			description:    "empty string slices",
+			value:          []string{},
+			expectedString: "[]",
+		},
+		{
+			description:    "string slices",
+			value:          []string{"slice", "of", "strings"},
+			expectedString: "[slice of strings]",
+		},
+		{
+			description:    "int slices",
+			value:          []int{1, 2, 3},
+			expectedString: "[1 2 3]",
+		},
+		{
+			description:    "generic slices",
+			value:          []interface{}{1, "2", []int{3, 3, 3}},
+			expectedString: "[1 2 [3 3 3]]",
+		},
+		{
+			description:    "integers",
+			value:          42,
+			expectedString: "42",
+		},
+		{
+			description:    "negative integers",
+			value:          -42,
+			expectedString: "-42",
+		},
+		{
+			description:    "whole number floats",
+			value:          42.0,
+			expectedString: "42",
+		},
+		{
+			description:    "floats",
+			value:          42.120,
+			expectedString: "42.12",
+		},
+	} {
+		t.Run("parseValue should correctly parse "+tc.description, func(t *testing.T) {
+		})
+	}
+	t.Run("parseValue should correctly parse pointers", func(t *testing.T) {
 		var foo int = 42
 		pointerRepresentation := parseValue(&foo)
 		assert.Equal(t, pointerRepresentation[:2], "0x")
-
-		assert.Equal(t, parseValue(42), "42")
-		assert.Equal(t, parseValue(-42), "-42")
-		assert.Equal(t, parseValue(42.0), "42")
-		assert.Equal(t, parseValue(42.120), "42.12")
 	})
 }
