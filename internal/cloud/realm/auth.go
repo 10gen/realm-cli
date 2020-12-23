@@ -5,12 +5,14 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
 const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
+	refreshPath      = adminAPI + "/auth/session"
 )
 
 // set of supported auth errors
@@ -18,18 +20,12 @@ var (
 	ErrInvalidSession = errors.New("invalid session")
 )
 
-// Session is the Realm session
-type Session struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 type authenticateRequest struct {
 	PublicAPIKey  string `json:"username"`
 	PrivateAPIKey string `json:"apiKey"`
 }
 
-func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
+func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (auth.Session, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		authenticatePath,
@@ -37,16 +33,16 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 		api.RequestOptions{},
 	)
 	if resErr != nil {
-		return Session{}, resErr
+		return auth.Session{}, resErr
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return Session{}, unmarshalServerError(res)
+		return auth.Session{}, unmarshalServerError(res)
 	}
 
-	var session Session
+	var session auth.Session
 	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
-		return Session{}, err
+		return auth.Session{}, err
 	}
 	return session, nil
 }
@@ -79,18 +75,19 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 }
 
 func (c *client) getAuth(options api.RequestOptions) (string, error) {
+	session := c.profile.Session()
 	if options.UseAuth {
-		if c.session.AccessToken == "" {
+		if session.AccessToken == "" {
 			return "", ErrInvalidSession
 		}
-		return c.session.AccessToken, nil
+		return session.AccessToken, nil
 	}
 
 	if options.RefreshAuth {
-		if c.session.RefreshToken == "" {
+		if session.RefreshToken == "" {
 			return "", ErrInvalidSession
 		}
-		return c.session.RefreshToken, nil
+		return session.RefreshToken, nil
 	}
 
 	return "", nil
