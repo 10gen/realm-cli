@@ -3,6 +3,7 @@ package login
 import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -30,12 +31,12 @@ func (cmd *command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
-	cmd.realmClient = realm.NewClient(profile.RealmBaseURL())
+func (cmd *command) Setup(profile *profile.Profile, ui terminal.UI, appData cli.AppData) error {
+	cmd.realmClient = realm.NewClient(profile.GetRealmBaseURL())
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *command) Handler(profile *profile.Profile, ui terminal.UI) error {
 	existingUser := profile.User()
 
 	if existingUser.PublicAPIKey != "" && existingUser.PublicAPIKey != cmd.inputs.PublicAPIKey {
@@ -63,6 +64,6 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return profile.Save()
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *command) Feedback(profile *profile.Profile, ui terminal.UI) error {
 	return ui.Print(terminal.NewTextLog("Successfully logged in"))
 }

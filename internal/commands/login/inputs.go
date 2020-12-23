@@ -2,6 +2,7 @@ package login
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -16,7 +17,7 @@ type inputs struct {
 	PrivateAPIKey string
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+func (i *inputs) Resolve(profile *profile.Profile, ui terminal.UI, appData cli.AppData) error {
 	user := profile.User()
 	var questions []*survey.Question
 

@@ -75,7 +75,7 @@ func TestLoginHandler(t *testing.T) {
 	})
 
 	t.Run("With existing credentials", func(t *testing.T) {
-		setup := func(t *testing.T) (*cli.Profile, realm.Client, func()) {
+		setup := func(t *testing.T) (*profile.Profile, realm.Client, func()) {
 			tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 			assert.Nil(t, tmpDirErr)
 
@@ -197,7 +197,7 @@ func TestLoginFeedback(t *testing.T) {
 	})
 }
 
-func ensureProfileContents(t *testing.T, profile *cli.Profile, user cli.User, session realm.Session) {
+func ensureProfileContents(t *testing.T, profile *profile.Profile, user cli.User, session realm.Session) {
 	contents, err := ioutil.ReadFile(profile.Path())
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(string(contents), fmt.Sprintf(`%s:

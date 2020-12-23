@@ -1,10 +1,10 @@
-package cli
+package profile
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/telemetry"
 
 	"github.com/spf13/afero"
@@ -18,15 +18,26 @@ const (
 	envPrefix   = "realm"
 	profileType = "yaml"
 
-	flagProfile      = "profile"
-	flagProfileShort = "i"
-	flagProfileUsage = "this is the --profile, -p usage"
+	// FlagProfile is the name of the profile flag
+	FlagProfile = "profile"
 
-	flagAtlasBaseURL      = "atlas-url"
-	flagAtlasBaseURLUsage = "specify the base Atlas server URL"
+	// FlagProfileShort is the short name of the profile flag
+	FlagProfileShort = "i"
 
-	flagRealmBaseURL      = "realm-url"
-	flagRealmBaseURLUsage = "specify the base Realm server URL"
+	// FlagProfileUsage is the usage text for the profile flag
+	FlagProfileUsage = "this is the --profile, -p usage"
+
+	// FlagAtlasBaseURL is the name of the atlas-url flag
+	FlagAtlasBaseURL = "atlas-url"
+
+	// FlagAtlasBaseURLUsage is the usage text for the atlas-url flag
+	FlagAtlasBaseURLUsage = "specify the base Atlas server URL"
+
+	// FlagRealmBaseURL is the name of the realm-url flag
+	FlagRealmBaseURL = "realm-url"
+
+	// FlagRealmBaseURLUsage is the usage text for the realm-url flag
+	FlagRealmBaseURLUsage = "specify the base Realm server URL"
 
 	defaultAtlasBaseURL = "https://cloud.mongodb.com"
 	defaultRealmBaseURL = "https://realm.mongodb.com"
@@ -35,9 +46,9 @@ const (
 // Profile is the CLI profile
 type Profile struct {
 	Name          string
-	atlasBaseURL  string
-	realmBaseURL  string
-	telemetryMode telemetry.Mode
+	AtlasBaseURL  string
+	RealmBaseURL  string
+	TelemetryMode telemetry.Mode
 
 	dir string
 	fs  afero.Fs
@@ -119,29 +130,29 @@ func (p *Profile) Save() error {
 	return nil
 }
 
-func (p Profile) resolveFlags() error {
-	if p.telemetryMode == telemetry.ModeNil {
-		p.telemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
+func (p Profile) ResolveFlags() error {
+	if p.TelemetryMode == telemetry.ModeNil {
+		p.TelemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
 	}
-	p.SetString(keyTelemetryMode, string(p.telemetryMode))
+	p.SetString(keyTelemetryMode, string(p.TelemetryMode))
 
-	if p.realmBaseURL == "" {
+	if p.RealmBaseURL == "" {
 		realmBaseURL := p.GetString(keyRealmBaseURL)
 		if realmBaseURL == "" {
 			realmBaseURL = defaultRealmBaseURL
 		}
-		p.realmBaseURL = realmBaseURL
+		p.RealmBaseURL = realmBaseURL
 	}
-	p.SetRealmBaseURL(p.realmBaseURL)
+	p.SetRealmBaseURL(p.RealmBaseURL)
 
-	if p.atlasBaseURL == "" {
-		atlasBaseURL := p.GetString(keyAtlasBaseURL)
-		if atlasBaseURL == "" {
-			atlasBaseURL = defaultAtlasBaseURL
+	if p.AtlasBaseURL == "" {
+		AtlasBaseURL := p.GetString(keyAtlasBaseURL)
+		if AtlasBaseURL == "" {
+			AtlasBaseURL = defaultAtlasBaseURL
 		}
-		p.atlasBaseURL = atlasBaseURL
+		p.AtlasBaseURL = AtlasBaseURL
 	}
-	p.SetAtlasBaseURL(p.atlasBaseURL)
+	p.SetAtlasBaseURL(p.AtlasBaseURL)
 
 	return p.Save()
 }
@@ -209,8 +220,8 @@ func (p Profile) SetUser(publicAPIKey, privateAPIKey string) {
 }
 
 // Session gets the CLI profile session
-func (p Profile) Session() realm.Session {
-	return realm.Session{
+func (p Profile) Session() auth.Session {
+	return auth.Session{
 		p.GetString(keyAccessToken),
 		p.GetString(keyRefreshToken),
 	}
@@ -228,8 +239,8 @@ func (p Profile) ClearSession() {
 	p.Clear(keyRefreshToken)
 }
 
-// RealmBaseURL gets the CLI profile Realm base url
-func (p Profile) RealmBaseURL() string {
+// GetRealmBaseURL gets the CLI profile Realm base url
+func (p Profile) GetRealmBaseURL() string {
 	return p.GetString(keyRealmBaseURL)
 }
 
@@ -238,8 +249,8 @@ func (p Profile) SetRealmBaseURL(realmBaseURL string) {
 	p.SetString(keyRealmBaseURL, realmBaseURL)
 }
 
-// AtlasBaseURL gets the CLI profile Atlas base url
-func (p Profile) AtlasBaseURL() string {
+// GetAtlasBaseURL gets the CLI profile Atlas base url
+func (p Profile) GetAtlasBaseURL() string {
 	return p.GetString(keyAtlasBaseURL)
 }
 

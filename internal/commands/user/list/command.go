@@ -2,6 +2,7 @@ package list
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/terminal"
 )
 
@@ -15,6 +16,6 @@ var Command = cli.CommandDefinition{
 
 type command struct{}
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *command) Handler(profile *profile.Profile, ui terminal.UI) error {
 	return nil
 }

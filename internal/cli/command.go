@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -19,7 +20,7 @@ import (
 // At any point should an error occur, command execution will terminate
 // and the ensuing steps will not be run
 type Command interface {
-	Handler(profile *Profile, ui terminal.UI) error
+	Handler(profile *profile.Profile, ui terminal.UI) error
 }
 
 // CommandFlagger is a hook for commands to register local flags to be parsed
@@ -34,19 +35,19 @@ type CommandInputs interface {
 
 // InputResolver is an input resolver
 type InputResolver interface {
-	Resolve(profile *Profile, ui terminal.UI, appData AppData) error
+	Resolve(profile *profile.Profile, ui terminal.UI, appData AppData) error
 }
 
 // CommandPreparer handles the command setup phase
 // This interface maps 1:1 to Cobra's Command.PreRunE phase
 type CommandPreparer interface {
-	Setup(profile *Profile, ui terminal.UI, appData AppData) error
+	Setup(profile *profile.Profile, ui terminal.UI, appData AppData) error
 }
 
 // CommandResponder handles the command feedback phase
 // This interface maps 1:1 to Cobra's Command.PostRun phase
 type CommandResponder interface {
-	Feedback(profile *Profile, ui terminal.UI) error
+	Feedback(profile *profile.Profile, ui terminal.UI) error
 }
 
 // CommandDefinition is a command's definition that the CommandFactory

@@ -13,7 +13,7 @@ func TestLoginInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         inputs
-		prepareProfile func(p *cli.Profile)
+		prepareProfile func(p *profile.Profile)
 		procedure      func(c *expect.Console)
 		test           func(t *testing.T, i inputs)
 	}{
@@ -22,7 +22,7 @@ func TestLoginInputs(t *testing.T) {
 			inputs: inputs{
 				PrivateAPIKey: "password",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *profile.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key")
 				c.SendLine("username")
@@ -36,7 +36,7 @@ func TestLoginInputs(t *testing.T) {
 			inputs: inputs{
 				PublicAPIKey: "username",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *profile.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Private API Key")
 				c.SendLine("password")
@@ -48,7 +48,7 @@ func TestLoginInputs(t *testing.T) {
 		},
 		{
 			description:    "Should prompt for both api keys when not provided",
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *profile.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key")
 				c.SendLine("username")
@@ -67,7 +67,7 @@ func TestLoginInputs(t *testing.T) {
 				PublicAPIKey:  "username",
 				PrivateAPIKey: "password",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *profile.Profile) {},
 			procedure: func(c *expect.Console) {
 				// c.ExpectEOF()
 			},
@@ -78,7 +78,7 @@ func TestLoginInputs(t *testing.T) {
 		},
 		{
 			description: "Should not prompt for inputs when profile provides the data",
-			prepareProfile: func(p *cli.Profile) {
+			prepareProfile: func(p *profile.Profile) {
 				p.SetUser("username", "password")
 			},
 			procedure: func(c *expect.Console) {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -30,12 +31,12 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
-	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
+func (cmd *command) Setup(profile *profile.Profile, ui terminal.UI, appData cli.AppData) error {
+	cmd.realmClient = realm.NewAuthClient(profile.GetRealmBaseURL(), profile)
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *command) Handler(profile *profile.Profile, ui terminal.UI) error {
 	apps, appsErr := cmd.realmClient.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
 	if appsErr != nil {
 		return fmt.Errorf("failed to get apps: %w", appsErr)
@@ -45,7 +46,7 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *command) Feedback(profile *profile.Profile, ui terminal.UI) error {
 	if len(cmd.apps) == 0 {
 		return ui.Print(terminal.NewTextLog("No available apps to show"))
 	}

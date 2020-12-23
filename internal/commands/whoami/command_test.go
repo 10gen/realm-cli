@@ -21,7 +21,7 @@ func TestWhoamiFeedback(t *testing.T) {
 	t.Run("Feedback should print the auth details", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
-			setup       func(t *testing.T, profile *cli.Profile)
+			setup       func(t *testing.T, profile *profile.Profile)
 			test        func(t *testing.T, output string)
 		}{
 			{
@@ -32,7 +32,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			},
 			{
 				description: "with a user that has no active session",
-				setup: func(t *testing.T, profile *cli.Profile) {
+				setup: func(t *testing.T, profile *profile.Profile) {
 					profile.SetUser("username", "my-super-secret-key")
 				},
 				test: func(t *testing.T, output string) {
@@ -41,7 +41,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			},
 			{
 				description: "with a user fully logged in",
-				setup: func(t *testing.T, profile *cli.Profile) {
+				setup: func(t *testing.T, profile *profile.Profile) {
 					profile.SetUser("username", "my-super-secret-key")
 					profile.SetSession("accessToken", "refreshToken")
 				},

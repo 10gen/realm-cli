@@ -10,7 +10,7 @@ import (
 )
 
 // NewProfile returns a new CLI profile with a random name
-func NewProfile(t *testing.T) *cli.Profile {
+func NewProfile(t *testing.T) *profile.Profile {
 	t.Helper()
 	profile, err := cli.NewProfile(primitive.NewObjectID().Hex())
 	assert.Nil(t, err)

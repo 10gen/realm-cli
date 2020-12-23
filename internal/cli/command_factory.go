@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/10gen/realm-cli/internal/profile"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -15,7 +16,7 @@ import (
 // CommandFactory is a command factory
 type CommandFactory struct {
 	wd               string
-	profile          *Profile
+	profile          *profile.Profile
 	ui               terminal.UI
 	uiConfig         terminal.UIConfig
 	inReader         *os.File
@@ -29,7 +30,7 @@ type CommandFactory struct {
 func NewCommandFactory() *CommandFactory {
 	errLogger := log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
 
-	profile, profileErr := NewDefaultProfile()
+	profile, profileErr := profile.NewDefaultProfile()
 	if profileErr != nil {
 		errLogger.Fatal(profileErr)
 	}
@@ -75,7 +76,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.SetOut(factory.outWriter)
 			cmd.SetErr(factory.errWriter)
 
-			if err := factory.profile.resolveFlags(); err != nil {
+			if err := factory.profile.ResolveFlags(); err != nil {
 				printErr := factory.ui.Print(terminal.NewErrorLog(err))
 				if printErr != nil {
 					factory.errLogger.Fatal(err) // log the original failure
@@ -84,7 +85,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			}
 
 			factory.telemetryService = telemetry.NewService(
-				factory.profile.telemetryMode,
+				factory.profile.TelemetryMode,
 				factory.profile.User().PublicAPIKey,
 				display,
 			)
@@ -172,10 +173,10 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 // SetGlobalFlags sets the global flags
 func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 	// cli profile
-	fs.StringVarP(&factory.profile.Name, flagProfile, flagProfileShort, DefaultProfile, flagProfileUsage)
-	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
-	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
-	fs.VarP(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
+	fs.StringVarP(&factory.profile.Name, profile.FlagProfile, profile.FlagProfileShort, profile.DefaultProfile, profile.FlagProfileUsage)
+	fs.StringVar(&factory.profile.AtlasBaseURL, profile.FlagAtlasBaseURL, "", profile.FlagAtlasBaseURLUsage)
+	fs.StringVar(&factory.profile.RealmBaseURL, profile.FlagRealmBaseURL, "", profile.FlagRealmBaseURLUsage)
+	fs.VarP(&factory.profile.TelemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
 
 	// cli ui
 	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
