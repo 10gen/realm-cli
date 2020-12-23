@@ -1,0 +1,9 @@
+{
+    "name": "yell",
+    "type": "SCHEDULED",
+    "config": {
+        "schedule": "0 0 * * 1"
+    },
+    "function_name": "test",
+    "disabled": false
+}

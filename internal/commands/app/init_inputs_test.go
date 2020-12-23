@@ -1,12 +1,11 @@
 package app
 
 import (
+	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/app"
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -20,7 +19,11 @@ func TestAppInitInputsResolve(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()
 
-		assert.Nil(t, cli.WriteFile(filepath.Join(profile.WorkingDirectory, app.FileConfig), 0666, strings.NewReader(`{"name":"eggcorn"}`)))
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, app.FileConfig.String()),
+			[]byte(`{"name":"eggcorn"}`),
+			0666,
+		))
 
 		var i initInputs
 		assert.Equal(t, errProjectExists{}, i.Resolve(profile, nil))
@@ -94,14 +97,14 @@ func TestAppInitInputsResolve(t *testing.T) {
 }
 
 func TestAppInitInputsResolveApp(t *testing.T) {
-	t.Run("Should do nothing if from type is not set", func(t *testing.T) {
+	t.Run("Should do nothing if from is not set", func(t *testing.T) {
 		var i initInputs
 		f, err := i.resolveFrom(nil, nil)
 		assert.Nil(t, err)
 		assert.Equal(t, from{}, f)
 	})
 
-	t.Run("Should return the app id and group id of specified app if from type is set to app", func(t *testing.T) {
+	t.Run("Should return the app id and group id of specified app if from is set to app", func(t *testing.T) {
 		var appFilter realm.AppFilter
 		app := realm.App{
 			ID:          primitive.NewObjectID().Hex(),

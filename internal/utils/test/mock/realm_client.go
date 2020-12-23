@@ -12,10 +12,20 @@ type RealmClient struct {
 	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
 
+	DiffFn   func(groupID, appID string, pkg map[string]interface{}) ([]string, error)
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
-	ImportFn func(groupID, appID string, req realm.ImportRequest) error
+	ImportFn func(groupID, appID string, pkg map[string]interface{}) error
 
-	FindAppsFn func(filter realm.AppFilter) ([]realm.App, error)
+	CreateAppFn func(groupID, name string, meta realm.AppMeta) (realm.App, error)
+	FindAppsFn  func(filter realm.AppFilter) ([]realm.App, error)
+
+	CreateDraftFn  func(groupID, appID string) (realm.AppDraft, error)
+	DiffDraftFn    func(groupID, appID, draftID string) (realm.AppDraftDiff, error)
+	DiscardDraftFn func(groupID, appID, draftID string) error
+	DraftFn        func(groupID, appID string) (realm.AppDraft, error)
+
+	DeployDraftFn func(groupID, appID, draftID string) (realm.AppDeployment, error)
+	DeploymentFn  func(groupID, appID, deploymentID string) (realm.AppDeployment, error)
 
 	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
 	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
@@ -58,11 +68,31 @@ func (rc RealmClient) Export(groupID, appID string, req realm.ExportRequest) (st
 // Import calls the mocked Import implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) Import(groupID, appID string, req realm.ImportRequest) error {
+func (rc RealmClient) Import(groupID, appID string, pkg map[string]interface{}) error {
 	if rc.ImportFn != nil {
-		return rc.ImportFn(groupID, appID, req)
+		return rc.ImportFn(groupID, appID, pkg)
 	}
-	return rc.Client.Import(groupID, appID, req)
+	return rc.Client.Import(groupID, appID, pkg)
+}
+
+// Diff calls the mocked Diff implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Diff(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+	if rc.DiffFn != nil {
+		return rc.DiffFn(groupID, appID, pkg)
+	}
+	return rc.Client.Diff(groupID, appID, pkg)
+}
+
+// CreateApp calls the mocked CreateApp implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) CreateApp(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+	if rc.CreateAppFn != nil {
+		return rc.CreateAppFn(groupID, name, meta)
+	}
+	return rc.Client.CreateApp(groupID, name, meta)
 }
 
 // FindApps calls the mocked FindApps implementation if provided,
@@ -73,6 +103,66 @@ func (rc RealmClient) FindApps(filter realm.AppFilter) ([]realm.App, error) {
 		return rc.FindAppsFn(filter)
 	}
 	return rc.Client.FindApps(filter)
+}
+
+// CreateDraft calls the mocked CreateDraft implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) CreateDraft(groupID, appID string) (realm.AppDraft, error) {
+	if rc.CreateDraftFn != nil {
+		return rc.CreateDraftFn(groupID, appID)
+	}
+	return rc.Client.CreateDraft(groupID, appID)
+}
+
+// DeployDraft calls the mocked DeployDraft implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DeployDraft(groupID, appID, draftID string) (realm.AppDeployment, error) {
+	if rc.DeployDraftFn != nil {
+		return rc.DeployDraftFn(groupID, appID, draftID)
+	}
+	return rc.Client.DeployDraft(groupID, appID, draftID)
+}
+
+// DiffDraft calls the mocked DiffDraft implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DiffDraft(groupID, appID, draftID string) (realm.AppDraftDiff, error) {
+	if rc.DiffDraftFn != nil {
+		return rc.DiffDraftFn(groupID, appID, draftID)
+	}
+	return rc.Client.DiffDraft(groupID, appID, draftID)
+}
+
+// DiscardDraft calls the mocked DiscardDraft implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DiscardDraft(groupID, appID, draftID string) error {
+	if rc.DiscardDraftFn != nil {
+		return rc.DiscardDraftFn(groupID, appID, draftID)
+	}
+	return rc.Client.DiscardDraft(groupID, appID, draftID)
+}
+
+// Draft calls the mocked Draft implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Draft(groupID, appID string) (realm.AppDraft, error) {
+	if rc.DraftFn != nil {
+		return rc.DraftFn(groupID, appID)
+	}
+	return rc.Client.Draft(groupID, appID)
+}
+
+// Deployment calls the mocked Deployment implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Deployment(groupID, appID, deploymentID string) (realm.AppDeployment, error) {
+	if rc.DeploymentFn != nil {
+		return rc.DeploymentFn(groupID, appID, deploymentID)
+	}
+	return rc.Client.Deployment(groupID, appID, deploymentID)
 }
 
 // CreateAPIKey calls the mocked CreateAPIKey implementation if provided,

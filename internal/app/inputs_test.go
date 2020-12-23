@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -95,6 +96,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 }
 
 func TestResolveApp(t *testing.T) {
+	groupID := "groupID"
 	testApp := realm.App{
 		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
@@ -104,6 +106,7 @@ func TestResolveApp(t *testing.T) {
 
 	for _, tc := range []struct {
 		description string
+		appID       string
 		apps        []realm.App
 		procedure   func(c *expect.Console)
 		expectedApp realm.App
@@ -111,17 +114,25 @@ func TestResolveApp(t *testing.T) {
 	}{
 		{
 			description: "Should return the single app found from the client call",
+			appID:       "app",
 			apps:        []realm.App{testApp},
 			procedure:   func(c *expect.Console) {},
 			expectedApp: testApp,
 		},
 		{
-			description: "Should return an error when no apps are returned from the client call",
+			description: "Should return an error when no apps are returned from the client call with no app id specified",
 			procedure:   func(c *expect.Console) {},
-			expectedErr: errors.New("failed to find app 'app'"),
+			expectedErr: ErrAppNotFound{},
+		},
+		{
+			description: "Should return an error when no apps are returned from the client call with an app id specified",
+			appID:       "app",
+			procedure:   func(c *expect.Console) {},
+			expectedErr: ErrAppNotFound{"app"},
 		},
 		{
 			description: "Should prompt user to select an app when more than one is returned from the client call",
+			appID:       "app",
 			apps:        []realm.App{testApp, testApp},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Select App")
@@ -149,7 +160,7 @@ func TestResolveApp(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			inputs := ProjectInputs{Project: "groupID", App: "app"}
+			inputs := ProjectInputs{Project: groupID, App: tc.appID}
 
 			app, err := Resolve(ui, realmClient, inputs.Filter())
 
@@ -158,7 +169,7 @@ func TestResolveApp(t *testing.T) {
 
 			assert.Equal(t, tc.expectedApp, app)
 			assert.Equal(t, tc.expectedErr, err)
-			assert.Equal(t, realm.AppFilter{GroupID: "groupID", App: "app"}, appFilter)
+			assert.Equal(t, realm.AppFilter{GroupID: "groupID", App: tc.appID}, appFilter)
 		})
 	}
 
@@ -169,6 +180,77 @@ func TestResolveApp(t *testing.T) {
 		}
 
 		_, err := Resolve(nil, realmClient, realm.AppFilter{})
+		assert.Equal(t, errors.New("something bad happened"), err)
+	})
+}
+
+func TestResolveGroupID(t *testing.T) {
+	testGroup := atlas.Group{
+		ID:   "some-id",
+		Name: "eggcorn",
+	}
+
+	for _, tc := range []struct {
+		description     string
+		groups          []atlas.Group
+		procedure       func(c *expect.Console)
+		expectedGroupID string
+		expectedErr     error
+	}{
+		{
+			description:     "Should return the single group found from the client call",
+			groups:          []atlas.Group{testGroup},
+			procedure:       func(c *expect.Console) {},
+			expectedGroupID: testGroup.ID,
+		},
+		{
+			description: "Should return an error when no groups are returned from the client call",
+			procedure:   func(c *expect.Console) {},
+			expectedErr: ErrGroupNotFound,
+		},
+		{
+			description: "Should prompt user to select a group when more than one is returned from the client call",
+			groups:      []atlas.Group{testGroup, testGroup},
+			procedure: func(c *expect.Console) {
+				c.ExpectString("Atlas Project")
+				c.SendLine("egg")
+			},
+			expectedGroupID: testGroup.ID,
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			atlasClient := mock.AtlasClient{}
+			atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+				return tc.groups, nil
+			}
+
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+				tc.procedure(console)
+			}()
+
+			groupID, err := ResolveGroupID(ui, atlasClient)
+
+			console.Tty().Close() // flush the writers
+			<-doneCh              // wait for procedure to complete
+
+			assert.Equal(t, tc.expectedGroupID, groupID)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
+
+	t.Run("Should return the client error if one occurs", func(t *testing.T) {
+		atlasClient := mock.AtlasClient{}
+		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			return nil, errors.New("something bad happened")
+		}
+
+		_, err := ResolveGroupID(nil, atlasClient)
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }

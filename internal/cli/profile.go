@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 
 	"github.com/spf13/afero"
@@ -127,7 +129,7 @@ func (p *Profile) Save() error {
 	return nil
 }
 
-func (p Profile) resolveFlags() error {
+func (p *Profile) resolveFlags() error {
 	if p.telemetryMode == telemetry.ModeEmpty {
 		p.telemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
 	}
@@ -228,4 +230,24 @@ func (p Profile) AtlasBaseURL() string {
 // SetAtlasBaseURL sets the CLI profile Atlas base url
 func (p Profile) SetAtlasBaseURL(realmBaseURL string) {
 	p.SetString(keyAtlasBaseURL, realmBaseURL)
+}
+
+// RealmClient creates an unauthenticated Realm client
+func (p Profile) RealmClient() realm.Client {
+	return realm.NewClient(p.RealmBaseURL())
+}
+
+// RealmAuthClient creates an authenticated Realm client
+func (p *Profile) RealmAuthClient() realm.Client {
+	return realm.NewAuthClient(p.RealmBaseURL(), p)
+}
+
+// AtlasClient creates an unauthenticated Atlas client
+func (p Profile) AtlasClient() atlas.Client {
+	return atlas.NewClient(p.AtlasBaseURL())
+}
+
+// AtlasAuthClient creates an authenticated Atlas client
+func (p Profile) AtlasAuthClient() atlas.Client {
+	return atlas.NewAuthClient(p.AtlasBaseURL(), p.User())
 }

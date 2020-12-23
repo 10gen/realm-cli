@@ -5,6 +5,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
+	"github.com/10gen/realm-cli/internal/commands/push"
 	"github.com/10gen/realm-cli/internal/commands/user"
 	"github.com/10gen/realm-cli/internal/commands/whoami"
 )
@@ -12,22 +13,36 @@ import (
 // set of commands
 var (
 	Login = cli.CommandDefinition{
+		Command:     &login.Command{},
 		Use:         "login",
 		Description: "Authenticate with an Atlas programmatic API Key",
 		Help:        "login", // TODO(REALMC-7429): add help text description
-		Command:     &login.Command{},
 	}
 	Logout = cli.CommandDefinition{
+		Command:     &logout.Command{},
 		Use:         "logout",
 		Description: "Terminate the current user’s session",
 		Help:        "logout", // TODO(REALMC-7429): add help text description
-		Command:     &logout.Command{},
 	}
 	Whoami = cli.CommandDefinition{
+		Command:     &whoami.Command{},
 		Use:         "whoami",
 		Description: "Display the current user's details",
 		Help:        "whoami", // TODO(REALMC-7429): add help text description
-		Command:     &whoami.Command{},
+	}
+
+	Push = cli.CommandDefinition{
+		Command:     &push.Command{},
+		Use:         "push",
+		Aliases:     []string{"export"},
+		Description: "Push and deploy changes from your local directory to your Realm app",
+		Help: `Push and deploy changes from your local directory to your Realm app
+
+	Updates a remote Realm application with your local directory. First, input a
+	Realm app that you would like changes pushed to. This input can be either the
+	application Client App ID of an existing Realm app you would like to update, or
+	the name of a new Realm app you would like to create. Changes pushed are
+	automatically deployed.`,
 	}
 
 	App = cli.CommandDefinition{

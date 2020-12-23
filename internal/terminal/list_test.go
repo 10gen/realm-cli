@@ -22,7 +22,7 @@ func TestList(t *testing.T) {
 			[]string{"1", "2", "3"},
 			nil,
 		}
-		testList := newList(testMessage, testData)
+		testList := newList(testMessage, testData, false)
 		expectedList := list{
 			"a list message",
 			[]string{
@@ -33,6 +33,7 @@ func TestList(t *testing.T) {
 				"[1 2 3]",
 				"",
 			},
+			false,
 		}
 		assert.Equal(t, expectedList, testList)
 
@@ -69,12 +70,19 @@ func TestList(t *testing.T) {
 		})
 	})
 
-	t.Run("Message should display single item lists the same line as the message", func(*testing.T) {
-		testData := []interface{}{"https://mongodb.com"}
-		testList := newList(linkMessage, testData)
+	t.Run("Message should display single item lists the same line as the message with consolidated set to true", func(*testing.T) {
+		testList := newList(linkMessage, []interface{}{"https://mongodb.com"}, true)
+
 		message, err := testList.Message()
 		assert.Nil(t, err)
-		expectedMessage := "For more information: https://mongodb.com"
-		assert.Equal(t, expectedMessage, message)
+		assert.Equal(t, "For more information: https://mongodb.com", message)
+	})
+
+	t.Run("Message should display single item lists the same line as the message with consolidated set to false", func(*testing.T) {
+		testList := newList(linkMessage, []interface{}{"https://mongodb.com"}, false)
+
+		message, err := testList.Message()
+		assert.Nil(t, err)
+		assert.Equal(t, "For more information\n  https://mongodb.com", message)
 	})
 }

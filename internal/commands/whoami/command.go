@@ -18,7 +18,7 @@ func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	user := profile.User()
 	session := profile.Session()
 
-	if user.PublicAPIKey == "" {
+	if user.PrivateAPIKey == "" {
 		return ui.Print(terminal.NewTextLog("No user is currently logged in"))
 	}
 

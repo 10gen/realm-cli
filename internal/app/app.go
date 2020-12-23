@@ -1,113 +1,127 @@
 package app
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
-// set of exported json options
-const (
-	ExportedJSONPrefix = ""
-	ExportedJSONIndent = "    "
-)
-
-// Data is the exported Realm app config data which it is identified by
-type Data struct {
-	ID   string `json:"client_app_id,omitempty"`
-	Name string `json:"name"`
-}
-
-// Config is the exported Realm app config
-type Config struct {
-	Data
-	ConfigVersion        realm.AppConfigVersion `json:"config_version"`
-	Location             realm.Location         `json:"location"`
-	DeploymentModel      realm.DeploymentModel  `json:"deployment_model"`
-	Security             SecurityConfig         `json:"security"`
-	CustomUserDataConfig CustomUserDataConfig   `json:"custom_user_data_config"`
-	Sync                 SyncConfig             `json:"sync"`
-}
-
-// SecurityConfig ia the Realm app security config
-type SecurityConfig struct{}
-
-// CustomUserDataConfig is the Realm app custom user data config
-type CustomUserDataConfig struct {
-	Enabled bool `json:"enabled"`
-}
-
-// SyncConfig is the Realm app sync config
-type SyncConfig struct {
-	DevelopmentModeEnabled bool `json:"development_mode_enabled"`
-}
-
-// set of app structure filepath parts
-const (
-	FileConfig = "config.json"
-
-	DirAuthProviders = "auth_providers"
-
-	DirGraphQL                = "graphql"
-	DirGraphQLCustomResolvers = DirGraphQL + "/custom_resolvers"
-	FileGraphQLConfig         = DirGraphQL + "/config.json"
-)
-
-// FileAuthProvider creates the auth provider config filepath
-func FileAuthProvider(name string) string {
-	return fmt.Sprintf("%s/%s.json", DirAuthProviders, name)
-}
-
-// ResolveData resolves the MongoDB Realm application based on the current working directory
-// Empty data is successfully returned if this is called outside of a project directory
-func ResolveData(wd string) (Data, error) {
+// ReadPackage reads the app package
+func ReadPackage(wd string) (map[string]interface{}, error) {
 	appDir, appDirOK, appDirErr := ResolveDirectory(wd)
 	if appDirErr != nil {
-		return Data{}, appDirErr
+		return nil, appDirErr
 	}
 	if !appDirOK {
-		return Data{}, nil
+		return map[string]interface{}{}, nil
 	}
 
-	path := filepath.Join(appDir, FileConfig)
-
-	data, readErr := ioutil.ReadFile(path)
-	if readErr != nil {
-		return Data{}, readErr
+	switch appDir.ConfigVersion {
+	case realm.AppConfigVersion20180301, realm.AppConfigVersion20200603:
+		return readAppStructureV1(appDir)
 	}
-
-	if len(data) == 0 {
-		return Data{}, fmt.Errorf("failed to read app data at %s", path)
-	}
-
-	var appData Data
-	if err := json.Unmarshal(data, &appData); err != nil {
-		return Data{}, err
-	}
-	return appData, nil
+	return readAppStructureV2(appDir)
 }
 
-// app directory search configuration
+const (
+	exportedJSONPrefix = ""
+	exportedJSONIndent = "    "
+)
+
+// WriteDefaultConfig writes a default Realm app config to disk
+func WriteDefaultConfig(path string, config Config) error {
+	// TODO(REALMC-7653): marshal config according to version
+	data, dataErr := json.MarshalIndent(config, exportedJSONPrefix, exportedJSONIndent)
+	if dataErr != nil {
+		return fmt.Errorf("failed to write app config: %w", dataErr)
+	}
+
+	file, fileErr := configVersionFile(realm.DefaultAppConfigVersion)
+	if fileErr != nil {
+		return fileErr
+	}
+
+	return writeFile(filepath.Join(path, file.String()), 0666, bytes.NewReader(data))
+}
+
+// WriteZip writes the zip contents to the specified filepath
+func WriteZip(wd string, zipPkg *zip.Reader) error {
+	for _, zipFile := range zipPkg.File {
+		path := filepath.Join(wd, zipFile.Name)
+
+		if zipFile.FileInfo().IsDir() {
+			if err := mkdir(path); err != nil {
+				return err
+			}
+			continue
+		}
+
+		data, openErr := zipFile.Open()
+		if openErr != nil {
+			return openErr
+		}
+		defer data.Close()
+
+		if err := writeFile(path, zipFile.Mode(), data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ResolveConfig resolves the MongoDB Realm application configuration
+// based on the current working directory
+// Empty data will be returned if called outside a project directory
+func ResolveConfig(wd string) (Config, error) {
+	appDir, appDirOK, appDirErr := ResolveDirectory(wd)
+	if appDirErr != nil {
+		return Config{}, appDirErr
+	}
+	if !appDirOK {
+		return Config{}, nil
+	}
+
+	var config Config
+	if err := unmarshalAppConfigInto(appDir, &config); err != nil {
+		return Config{}, err
+	}
+	return config, nil
+}
+
+// Directory represents the metadata associated with a Realm app project directory
+type Directory struct {
+	Path          string
+	ConfigVersion realm.AppConfigVersion
+}
+
 const (
 	maxDirectoryContainSearchDepth = 8
 )
 
+var (
+	validConfigs = []File{FileRealmConfig, FileConfig, FileStitch}
+)
+
 // ResolveDirectory searches upwards from the current working directory
 // for the root directory of a MongoDB Realm application project
-func ResolveDirectory(wd string) (string, bool, error) {
+// and returns the root directory path along with the project's config version
+func ResolveDirectory(wd string) (Directory, bool, error) {
 	wd, wdErr := filepath.Abs(wd)
 	if wdErr != nil {
-		return "", false, wdErr
+		return Directory{}, false, wdErr
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		path := filepath.Join(wd, FileConfig)
-		if _, err := os.Stat(path); err == nil {
-			return filepath.Dir(path), true, nil
+		for _, config := range validConfigs {
+			path := filepath.Join(wd, config.String())
+			if _, err := os.Stat(path); err == nil {
+				return Directory{filepath.Dir(path), fileConfigVersion(config)}, true, nil
+			}
 		}
 
 		if wd == "/" {
@@ -116,5 +130,5 @@ func ResolveDirectory(wd string) (string, bool, error) {
 		wd = filepath.Clean(filepath.Join(wd, ".."))
 	}
 
-	return "", false, nil
+	return Directory{}, false, nil
 }

@@ -24,7 +24,7 @@ func TestRealmImportExport(t *testing.T) {
 	t.Run("Should fail without an auth client", func(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
-		err := client.Import(groupID, primitive.NewObjectID().Hex(), realm.ImportRequest{})
+		err := client.Import(groupID, primitive.NewObjectID().Hex(), nil)
 		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 
@@ -38,10 +38,10 @@ func TestRealmImportExport(t *testing.T) {
 		emailConfirmationURL := "http://localhost:8080/confirm_email"
 
 		t.Run("Should import an app with auth providers", func(t *testing.T) {
-			err := client.Import(groupID, testApp.ID, realm.ImportRequest{
-				AuthProviders: []realm.AuthProvider{
-					{Name: "api-key", Type: "api-key"},
-					{Name: "local-userpass", Type: "local-userpass", Config: map[string]interface{}{
+			err := client.Import(groupID, testApp.ID, map[string]interface{}{
+				app.NameAuthProviders: []map[string]interface{}{
+					{"name": "api-key", "type": "api-key"},
+					{"name": "local-userpass", "type": "local-userpass", "config": map[string]interface{}{
 						"resetPasswordUrl":     resetPasswordURL,
 						"emailConfirmationUrl": emailConfirmationURL,
 					}},
@@ -61,7 +61,7 @@ func TestRealmImportExport(t *testing.T) {
 			exported := parseZipPkg(t, zipPkg)
 
 			t.Run("And the app config contents should be as expected", func(t *testing.T) {
-				appConfig, appConfigOK := exported[app.FileConfig]
+				appConfig, appConfigOK := exported[app.FileConfig.String()]
 				assert.True(t, appConfigOK, "expected exported app to have file: %s", app.FileConfig)
 				assert.Equal(t, fmt.Sprintf(`{
     "app_id": %q,
@@ -82,7 +82,7 @@ func TestRealmImportExport(t *testing.T) {
 
 			t.Run("And the auth provider contents should be as expected", func(t *testing.T) {
 				apiKeyConfigFilepath := app.FileAuthProvider("api-key")
-				apiKeyConfigPayload, apiKeyConfigOK := exported[apiKeyConfigFilepath]
+				apiKeyConfigPayload, apiKeyConfigOK := exported[apiKeyConfigFilepath.String()]
 				assert.True(t, apiKeyConfigOK, "expected exported app to have file: %s", apiKeyConfigFilepath)
 
 				var apiKeyConfig map[string]interface{}
@@ -93,7 +93,7 @@ func TestRealmImportExport(t *testing.T) {
 				assert.False(t, apiKeyConfig["disabled"], "expected api-key.json to have 'disabled' field set to false")
 
 				localUserpassConfigFilepath := app.FileAuthProvider("local-userpass")
-				localUserpassConfigPayload, localUserpassOK := exported[localUserpassConfigFilepath]
+				localUserpassConfigPayload, localUserpassOK := exported[localUserpassConfigFilepath.String()]
 				assert.True(t, localUserpassOK, "expected exported app to have file: %s", localUserpassConfigFilepath)
 
 				var localUserpassConfig map[string]interface{}
@@ -110,7 +110,7 @@ func TestRealmImportExport(t *testing.T) {
 			})
 
 			t.Run("And the graphql contents should be as expected", func(t *testing.T) {
-				graphQLConfig, graphQLConfigOK := exported[app.FileGraphQLConfig]
+				graphQLConfig, graphQLConfigOK := exported[app.FileGraphQLConfig.String()]
 				assert.True(t, graphQLConfigOK, "expected exported app to have file: %s", app.FileGraphQLConfig)
 				assert.Equal(t, `{
     "use_natural_pluralization": true

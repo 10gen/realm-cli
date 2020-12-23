@@ -3,11 +3,20 @@ package realm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
+// set of known error codes
 const (
-	invalidSessionCode = "InvalidSession"
+	errCodeInvalidSession = "InvalidSession"
+
+	ErrCodeDraftAlreadyExists = "DraftAlreadyExists"
+)
+
+// set of known Realm errors
+var (
+	ErrDraftNotFound = errors.New("failed to find draft")
 )
 
 // ErrInvalidSession is an invalid session error

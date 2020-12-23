@@ -43,14 +43,14 @@ func TestAppInitHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
-		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig))
+		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig.String()))
 		assert.Nil(t, readErr)
 
 		var config app.Config
 		assert.Nil(t, json.Unmarshal(data, &config))
 		assert.Equal(t, app.Config{
-			Data:            app.Data{Name: "test-app"},
 			ConfigVersion:   realm.DefaultAppConfigVersion,
+			Name:            "test-app",
 			Location:        realm.LocationSydney,
 			DeploymentModel: realm.DeploymentModelLocal,
 		}, config)
@@ -89,21 +89,21 @@ func TestAppInitHandler(t *testing.T) {
 		assert.Nil(t, cmd.Handler(profile, nil))
 
 		t.Run("Should have the expected contents in the app config file", func(t *testing.T) {
-			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig))
+			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig.String()))
 			assert.Nil(t, readErr)
 
 			var config app.Config
 			assert.Nil(t, json.Unmarshal(data, &config))
 			assert.Equal(t, app.Config{
-				Data:            app.Data{Name: "from-app"},
 				ConfigVersion:   realm.DefaultAppConfigVersion,
+				Name:            "from-app",
 				Location:        realm.LocationIreland,
 				DeploymentModel: realm.DeploymentModelGlobal,
 			}, config)
 		})
 
 		t.Run("Should have the expected contents in the api key auth provider config file", func(t *testing.T) {
-			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileAuthProvider("api-key")))
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileAuthProvider("api-key").String()))
 			assert.Nil(t, err)
 			assert.Equal(t, `{
     "name": "api-key",

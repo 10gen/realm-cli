@@ -50,11 +50,11 @@ type initInputs struct {
 }
 
 func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	appData, appDataErr := appcli.ResolveData(profile.WorkingDirectory)
-	if appDataErr != nil {
-		return appDataErr
+	appConfig, appConfigErr := appcli.ResolveConfig(profile.WorkingDirectory)
+	if appConfigErr != nil {
+		return appConfigErr
 	}
-	if appData.Name != "" {
+	if appConfig.Name != "" {
 		return errProjectExists{}
 	}
 

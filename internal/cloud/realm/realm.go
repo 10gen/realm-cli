@@ -29,6 +29,26 @@ const (
 	AppConfigVersion20180301 AppConfigVersion = 20180301
 )
 
+// set of known location and deployment values
+var (
+	LocationValues = []string{
+		LocationVirginia.String(),
+		LocationOregon.String(),
+		LocationFrankfurt.String(),
+		LocationIreland.String(),
+		LocationSydney.String(),
+		LocationMumbai.String(),
+		LocationSingapore.String(),
+	}
+	DeploymentModelValues = []string{
+		DeploymentModelGlobal.String(),
+		DeploymentModelLocal.String(),
+	}
+
+	errInvalidLocation        = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(LocationValues, ", "))
+	errInvalidDeploymentModel = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(DeploymentModelValues, ", "))
+)
+
 // DeploymentModel is the Realm app deployment model
 type DeploymentModel string
 
@@ -71,13 +91,6 @@ const (
 	DeploymentModelEmpty  DeploymentModel = ""
 	DeploymentModelGlobal DeploymentModel = "GLOBAL"
 	DeploymentModelLocal  DeploymentModel = "LOCAL"
-)
-
-var (
-	errInvalidDeploymentModel = func() error {
-		allDeploymentModels := []string{DeploymentModelGlobal.String(), DeploymentModelLocal.String()}
-		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allDeploymentModels, ", "))
-	}()
 )
 
 func isValidDeploymentModel(dm DeploymentModel) bool {
@@ -138,21 +151,6 @@ const (
 	LocationSydney    Location = "AU"
 	LocationMumbai    Location = "IN-MB"
 	LocationSingapore Location = "SG"
-)
-
-var (
-	errInvalidLocation = func() error {
-		allLocations := []string{
-			LocationVirginia.String(),
-			LocationOregon.String(),
-			LocationFrankfurt.String(),
-			LocationIreland.String(),
-			LocationSydney.String(),
-			LocationMumbai.String(),
-			LocationSingapore.String(),
-		}
-		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allLocations, ", "))
-	}()
 )
 
 func isValidLocation(l Location) bool {
