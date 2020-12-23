@@ -20,7 +20,7 @@ func TestAppListSetup(t *testing.T) {
 		cmd := &command{}
 		assert.Nil(t, cmd.realmClient)
 
-		assert.Nil(t, cmd.Setup(profile, nil, cli.AppData{}))
+		assert.Nil(t, cmd.Setup(profile, nil))
 		assert.NotNil(t, cmd.realmClient)
 	})
 }

@@ -30,7 +30,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
+func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
 	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
 	return nil
 }

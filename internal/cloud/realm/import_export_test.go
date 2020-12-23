@@ -74,7 +74,8 @@ func TestRealmImportExport(t *testing.T) {
     },
     "sync": {
         "development_mode_enabled": false
-    }
+    },
+    "environment": "none"
 }
 `, app.ClientAppID, realm.DefaultAppConfigVersion), appConfig)
 			})

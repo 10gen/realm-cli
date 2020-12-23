@@ -24,7 +24,7 @@ func TestLoginSetup(t *testing.T) {
 			PrivateAPIKey: "privateAPIKey",
 		}}
 
-		err := cmd.Setup(profile, nil, cli.AppData{})
+		err := cmd.Setup(profile, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, cmd.realmClient)
 	})

@@ -22,8 +22,8 @@ type inputs struct {
 	APIKeyName string
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI, appData cli.AppData) error {
-	if err := i.ProjectAppInputs.Resolve(ui, appData); err != nil {
+func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if err := i.ProjectAppInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
 		return err
 	}
 

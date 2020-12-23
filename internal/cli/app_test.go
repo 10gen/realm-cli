@@ -19,14 +19,14 @@ func TestResolveAppData(t *testing.T) {
 
 	t.Run("With a working directory outside of the root of a project directory", func(t *testing.T) {
 		t.Run("Resolving the app directory should return an empty string", func(t *testing.T) {
-			path, insideProject, err := resolveAppDirectory(testRoot)
+			path, insideProject, err := ResolveAppDirectory(testRoot)
 			assert.Nil(t, err)
 			assert.False(t, insideProject, "expected to be outside project")
 			assert.Equal(t, "", path)
 		})
 
 		t.Run("Resolving the app data should successfully return empty data", func(t *testing.T) {
-			data, err := resolveAppData(testRoot)
+			data, err := ResolveAppData(testRoot)
 			assert.Nil(t, err)
 			assert.Equal(t, AppData{}, data)
 		})
@@ -34,14 +34,14 @@ func TestResolveAppData(t *testing.T) {
 
 	t.Run("With a working directory at the root of a project directory", func(t *testing.T) {
 		t.Run("Resolving the app directory should return the working directory", func(t *testing.T) {
-			path, insideProject, err := resolveAppDirectory(projectRoot)
+			path, insideProject, err := ResolveAppDirectory(projectRoot)
 			assert.Nil(t, err)
 			assert.True(t, insideProject, "expected to be inside project")
 			assert.Equal(t, projectRoot, path)
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			data, err := resolveAppData(projectRoot)
+			data, err := ResolveAppData(projectRoot)
 			assert.Nil(t, err)
 			assert.Equal(t, AppData{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
 		})
@@ -51,14 +51,14 @@ func TestResolveAppData(t *testing.T) {
 		nestedRoot := filepath.Join(projectRoot, "l1", "l2", "l3")
 
 		t.Run("Resolving the app directory should return the working directory", func(t *testing.T) {
-			path, insideProject, err := resolveAppDirectory(nestedRoot)
+			path, insideProject, err := ResolveAppDirectory(nestedRoot)
 			assert.Nil(t, err)
 			assert.True(t, insideProject, "expected to be inside project")
 			assert.Equal(t, projectRoot, path)
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			data, err := resolveAppData(nestedRoot)
+			data, err := ResolveAppData(nestedRoot)
 			assert.Nil(t, err)
 			assert.Equal(t, AppData{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
 		})
@@ -68,7 +68,7 @@ func TestResolveAppData(t *testing.T) {
 			maxDirectoryContainSearchDepth = 2
 			defer func() { maxDirectoryContainSearchDepth = origMaxDirectoryContainSearchDepth }()
 
-			data, err := resolveAppData(nestedRoot)
+			data, err := ResolveAppData(nestedRoot)
 			assert.Nil(t, err)
 			assert.Equal(t, AppData{}, data)
 		})
@@ -82,7 +82,7 @@ func TestResolveAppData(t *testing.T) {
 			filepath.Join(emptyProjectRoot, realm.FileAppConfig),
 		)
 
-		_, err := resolveAppData(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
+		_, err := ResolveAppData(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
 		assert.Equal(t, expectedErr, err)
 	})
 }

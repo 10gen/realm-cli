@@ -2,6 +2,8 @@ package cli_test
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -14,16 +16,24 @@ import (
 )
 
 func TestProjectAppInputsResolve(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	testRoot := wd
+	projectRoot := filepath.Join(testRoot, "testdata", "project")
+	localProjectRoot := filepath.Join(testRoot, "testdata", "local_project")
+
 	for _, tc := range []struct {
 		description string
 		inputs      cli.ProjectAppInputs
-		appData     cli.AppData
+		wd          string
 		procedure   func(c *expect.Console)
 		test        func(t *testing.T, i cli.ProjectAppInputs)
 	}{
 		{
 			description: "Should not prompt for app when set by flag already",
 			inputs:      cli.ProjectAppInputs{App: "some-app"},
+			wd:          testRoot,
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i cli.ProjectAppInputs) {
 				assert.Equal(t, "some-app", i.App)
@@ -31,6 +41,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 		},
 		{
 			description: "When outside a project directory should prompt for app when not flagged",
+			wd:          testRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
 				c.SendLine("some-app")
@@ -41,7 +52,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 		},
 		{
 			description: "When inside a project directory should prompt for app when not flagged and provide client app id as a default",
-			appData:     cli.AppData{ID: "eggcorn-abcde"},
+			wd:          projectRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
@@ -52,7 +63,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 		},
 		{
 			description: "When inside a project directory should prompt for app when not flagged and provide name as a default when client app id is not available",
-			appData:     cli.AppData{Name: "eggcorn"},
+			wd:          localProjectRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
@@ -73,7 +84,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			err := tc.inputs.Resolve(ui, tc.appData)
+			err := tc.inputs.Resolve(ui, tc.wd)
 			assert.Nil(t, err)
 
 			console.Tty().Close() // flush the writers
@@ -84,7 +95,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 	}
 }
 
-func TestProjectAppInputsResolveApp(t *testing.T) {
+func TestResolveApp(t *testing.T) {
 	testApp := realm.App{
 		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
@@ -141,7 +152,7 @@ func TestProjectAppInputsResolveApp(t *testing.T) {
 
 			inputs := cli.ProjectAppInputs{Project: "groupID", App: "app"}
 
-			app, err := inputs.ResolveApp(ui, realmClient)
+			app, err := cli.ResolveApp(ui, realmClient, inputs.Filter())
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -158,9 +169,7 @@ func TestProjectAppInputsResolveApp(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		var inputs cli.ProjectAppInputs
-
-		_, err := inputs.ResolveApp(nil, realmClient)
+		_, err := cli.ResolveApp(nil, realmClient, realm.AppFilter{})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }
