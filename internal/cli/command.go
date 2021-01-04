@@ -90,4 +90,14 @@ type errDisableUsage struct {
 	error
 }
 
+// CommandSuggester handles any suggestions to run if the current command isn't working
+type CommandSuggester interface {
+	SuggestedCommands() []string
+}
+
+// LinkReferrer gives a list of links that relate to this command to give the user more context
+type LinkReferrer interface {
+	ReferenceLinks() []string
+}
+
 func (err errDisableUsage) DisableUsage() struct{} { return struct{}{} }
