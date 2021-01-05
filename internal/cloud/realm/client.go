@@ -91,5 +91,55 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
 	}
 	client := &http.Client{}
-	return client.Do(req)
+	res, err := client.Do(req)
+	if err != nil {
+		return res, err
+	}
+	if res.StatusCode != http.StatusUnauthorized || !options.UseAuth || options.PreventRefresh {
+		return res, err
+	}
+
+	serverError := unmarshalServerError(res).(ServerError)
+	if serverError.Code != InvalidSessionCode {
+		return res, err
+	}
+
+	authToken, refreshErr := c.refreshAuth(client)
+	if refreshErr != nil {
+		return nil, refreshErr
+	}
+	c.session.AccessToken = authToken
+	options.PreventRefresh = true
+
+	return c.do(method, path, options)
+}
+
+func (c *client) refreshAuth(httpClient *http.Client) (string, error) {
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+refreshAuthPath, nil)
+	if err != nil {
+		return "", err
+	}
+
+	refreshToken, err := c.getAuth(api.RequestOptions{RefreshAuth: true})
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set(api.HeaderAuthorization, "Bearer "+refreshToken)
+
+	res, err := httpClient.Do(req)
+
+	if err != nil {
+		return "", err
+	}
+	if res.StatusCode != http.StatusCreated {
+		return "", ErrInvalidSession
+	}
+	defer res.Body.Close()
+
+	var session Session
+	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
+		return "", err
+	}
+	return session.AccessToken, nil
 }

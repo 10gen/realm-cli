@@ -11,6 +11,7 @@ import (
 const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
+	refreshAuthPath  = adminAPI + "/auth/session"
 )
 
 // set of supported auth errors

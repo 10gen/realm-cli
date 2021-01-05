@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -106,6 +107,10 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 			err := command.Command.Handler(factory.profile, factory.ui)
+			if err == realm.ErrInvalidSession {
+				factory.profile.ClearSession()
+				factory.profile.Save()
+			}
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,

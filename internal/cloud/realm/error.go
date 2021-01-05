@@ -6,6 +6,11 @@ import (
 	"net/http"
 )
 
+const (
+	// InvalidSessionCode is the error code returned when the user's sesison is invalid
+	InvalidSessionCode = "InvalidSession"
+)
+
 // ServerError is a Realm server error
 type ServerError struct {
 	Code    string `json:"error_code"`

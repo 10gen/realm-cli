@@ -19,9 +19,10 @@ const (
 
 // RequestOptions are options to configure an *http.Request
 type RequestOptions struct {
-	Body        io.Reader
-	ContentType string
-	Query       map[string]string
-	RefreshAuth bool
-	UseAuth     bool
+	Body           io.Reader
+	ContentType    string
+	Query          map[string]string
+	RefreshAuth    bool
+	UseAuth        bool
+	PreventRefresh bool
 }
