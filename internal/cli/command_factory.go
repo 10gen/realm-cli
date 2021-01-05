@@ -107,6 +107,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 			err := command.Command.Handler(factory.profile, factory.ui)
+
 			if err == realm.ErrInvalidSession {
 				factory.profile.ClearSession()
 				profileErr := factory.profile.Save()
@@ -118,6 +119,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 					}
 				}
 			}
+
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,

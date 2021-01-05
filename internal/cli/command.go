@@ -19,7 +19,7 @@ import (
 // At any point should an error occur, command execution will terminate
 // and the ensuing steps will not be run
 type Command interface {
-	Handler(profile *Profile, ui terminal.UI) error
+	 Handler(profile *Profile, ui terminal.UI) error
 }
 
 // CommandFlagger is a hook for commands to register local flags to be parsed
