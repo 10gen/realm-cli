@@ -109,7 +109,10 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			err := command.Command.Handler(factory.profile, factory.ui)
 			if err == realm.ErrInvalidSession {
 				factory.profile.ClearSession()
-				factory.profile.Save()
+				profileErr := factory.profile.Save()
+				if profileErr != nil {
+					factory.errLogger.Fatal(fmt.Errorf("failed to clear session: %s", profileErr.Error()))
+				}
 			}
 			if err != nil {
 				factory.telemetryService.TrackEvent(

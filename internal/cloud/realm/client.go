@@ -108,6 +108,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	if refreshErr != nil {
 		return nil, refreshErr
 	}
+	// TODO: REALMC-7719 save the new access token to prevent unnecessary retries
 	c.session.AccessToken = authToken
 	options.PreventRefresh = true
 
