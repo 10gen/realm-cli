@@ -6,111 +6,70 @@ import (
 	"strings"
 )
 
-type followUp struct {
-	stringRep string
-	name      string
-}
-
-func (f followUp) String() string {
-	return f.stringRep
-}
-
-type FollowUpType struct {
-	LINK    *followUp
-	COMMAND *followUp
-
-	types []*followUp
-}
-
 const (
-	FollowUpLink    = "FollowUpLink"
-	FollowUpCommand = "FollowUpCommand"
-)
+	LinkMessage     = "Try the following command"
+	CommandsMessage = "Refer to the following link"
 
-const (
-	linkMessage = "For more information"
-	cmdMessage  = "Try running instead"
-
-	// sep is the separation between links or suggested commands
-	sep = ", "
+	logFieldFollowUps = "followUps"
 )
 
 var (
-	followUpFields = []string{logFieldMessage}
+	followUpFields = []string{logFieldMessage, logFieldFollowUps}
 )
 
-var followUpTypes = newFollowUpType()
-
-func newFollowUpType() *FollowUpType {
-	link := &followUp{FollowUpLink, linkMessage}
-	cmd := &followUp{FollowUpCommand, cmdMessage}
-	return &FollowUpType{
-		LINK:    link,
-		COMMAND: cmd,
-
-		types: []*followUp{link, cmd},
-	}
+type followUpMessage struct {
+	message   string
+	followUps []string
 }
 
-func (ft FollowUpType) parse(key string) (*followUp, error) {
-	for _, t := range ft.types {
-		if t.String() == key {
-			return t, nil
-		}
-	}
-	return nil, errors.New("cannot find type in FollowUpTypes: " + key)
-}
-
-//
-func (ft FollowUpType) contains(key string) bool {
-	for _, t := range ft.types {
-		if t.String() == key {
-			return true
-		}
-	}
-	return false
-}
-
-type FollowUpMessage struct {
-	messageType *followUp
-	message     string
-}
-
-func (fm FollowUpMessage) validate() error {
-	if fm.messageType == nil || len(fm.message) == 0 {
+func (fm followUpMessage) validate() error {
+	if len(fm.message) == 0 || len(fm.followUps) == 0 {
 		return errors.New("empty follow up message")
-	}
-	if _, err := followUpTypes.parse(fm.messageType.name); err != nil {
-		return err
 	}
 	return nil
 }
 
-func NewFollowUpMessage(followUpType string, messages []string) FollowUpMessage {
-	var f FollowUpMessage
-	parsed, err := followUpTypes.parse(followUpType)
-	if err != nil {
-		return f
+func NewFollowUpMessage(message string, followUps []string) followUpMessage {
+	return followUpMessage{
+		message:   message,
+		followUps: followUps,
 	}
-
-	f.message = fmt.Sprintf(`%s: %s`, parsed.name, strings.Join(messages, sep))
-	f.messageType = parsed
-
-	return f
 }
 
-func (fm FollowUpMessage) Message() (string, error) {
+func (fm followUpMessage) Message() (string, error) {
 	if err := fm.validate(); err != nil {
 		return "", err
 	}
-	return fm.message, nil
+	return fmt.Sprintf(`%s
+%s
+`, fm.formatMessage(), fm.formatFollowUp()), nil
 }
 
-func (fm FollowUpMessage) Payload() ([]string, map[string]interface{}, error) {
+func (fm followUpMessage) Payload() ([]string, map[string]interface{}, error) {
 	if err := fm.validate(); err != nil {
 		return nil, nil, err
 	}
 	return followUpFields, map[string]interface{}{
 		logFieldMessage: fm.message,
+		logFieldFollowUps: fm.followUps,
 	}, nil
+}
+
+func (fm followUpMessage) formatMessage() string {
+	if len(fm.followUps) > 1 {
+		return fm.message + "s"
+	}
+	return fm.message
+}
+
+// TODO: similar to the dataString function in list; consolidate?
+func (fm followUpMessage) formatFollowUp() string {
+	if len(fm.followUps) == 1 {
+		return fm.followUps[0]
+	}
+	followUps := make([]string, 0, len(fm.followUps))
+	for _, f := range fm.followUps {
+		followUps = append(followUps, indent + f)
+	}
+	return strings.Join(followUps, "\n")
 }

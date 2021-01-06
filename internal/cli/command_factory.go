@@ -162,7 +162,14 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 			factory.errLogger.Fatal(err)
 		}
 
-		if printErr := factory.ui.Print(terminal.NewErrorLog(err)); printErr != nil {
+		// TODO: construct what we're doing to print here
+		//	[newErrorLog, conditional append for commandSuggester, conditional append for linkReference]
+		// TODO: check if the err implements the suggested commands / link referrers - after REALMC-7573
+
+		logs := []terminal.Log{
+			terminal.NewErrorLog(err),
+		}
+		if printErr := factory.ui.Print(logs...); printErr != nil {
 			factory.errLogger.Fatal(err) // log the original failure
 		}
 
