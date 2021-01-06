@@ -22,14 +22,8 @@ var Command = cli.CommandDefinition{
 
 type command struct {
 	inputs      inputs
-	outputs     outputs
 	realmClient realm.Client
 	users       []realm.User
-}
-
-type outputs struct {
-	apiKey realm.APIKey
-	user   realm.User
 }
 
 func (cmd *command) Flags(fs *pflag.FlagSet) {
@@ -38,6 +32,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	fs.Var(&cmd.inputs.StateValue, flagState, flagStateUsage)
 	fs.BoolVar(&cmd.inputs.Pending, flagStatus, false, flagStatusUsage)
 	fs.Var(newProviderTypesValue(&cmd.inputs.ProviderTypes), flagProviderTypes, flagProviderTypesUsage)
+	fs.StringSliceVar(&cmd.inputs.Users, flagUsers, []string{}, flagUsersUsage)
 }
 
 func (cmd *command) Inputs() cli.InputResolver {
@@ -61,7 +56,7 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 			State:     cmd.inputs.StateValue.getUserState(),
 			Pending:   cmd.inputs.Pending,
 			Providers: cmd.inputs.ProviderTypes,
-			//todo add users filter
+			IDs:       cmd.inputs.Users,
 		},
 	)
 	if usersErr != nil {

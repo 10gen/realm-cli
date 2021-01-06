@@ -18,6 +18,9 @@ const (
 
 	flagProviderTypes      = "provider-types"
 	flagProviderTypesUsage = `todo add description`
+
+	flagUsers      = "users"
+	flagUsersUsage = `todo add description`
 )
 
 type stateValue string
@@ -104,15 +107,15 @@ func readAsCSV(val string) ([]string, error) {
 	return providerTypes, nil
 }
 
-func writeAsCSV(vals []string) (string, error) {
+func writeAsCSV(vals []string) string {
 	b := &bytes.Buffer{}
 	w := csv.NewWriter(b)
 	err := w.Write(vals)
 	if err != nil {
-		return "", err
+		return ""
 	}
 	w.Flush()
-	return strings.TrimSuffix(b.String(), "\n"), nil
+	return strings.TrimSuffix(b.String(), "\n")
 }
 
 func (p *providerTypesValue) Set(val string) error {
@@ -134,7 +137,7 @@ func (p *providerTypesValue) Type() string {
 }
 
 func (p *providerTypesValue) String() string {
-	str, _ := writeAsCSV(*p.value)
+	str := writeAsCSV(*p.value)
 	return "[" + str + "]"
 }
 
