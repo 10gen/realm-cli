@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	LinkMessage     = "Try the following command"
-	CommandsMessage = "Refer to the following link"
+	CommandMessage = "Try the following command"
+	LinkMessage    = "Refer to the following link"
 
 	logFieldFollowUps = "followUps"
 )
@@ -40,9 +40,7 @@ func (fm followUpMessage) Message() (string, error) {
 	if err := fm.validate(); err != nil {
 		return "", err
 	}
-	return fmt.Sprintf(`%s
-%s
-`, fm.formatMessage(), fm.formatFollowUp()), nil
+	return fmt.Sprintf("%s%s", fm.formatMessage(), fm.formatFollowUp()), nil
 }
 
 func (fm followUpMessage) Payload() ([]string, map[string]interface{}, error) {
@@ -50,7 +48,7 @@ func (fm followUpMessage) Payload() ([]string, map[string]interface{}, error) {
 		return nil, nil, err
 	}
 	return followUpFields, map[string]interface{}{
-		logFieldMessage: fm.message,
+		logFieldMessage:   fm.message,
 		logFieldFollowUps: fm.followUps,
 	}, nil
 }
@@ -65,11 +63,12 @@ func (fm followUpMessage) formatMessage() string {
 // TODO: similar to the dataString function in list; consolidate?
 func (fm followUpMessage) formatFollowUp() string {
 	if len(fm.followUps) == 1 {
-		return fm.followUps[0]
+		return " " + fm.followUps[0]
 	}
-	followUps := make([]string, 0, len(fm.followUps))
+	followUps := make([]string, 0, len(fm.followUps)+1)
+	followUps = append(followUps, "")
 	for _, f := range fm.followUps {
-		followUps = append(followUps, indent + f)
+		followUps = append(followUps, indent+f)
 	}
 	return strings.Join(followUps, "\n")
 }
