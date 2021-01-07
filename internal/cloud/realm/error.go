@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	// InvalidSessionCode is the error code returned when the user's sesison is invalid
 	invalidSessionCode = "InvalidSession"
 )
 
@@ -25,7 +24,8 @@ func (se ServerError) Error() string {
 }
 
 // parseResponseError attempts to read and unmarshal a server error
-// from the provided *http.Response
+// from the provided *http.Response. a generic error with the response status
+// will be returned if unable to parse the response body.
 func parseResponseError(res *http.Response) error {
 	if res.Header.Get(api.HeaderContentType) != api.MediaTypeJSON {
 		return errors.New(res.Status)

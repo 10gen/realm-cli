@@ -62,7 +62,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 		client = realm.NewAuthClient(u.RealmServerURL(), session)
 		_, err = client.AuthProfile()
 		serverError := err.(realm.ServerError)
-		assert.Equal(t, "401 Unauthorized", serverError.Message)
+		assert.Equal(t, "invalid session: valid Issuer required", serverError.Message)
 	})
 
 	t.Run("Should return the invalid session error when credentials are invalid", func(t *testing.T) {

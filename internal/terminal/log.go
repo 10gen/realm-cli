@@ -48,12 +48,7 @@ type Log struct {
 
 // NewTextLog creates a new log with a text message
 func NewTextLog(format string, args ...interface{}) Log {
-	message := format
-	if len(args) > 0 {
-		message = fmt.Sprintf(format, args...)
-	}
-
-	return newLog(LogLevelInfo, textMessage(message))
+	return newLog(LogLevelInfo, convertFormatStringToLogData(format, args...))
 }
 
 // NewJSONLog creates a new log with a JSON document
@@ -76,14 +71,9 @@ func NewErrorLog(err error) Log {
 	return newLog(LogLevelError, errorMessage{err})
 }
 
-// NewWarningLog creates a new warn log
+// NewWarningLog creates a new warning log
 func NewWarningLog(format string, args ...interface{}) Log {
-	message := format
-	if len(args) > 0 {
-		message = fmt.Sprintf(format, args...)
-	}
-
-	return newLog(LogLevelInfo, textMessage(message))
+	return newLog(LogLevelWarn, convertFormatStringToLogData(format, args...))
 }
 
 func newLog(level LogLevel, data LogData) Log {
@@ -100,6 +90,15 @@ func (l Log) Print(outputFormat OutputFormat) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported output format type: %s", outputFormat)
 	}
+}
+
+func convertFormatStringToLogData(format string, args ...interface{}) LogData {
+	message := format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	}
+
+	return textMessage(message)
 }
 
 func (l Log) textLog() (string, error) {

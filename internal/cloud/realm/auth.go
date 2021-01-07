@@ -11,7 +11,7 @@ import (
 const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
-	refreshAuthPath  = adminAPI + "/auth/session"
+	authSessionPath  = adminAPI + "/auth/session"
 )
 
 // set of supported auth errors
@@ -97,9 +97,8 @@ func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	return "", nil
 }
 
-//Refresh Auth uses the user's refresh token to attempt to create a new access token
 func (c *client) refreshAuth() (string, error) {
-	res, resErr := c.do(http.MethodPost, refreshAuthPath, api.RequestOptions{RefreshAuth: true})
+	res, resErr := c.do(http.MethodPost, authSessionPath, api.RequestOptions{RefreshAuth: true, PreventRefresh: true})
 	if resErr != nil {
 		return "", resErr
 	}

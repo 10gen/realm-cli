@@ -91,28 +91,25 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
 	}
 	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
+	res, resErr := client.Do(req)
+	if resErr != nil {
+		return nil, resErr
 	}
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return res, nil
 	}
+	defer res.Body.Close()
 
 	parsedErr := parseResponseError(res)
 	if err, ok := parsedErr.(ServerError); !ok {
 		return nil, parsedErr
-	} else if err.Code != invalidSessionCode {
-		return nil, parsedErr
-	}
-
-	if options.PreventRefresh {
-		return nil, parsedErr
+	} else if options.PreventRefresh || err.Code != invalidSessionCode {
+		return nil, err
 	}
 
 	authToken, refreshErr := c.refreshAuth()
 	if refreshErr != nil {
-		return nil, refreshErr
+		return nil, ErrInvalidSession
 	}
 	// TODO(REALMC-7719): save the new access token to prevent unnecessary retries
 	c.session.AccessToken = authToken
