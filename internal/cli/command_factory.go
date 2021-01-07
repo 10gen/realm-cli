@@ -111,9 +111,10 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				factory.profile.ClearSession()
 				profileErr := factory.profile.Save()
 				if profileErr != nil {
-					printErr := factory.ui.Print(terminal.NewWarningLog("failed to clear session: %s", profileErr.Error()))
+					profileMsg := fmt.Sprintf("failed to clear session: %s", profileErr)
+					printErr := factory.ui.Print(terminal.NewWarningLog(profileMsg))
 					if printErr != nil {
-						factory.errLogger.Printf("failed to print log: %s", printErr.Error())
+						factory.errLogger.Printf(profileMsg)
 					}
 				}
 			}

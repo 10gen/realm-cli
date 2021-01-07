@@ -6,17 +6,19 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/utils/api"
+
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
 func TestServerError(t *testing.T) {
-	var jsonContentTypeHeader http.Header = map[string][]string{"Content-Type": []string{"application/json"}}
+	var jsonContentTypeHeader http.Header = http.Header{api.HeaderContentType: []string{api.MediaTypeJSON}}
 
 	t.Run("Should unmarshal a non-json response successfully", func(t *testing.T) {
 		err := parseResponseError(&http.Response{
 			Body: ioutil.NopCloser(strings.NewReader("something bad happened")),
 		})
-		assert.Equal(t, "", err.Error())
+		assert.Equal(t, ServerError{Message: "something bad happened"}, err)
 	})
 
 	t.Run("Should create error from an empty response with its status", func(t *testing.T) {
@@ -24,7 +26,7 @@ func TestServerError(t *testing.T) {
 			Status: "something bad happened",
 			Body:   ioutil.NopCloser(strings.NewReader("")),
 		})
-		assert.Equal(t, "something bad happened", err.Error())
+		assert.Equal(t, ServerError{Message: "something bad happened"}, err)
 	})
 
 	t.Run("Should unmarshal a server error payload without an error code successfully", func(t *testing.T) {

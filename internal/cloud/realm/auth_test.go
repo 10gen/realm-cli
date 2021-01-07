@@ -57,6 +57,8 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 		assert.Equal(t, nil, err)
+
+		// invalidate the access token
 		session.AccessToken = session.RefreshToken
 
 		client = realm.NewAuthClient(u.RealmServerURL(), session)
@@ -70,6 +72,8 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 		assert.Equal(t, nil, err)
+
+		// invalidate the refresh and access tokens
 		session.RefreshToken = session.AccessToken
 		session.AccessToken = ""
 
