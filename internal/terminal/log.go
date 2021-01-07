@@ -16,6 +16,7 @@ type LogLevel string
 const (
 	LogLevelInfo  LogLevel = "info"
 	LogLevelError LogLevel = "error"
+	LogLevelWarn  LogLevel = "warn"
 )
 
 var (
@@ -73,6 +74,16 @@ func NewListLog(message string, data ...interface{}) Log {
 // NewErrorLog creates a new error log
 func NewErrorLog(err error) Log {
 	return newLog(LogLevelError, errorMessage{err})
+}
+
+// NewWarningLog creates a new warn log
+func NewWarningLog(format string, args ...interface{}) Log {
+	message := format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	}
+
+	return newLog(LogLevelInfo, textMessage(message))
 }
 
 func newLog(level LogLevel, data LogData) Log {

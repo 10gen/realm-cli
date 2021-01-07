@@ -35,14 +35,14 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 		http.MethodPost,
 		authenticatePath,
 		authenticateRequest{publicAPIKey, privateAPIKey},
-		api.RequestOptions{},
+		api.RequestOptions{PreventRefresh: true},
 	)
 	if resErr != nil {
 		return Session{}, resErr
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return Session{}, unmarshalServerError(res)
+		return Session{}, parseResponseError(res)
 	}
 
 	var session Session
@@ -69,7 +69,7 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return AuthProfile{}, unmarshalServerError(res)
+		return AuthProfile{}, parseResponseError(res)
 	}
 
 	var profile AuthProfile
@@ -100,7 +100,6 @@ func (c *client) getAuth(options api.RequestOptions) (string, error) {
 //Refresh Auth uses the user's refresh token to attempt to create a new access token
 func (c *client) refreshAuth() (string, error) {
 	res, resErr := c.do(http.MethodPost, refreshAuthPath, api.RequestOptions{RefreshAuth: true})
-
 	if resErr != nil {
 		return "", resErr
 	}

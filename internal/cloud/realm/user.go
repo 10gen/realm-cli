@@ -76,7 +76,7 @@ func (c *client) CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return APIKey{}, unmarshalServerError(res)
+		return APIKey{}, parseResponseError(res)
 	}
 
 	var apiKey APIKey
@@ -103,7 +103,7 @@ func (c *client) CreateUser(groupID, appID, email, password string) (User, error
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return User{}, unmarshalServerError(res)
+		return User{}, parseResponseError(res)
 	}
 
 	var user User
@@ -124,7 +124,7 @@ func (c *client) DeleteUser(groupID, appID, userID string) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return unmarshalServerError(res)
+		return parseResponseError(res)
 	}
 	return nil
 }
@@ -140,7 +140,7 @@ func (c *client) DisableUser(groupID, appID, userID string) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return unmarshalServerError(res)
+		return parseResponseError(res)
 	}
 	return nil
 }
@@ -174,7 +174,7 @@ func (c *client) RevokeUserSessions(groupID, appID, userID string) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return unmarshalServerError(res)
+		return parseResponseError(res)
 	}
 	return nil
 }
@@ -190,7 +190,7 @@ func (c *client) getPendingUsers(groupID, appID string, userIDs []string) ([]Use
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, unmarshalServerError(res)
+		return nil, parseResponseError(res)
 	}
 
 	var users []User
@@ -228,7 +228,7 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return User{}, unmarshalServerError(res)
+		return User{}, parseResponseError(res)
 	}
 
 	var user User
@@ -256,7 +256,7 @@ func (c *client) getUsers(groupID, appID string, userState UserState, providerTy
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, unmarshalServerError(res)
+		return nil, parseResponseError(res)
 	}
 
 	var users []User

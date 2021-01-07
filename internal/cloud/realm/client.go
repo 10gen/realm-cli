@@ -99,12 +99,15 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return res, nil
 	}
 
-	serverError, ok := unmarshalServerError(res).(ServerError)
-	if !ok {
-		return res, nil
+	parsedErr := parseResponseError(res)
+	if err, ok := parsedErr.(ServerError); !ok {
+		return nil, parsedErr
+	} else if err.Code != invalidSessionCode {
+		return nil, parsedErr
 	}
-	if serverError.Code != invalidSessionCode {
-		return res, nil
+
+	if options.PreventRefresh {
+		return nil, parsedErr
 	}
 
 	authToken, refreshErr := c.refreshAuth()

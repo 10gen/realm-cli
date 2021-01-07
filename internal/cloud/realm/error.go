@@ -24,9 +24,9 @@ func (se ServerError) Error() string {
 	return se.Message
 }
 
-// unmarshalServerError attempts to read and unmarshal a server error
+// parseResponseError attempts to read and unmarshal a server error
 // from the provided *http.Response
-func unmarshalServerError(res *http.Response) error {
+func parseResponseError(res *http.Response) error {
 	if res.Header.Get(api.HeaderContentType) != api.MediaTypeJSON {
 		return errors.New(res.Status)
 	}

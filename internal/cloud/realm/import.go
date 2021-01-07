@@ -42,7 +42,7 @@ func (c *client) Import(groupID, appID string, req ImportRequest) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return unmarshalServerError(res)
+		return parseResponseError(res)
 	}
 	return nil
 }
