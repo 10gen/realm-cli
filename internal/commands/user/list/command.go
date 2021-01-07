@@ -31,7 +31,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagStatus, flagStatusShort, false, flagStatusUsage)
-	fs.VarP(newProviderTypesValue(&cmd.inputs.ProviderTypes), flagProviderTypes, flagProviderTypesShort, flagProviderTypesUsage)
+	fs.StringSliceVarP(&cmd.inputs.ProviderTypes, flagProviderTypes, flagProviderTypesShort, []string{}, flagProviderTypesUsage)
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUsers, flagUsersShort, []string{}, flagUsersUsage)
 }
 
