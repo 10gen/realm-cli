@@ -3,12 +3,15 @@ package realm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
+
+	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
 const (
 	// InvalidSessionCode is the error code returned when the user's sesison is invalid
-	InvalidSessionCode = "InvalidSession"
+	invalidSessionCode = "InvalidSession"
 )
 
 // ServerError is a Realm server error
@@ -24,6 +27,9 @@ func (se ServerError) Error() string {
 // unmarshalServerError attempts to read and unmarshal a server error
 // from the provided *http.Response
 func unmarshalServerError(res *http.Response) error {
+	if res.Header.Get(api.HeaderContentType) != api.MediaTypeJSON {
+		return errors.New(res.Status)
+	}
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(res.Body); err != nil {
 		return err

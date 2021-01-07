@@ -49,6 +49,37 @@ func TestRealmAuthProfile(t *testing.T) {
 	})
 }
 
+func TestRealmAuthRefresh(t *testing.T) {
+	u.SkipUnlessRealmServerRunning(t)
+
+	t.Run("Does not refresh auth if request does not return invalid session code", func(t *testing.T) {
+		client := realm.NewClient(u.RealmServerURL())
+
+		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+		assert.Equal(t, nil, err)
+		session.AccessToken = session.RefreshToken
+
+		client = realm.NewAuthClient(u.RealmServerURL(), session)
+		_, err = client.AuthProfile()
+		serverError := err.(realm.ServerError)
+		assert.Equal(t, "401 Unauthorized", serverError.Message)
+	})
+
+	t.Run("Should return the invalid session error when credentials are invalid", func(t *testing.T) {
+		client := realm.NewClient(u.RealmServerURL())
+
+		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+		assert.Equal(t, nil, err)
+		session.RefreshToken = session.AccessToken
+		session.AccessToken = ""
+
+		client = realm.NewAuthClient(u.RealmServerURL(), session)
+		_, err = client.AuthProfile()
+		assert.Equal(t, realm.ErrInvalidSession, err)
+	})
+	// TODO: REALMC-7719 add test for expired credentials and test for ensuring profile cleared on invalid session
+}
+
 func newAuthClient(t *testing.T) realm.Client {
 	t.Helper()
 

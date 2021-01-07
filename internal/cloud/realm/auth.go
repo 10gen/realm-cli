@@ -97,6 +97,25 @@ func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	return "", nil
 }
 
+//Refresh Auth uses the user's refresh token to attempt to create a new access token
+func (c *client) refreshAuth() (string, error) {
+	res, resErr := c.do(http.MethodPost, refreshAuthPath, api.RequestOptions{RefreshAuth: true})
+
+	if resErr != nil {
+		return "", resErr
+	}
+	if res.StatusCode != http.StatusCreated {
+		return "", ErrInvalidSession
+	}
+	defer res.Body.Close()
+
+	var session Session
+	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
+		return "", err
+	}
+	return session.AccessToken, nil
+}
+
 // AllGroupIDs returns all group ids associated with the user's profile
 func (profile AuthProfile) AllGroupIDs() []string {
 	groupIDSet := map[string]struct{}{"": struct{}{}}

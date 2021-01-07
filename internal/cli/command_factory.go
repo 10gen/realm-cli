@@ -23,12 +23,14 @@ type CommandFactory struct {
 	outWriter        *os.File
 	errWriter        *os.File
 	errLogger        *log.Logger
+	warnLogger       *log.Logger
 	telemetryService *telemetry.Service
 }
 
 // NewCommandFactory creates a new command factory
 func NewCommandFactory() *CommandFactory {
 	errLogger := log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
+	warnLogger := log.New(os.Stdout, "UTC TRACE  ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	profile, profileErr := NewDefaultProfile()
 	if profileErr != nil {
@@ -36,8 +38,9 @@ func NewCommandFactory() *CommandFactory {
 	}
 
 	return &CommandFactory{
-		profile:   profile,
-		errLogger: errLogger,
+		profile:    profile,
+		errLogger:  errLogger,
+		warnLogger: warnLogger,
 	}
 }
 
@@ -111,7 +114,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				factory.profile.ClearSession()
 				profileErr := factory.profile.Save()
 				if profileErr != nil {
-					factory.errLogger.Fatal(fmt.Errorf("failed to clear session: %s", profileErr.Error()))
+					factory.warnLogger.Printf("failed to clear session: %s", profileErr.Error())
 				}
 			}
 			if err != nil {

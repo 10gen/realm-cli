@@ -93,54 +93,27 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return res, err
+		return nil, err
 	}
-	if res.StatusCode != http.StatusUnauthorized || !options.UseAuth || options.PreventRefresh {
-		return res, err
-	}
-
-	serverError := unmarshalServerError(res).(ServerError)
-	if serverError.Code != InvalidSessionCode {
-		return res, err
+	if res.StatusCode >= 200 && res.StatusCode <= 299 {
+		return res, nil
 	}
 
-	authToken, refreshErr := c.refreshAuth(client)
+	serverError, ok := unmarshalServerError(res).(ServerError)
+	if !ok {
+		return res, nil
+	}
+	if serverError.Code != invalidSessionCode {
+		return res, nil
+	}
+
+	authToken, refreshErr := c.refreshAuth()
 	if refreshErr != nil {
 		return nil, refreshErr
 	}
-	// TODO: REALMC-7719 save the new access token to prevent unnecessary retries
+	// TODO(REALMC-7719): save the new access token to prevent unnecessary retries
 	c.session.AccessToken = authToken
 	options.PreventRefresh = true
 
 	return c.do(method, path, options)
-}
-
-func (c *client) refreshAuth(httpClient *http.Client) (string, error) {
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+refreshAuthPath, nil)
-	if err != nil {
-		return "", err
-	}
-
-	refreshToken, err := c.getAuth(api.RequestOptions{RefreshAuth: true})
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set(api.HeaderAuthorization, "Bearer "+refreshToken)
-
-	res, err := httpClient.Do(req)
-
-	if err != nil {
-		return "", err
-	}
-	if res.StatusCode != http.StatusCreated {
-		return "", ErrInvalidSession
-	}
-	defer res.Body.Close()
-
-	var session Session
-	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
-		return "", err
-	}
-	return session.AccessToken, nil
 }
