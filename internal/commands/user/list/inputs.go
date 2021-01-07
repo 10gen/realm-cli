@@ -2,12 +2,13 @@ package list
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 )
 
 type inputs struct {
 	cli.ProjectAppInputs
-	StateValue    stateValue
+	UserState     realm.UserState
 	Pending       bool
 	ProviderTypes []string
 	Users         []string

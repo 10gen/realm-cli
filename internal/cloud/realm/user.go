@@ -26,12 +26,48 @@ const (
 // UserState is a Realm application user state
 type UserState string
 
+// Type returns the state string
+func (us UserState) String() string { return string(us) }
+
+// Type returns the state type
+func (us UserState) Type() string { return "string" }
+
+// Set validates and sets the user state value
+func (us *UserState) Set(val string) error {
+	newUserState := UserState(val)
+
+	if !isValidState(newUserState) {
+		return errInvalidState
+	}
+
+	*us = newUserState
+	return nil
+}
+
 // set of supported user state values
 const (
 	UserStateNil      UserState = ""
 	UserStateEnabled  UserState = "enabled"
 	UserStateDisabled UserState = "disabled"
 )
+
+var (
+	errInvalidState = func() error {
+		allStateTypes := []string{UserStateEnabled.String(), UserStateDisabled.String()}
+		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allStateTypes, ", "))
+	}()
+)
+
+func isValidState(us UserState) bool {
+	switch us {
+	case
+		UserStateNil, // allow state to be optional
+		UserStateEnabled,
+		UserStateDisabled:
+		return true
+	}
+	return false
+}
 
 // APIKey is a Realm application api key
 type APIKey struct {

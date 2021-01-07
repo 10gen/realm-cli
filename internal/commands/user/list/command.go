@@ -29,10 +29,10 @@ type command struct {
 func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
-	fs.Var(&cmd.inputs.StateValue, flagState, flagStateUsage)
-	fs.BoolVar(&cmd.inputs.Pending, flagStatus, false, flagStatusUsage)
-	fs.Var(newProviderTypesValue(&cmd.inputs.ProviderTypes), flagProviderTypes, flagProviderTypesUsage)
-	fs.StringSliceVar(&cmd.inputs.Users, flagUsers, []string{}, flagUsersUsage)
+	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
+	fs.BoolVarP(&cmd.inputs.Pending, flagStatus, flagStatusShort, false, flagStatusUsage)
+	fs.VarP(newProviderTypesValue(&cmd.inputs.ProviderTypes), flagProviderTypes, flagProviderTypesShort, flagProviderTypesUsage)
+	fs.StringSliceVarP(&cmd.inputs.Users, flagUsers, flagUsersShort, []string{}, flagUsersUsage)
 }
 
 func (cmd *command) Inputs() cli.InputResolver {
@@ -53,14 +53,14 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		app.GroupID,
 		app.ID,
 		realm.UserFilter{
-			State:     cmd.inputs.StateValue.getUserState(),
+			State:     cmd.inputs.UserState,
 			Pending:   cmd.inputs.Pending,
 			Providers: cmd.inputs.ProviderTypes,
 			IDs:       cmd.inputs.Users,
 		},
 	)
 	if usersErr != nil {
-		return usersErr
+		return fmt.Errorf("failed to list users: %s", usersErr)
 	}
 
 	cmd.users = users
@@ -71,6 +71,7 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 const (
 	headerID                     = "ID"
 	headerName                   = "Name"
+	headerEmail                  = "Email"
 	headerEnabled                = "Enabled"
 	headerType                   = "Type"
 	headerLastAuthenticationDate = "Last Authentication"
@@ -95,31 +96,53 @@ func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 				return users[i].LastAuthenticationDate < users[j].LastAuthenticationDate
 			},
 		)
-
 		userTable := make([]map[string]interface{}, 0, len(users))
 		for _, user := range users {
-			name := user.Data["name"]
-			if name == nil { //what else should I use here?
-				name = user.Data["email"]
-			}
-			timeString := ""
-			if user.LastAuthenticationDate != 0 {
-				timeString = time.Unix(user.LastAuthenticationDate, 0).String()
-			}
-			userTable = append(userTable, map[string]interface{}{
-				headerID:                     user.ID,
-				headerName:                   name,
-				headerEnabled:                !user.Disabled,
-				headerType:                   user.Type,
-				headerLastAuthenticationDate: timeString,
-			})
+			userTable = append(userTable, userTableRow(provider, user))
 		}
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", provider),
-			[]string{headerName, headerID, headerEnabled, headerType, headerLastAuthenticationDate},
+			userTableHeaders(provider),
 			userTable...,
 		))
 	}
-
 	return ui.Print(logs...)
+}
+
+func userTableHeaders(providerType string) []string {
+	var headers []string
+	switch providerType {
+	case providerTypeAPIKey:
+		headers = append(headers, headerName)
+	case providerTypeLocalUserPass:
+		headers = append(headers, headerEmail)
+	}
+	headers = append(
+		headers,
+		headerID,
+		headerEnabled,
+		headerType,
+		headerLastAuthenticationDate,
+	)
+	return headers
+}
+
+func userTableRow(providerType string, user realm.User) map[string]interface{} {
+	timeString := ""
+	if user.LastAuthenticationDate != 0 {
+		timeString = time.Unix(user.LastAuthenticationDate, 0).UTC().String()
+	}
+	row := map[string]interface{}{
+		headerID:                     user.ID,
+		headerEnabled:                !user.Disabled,
+		headerType:                   user.Type,
+		headerLastAuthenticationDate: timeString,
+	}
+	switch providerType {
+	case providerTypeAPIKey:
+		row[headerName] = user.Data["name"]
+	case providerTypeLocalUserPass:
+		row[headerEmail] = user.Data["email"]
+	}
+	return row
 }

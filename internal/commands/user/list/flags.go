@@ -5,77 +5,25 @@ import (
 	"encoding/csv"
 	"fmt"
 	"strings"
-
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
 const (
 	flagState      = "state"
+	flagStateShort = "s"
 	flagStateUsage = `select the state of users to list, available options: ["enabled", "disabled"]`
 
 	flagStatus      = "status-pending"
+	flagStatusShort = "p"
 	flagStatusUsage = `select the state of users to list, available options: ["enabled", "disabled"]`
 
-	flagProviderTypes      = "provider-types"
+	flagProviderTypes      = "provider"
+	flagProviderTypesShort = "t"
 	flagProviderTypesUsage = `todo add description`
 
 	flagUsers      = "users"
+	flagUsersShort = "u" //idk what you want this to be
 	flagUsersUsage = `todo add description`
 )
-
-type stateValue string
-
-// String returns the state filter
-func (sv stateValue) String() string { return string(sv) }
-
-// Type returns the state type
-func (sv stateValue) Type() string { return "string" }
-
-// Set validates and sets the user type value
-func (sv *stateValue) Set(val string) error {
-	newStateValue := stateValue(val)
-
-	if !isValidState(newStateValue) {
-		return errInvalidState
-	}
-
-	*sv = newStateValue
-	return nil
-}
-
-func (sv stateValue) getUserState() realm.UserState {
-	switch sv {
-	case stateEnabled:
-		return realm.UserStateEnabled
-	case stateDisabled:
-		return realm.UserStateDisabled
-	}
-	return realm.UserStateNil
-}
-
-const (
-	stateNil      stateValue = ""
-	stateEnabled  stateValue = "enabled"
-	stateDisabled stateValue = "disabled"
-)
-
-var (
-	errInvalidState = func() error {
-		allStateTypes := []string{stateEnabled.String(), stateDisabled.String()}
-		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allStateTypes, ", "))
-	}()
-)
-
-func isValidState(sv stateValue) bool {
-	switch sv {
-	case
-		stateNil, // allow state to be optional
-		stateEnabled,
-		stateDisabled:
-		return true
-	}
-	return false
-}
 
 type providerTypesValue struct {
 	value   *[]string
