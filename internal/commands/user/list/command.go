@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/pflag"
 )
@@ -31,7 +32,12 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
-	fs.StringSliceVarP(&cmd.inputs.ProviderTypes, flagProvider, flagProviderShort, []string{}, flagProviderUsage)
+	fs.VarP(
+		flags.NewEnumSliceValue(&cmd.inputs.ProviderTypes, validProviderTypes, []string{}),
+		flagProvider,
+		flagProviderShort,
+		flagProviderUsage,
+	)
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserUsage)
 }
 

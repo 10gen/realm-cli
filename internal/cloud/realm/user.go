@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
-	"github.com/10gen/realm-cli/internal/utils/flag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -31,7 +31,7 @@ type UserState string
 func (us UserState) String() string { return string(us) }
 
 // Type returns the user state type
-func (us UserState) Type() string { return flag.TypeString }
+func (us UserState) Type() string { return flags.TypeString }
 
 // Set validates and sets the user state value
 func (us *UserState) Set(val string) error {

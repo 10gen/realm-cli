@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/10gen/realm-cli/internal/utils/flag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // set of supported telemetry flags
@@ -21,7 +21,7 @@ type Mode string
 func (m Mode) String() string { return string(m) }
 
 // Type returns the Mode type
-func (m Mode) Type() string { return flag.TypeString }
+func (m Mode) Type() string { return flags.TypeString }
 
 // Set validates and sets the mode value
 func (m *Mode) Set(val string) error {

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
-	"github.com/10gen/realm-cli/internal/utils/flag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 	"github.com/AlecAivazis/survey/v2/core"
 )
 
@@ -166,7 +166,7 @@ type DeploymentModel string
 func (dm DeploymentModel) String() string { return string(dm) }
 
 // Type returns the DeploymentModel type
-func (dm DeploymentModel) Type() string { return flag.TypeString }
+func (dm DeploymentModel) Type() string { return flags.TypeString }
 
 // Set validates and sets the deployment model value
 func (dm *DeploymentModel) Set(val string) error {
@@ -228,7 +228,7 @@ type Location string
 func (l Location) String() string { return string(l) }
 
 // Type returns the Location type
-func (l Location) Type() string { return flag.TypeString }
+func (l Location) Type() string { return flags.TypeString }
 
 // Set validates and sets the Location value
 func (l *Location) Set(val string) error {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/10gen/realm-cli/internal/utils/flag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 	"github.com/AlecAivazis/survey/v2/core"
 )
 
@@ -32,7 +32,7 @@ type userType string
 func (ut userType) String() string { return string(ut) }
 
 // Type returns the userType type
-func (ut userType) Type() string { return flag.TypeString }
+func (ut userType) Type() string { return flags.TypeString }
 
 // Set validates and sets the user type value
 func (ut *userType) Set(val string) error {

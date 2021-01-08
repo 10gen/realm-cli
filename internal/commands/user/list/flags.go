@@ -1,10 +1,5 @@
 package list
 
-import (
-	"fmt"
-	"strings"
-)
-
 const (
 	flagState      = "state"
 	flagStateShort = "s"
@@ -33,38 +28,12 @@ const (
 )
 
 var (
-	errInvalidProviderType = func() error {
-		return fmt.Errorf(
-			"unsupported value, use one of [%s] instead",
-			strings.Join(
-				[]string{
-					providerTypeLocalUserPass,
-					providerTypeAPIKey,
-					providerTypeFacebook,
-					providerTypeGoogle,
-					providerTypeAnonymous,
-					providerTypeCustom,
-				},
-				", ",
-			),
-		)
-	}()
-)
-
-func isEachProviderTypeValid(providers []string) bool {
-	for _, provider := range providers {
-		switch provider {
-		case
-			providerTypeLocalUserPass,
-			providerTypeAPIKey,
-			providerTypeFacebook,
-			providerTypeGoogle,
-			providerTypeAnonymous,
-			providerTypeCustom:
-			continue
-		default:
-			return false
-		}
+	validProviderTypes = []string{
+		providerTypeLocalUserPass,
+		providerTypeAPIKey,
+		providerTypeFacebook,
+		providerTypeGoogle,
+		providerTypeAnonymous,
+		providerTypeCustom,
 	}
-	return true
-}
+)
