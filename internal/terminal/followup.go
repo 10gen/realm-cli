@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	CommandMessage = "Try the following command"
-	LinkMessage    = "Refer to the following link"
+	commandMessage = "Try the following command"
+	linkMessage    = "Refer to the following link"
 
 	logFieldFollowUps = "followUps"
 )
@@ -29,7 +29,7 @@ func (fm followUpMessage) validate() error {
 	return nil
 }
 
-func NewFollowUpMessage(message string, followUps []string) followUpMessage {
+func newFollowUpMessage(message string, followUps []string) followUpMessage {
 	return followUpMessage{
 		message:   message,
 		followUps: followUps,

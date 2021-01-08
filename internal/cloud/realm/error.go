@@ -3,12 +3,30 @@ package realm
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
 const (
 	invalidSessionCode = "InvalidSession"
 )
+
+// ErrInvalidSession is an invalid session error that has a follow up message
+type ErrInvalidSession struct {
+	error
+}
+
+func (err ErrInvalidSession) SuggestedCommands() []string {
+	return []string{}
+}
+
+func (err ErrInvalidSession) ReferenceLinks() []string {
+	return []string{}
+}
+
+func NewErrInvalidSession() ErrInvalidSession {
+	return ErrInvalidSession{errors.New("invalid session") }
+}
 
 // ServerError is a Realm server error
 type ServerError struct {

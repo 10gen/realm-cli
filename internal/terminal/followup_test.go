@@ -30,25 +30,25 @@ func TestNewFollowUpMessage(t *testing.T) {
 		},
 		{
 			description: "Should return a follow up message even if there are no followups",
-			message:     CommandMessage,
+			message:     commandMessage,
 			followUps:   []string{},
 			expectedFollowUp: followUpMessage{
-				CommandMessage,
+				commandMessage,
 				[]string{},
 			},
 		},
 		{
 			description: "Should return a follow up message",
-			message:     LinkMessage,
+			message:     linkMessage,
 			followUps:   []string{"follow", "up"},
 			expectedFollowUp: followUpMessage{
-				LinkMessage,
+				linkMessage,
 				[]string{"follow", "up"},
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedFollowUp, NewFollowUpMessage(tc.message, tc.followUps))
+			assert.Equal(t, tc.expectedFollowUp, newFollowUpMessage(tc.message, tc.followUps))
 		})
 	}
 }
@@ -65,7 +65,7 @@ func TestFollowUpMessage(t *testing.T) {
 		},
 		{
 			description:     "Should return an error if there are no followUps",
-			followUpMessage: followUpMessage{LinkMessage, nil},
+			followUpMessage: followUpMessage{linkMessage, nil},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -82,12 +82,12 @@ func TestFollowUpMessage(t *testing.T) {
 	}{
 		{
 			description:     "Should print a message for one followUp on the same line",
-			followUpMessage: followUpMessage{LinkMessage, []string{"https://mongodb.com"}},
+			followUpMessage: followUpMessage{linkMessage, []string{"https://mongodb.com"}},
 			expectedMessage: `Refer to the following link https://mongodb.com`,
 		},
 		{
 			description:     "Should print a message for multiple followUps on multiple lines with plurals",
-			followUpMessage: followUpMessage{CommandMessage, []string{"cwd", "ls", "mkdir"}},
+			followUpMessage: followUpMessage{commandMessage, []string{"cwd", "ls", "mkdir"}},
 			expectedMessage: strings.Join(
 				[]string{
 					"Try the following commands",
@@ -116,7 +116,7 @@ func TestFollowUpPayload(t *testing.T) {
 		},
 		{
 			description:     "Should return an error if there is no followUp",
-			followUpMessage: followUpMessage{LinkMessage, nil},
+			followUpMessage: followUpMessage{linkMessage, nil},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -131,14 +131,14 @@ func TestFollowUpPayload(t *testing.T) {
 		expectedFollowUps := []string{"https://mongodb.com"}
 
 		followUp := followUpMessage{
-			LinkMessage,
+			linkMessage,
 			expectedFollowUps,
 		}
 		actualFields, actualPayload, err := followUp.Payload()
 		assert.Nil(t, err)
 		assert.Equal(t, followUpFields, actualFields)
 
-		assert.Equal(t, LinkMessage, actualPayload[logFieldMessage])
+		assert.Equal(t, linkMessage, actualPayload[logFieldMessage])
 		assert.Equal(t, expectedFollowUps, actualPayload[logFieldFollowUps])
 	})
 }

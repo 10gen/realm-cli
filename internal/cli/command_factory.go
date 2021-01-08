@@ -108,7 +108,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 			err := command.Command.Handler(factory.profile, factory.ui)
 
-			if err == realm.ErrInvalidSession {
+			if _, ok := err.(realm.ErrInvalidSession); ok {
 				factory.profile.ClearSession()
 				profileErr := factory.profile.Save()
 				if profileErr != nil {
@@ -162,13 +162,19 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 			factory.errLogger.Fatal(err)
 		}
 
-		// TODO: construct what we're doing to print here
-		//	[newErrorLog, conditional append for commandSuggester, conditional append for linkReference]
-		// TODO: check if the err implements the suggested commands / link referrers - after REALMC-7573
-
 		logs := []terminal.Log{
 			terminal.NewErrorLog(err),
 		}
+
+		if e, ok := err.(realm.ErrInvalidSession); ok {
+			if len(e.SuggestedCommands()) != 0 {
+				logs = append(logs, terminal.NewSuggestedCommandsLog(e.SuggestedCommands()))
+			}
+			if len(e.ReferenceLinks()) != 0 {
+				logs = append(logs, terminal.NewReferenceLinksLog(e.ReferenceLinks()))
+			}
+		}
+
 		if printErr := factory.ui.Print(logs...); printErr != nil {
 			factory.errLogger.Fatal(err) // log the original failure
 		}

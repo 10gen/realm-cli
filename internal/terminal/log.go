@@ -76,6 +76,16 @@ func NewWarningLog(format string, args ...interface{}) Log {
 	return newLog(LogLevelWarn, newTextMessage(format, args...))
 }
 
+// NewSuggestedCommandsLog creates a log with a follow up message about suggested commands for the error
+func NewSuggestedCommandsLog(commands []string) Log {
+	return newLog(LogLevelInfo, newFollowUpMessage(commandMessage, commands))
+}
+
+// NewReferenceLinksLog creates a log with a follow up message about reference links for the error
+func NewReferenceLinksLog(links []string) Log {
+	return newLog(LogLevelInfo, newFollowUpMessage(linkMessage, links))
+}
+
 func newLog(level LogLevel, data LogData) Log {
 	return Log{level, time.Now(), data}
 }
