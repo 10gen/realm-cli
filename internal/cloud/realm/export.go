@@ -53,7 +53,7 @@ func (c *client) Export(groupID, appID string, req ExportRequest) (string, *zip.
 	}
 	if res.StatusCode != http.StatusOK {
 		defer res.Body.Close()
-		return "", nil, unmarshalServerError(res)
+		return "", nil, parseResponseError(res)
 	}
 
 	_, mediaParams, mediaErr := mime.ParseMediaType(res.Header.Get(api.HeaderContentDisposition))

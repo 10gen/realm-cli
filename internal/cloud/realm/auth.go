@@ -11,6 +11,7 @@ import (
 const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
+	authSessionPath  = adminAPI + "/auth/session"
 )
 
 // set of supported auth errors
@@ -34,14 +35,14 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 		http.MethodPost,
 		authenticatePath,
 		authenticateRequest{publicAPIKey, privateAPIKey},
-		api.RequestOptions{},
+		api.RequestOptions{PreventRefresh: true},
 	)
 	if resErr != nil {
 		return Session{}, resErr
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return Session{}, unmarshalServerError(res)
+		return Session{}, parseResponseError(res)
 	}
 
 	var session Session
@@ -68,7 +69,7 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return AuthProfile{}, unmarshalServerError(res)
+		return AuthProfile{}, parseResponseError(res)
 	}
 
 	var profile AuthProfile
@@ -94,6 +95,23 @@ func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	}
 
 	return "", nil
+}
+
+func (c *client) refreshAuth() (string, error) {
+	res, resErr := c.do(http.MethodPost, authSessionPath, api.RequestOptions{RefreshAuth: true, PreventRefresh: true})
+	if resErr != nil {
+		return "", resErr
+	}
+	if res.StatusCode != http.StatusCreated {
+		return "", ErrInvalidSession
+	}
+	defer res.Body.Close()
+
+	var session Session
+	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
+		return "", err
+	}
+	return session.AccessToken, nil
 }
 
 // AllGroupIDs returns all group ids associated with the user's profile

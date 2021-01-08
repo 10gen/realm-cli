@@ -56,7 +56,7 @@ func (c *client) CreateApp(groupID, name string, meta AppMeta) (App, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return App{}, unmarshalServerError(res)
+		return App{}, parseResponseError(res)
 	}
 
 	var app App
@@ -77,7 +77,7 @@ func (c *client) DeleteApp(groupID, appID string) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return unmarshalServerError(res)
+		return parseResponseError(res)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func (c *client) getApps(groupID string) ([]App, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, unmarshalServerError(res)
+		return nil, parseResponseError(res)
 	}
 
 	var apps []App

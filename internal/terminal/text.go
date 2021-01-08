@@ -1,5 +1,7 @@
 package terminal
 
+import "fmt"
+
 const (
 	logFieldMessage = "message"
 )
@@ -9,6 +11,15 @@ var (
 )
 
 type textMessage string
+
+func newTextMessage(format string, args ...interface{}) textMessage {
+	message := format
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	}
+
+	return textMessage(message)
+}
 
 func (t textMessage) Message() (string, error) {
 	return string(t), nil

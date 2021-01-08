@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -106,6 +107,17 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 			err := command.Command.Handler(factory.profile, factory.ui)
+			if err == realm.ErrInvalidSession {
+				factory.profile.ClearSession()
+				profileErr := factory.profile.Save()
+				if profileErr != nil {
+					profileMsg := fmt.Sprintf("failed to clear session: %s", profileErr)
+					printErr := factory.ui.Print(terminal.NewWarningLog(profileMsg))
+					if printErr != nil {
+						factory.errLogger.Printf(profileMsg)
+					}
+				}
+			}
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,

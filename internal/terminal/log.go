@@ -16,6 +16,7 @@ type LogLevel string
 const (
 	LogLevelInfo  LogLevel = "info"
 	LogLevelError LogLevel = "error"
+	LogLevelWarn  LogLevel = "warn"
 )
 
 var (
@@ -47,12 +48,7 @@ type Log struct {
 
 // NewTextLog creates a new log with a text message
 func NewTextLog(format string, args ...interface{}) Log {
-	message := format
-	if len(args) > 0 {
-		message = fmt.Sprintf(format, args...)
-	}
-
-	return newLog(LogLevelInfo, textMessage(message))
+	return newLog(LogLevelInfo, newTextMessage(format, args...))
 }
 
 // NewJSONLog creates a new log with a JSON document
@@ -73,6 +69,11 @@ func NewListLog(message string, data ...interface{}) Log {
 // NewErrorLog creates a new error log
 func NewErrorLog(err error) Log {
 	return newLog(LogLevelError, errorMessage{err})
+}
+
+// NewWarningLog creates a new warning log
+func NewWarningLog(format string, args ...interface{}) Log {
+	return newLog(LogLevelWarn, newTextMessage(format, args...))
 }
 
 func newLog(level LogLevel, data LogData) Log {
