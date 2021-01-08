@@ -3,6 +3,8 @@ package terminal
 import (
 	"fmt"
 	"strings"
+
+	"github.com/10gen/realm-cli/internal/utils/flag"
 )
 
 // set of supported terminal flags
@@ -31,7 +33,7 @@ type OutputFormat string
 func (of OutputFormat) String() string { return string(of) }
 
 // Type returns the OutputFormat type
-func (of OutputFormat) Type() string { return "string" }
+func (of OutputFormat) Type() string { return flag.TypeString }
 
 // Set validates and sets the output format value
 func (of *OutputFormat) Set(val string) error {
