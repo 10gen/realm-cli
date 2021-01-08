@@ -17,13 +17,13 @@ type ErrInvalidSession struct {
 }
 
 // SuggestedCommands returns a list of commands to run to remedy an invalid session error
-func (err ErrInvalidSession) SuggestedCommands() []string {
-	return []string{}
+func (err ErrInvalidSession) SuggestedCommands() []interface{} {
+	return []interface{}{}
 }
 
 // ReferenceLinks returns a list of reference links for an invalid session error
-func (err ErrInvalidSession) ReferenceLinks() []string {
-	return []string{}
+func (err ErrInvalidSession) ReferenceLinks() []interface{} {
+	return []interface{}{}
 }
 
 // NewErrInvalidSession creates a default ErrInvalidSession
