@@ -15,7 +15,7 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if !areValidProviderTypes(i.ProviderTypes) {
+	if !isEachProviderTypeValid(i.ProviderTypes) {
 		return errInvalidProviderType
 	}
 

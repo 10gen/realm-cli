@@ -94,7 +94,7 @@ func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 
 	var logs []terminal.Log
 	for providerType, users := range usersByProviderType {
-		sortUsersByLastAuthentication(users)
+		sort.Slice(users, getUserComparerByLastAuthentication(users))
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType),
@@ -105,13 +105,10 @@ func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(logs...)
 }
 
-func sortUsersByLastAuthentication(users []realm.User) {
-	sort.Slice(
-		users,
-		func(i, j int) bool {
-			return users[i].LastAuthenticationDate > users[j].LastAuthenticationDate
-		},
-	)
+func getUserComparerByLastAuthentication(users []realm.User) func(i, j int) bool {
+	return func(i, j int) bool {
+		return users[i].LastAuthenticationDate > users[j].LastAuthenticationDate
+	}
 }
 
 func userTableHeaders(providerType string) []string {

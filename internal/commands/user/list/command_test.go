@@ -25,7 +25,12 @@ func TestUserListSetup(t *testing.T) {
 }
 
 func TestUserListHandler(t *testing.T) {
+
+	const projectID = "projectID"
+	const appID = "appID"
 	testApp := realm.App{
+		ID:          appID,
+		GroupID:     projectID,
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
 	}
@@ -33,16 +38,15 @@ func TestUserListHandler(t *testing.T) {
 	t.Run("Should find app users", func(t *testing.T) {
 		testUsers := []realm.User{{ID: "user1"}, {ID: "user2"}}
 
-		const projectID = "projectID"
-		const appID = "appID"
+		var capturedAppFilter realm.AppFilter
 		var capturedProjectID, capturedAppID string
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			testApp.GroupID = filter.GroupID
-			testApp.ID = filter.App
+			capturedAppFilter = filter
 			return []realm.App{testApp}, nil
 		}
+
 		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 			capturedProjectID = groupID
 			capturedAppID = appID
@@ -60,6 +64,7 @@ func TestUserListHandler(t *testing.T) {
 		}
 
 		assert.Nil(t, cmd.Handler(nil, nil))
+		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
 		assert.Equal(t, projectID, capturedProjectID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, testUsers, cmd.users)
@@ -94,7 +99,7 @@ func TestUserListHandler(t *testing.T) {
 					}
 					return realmClient
 				},
-				expectedErr: errors.New("failed to list users: something bad happened"),
+				expectedErr: errors.New("something bad happened"),
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -111,12 +116,94 @@ func TestUserListHandler(t *testing.T) {
 	})
 }
 
+func TestUserTableHeaders(t *testing.T) {
+	for _, tc := range []struct {
+		description     string
+		providerType    string
+		expectedHeaders []string
+	}{
+		{
+			description:     "Should show name for apikey",
+			providerType:    "api-key",
+			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authentication"},
+		},
+		{
+			description:     "Should show email for local-userpass",
+			providerType:    "local-userpass",
+			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authentication"},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.providerType))
+		})
+	}
+}
+
+func TestUserTableRow(t *testing.T) {
+	for _, tc := range []struct {
+		description  string
+		providerType string
+		user         realm.User
+		expectedRow  map[string]interface{}
+	}{
+		{
+			description:  "Should show name for apikey type user",
+			providerType: "api-key",
+			user: realm.User{
+				ID:                     "id1",
+				Identities:             []realm.UserIdentity{{ProviderType: "api-key"}},
+				Type:                   "type1",
+				Disabled:               false,
+				Data:                   map[string]interface{}{"name": "myName"},
+				CreationDate:           1111111111,
+				LastAuthenticationDate: 1111111111,
+			},
+			expectedRow: map[string]interface{}{
+				"Enabled":             true,
+				"ID":                  "id1",
+				"Last Authentication": "2005-03-18 01:58:31 +0000 UTC",
+				"Name":                "myName",
+				"Type":                "type1",
+			},
+		},
+		{
+			description:  "Should show email for local-userpass type user",
+			providerType: "local-userpass",
+			user: realm.User{
+				ID:                     "id1",
+				Identities:             []realm.UserIdentity{{ProviderType: "local-userpass"}},
+				Type:                   "type1",
+				Disabled:               false,
+				Data:                   map[string]interface{}{"email": "myEmail"},
+				CreationDate:           1111111111,
+				LastAuthenticationDate: 1111111111,
+			},
+			expectedRow: map[string]interface{}{
+				"Enabled":             true,
+				"ID":                  "id1",
+				"Last Authentication": "2005-03-18 01:58:31 +0000 UTC",
+				"Email":               "myEmail",
+				"Type":                "type1",
+			},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedRow, userTableRow(tc.providerType, tc.user))
+		})
+	}
+}
+
 func TestUserListFeedback(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		users          []realm.User
 		expectedOutput string
 	}{
+		{
+			description:    "Should indicate no users found when none are found",
+			users:          []realm.User{},
+			expectedOutput: "01:23:45 UTC INFO  No available users to show\n",
+		},
 		{
 			description: "Should group the users by provider type and sort by LastAuthenticationDate",
 			users: []realm.User{
@@ -169,17 +256,6 @@ func TestUserListFeedback(t *testing.T) {
 					"  Name    ID   Enabled  Type   Last Authentication          ",
 					"  ------  ---  -------  -----  -----------------------------",
 					"  myName  id4  true     type1  2005-03-18 01:58:31 +0000 UTC",
-					"",
-				},
-				"\n",
-			),
-		},
-		{
-			description: "Should indicate no users found when none are found",
-			users:       []realm.User{},
-			expectedOutput: strings.Join(
-				[]string{
-					"01:23:45 UTC INFO  No available users to show",
 					"",
 				},
 				"\n",

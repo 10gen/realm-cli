@@ -51,7 +51,7 @@ var (
 	}()
 )
 
-func areValidProviderTypes(providers []string) bool {
+func isEachProviderTypeValid(providers []string) bool {
 	for _, provider := range providers {
 		switch provider {
 		case
