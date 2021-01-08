@@ -1,9 +1,6 @@
 package list
 
 import (
-	//"errors"
-
-	//"strings"
 	"errors"
 	"strings"
 	"testing"
@@ -33,37 +30,38 @@ func TestUserListHandler(t *testing.T) {
 		Name:        "eggcorn",
 	}
 
-	newMockClient := func() mock.RealmClient {
+	t.Run("Should find app users", func(t *testing.T) {
+		testUsers := []realm.User{{ID: "user1"}, {ID: "user2"}}
+
+		const projectID = "projectID"
+		const appID = "appID"
+		var capturedProjectID, capturedAppID string
+
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			testApp.GroupID = filter.GroupID
 			testApp.ID = filter.App
 			return []realm.App{testApp}, nil
 		}
-		return realmClient
-	}
-
-	t.Run("Should find app users", func(t *testing.T) {
-		testUsers := []realm.User{{ID: "user1"}, {ID: "user2"}}
-
-		realmClient := newMockClient()
 		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			assert.Equal(t, "projectID", groupID)
-			assert.Equal(t, "appID", appID)
+			capturedProjectID = groupID
+			capturedAppID = appID
 			return testUsers, nil
 		}
 
 		cmd := &command{
 			inputs: inputs{
 				ProjectAppInputs: cli.ProjectAppInputs{
-					Project: "projectID",
-					App:     "appID",
+					Project: projectID,
+					App:     appID,
 				},
 			},
 			realmClient: realmClient,
 		}
 
 		assert.Nil(t, cmd.Handler(nil, nil))
+		assert.Equal(t, projectID, capturedProjectID)
+		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, testUsers, cmd.users)
 	})
 
@@ -120,7 +118,7 @@ func TestUserListFeedback(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			description: "",
+			description: "Should group the users by provider type and sort by LastAuthenticationDate",
 			users: []realm.User{
 				{
 					ID:                     "id1",
@@ -164,13 +162,24 @@ func TestUserListFeedback(t *testing.T) {
 					"01:23:45 UTC INFO  Provider type: local-userpass",
 					"  Email     ID   Enabled  Type   Last Authentication          ",
 					"  --------  ---  -------  -----  -----------------------------",
-					"  myEmail1  id1  true     type1  2005-03-18 01:58:31 +0000 UTC",
-					"  myEmail3  id3  true     type1  2005-03-19 08:50:22 +0000 UTC",
 					"  myEmail2  id2  true     type2  2005-03-20 15:42:13 +0000 UTC",
+					"  myEmail3  id3  true     type1  2005-03-19 08:50:22 +0000 UTC",
+					"  myEmail1  id1  true     type1  2005-03-18 01:58:31 +0000 UTC",
 					"01:23:45 UTC INFO  Provider type: api-key",
 					"  Name    ID   Enabled  Type   Last Authentication          ",
 					"  ------  ---  -------  -----  -----------------------------",
 					"  myName  id4  true     type1  2005-03-18 01:58:31 +0000 UTC",
+					"",
+				},
+				"\n",
+			),
+		},
+		{
+			description: "Should indicate no users found when none are found",
+			users:       []realm.User{},
+			expectedOutput: strings.Join(
+				[]string{
+					"01:23:45 UTC INFO  No available users to show",
 					"",
 				},
 				"\n",

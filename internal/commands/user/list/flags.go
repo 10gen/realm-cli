@@ -10,43 +10,48 @@ const (
 	flagStateShort = "s"
 	flagStateUsage = `select the state of users to list, available options: ["enabled", "disabled"]`
 
-	flagStatus      = "status-pending"
-	flagStatusShort = "p"
-	flagStatusUsage = `select the state of users to list, available options: ["enabled", "disabled"]`
+	flagPending      = "pending"
+	flagPendingShort = "p"
+	flagPendingUsage = `select to show users with pending status`
 
-	flagProviderTypes      = "provider"
-	flagProviderTypesShort = "t"
-	flagProviderTypesUsage = `todo add description`
+	flagProvider      = "provider"
+	flagProviderShort = "t"
+	flagProviderUsage = `set the provider types for which to filter the list of app users with, available options: ["local-userpass", "api-key", "oauth2-facebook", "oauth2-google", "anon-user", "custom-token"]`
 
-	flagUsers      = "users"
-	flagUsersShort = "u" //idk what you want this to be
-	flagUsersUsage = `todo add description`
+	flagUser      = "user"
+	flagUserShort = "u"
+	flagUserUsage = `set the user ids for which to filter the list of app users with`
 )
 
 const (
-	providerTypeLocalUserPass string = "local-userpass"
-	providerTypeAPIKey        string = "api-key"
-	providerTypeFacebook      string = "oauth2-facebook"
-	providerTypeGoogle        string = "oauth2-google"
-	providerTypeAnonymous     string = "anon-user"
-	providerTypeCustom        string = "custom-token"
+	providerTypeLocalUserPass = "local-userpass"
+	providerTypeAPIKey        = "api-key"
+	providerTypeFacebook      = "oauth2-facebook"
+	providerTypeGoogle        = "oauth2-google"
+	providerTypeAnonymous     = "anon-user"
+	providerTypeCustom        = "custom-token"
 )
 
 var (
 	errInvalidProviderType = func() error {
-		allProviderTypes := []string{
-			providerTypeLocalUserPass,
-			providerTypeAPIKey,
-			providerTypeFacebook,
-			providerTypeGoogle,
-			providerTypeAnonymous,
-			providerTypeCustom,
-		}
-		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allProviderTypes, ", "))
+		return fmt.Errorf(
+			"unsupported value, use one of [%s] instead",
+			strings.Join(
+				[]string{
+					providerTypeLocalUserPass,
+					providerTypeAPIKey,
+					providerTypeFacebook,
+					providerTypeGoogle,
+					providerTypeAnonymous,
+					providerTypeCustom,
+				},
+				", ",
+			),
+		)
 	}()
 )
 
-func isValidProviderTypes(providers []string) bool {
+func areValidProviderTypes(providers []string) bool {
 	for _, provider := range providers {
 		switch provider {
 		case

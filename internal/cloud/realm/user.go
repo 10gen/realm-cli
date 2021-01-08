@@ -26,18 +26,18 @@ const (
 // UserState is a Realm application user state
 type UserState string
 
-// Type returns the state string
+// String returns the user state string
 func (us UserState) String() string { return string(us) }
 
-// Type returns the state type
+// Type returns the user state type
 func (us UserState) Type() string { return "string" }
 
 // Set validates and sets the user state value
 func (us *UserState) Set(val string) error {
 	newUserState := UserState(val)
 
-	if !isValidState(newUserState) {
-		return errInvalidState
+	if !isValidUserState(newUserState) {
+		return errInvalidUserState
 	}
 
 	*us = newUserState
@@ -52,13 +52,13 @@ const (
 )
 
 var (
-	errInvalidState = func() error {
-		allStateTypes := []string{UserStateEnabled.String(), UserStateDisabled.String()}
-		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allStateTypes, ", "))
+	errInvalidUserState = func() error {
+		allUserStateTypes := []string{UserStateEnabled.String(), UserStateDisabled.String()}
+		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allUserStateTypes, ", "))
 	}()
 )
 
-func isValidState(us UserState) bool {
+func isValidUserState(us UserState) bool {
 	switch us {
 	case
 		UserStateNil, // allow state to be optional

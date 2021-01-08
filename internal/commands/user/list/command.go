@@ -30,9 +30,9 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
-	fs.BoolVarP(&cmd.inputs.Pending, flagStatus, flagStatusShort, false, flagStatusUsage)
-	fs.StringSliceVarP(&cmd.inputs.ProviderTypes, flagProviderTypes, flagProviderTypesShort, []string{}, flagProviderTypesUsage)
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUsers, flagUsersShort, []string{}, flagUsersUsage)
+	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
+	fs.StringSliceVarP(&cmd.inputs.ProviderTypes, flagProvider, flagProviderShort, []string{}, flagProviderUsage)
+	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserUsage)
 }
 
 func (cmd *command) Inputs() cli.InputResolver {
@@ -60,7 +60,7 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		},
 	)
 	if usersErr != nil {
-		return fmt.Errorf("failed to list users: %s", usersErr)
+		return usersErr
 	}
 
 	cmd.users = users
@@ -75,38 +75,43 @@ const (
 	headerEnabled                = "Enabled"
 	headerType                   = "Type"
 	headerLastAuthenticationDate = "Last Authentication"
+
+	userDataEmail = "email"
+	userDataName  = "name"
 )
 
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.users) == 0 {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
-	var usersByProvider = make(map[string][]realm.User, 0)
+
+	var usersByProviderType = make(map[string][]realm.User)
 	for _, user := range cmd.users {
 		for _, identity := range user.Identities {
-			usersByProvider[identity.ProviderType] = append(usersByProvider[identity.ProviderType], user)
+			usersByProviderType[identity.ProviderType] = append(usersByProviderType[identity.ProviderType], user)
 		}
 	}
 
 	var logs []terminal.Log
-	for provider, users := range usersByProvider {
-		sort.Slice(
-			users,
-			func(i, j int) bool {
-				return users[i].LastAuthenticationDate < users[j].LastAuthenticationDate
-			},
-		)
-		userTable := make([]map[string]interface{}, 0, len(users))
-		for _, user := range users {
-			userTable = append(userTable, userTableRow(provider, user))
-		}
+	for providerType, users := range usersByProviderType {
+		sortUsersByLastAuthentication(users)
+
 		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", provider),
-			userTableHeaders(provider),
-			userTable...,
+			fmt.Sprintf("Provider type: %s", providerType),
+			userTableHeaders(providerType),
+			userTableRows(providerType, users)...,
 		))
 	}
 	return ui.Print(logs...)
+}
+
+func sortUsersByLastAuthentication(users []realm.User) {
+	sort.Slice(
+		users,
+		func(i, j int) bool {
+			return users[i].LastAuthenticationDate > users[j].LastAuthenticationDate
+		},
+	)
 }
 
 func userTableHeaders(providerType string) []string {
@@ -127,8 +132,16 @@ func userTableHeaders(providerType string) []string {
 	return headers
 }
 
+func userTableRows(providerType string, users []realm.User) []map[string]interface{} {
+	userTableRows := make([]map[string]interface{}, 0, len(users))
+	for _, user := range users {
+		userTableRows = append(userTableRows, userTableRow(providerType, user))
+	}
+	return userTableRows
+}
+
 func userTableRow(providerType string, user realm.User) map[string]interface{} {
-	timeString := ""
+	timeString := "n/a"
 	if user.LastAuthenticationDate != 0 {
 		timeString = time.Unix(user.LastAuthenticationDate, 0).UTC().String()
 	}
@@ -140,9 +153,9 @@ func userTableRow(providerType string, user realm.User) map[string]interface{} {
 	}
 	switch providerType {
 	case providerTypeAPIKey:
-		row[headerName] = user.Data["name"]
+		row[headerName] = user.Data[userDataName]
 	case providerTypeLocalUserPass:
-		row[headerEmail] = user.Data["email"]
+		row[headerEmail] = user.Data[userDataEmail]
 	}
 	return row
 }
