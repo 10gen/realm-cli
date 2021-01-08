@@ -12,12 +12,16 @@ import (
 // LogLevel is the level of a terminal log
 type LogLevel string
 
-// set of supported log levels
 const (
+	// set of supported log levels
 	LogLevelInfo  LogLevel = "info"
 	LogLevelError LogLevel = "error"
 	LogLevelWarn  LogLevel = "warn"
 	LogLevelDebug LogLevel = "debug"
+
+	// follow up messages
+	linkMessage string = "For more information"
+	commandMessage string = "Try running instead"
 )
 
 var (

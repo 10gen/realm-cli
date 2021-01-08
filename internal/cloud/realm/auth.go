@@ -76,14 +76,14 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	if options.UseAuth {
 		if c.session.AccessToken == "" {
-			return "", NewErrInvalidSession()
+			return "", ErrInvalidSession{}
 		}
 		return c.session.AccessToken, nil
 	}
 
 	if options.RefreshAuth {
 		if c.session.RefreshToken == "" {
-			return "", NewErrInvalidSession()
+			return "", ErrInvalidSession{}
 		}
 		return c.session.RefreshToken, nil
 	}
@@ -97,7 +97,7 @@ func (c *client) refreshAuth() (string, error) {
 		return "", resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return "", NewErrInvalidSession()
+		return "", ErrInvalidSession{}
 	}
 	defer res.Body.Close()
 

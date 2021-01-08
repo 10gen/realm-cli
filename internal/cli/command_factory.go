@@ -162,17 +162,13 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 			factory.errLogger.Fatal(err)
 		}
 
-		logs := []terminal.Log{
-			terminal.NewErrorLog(err),
-		}
+		logs := []terminal.Log{terminal.NewErrorLog(err)}
 
-		if e, ok := err.(realm.ErrInvalidSession); ok {
-			if len(e.SuggestedCommands()) != 0 {
-				logs = append(logs, terminal.NewSuggestedCommandsLog(e.SuggestedCommands()))
-			}
-			if len(e.ReferenceLinks()) != 0 {
-				logs = append(logs, terminal.NewReferenceLinksLog(e.ReferenceLinks()))
-			}
+		if e, ok := err.(CommandSuggester); ok {
+			logs = append(logs, terminal.NewSuggestedCommandsLog(e.SuggestedCommands()))
+		}
+		if e, ok := err.(LinkReferrer); ok {
+			logs = append(logs, terminal.NewSuggestedCommandsLog(e.ReferenceLinks()))
 		}
 
 		if printErr := factory.ui.Print(logs...); printErr != nil {

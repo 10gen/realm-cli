@@ -16,7 +16,7 @@ func TestRealmApps(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.FindApps(realm.AppFilter{})
-		assert.Equal(t, realm.NewErrInvalidSession(), err)
+		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 
 	t.Run("With an active session ", func(t *testing.T) {

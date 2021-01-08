@@ -36,7 +36,7 @@ func TestRealmAuthProfile(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.AuthProfile()
-		assert.Equal(t, realm.NewErrInvalidSession(), err)
+		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 
 	t.Run("With an active session should return session details with valid credentials", func(t *testing.T) {
@@ -79,7 +79,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 		client = realm.NewAuthClient(u.RealmServerURL(), session)
 		_, err = client.AuthProfile()
-		assert.Equal(t, realm.NewErrInvalidSession(), err)
+		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 	// TODO: REALMC-7719 add test for expired credentials and test for ensuring profile cleared on invalid session
 }

@@ -109,7 +109,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 
 	authToken, refreshErr := c.refreshAuth()
 	if refreshErr != nil {
-		return nil, NewErrInvalidSession()
+		return nil, ErrInvalidSession{}
 	}
 	// TODO(REALMC-7719): save the new access token to prevent unnecessary retries
 	c.session.AccessToken = authToken

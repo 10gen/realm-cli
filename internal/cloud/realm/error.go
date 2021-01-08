@@ -3,7 +3,6 @@ package realm
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
 )
 
@@ -13,22 +12,18 @@ const (
 
 // ErrInvalidSession is an invalid session error that has a follow up message
 type ErrInvalidSession struct {
-	error
+	profileName string
 }
+
+func (err ErrInvalidSession) Error() string { return "invalid session" }
 
 // SuggestedCommands returns a list of commands to run to remedy an invalid session error
 func (err ErrInvalidSession) SuggestedCommands() []interface{} {
-	return []interface{}{}
-}
-
-// ReferenceLinks returns a list of reference links for an invalid session error
-func (err ErrInvalidSession) ReferenceLinks() []interface{} {
-	return []interface{}{}
-}
-
-// NewErrInvalidSession creates a default ErrInvalidSession
-func NewErrInvalidSession() ErrInvalidSession {
-	return ErrInvalidSession{errors.New("invalid session")}
+	suggestion := "realm-cli login"
+	if err.profileName != "" {
+		suggestion += " --profile " + err.profileName
+	}
+	return []interface{}{suggestion}
 }
 
 // ServerError is a Realm server error

@@ -69,12 +69,12 @@ func TestList(t *testing.T) {
 		})
 	})
 
-	t.Run("Message should display single item lists the same line as the message", func(*testing.T){
+	t.Run("Message should display single item lists the same line as the message", func(*testing.T) {
 		testData := []interface{}{"https://mongodb.com"}
 		testList := newList(linkMessage, testData)
 		message, err := testList.Message()
 		assert.Nil(t, err)
-		expectedMessage := "Refer to the following link(s) https://mongodb.com"
+		expectedMessage := "For more information: https://mongodb.com"
 		assert.Equal(t, expectedMessage, message)
 	})
 }

@@ -11,12 +11,12 @@ type errDisableUsage struct {
 
 func (err errDisableUsage) DisableUsage() struct{} { return struct{}{} }
 
-// CommandSuggester returns any suggested commands to remedy an error
+// CommandSuggester provides a list of suggested commands that will display to the user when an error occurs
 type CommandSuggester interface {
-	SuggestedCommands() []string
+	SuggestedCommands() []interface{}
 }
 
-// LinkReferrer gives a list of reference links that are related to the error
+// LinkReferrer provides a list of reference links that will display to the user when an error occurs
 type LinkReferrer interface {
-	ReferenceLinks() []string
+	ReferenceLinks() []interface{}
 }

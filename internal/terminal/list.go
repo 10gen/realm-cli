@@ -5,12 +5,6 @@ import (
 	"strings"
 )
 
-const (
-	// These are messages for the follow ups
-	commandMessage = "Try the following command(s)"
-	linkMessage    = "Refer to the following link(s)"
-)
-
 var (
 	listFields = []string{logFieldMessage, logFieldData}
 )
@@ -32,7 +26,15 @@ func newList(message string, data []interface{}) list {
 }
 
 func (l list) Message() (string, error) {
-	return fmt.Sprintf("%s%s", l.message, l.dataString()), nil
+	if len(l.data) == 0 {
+		return l.message, nil
+	}
+
+	if len(l.data) == 1 {
+		return fmt.Sprintf("%s: %s", l.message, l.data[0]), nil
+	}
+
+	return fmt.Sprintf("%s\n%s", l.message, l.dataString()), nil
 }
 
 func (l list) Payload() ([]string, map[string]interface{}, error) {
@@ -43,12 +45,9 @@ func (l list) Payload() ([]string, map[string]interface{}, error) {
 }
 
 func (l list) dataString() string {
-	if len(l.data) == 1 {
-		return " " + l.data[0]
-	}
 	data := make([]string, 0, len(l.data))
 	for _, item := range l.data {
 		data = append(data, indent+item)
 	}
-	return "\n" + strings.Join(data, "\n")
+	return strings.Join(data, "\n")
 }
