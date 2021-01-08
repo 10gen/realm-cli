@@ -24,7 +24,7 @@ func TestRealmImportExport(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		err := client.Import(groupID, primitive.NewObjectID().Hex(), realm.ImportRequest{})
-		assert.Equal(t, realm.ErrInvalidSession, err)
+		assert.Equal(t, realm.NewErrInvalidSession(), err)
 	})
 
 	t.Run("With an active session", func(t *testing.T) {
