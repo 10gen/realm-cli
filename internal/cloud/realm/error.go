@@ -16,16 +16,19 @@ type ErrInvalidSession struct {
 	error
 }
 
+// SuggestedCommands returns a list of commands to run to remedy an invalid session error
 func (err ErrInvalidSession) SuggestedCommands() []string {
 	return []string{}
 }
 
+// ReferenceLinks returns a list of reference links for an invalid session error
 func (err ErrInvalidSession) ReferenceLinks() []string {
 	return []string{}
 }
 
+// NewErrInvalidSession creates a default ErrInvalidSession
 func NewErrInvalidSession() ErrInvalidSession {
-	return ErrInvalidSession{errors.New("invalid session") }
+	return ErrInvalidSession{errors.New("invalid session")}
 }
 
 // ServerError is a Realm server error
