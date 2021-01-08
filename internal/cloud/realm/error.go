@@ -21,7 +21,7 @@ func (se ServerError) Error() string {
 }
 
 // parseResponseError attempts to read and unmarshal a server error
-// from the provided *http.Response.
+// from the provided *http.Response
 func parseResponseError(res *http.Response) error {
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(res.Body); err != nil {
