@@ -1,7 +1,10 @@
 package flags
 
 import (
+	"bytes"
+	"encoding/csv"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -12,81 +15,108 @@ const (
 	TypeString = "string"
 )
 
-type sliceValue interface {
-	pflag.Value
-	pflag.SliceValue
+// enumSetValue is modified copy of stringSliceValue from
+// the cobra pflags package
+type enumSetValue struct {
+	value          *[]string
+	changed        bool
+	validValuesSet map[string]bool
 }
 
-type enumSliceValue struct {
-	stringSliceValue sliceValue
-	validEnumValues  map[string]bool
-	enumValues       *[]string
-}
-
-// NewEnumSliceValue creates a pflag value that validates enums
-func NewEnumSliceValue(p *[]string, validEnumValues []string, defaultValues []string) pflag.Value {
-	esv := new(enumSliceValue)
-	fs := pflag.FlagSet{}
-	name := "name"
-	fs.StringSliceVar(p, name, defaultValues, "")
-	esv.stringSliceValue = fs.Lookup(name).Value.(sliceValue)
-	esv.validEnumValues = make(map[string]bool)
-	for _, validEnumValue := range validEnumValues {
-		esv.validEnumValues[validEnumValue] = true
+// NewEnumSetValue creates a stringSliceValue that validates inputs and prevents duplicates
+func NewEnumSetValue(p *[]string, val []string, validValues []string) pflag.Value {
+	esv := new(enumSetValue)
+	esv.value = p
+	*esv.value = val
+	esv.validValuesSet = make(map[string]bool)
+	for _, validValue := range validValues {
+		esv.validValuesSet[validValue] = true
 	}
-	esv.enumValues = p
 	return esv
 }
 
-func (esv *enumSliceValue) Set(val string) error {
-	err := esv.stringSliceValue.Set(val)
+func (esv *enumSetValue) Set(val string) error {
+	v, err := readAsCSV(val)
 	if err != nil {
 		return err
 	}
-	for _, enumValue := range *esv.enumValues {
-		if !esv.validEnumValues[enumValue] {
-			return esv.errInvalidEnumValue()
-		}
+	if !esv.changed {
+		*esv.value = v
+	} else {
+		*esv.value = append(*esv.value, v...)
 	}
-	return nil
+	esv.changed = true
+	return esv.validateAndRemoveDuplicates()
 }
 
-func (esv *enumSliceValue) Type() string {
+func (esv *enumSetValue) Type() string {
 	return "stringSlice"
 }
 
-func (esv *enumSliceValue) String() string {
-	return esv.stringSliceValue.String()
+func (esv *enumSetValue) String() string {
+	str, _ := writeAsCSV(*esv.value)
+	return "[" + str + "]"
 }
 
-func (esv *enumSliceValue) Append(val string) error {
-	if !esv.validEnumValues[val] {
-		return esv.errInvalidEnumValue()
-	}
-	return esv.stringSliceValue.Append(val)
+func (esv *enumSetValue) Append(val string) error {
+	*esv.value = append(*esv.value, val)
+	return esv.validateAndRemoveDuplicates()
 }
 
-func (esv *enumSliceValue) Replace(val []string) error {
-	err := esv.stringSliceValue.Replace(val)
-	if err != nil {
-		return err
-	}
-	for _, enumValue := range *esv.enumValues {
-		if !esv.validEnumValues[enumValue] {
+func (esv *enumSetValue) Replace(val []string) error {
+	*esv.value = val
+	return esv.validateAndRemoveDuplicates()
+}
+
+func (esv *enumSetValue) GetSlice() []string {
+	return *esv.value
+}
+
+func (esv *enumSetValue) validateAndRemoveDuplicates() error {
+	valueSet := make(map[string]bool)
+	for _, value := range *esv.value {
+		if !esv.validValuesSet[value] {
 			return esv.errInvalidEnumValue()
 		}
+		valueSet[value] = true
 	}
+
+	newValues := make([]string, 0, len(valueSet))
+	for value := range valueSet {
+		newValues = append(newValues, value)
+	}
+	*esv.value = newValues
 	return nil
 }
 
-func (esv *enumSliceValue) GetSlice() []string {
-	return esv.stringSliceValue.GetSlice()
-}
-
-func (esv *enumSliceValue) errInvalidEnumValue() error {
-	validEnumValues := make([]string, 0, len(esv.validEnumValues))
-	for validEnumValue := range esv.validEnumValues {
+func (esv *enumSetValue) errInvalidEnumValue() error {
+	validEnumValues := make([]string, 0, len(esv.validValuesSet))
+	for validEnumValue := range esv.validValuesSet {
 		validEnumValues = append(validEnumValues, validEnumValue)
 	}
+	// sort to ensure a consistent error message
+	sort.Strings(validEnumValues)
 	return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(validEnumValues, ", "))
+}
+
+// readAsCSV is copied from the cobra pflags package
+func readAsCSV(val string) ([]string, error) {
+	if val == "" {
+		return []string{}, nil
+	}
+	stringReader := strings.NewReader(val)
+	csvReader := csv.NewReader(stringReader)
+	return csvReader.Read()
+}
+
+// writeAsCSV is copied from the cobra pflags package
+func writeAsCSV(vals []string) (string, error) {
+	b := &bytes.Buffer{}
+	w := csv.NewWriter(b)
+	err := w.Write(vals)
+	if err != nil {
+		return "", err
+	}
+	w.Flush()
+	return strings.TrimSuffix(b.String(), "\n"), nil
 }

@@ -33,7 +33,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
 	fs.VarP(
-		flags.NewEnumSliceValue(&cmd.inputs.ProviderTypes, validProviderTypes, []string{}),
+		flags.NewEnumSetValue(&cmd.inputs.ProviderTypes, []string{}, validProviderTypes),
 		flagProvider,
 		flagProviderShort,
 		flagProviderUsage,
