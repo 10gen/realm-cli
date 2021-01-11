@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -26,12 +27,48 @@ const (
 // UserState is a Realm application user state
 type UserState string
 
+// String returns the user state string
+func (us UserState) String() string { return string(us) }
+
+// Type returns the user state type
+func (us UserState) Type() string { return flags.TypeString }
+
+// Set validates and sets the user state value
+func (us *UserState) Set(val string) error {
+	newUserState := UserState(val)
+
+	if !isValidUserState(newUserState) {
+		return errInvalidUserState
+	}
+
+	*us = newUserState
+	return nil
+}
+
 // set of supported user state values
 const (
 	UserStateNil      UserState = ""
 	UserStateEnabled  UserState = "enabled"
 	UserStateDisabled UserState = "disabled"
 )
+
+var (
+	errInvalidUserState = func() error {
+		allUserStateTypes := []string{UserStateEnabled.String(), UserStateDisabled.String()}
+		return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(allUserStateTypes, ", "))
+	}()
+)
+
+func isValidUserState(us UserState) bool {
+	switch us {
+	case
+		UserStateNil, // allow state to be optional
+		UserStateEnabled,
+		UserStateDisabled:
+		return true
+	}
+	return false
+}
 
 // APIKey is a Realm application api key
 type APIKey struct {
