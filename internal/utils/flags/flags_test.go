@@ -47,14 +47,14 @@ func TestEnumSetValueSet(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSet(&values, []string{}, validValues)
+			enumSetValue := NewEnumSet(&values, validValues)
 			assert.Nil(t, enumSetValue.Set(tc.inputValue))
 			assert.Equal(t, tc.expectedValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		enumSetValue := NewEnumSet(&values, validValues)
 		assert.Equal(t, errUnsupportedValue, enumSetValue.Set("eggcorn"))
 	})
 }
@@ -62,7 +62,7 @@ func TestEnumSetValueSet(t *testing.T) {
 func TestEnumSetValueType(t *testing.T) {
 	t.Run("EnumSetValue should have type of stringSlice", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		enumSetValue := NewEnumSet(&values, validValues)
 		assert.Equal(t, "enumSet", enumSetValue.Type())
 	})
 }
@@ -90,7 +90,9 @@ func TestEnumSetValueString(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			enumSetValue := NewEnumSet(&tc.values, tc.values, tc.values)
+			var values []string
+			enumSetValue := NewEnumSet(&values, tc.values)
+			assert.Nil(t, enumSetValue.set(tc.values...))
 			assert.Equal(t, tc.expectedString, enumSetValue.String())
 		})
 	}
@@ -118,14 +120,15 @@ func TestEnumSetValueAppend(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSet(&values, tc.initialValues, validValues)
+			enumSetValue := NewEnumSet(&values, validValues)
+			assert.Nil(t, enumSetValue.set(tc.initialValues...))
 			assert.Nil(t, enumSetValue.Append(tc.newValue))
 			assert.Equal(t, tc.expectedValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		enumSetValue := NewEnumSet(&values, validValues)
 		assert.Equal(t, errUnsupportedValue, enumSetValue.Append("eggcorn"))
 	})
 }
@@ -152,14 +155,15 @@ func TestEnumSetValueReplace(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSet(&values, tc.oldValues, validValues)
+			enumSetValue := NewEnumSet(&values, validValues)
+			assert.Nil(t, enumSetValue.set(tc.oldValues...))
 			assert.Nil(t, enumSetValue.Replace(tc.newValues))
 			assert.Equal(t, tc.expectedNewValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		enumSetValue := NewEnumSet(&values, validValues)
 		assert.Equal(t, errUnsupportedValue, enumSetValue.Replace([]string{"eggcorn"}))
 	})
 }
@@ -167,7 +171,7 @@ func TestEnumSetValueReplace(t *testing.T) {
 func TestEnumSetValueGetSlice(t *testing.T) {
 	t.Run("EnumSetValue should return the values slice", func(t *testing.T) {
 		values := []string{value1, value2}
-		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		enumSetValue := NewEnumSet(&values, validValues)
 		assert.Equal(t, values, enumSetValue.GetSlice())
 	})
 }

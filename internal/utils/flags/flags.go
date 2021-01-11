@@ -25,26 +25,18 @@ type EnumSetValue struct {
 	validValuesSet map[string]struct{}
 }
 
-// NewEnumSet creates an EnumSetValue
-func NewEnumSet(p *[]string, defaultValues []string, validValues []string) *EnumSetValue {
+// NewEnumSet creates an EnumSetValue.  Expects p to point to an empty
+// slice and will clear it otherwise.
+func NewEnumSet(p *[]string, validValues []string) *EnumSetValue {
 	esv := new(EnumSetValue)
 	esv.values = p
-	*esv.values = defaultValues
+	*esv.values = nil
 	esv.validValues = validValues
 	esv.validValuesSet = make(map[string]struct{}, len(validValues))
 	for _, validValue := range validValues {
 		esv.validValuesSet[validValue] = setMember
 	}
-	esv.valuesSet = make(map[string]struct{}, len(defaultValues))
-	for _, value := range defaultValues {
-		esv.valuesSet[value] = setMember
-	}
-	err := esv.validateAndRemoveDuplicates()
-	if err != nil {
-		// what should I do here?  I'm pretty sure this would be a great example of when
-		// to panic (coding error in a single threaded, non-critical application) but I know
-		// you don't like that so lmk what to do.
-	}
+	esv.valuesSet = make(map[string]struct{})
 	return esv
 }
 
@@ -55,11 +47,7 @@ func (esv *EnumSetValue) Set(val string) error {
 		return err
 	}
 
-	*esv.values = append(*esv.values, values...)
-	for _, value := range values {
-		esv.valuesSet[value] = setMember
-	}
-	return esv.validateAndRemoveDuplicates()
+	return esv.set(values...)
 }
 
 // Type returns the type string of EnumSetValue
@@ -78,24 +66,26 @@ func (esv *EnumSetValue) String() string {
 
 // Append appends a single value to an EnumSetValue
 func (esv *EnumSetValue) Append(val string) error {
-	*esv.values = append(*esv.values, val)
-	esv.valuesSet[val] = setMember
-	return esv.validateAndRemoveDuplicates()
+	return esv.set(val)
 }
 
 // Replace replaces all values in an EnumSetValue
 func (esv *EnumSetValue) Replace(values []string) error {
-	*esv.values = values
 	esv.valuesSet = make(map[string]struct{}, len(values))
-	for _, value := range values {
-		esv.valuesSet[value] = setMember
-	}
-	return esv.validateAndRemoveDuplicates()
+	return esv.set(values...)
 }
 
 // GetSlice returns the underlying slice of the set of the EnumSetValue
 func (esv *EnumSetValue) GetSlice() []string {
 	return *esv.values
+}
+
+func (esv *EnumSetValue) set(values ...string) error {
+	*esv.values = append(*esv.values, values...)
+	for _, value := range values {
+		esv.valuesSet[value] = setMember
+	}
+	return esv.validateAndRemoveDuplicates()
 }
 
 func (esv *EnumSetValue) validateAndRemoveDuplicates() error {
