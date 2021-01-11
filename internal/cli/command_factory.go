@@ -107,7 +107,8 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 			err := command.Command.Handler(factory.profile, factory.ui)
-			if err == realm.ErrInvalidSession {
+
+			if _, ok := err.(realm.ErrInvalidSession); ok {
 				factory.profile.ClearSession()
 				profileErr := factory.profile.Save()
 				if profileErr != nil {
@@ -118,6 +119,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 					}
 				}
 			}
+
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
@@ -160,7 +162,16 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 			factory.errLogger.Fatal(err)
 		}
 
-		if printErr := factory.ui.Print(terminal.NewErrorLog(err)); printErr != nil {
+		logs := []terminal.Log{terminal.NewErrorLog(err)}
+
+		if e, ok := err.(CommandSuggester); ok {
+			logs = append(logs, terminal.NewSuggestedCommandsLog(e.SuggestedCommands()))
+		}
+		if e, ok := err.(LinkReferrer); ok {
+			logs = append(logs, terminal.NewSuggestedCommandsLog(e.ReferenceLinks()))
+		}
+
+		if printErr := factory.ui.Print(logs...); printErr != nil {
 			factory.errLogger.Fatal(err) // log the original failure
 		}
 

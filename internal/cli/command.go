@@ -80,14 +80,3 @@ type CommandDefinition struct {
 	// This value maps 1:1 to Cobra's `Aliases` property
 	Aliases []string
 }
-
-// DisableUsage disables the usage printing when an error occurs
-type DisableUsage interface {
-	DisableUsage() struct{}
-}
-
-type errDisableUsage struct {
-	error
-}
-
-func (err errDisableUsage) DisableUsage() struct{} { return struct{}{} }

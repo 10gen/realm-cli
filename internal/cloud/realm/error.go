@@ -10,6 +10,22 @@ const (
 	invalidSessionCode = "InvalidSession"
 )
 
+// ErrInvalidSession is an invalid session error
+type ErrInvalidSession struct {
+	profileName string
+}
+
+func (err ErrInvalidSession) Error() string { return "invalid session" }
+
+// SuggestedCommands returns a list of commands to run to remedy an invalid session error
+func (err ErrInvalidSession) SuggestedCommands() []interface{} {
+	suggestion := "realm-cli login"
+	if err.profileName != "" {
+		suggestion += " --profile " + err.profileName
+	}
+	return []interface{}{suggestion}
+}
+
 // ServerError is a Realm server error
 type ServerError struct {
 	Code    string `json:"error_code"`

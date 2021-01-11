@@ -2,7 +2,6 @@ package realm
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
@@ -12,11 +11,6 @@ const (
 	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
 	authProfilePath  = adminAPI + "/auth/profile"
 	authSessionPath  = adminAPI + "/auth/session"
-)
-
-// set of supported auth errors
-var (
-	ErrInvalidSession = errors.New("invalid session")
 )
 
 // Session is the Realm session
@@ -82,14 +76,14 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 func (c *client) getAuth(options api.RequestOptions) (string, error) {
 	if options.UseAuth {
 		if c.session.AccessToken == "" {
-			return "", ErrInvalidSession
+			return "", ErrInvalidSession{}
 		}
 		return c.session.AccessToken, nil
 	}
 
 	if options.RefreshAuth {
 		if c.session.RefreshToken == "" {
-			return "", ErrInvalidSession
+			return "", ErrInvalidSession{}
 		}
 		return c.session.RefreshToken, nil
 	}
@@ -103,7 +97,7 @@ func (c *client) refreshAuth() (string, error) {
 		return "", resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return "", ErrInvalidSession
+		return "", ErrInvalidSession{}
 	}
 	defer res.Body.Close()
 

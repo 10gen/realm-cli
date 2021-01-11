@@ -17,7 +17,7 @@ func TestRealmUsers(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.FindUsers(primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex(), realm.UserFilter{})
-		assert.Equal(t, realm.ErrInvalidSession, err)
+		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 
 	t.Run("With an active session ", func(t *testing.T) {

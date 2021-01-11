@@ -17,6 +17,7 @@ const (
 	LogLevelInfo  LogLevel = "info"
 	LogLevelError LogLevel = "error"
 	LogLevelWarn  LogLevel = "warn"
+	LogLevelDebug LogLevel = "debug"
 )
 
 var (
@@ -75,6 +76,21 @@ func NewErrorLog(err error) Log {
 func NewWarningLog(format string, args ...interface{}) Log {
 	return newLog(LogLevelWarn, newTextMessage(format, args...))
 }
+
+// NewSuggestedCommandsLog creates a log with a follow up message about suggested commands for the error
+func NewSuggestedCommandsLog(commands ...interface{}) Log {
+	return newLog(LogLevelDebug, newList(commandMessage, commands))
+}
+
+// NewReferenceLinksLog creates a log with a follow up message about reference links for the error
+func NewReferenceLinksLog(links ...interface{}) Log {
+	return newLog(LogLevelDebug, newList(linkMessage, links))
+}
+
+const (
+	linkMessage    string = "For more information"
+	commandMessage string = "Try running instead"
+)
 
 func newLog(level LogLevel, data LogData) Log {
 	return Log{level, time.Now(), data}

@@ -26,6 +26,17 @@ func newList(message string, data []interface{}) list {
 }
 
 func (l list) Message() (string, error) {
+	if len(l.data) == 0 {
+		return l.message, nil
+	}
+
+	if len(l.data) == 1 {
+		if len(l.message) == 0 {
+			return l.data[0], nil
+		}
+		return fmt.Sprintf("%s: %s", l.message, l.data[0]), nil
+	}
+
 	return fmt.Sprintf("%s\n%s", l.message, l.dataString()), nil
 }
 
