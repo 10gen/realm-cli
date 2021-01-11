@@ -25,9 +25,8 @@ func TestUserListSetup(t *testing.T) {
 }
 
 func TestUserListHandler(t *testing.T) {
-
-	const projectID = "projectID"
-	const appID = "appID"
+	projectID := "projectID"
+	appID := "appID"
 	testApp := realm.App{
 		ID:          appID,
 		GroupID:     projectID,

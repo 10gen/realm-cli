@@ -9,6 +9,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/utils/api"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+
 	"github.com/AlecAivazis/survey/v2/core"
 )
 

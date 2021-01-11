@@ -2,11 +2,9 @@ package flags
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -16,7 +14,8 @@ const (
 )
 
 var (
-	validValues = []string{value1, value2, valueWithComma}
+	validValues         = []string{value1, value2, valueWithComma}
+	errUnsupportedValue = fmt.Errorf(`unsupported value, use one of ["1-value", "2-value", "3-value with, comma"] instead`)
 )
 
 func TestEnumSetValueSet(t *testing.T) {
@@ -48,24 +47,23 @@ func TestEnumSetValueSet(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
+			enumSetValue := NewEnumSet(&values, []string{}, validValues)
 			assert.Nil(t, enumSetValue.Set(tc.inputValue))
 			assert.Equal(t, tc.expectedValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
-		expectedError := fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(validValues, ", "))
-		assert.Equal(t, expectedError, enumSetValue.Set("eggcorn"))
+		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		assert.Equal(t, errUnsupportedValue, enumSetValue.Set("eggcorn"))
 	})
 }
 
 func TestEnumSetValueType(t *testing.T) {
 	t.Run("EnumSetValue should have type of stringSlice", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
-		assert.Equal(t, "stringSlice", enumSetValue.Type())
+		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		assert.Equal(t, "enumSet", enumSetValue.Type())
 	})
 }
 
@@ -81,7 +79,7 @@ func TestEnumSetValueString(t *testing.T) {
 			expectedString: "[]",
 		},
 		{
-			description:    "Values should be comma seperated",
+			description:    "Values should be comma separated",
 			values:         []string{value1, value2},
 			expectedString: fmt.Sprintf("[%s,%s]", value1, value2),
 		},
@@ -92,7 +90,7 @@ func TestEnumSetValueString(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			enumSetValue := NewEnumSetValue(&tc.values, tc.values, tc.values)
+			enumSetValue := NewEnumSet(&tc.values, tc.values, tc.values)
 			assert.Equal(t, tc.expectedString, enumSetValue.String())
 		})
 	}
@@ -120,16 +118,15 @@ func TestEnumSetValueAppend(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSetValue(&values, tc.initialValues, validValues)
-			assert.Nil(t, enumSetValue.(pflag.SliceValue).Append(tc.newValue))
+			enumSetValue := NewEnumSet(&values, tc.initialValues, validValues)
+			assert.Nil(t, enumSetValue.Append(tc.newValue))
 			assert.Equal(t, tc.expectedValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
-		expectedError := fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(validValues, ", "))
-		assert.Equal(t, expectedError, enumSetValue.(pflag.SliceValue).Append("eggcorn"))
+		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		assert.Equal(t, errUnsupportedValue, enumSetValue.Append("eggcorn"))
 	})
 }
 
@@ -155,23 +152,22 @@ func TestEnumSetValueReplace(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			values := []string{}
-			enumSetValue := NewEnumSetValue(&values, tc.oldValues, validValues)
-			assert.Nil(t, enumSetValue.(pflag.SliceValue).Replace(tc.newValues))
+			enumSetValue := NewEnumSet(&values, tc.oldValues, validValues)
+			assert.Nil(t, enumSetValue.Replace(tc.newValues))
 			assert.Equal(t, tc.expectedNewValues, values)
 		})
 	}
 	t.Run("Invalid values should cause an error", func(t *testing.T) {
 		values := []string{}
-		enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
-		expectedError := fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(validValues, ", "))
-		assert.Equal(t, expectedError, enumSetValue.(pflag.SliceValue).Replace([]string{"eggcorn"}))
+		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		assert.Equal(t, errUnsupportedValue, enumSetValue.Replace([]string{"eggcorn"}))
 	})
 }
 
 func TestEnumSetValueGetSlice(t *testing.T) {
 	t.Run("EnumSetValue should return the values slice", func(t *testing.T) {
 		values := []string{value1, value2}
-		enumSetValue := NewEnumSetValue(&values, []string{}, validValues)
-		assert.Equal(t, values, enumSetValue.(pflag.SliceValue).GetSlice())
+		enumSetValue := NewEnumSet(&values, []string{}, validValues)
+		assert.Equal(t, values, enumSetValue.GetSlice())
 	})
 }

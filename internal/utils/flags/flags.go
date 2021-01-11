@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -15,88 +13,111 @@ const (
 	TypeString = "string"
 )
 
-// enumSetValue is modified copy of stringSliceValue from
-// the cobra pflags package
-type enumSetValue struct {
-	value          *[]string
-	changed        bool
-	validValuesSet map[string]bool
+var setMember struct{}
+
+// EnumSetValue is a modified copy of stringSliceValue from
+// the cobra pflags package.  It validates a set of enum values.
+// Note: it does NOT maintain order of the input arguments
+type EnumSetValue struct {
+	values         *[]string
+	valuesSet      map[string]struct{}
+	validValues    []string
+	validValuesSet map[string]struct{}
 }
 
-// NewEnumSetValue creates a stringSliceValue that validates inputs and prevents duplicates
-func NewEnumSetValue(p *[]string, val []string, validValues []string) pflag.Value {
-	esv := new(enumSetValue)
-	esv.value = p
-	*esv.value = val
-	esv.validValuesSet = make(map[string]bool)
+// NewEnumSet creates an EnumSetValue
+func NewEnumSet(p *[]string, defaultValues []string, validValues []string) *EnumSetValue {
+	esv := new(EnumSetValue)
+	esv.values = p
+	*esv.values = defaultValues
+	esv.validValues = validValues
+	esv.validValuesSet = make(map[string]struct{}, len(validValues))
 	for _, validValue := range validValues {
-		esv.validValuesSet[validValue] = true
+		esv.validValuesSet[validValue] = setMember
+	}
+	esv.valuesSet = make(map[string]struct{}, len(defaultValues))
+	for _, value := range defaultValues {
+		esv.valuesSet[value] = setMember
+	}
+	err := esv.validateAndRemoveDuplicates()
+	if err != nil {
+		// what should I do here?  I'm pretty sure this would be a great example of when
+		// to panic (coding error in a single threaded, non-critical application) but I know
+		// you don't like that so lmk what to do.
 	}
 	return esv
 }
 
-func (esv *enumSetValue) Set(val string) error {
-	v, err := readAsCSV(val)
+// Set adds new values to the EnumSetValue
+func (esv *EnumSetValue) Set(val string) error {
+	values, err := readAsCSV(val)
 	if err != nil {
 		return err
 	}
-	if !esv.changed {
-		*esv.value = v
-	} else {
-		*esv.value = append(*esv.value, v...)
+
+	*esv.values = append(*esv.values, values...)
+	for _, value := range values {
+		esv.valuesSet[value] = setMember
 	}
-	esv.changed = true
 	return esv.validateAndRemoveDuplicates()
 }
 
-func (esv *enumSetValue) Type() string {
-	return "stringSlice"
+// Type returns the type string of EnumSetValue
+func (esv *EnumSetValue) Type() string {
+	return "enumSet"
 }
 
-func (esv *enumSetValue) String() string {
-	str, _ := writeAsCSV(*esv.value)
+// String returns a string representation of an EnumSetValue
+func (esv *EnumSetValue) String() string {
+	str, err := writeAsCSV(*esv.values)
+	if err != nil {
+		return "[]"
+	}
 	return "[" + str + "]"
 }
 
-func (esv *enumSetValue) Append(val string) error {
-	*esv.value = append(*esv.value, val)
+// Append appends a single value to an EnumSetValue
+func (esv *EnumSetValue) Append(val string) error {
+	*esv.values = append(*esv.values, val)
+	esv.valuesSet[val] = setMember
 	return esv.validateAndRemoveDuplicates()
 }
 
-func (esv *enumSetValue) Replace(val []string) error {
-	*esv.value = val
+// Replace replaces all values in an EnumSetValue
+func (esv *EnumSetValue) Replace(values []string) error {
+	*esv.values = values
+	esv.valuesSet = make(map[string]struct{}, len(values))
+	for _, value := range values {
+		esv.valuesSet[value] = setMember
+	}
 	return esv.validateAndRemoveDuplicates()
 }
 
-func (esv *enumSetValue) GetSlice() []string {
-	return *esv.value
+// GetSlice returns the underlying slice of the set of the EnumSetValue
+func (esv *EnumSetValue) GetSlice() []string {
+	return *esv.values
 }
 
-func (esv *enumSetValue) validateAndRemoveDuplicates() error {
-	valueSet := make(map[string]bool)
-	for _, value := range *esv.value {
-		if !esv.validValuesSet[value] {
+func (esv *EnumSetValue) validateAndRemoveDuplicates() error {
+	for _, value := range *esv.values {
+		if _, exists := esv.validValuesSet[value]; !exists {
 			return esv.errInvalidEnumValue()
 		}
-		valueSet[value] = true
 	}
 
-	newValues := make([]string, 0, len(valueSet))
-	for value := range valueSet {
+	newValues := make([]string, 0, len(esv.valuesSet))
+	for value := range esv.valuesSet {
 		newValues = append(newValues, value)
 	}
-	*esv.value = newValues
+	// sort to ensure determinism
+	sort.Strings(newValues)
+
+	*esv.values = newValues
 	return nil
 }
 
-func (esv *enumSetValue) errInvalidEnumValue() error {
-	validEnumValues := make([]string, 0, len(esv.validValuesSet))
-	for validEnumValue := range esv.validValuesSet {
-		validEnumValues = append(validEnumValues, validEnumValue)
-	}
-	// sort to ensure a consistent error message
-	sort.Strings(validEnumValues)
-	return fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(validEnumValues, ", "))
+func (esv *EnumSetValue) errInvalidEnumValue() error {
+	return fmt.Errorf(`unsupported value, use one of ["%s"] instead`, strings.Join(esv.validValues, `", "`))
 }
 
 // readAsCSV is copied from the cobra pflags package
