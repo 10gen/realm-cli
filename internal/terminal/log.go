@@ -12,16 +12,12 @@ import (
 // LogLevel is the level of a terminal log
 type LogLevel string
 
+// set of supported log levels
 const (
-	// set of supported log levels
 	LogLevelInfo  LogLevel = "info"
 	LogLevelError LogLevel = "error"
 	LogLevelWarn  LogLevel = "warn"
 	LogLevelDebug LogLevel = "debug"
-
-	// follow up messages
-	linkMessage string = "For more information"
-	commandMessage string = "Try running instead"
 )
 
 var (
@@ -82,14 +78,19 @@ func NewWarningLog(format string, args ...interface{}) Log {
 }
 
 // NewSuggestedCommandsLog creates a log with a follow up message about suggested commands for the error
-func NewSuggestedCommandsLog(commands []interface{}) Log {
+func NewSuggestedCommandsLog(commands ...interface{}) Log {
 	return newLog(LogLevelDebug, newList(commandMessage, commands))
 }
 
 // NewReferenceLinksLog creates a log with a follow up message about reference links for the error
-func NewReferenceLinksLog(links []interface{}) Log {
+func NewReferenceLinksLog(links ...interface{}) Log {
 	return newLog(LogLevelDebug, newList(linkMessage, links))
 }
+
+const (
+	linkMessage    string = "For more information"
+	commandMessage string = "Try running instead"
+)
 
 func newLog(level LogLevel, data LogData) Log {
 	return Log{level, time.Now(), data}

@@ -10,7 +10,7 @@ const (
 	invalidSessionCode = "InvalidSession"
 )
 
-// ErrInvalidSession is an invalid session error that has a follow up message
+// ErrInvalidSession is an invalid session error
 type ErrInvalidSession struct {
 	profileName string
 }
