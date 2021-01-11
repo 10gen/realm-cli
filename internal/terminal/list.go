@@ -31,8 +31,8 @@ func (l list) Message() (string, error) {
 	}
 
 	if len(l.data) == 1 {
-		if len(l.data[0]) == 0 {
-			return l.message, nil
+		if len(l.message) == 0 {
+			return l.data[0], nil
 		}
 		return fmt.Sprintf("%s: %s", l.message, l.data[0]), nil
 	}
