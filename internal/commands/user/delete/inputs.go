@@ -1,9 +1,6 @@
 package delete
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/commands/user/shared"
@@ -22,11 +19,8 @@ const (
 
 type inputs struct {
 	cli.ProjectAppInputs
-	State             realm.UserState
-	Users             []string
-	ProviderTypes     []string
-	Status            statusType
-	InteractiveFilter bool
+	shared.UsersInputs
+	Users []string
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -37,11 +31,11 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	var err error
 	// Interactive set Status
 	if i.InteractiveFilter {
-		allUserStatuses := []string{statusTypeConfirmed.String(), statusTypePending.String()}
+		allUserStatuses := []string{shared.StatusTypeConfirmed.String(), shared.StatusTypePending.String()}
 		selectedStatuses := []string{}
 		defaultStatuses := []string{}
-		if i.Status != statusTypeNil {
-			newStatusType := statusType(i.Status)
+		if i.Status != shared.StatusTypeNil {
+			newStatusType := shared.StatusType(i.Status)
 			err = newStatusType.Set(i.Status.String())
 			if err != nil {
 				return err
@@ -60,12 +54,12 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 			return err
 		}
 		if len(selectedStatuses) == 1 {
-			i.Status = statusType(selectedStatuses[0])
+			i.Status = shared.StatusType(selectedStatuses[0])
 		} else {
-			i.Status = statusTypeNil
+			i.Status = shared.StatusTypeNil
 		}
 	}
-	if i.Status == statusTypeConfirmed || i.Status == statusTypeNil {
+	if i.Status == shared.StatusTypeConfirmed || i.Status == shared.StatusTypeNil {
 		// Interactive set Providers
 		if i.InteractiveFilter {
 			err := ui.AskOne(
@@ -110,83 +104,6 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 			} else {
 				i.State = realm.UserStateNil
 			}
-		}
-	}
-	return nil
-}
-
-func (i *inputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) error {
-	if i.Users == nil || len(i.Users) < 1 {
-		var err error
-
-		userFilter := realm.UserFilter{}
-		if i.Status != statusTypeNil {
-			userFilter.Pending = i.Status == statusTypePending
-		}
-		if len(i.ProviderTypes) > 0 {
-			userFilter.Providers = i.ProviderTypes
-		}
-		if i.State != realm.UserStateNil {
-			userFilter.State = i.State
-		}
-		selectableUsersSet := make(map[string]realm.User)
-		if i.Status == statusTypeConfirmed || i.Status == statusTypeNil {
-			foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
-			if err != nil {
-				return err
-			}
-			for _, user := range foundUsers {
-				selectableUsersSet[user.ID] = user
-			}
-		}
-		if i.Status == statusTypePending || i.Status == statusTypeNil {
-			foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
-			if err != nil {
-				return err
-			}
-			for _, user := range foundUsers {
-				selectableUsersSet[user.ID] = user
-			}
-		}
-
-		// Interactive User Selection
-		selectableUserOptions := make([]string, len(selectableUsersSet))
-		userOptionPattern := "%s - %s"
-		x := 0
-		for _, user := range selectableUsersSet {
-			switch user.Identities[0].ProviderType {
-			case shared.ProviderTypeAnonymous:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Anonymous", user.ID)
-			case shared.ProviderTypeLocalUserPass:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, user.Data["email"], user.ID)
-			case shared.ProviderTypeAPIKey:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, user.Data["name"], user.ID)
-			case shared.ProviderTypeApple:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Apple", user.ID)
-			case shared.ProviderTypeGoogle:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Google", user.ID)
-			case shared.ProviderTypeFacebook:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Facebook", user.ID)
-			case shared.ProviderTypeCustom:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Custom JWT", user.ID)
-			case shared.ProviderTypeCustomFunction:
-				selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Custom Function", user.ID)
-			}
-			x++
-		}
-		selectedUsers := []string{}
-		err = ui.AskOne(
-			&selectedUsers,
-			&survey.MultiSelect{
-				Message: "Which user(s) would you like to delete?",
-				Options: selectableUserOptions,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		for _, userPattern := range selectedUsers {
-			i.Users = append(i.Users, strings.Split(userPattern, " - ")[1])
 		}
 	}
 	return nil

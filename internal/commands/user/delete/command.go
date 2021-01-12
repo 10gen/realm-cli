@@ -33,7 +33,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUsers, flagUsersShort, []string{}, flagUsersUsage)
-	fs.BoolVarP(&cmd.inputs.InteractiveFilter, flagInteractive, flagInteractiveShort, false, flagInteractiveUsage)
+	fs.BoolVarP(&cmd.inputs.InteractiveFilter, shared.FlagInteractive, shared.FlagInteractiveShort, false, shared.FlagInteractiveUsage)
 	fs.VarP(
 		flags.NewEnumSet(&cmd.inputs.ProviderTypes, shared.ValidProviderTypes),
 		shared.FlagProvider,
@@ -41,7 +41,7 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 		shared.FlagProviderUsage,
 	)
 	fs.VarP(&cmd.inputs.State, shared.FlagStateType, shared.FlagStateTypeShort, shared.FlagStateTypeUsage)
-	fs.VarP(&cmd.inputs.Status, flagStatusType, flagStatusTypeShort, flagStatusTypeUsage)
+	fs.VarP(&cmd.inputs.Status, shared.FlagStatusType, shared.FlagStatusTypeShort, shared.FlagStatusTypeUsage)
 }
 
 func (cmd *command) Inputs() cli.InputResolver {
@@ -59,12 +59,12 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	err := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
+	users, err := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
 	if err != nil {
 		return err
 	}
 
-	for _, userID := range cmd.inputs.Users {
+	for _, userID := range users {
 		err := cmd.realmClient.DeleteUser(app.GroupID, app.ID, userID)
 		if err != nil {
 			cmd.outputs.failed = append(cmd.outputs.failed, fmt.Errorf("failed to delete user (%s): %s", userID, err))

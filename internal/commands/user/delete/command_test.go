@@ -44,6 +44,10 @@ func TestUserDeleteHandler(t *testing.T) {
 			return []realm.App{testApp}, nil
 		}
 
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return testUsers, nil
+		}
+
 		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
 			capturedProjectID = groupID
 			capturedAppID = appID
