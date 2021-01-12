@@ -1,10 +1,11 @@
-package initialize
+package app
 
 import (
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -19,17 +20,17 @@ func TestAppInitInputsResolve(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()
 
-		assert.Nil(t, cli.WriteFile(filepath.Join(profile.WorkingDirectory, realm.FileAppConfig), 0666, strings.NewReader(`{"name":"eggcorn"}`)))
+		assert.Nil(t, cli.WriteFile(filepath.Join(profile.WorkingDirectory, app.FileConfig), 0666, strings.NewReader(`{"name":"eggcorn"}`)))
 
-		var i inputs
+		var i initInputs
 		assert.Equal(t, errProjectExists{}, i.Resolve(profile, nil))
 	})
 
 	for _, tc := range []struct {
 		description string
-		inputs      inputs
+		inputs      initInputs
 		procedure   func(c *expect.Console)
-		test        func(t *testing.T, i inputs)
+		test        func(t *testing.T, i initInputs)
 	}{
 		{
 			description: "With no flags set should prompt for just name and set realm.Location and deployment model to defaults",
@@ -38,7 +39,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 				c.SendLine("test-app")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
@@ -46,9 +47,9 @@ func TestAppInitInputsResolve(t *testing.T) {
 		},
 		{
 			description: "With a name flag set should prompt for nothing else and set realm.Location and deployment model to defaults",
-			inputs:      inputs{Name: "test-app"},
+			inputs:      initInputs{Name: "test-app"},
 			procedure:   func(c *expect.Console) {},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
@@ -56,13 +57,13 @@ func TestAppInitInputsResolve(t *testing.T) {
 		},
 		{
 			description: "With name realm.Location and deployment model flags set should prompt for nothing else",
-			inputs: inputs{
+			inputs: initInputs{
 				Name:            "test-app",
 				DeploymentModel: realm.DeploymentModelLocal,
 				Location:        realm.LocationOregon,
 			},
 			procedure: func(c *expect.Console) {},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, realm.DeploymentModelLocal, i.DeploymentModel)
 				assert.Equal(t, realm.LocationOregon, i.Location)
@@ -94,7 +95,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 
 func TestAppInitInputsResolveApp(t *testing.T) {
 	t.Run("Should do nothing if from type is not set", func(t *testing.T) {
-		var i inputs
+		var i initInputs
 		f, err := i.resolveFrom(nil, nil)
 		assert.Nil(t, err)
 		assert.Equal(t, from{}, f)
@@ -115,7 +116,7 @@ func TestAppInitInputsResolveApp(t *testing.T) {
 			return []realm.App{app}, nil
 		}
 
-		i := inputs{Project: app.GroupID, From: app.ClientAppID}
+		i := initInputs{Project: app.GroupID, From: app.ClientAppID}
 
 		f, err := i.resolveFrom(nil, client)
 		assert.Nil(t, err)

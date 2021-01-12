@@ -1,11 +1,15 @@
-package create
+package user
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/core"
 )
 
@@ -26,6 +30,77 @@ const (
 	flagAPIKeyNameShort = "n"
 	flagAPIKeyNameUsage = "sets the name of the api key to be created"
 )
+
+// input field names, per survey
+const (
+	inputCreateFieldEmail      = "email"
+	inputCreateFieldPassword   = "password"
+	inputCreateFieldAPIKeyName = "apiKeyName"
+)
+
+type createInputs struct {
+	app.ProjectInputs
+	UserType   userType
+	Email      string
+	Password   string
+	APIKeyName string
+}
+
+func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
+		return err
+	}
+
+	if i.UserType == userTypeNil && i.APIKeyName == "" && i.Email == "" {
+		err := ui.AskOne(
+			&i.UserType,
+			&survey.Select{
+				Message: "Which auth provider type are you creating a user for?",
+				Options: []string{userTypeAPIKey.String(), userTypeEmailPassword.String()},
+			},
+		)
+		if err != nil {
+			return err
+		}
+	} else if i.APIKeyName != "" {
+		i.UserType = userTypeAPIKey
+	} else if i.Email != "" {
+		i.UserType = userTypeEmailPassword
+	}
+
+	var questions []*survey.Question
+
+	switch i.UserType {
+	case userTypeAPIKey:
+		if i.APIKeyName == "" {
+			questions = append(questions, &survey.Question{
+				Name:   inputCreateFieldAPIKeyName,
+				Prompt: &survey.Input{Message: "API Key Name"},
+			})
+		}
+	case userTypeEmailPassword:
+		if i.Email == "" {
+			questions = append(questions, &survey.Question{
+				Name:   inputCreateFieldEmail,
+				Prompt: &survey.Input{Message: "New Email"},
+			})
+		}
+		if i.Password == "" {
+			questions = append(questions, &survey.Question{
+				Name:   inputCreateFieldPassword,
+				Prompt: &survey.Password{Message: "New Password"},
+			})
+		}
+	}
+
+	if len(questions) > 0 {
+		if err := ui.Ask(i, questions...); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 type userType string
 

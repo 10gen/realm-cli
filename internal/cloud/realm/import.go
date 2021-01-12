@@ -22,7 +22,7 @@ type ImportRequest struct {
 }
 
 func (c *client) Import(groupID, appID string, req ImportRequest) error {
-	if req.ConfigVersion == AppConfigVersionNil {
+	if req.ConfigVersion == AppConfigVersionZero {
 		req.ConfigVersion = DefaultAppConfigVersion
 	}
 
@@ -30,12 +30,9 @@ func (c *client) Import(groupID, appID string, req ImportRequest) error {
 		http.MethodPost,
 		fmt.Sprintf(importPathPattern, groupID, appID),
 		req,
-		api.RequestOptions{
-			UseAuth: true,
-			Query: map[string]string{
-				importQueryStrategy: importStrategyReplaceByName,
-			},
-		},
+		api.RequestOptions{Query: map[string]string{
+			importQueryStrategy: importStrategyReplaceByName,
+		}},
 	)
 	if resErr != nil {
 		return resErr

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -30,14 +31,14 @@ func TestRealmImportExport(t *testing.T) {
 	t.Run("With an active session", func(t *testing.T) {
 		client := newAuthClient(t)
 
-		app, appErr := client.CreateApp(groupID, "importexport-test", realm.AppMeta{})
-		assert.Nil(t, appErr)
+		testApp, testAppErr := client.CreateApp(groupID, "importexport-test", realm.AppMeta{})
+		assert.Nil(t, testAppErr)
 
 		resetPasswordURL := "http://localhost:8080/reset_password"
 		emailConfirmationURL := "http://localhost:8080/confirm_email"
 
 		t.Run("Should import an app with auth providers", func(t *testing.T) {
-			err := client.Import(groupID, app.ID, realm.ImportRequest{
+			err := client.Import(groupID, testApp.ID, realm.ImportRequest{
 				AuthProviders: []realm.AuthProvider{
 					{Name: "api-key", Type: "api-key"},
 					{Name: "local-userpass", Type: "local-userpass", Config: map[string]interface{}{
@@ -50,18 +51,18 @@ func TestRealmImportExport(t *testing.T) {
 		})
 
 		t.Run("Should export the same app with the imported changes included", func(t *testing.T) {
-			filename, zipPkg, err := client.Export(groupID, app.ID, realm.ExportRequest{})
+			filename, zipPkg, err := client.Export(groupID, testApp.ID, realm.ExportRequest{})
 			assert.Nil(t, err)
 
-			filenameMatch, matchErr := regexp.MatchString(fmt.Sprintf("%s_.*\\.zip", app.Name), filename)
+			filenameMatch, matchErr := regexp.MatchString(fmt.Sprintf("%s_.*\\.zip", testApp.Name), filename)
 			assert.Nil(t, matchErr)
 			assert.True(t, filenameMatch, "expected exported filename to match '$appName_yyyymmddHHMMSS'")
 
 			exported := parseZipPkg(t, zipPkg)
 
 			t.Run("And the app config contents should be as expected", func(t *testing.T) {
-				appConfig, appConfigOK := exported[realm.FileAppConfig]
-				assert.True(t, appConfigOK, "expected exported app to have file: %s", realm.FileAppConfig)
+				appConfig, appConfigOK := exported[app.FileConfig]
+				assert.True(t, appConfigOK, "expected exported app to have file: %s", app.FileConfig)
 				assert.Equal(t, fmt.Sprintf(`{
     "app_id": %q,
     "config_version": %s,
@@ -74,14 +75,13 @@ func TestRealmImportExport(t *testing.T) {
     },
     "sync": {
         "development_mode_enabled": false
-    },
-    "environment": "none"
+    }
 }
-`, app.ClientAppID, realm.DefaultAppConfigVersion), appConfig)
+`, testApp.ClientAppID, realm.DefaultAppConfigVersion), appConfig)
 			})
 
 			t.Run("And the auth provider contents should be as expected", func(t *testing.T) {
-				apiKeyConfigFilepath := realm.FileAuthProvider("api-key")
+				apiKeyConfigFilepath := app.FileAuthProvider("api-key")
 				apiKeyConfigPayload, apiKeyConfigOK := exported[apiKeyConfigFilepath]
 				assert.True(t, apiKeyConfigOK, "expected exported app to have file: %s", apiKeyConfigFilepath)
 
@@ -92,7 +92,7 @@ func TestRealmImportExport(t *testing.T) {
 				assert.Equal(t, "api-key", apiKeyConfig["type"])
 				assert.False(t, apiKeyConfig["disabled"], "expected api-key.json to have 'disabled' field set to false")
 
-				localUserpassConfigFilepath := realm.FileAuthProvider("local-userpass")
+				localUserpassConfigFilepath := app.FileAuthProvider("local-userpass")
 				localUserpassConfigPayload, localUserpassOK := exported[localUserpassConfigFilepath]
 				assert.True(t, localUserpassOK, "expected exported app to have file: %s", localUserpassConfigFilepath)
 
@@ -110,8 +110,8 @@ func TestRealmImportExport(t *testing.T) {
 			})
 
 			t.Run("And the graphql contents should be as expected", func(t *testing.T) {
-				graphQLConfig, graphQLConfigOK := exported[realm.FileGraphQLConfig]
-				assert.True(t, graphQLConfigOK, "expected exported app to have file: %s", realm.FileGraphQLConfig)
+				graphQLConfig, graphQLConfigOK := exported[app.FileGraphQLConfig]
+				assert.True(t, graphQLConfigOK, "expected exported app to have file: %s", app.FileGraphQLConfig)
 				assert.Equal(t, `{
     "use_natural_pluralization": true
 }

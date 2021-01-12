@@ -1,4 +1,4 @@
-package initialize
+package app
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -13,22 +14,14 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Command is the `app init` command
-var Command = cli.CommandDefinition{
-	Use:         "init",
-	Aliases:     []string{"initialize"},
-	Display:     "app init",
-	Description: "Initialize a Realm app in your current local directory",
-	Help:        "",
-	Command:     &command{},
-}
-
-type command struct {
-	inputs      inputs
+// CommandInit is the `app init` command
+type CommandInit struct {
+	inputs      initInputs
 	realmClient realm.Client
 }
 
-func (cmd *command) Flags(fs *pflag.FlagSet) {
+// Flags is the command flags
+func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.From, flagFrom, flagFromShort, "", flagFromUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
@@ -36,16 +29,19 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 }
 
-func (cmd *command) Inputs() cli.InputResolver {
+// Inputs is the command inputs
+func (cmd *CommandInit) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
+// Setup is the command setup
+func (cmd *CommandInit) Setup(profile *cli.Profile, ui terminal.UI) error {
+	cmd.realmClient = realm.NewAuthClient(profile)
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+// Handler is the command handler
+func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
 	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient)
 	if fromErr != nil {
 		return fromErr
@@ -57,27 +53,28 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return cmd.initializeFromApp(profile.WorkingDirectory, from.GroupID, from.AppID)
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *CommandInit) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(terminal.NewTextLog("Successfully initialized app"))
 }
 
-func (cmd *command) initialize(wd string) error {
-	appConfig := cli.AppConfig{
-		AppData:         cli.AppData{Name: cmd.inputs.Name},
+func (cmd *CommandInit) initialize(wd string) error {
+	appConfig := app.Config{
+		Data:            app.Data{Name: cmd.inputs.Name},
 		ConfigVersion:   realm.DefaultAppConfigVersion,
 		Location:        cmd.inputs.Location,
 		DeploymentModel: cmd.inputs.DeploymentModel,
 	}
 
-	data, err := json.MarshalIndent(appConfig, cli.ExportedJSONPrefix, cli.ExportedJSONIndent)
+	data, err := json.MarshalIndent(appConfig, app.ExportedJSONPrefix, app.ExportedJSONIndent)
 	if err != nil {
 		return fmt.Errorf("failed to write app config: %w", err)
 	}
 
-	return cli.WriteFile(filepath.Join(wd, realm.FileAppConfig), 0666, bytes.NewReader(data))
+	return cli.WriteFile(filepath.Join(wd, app.FileConfig), 0666, bytes.NewReader(data))
 }
 
-func (cmd *command) initializeFromApp(wd, groupID, appID string) error {
+func (cmd *CommandInit) initializeFromApp(wd, groupID, appID string) error {
 	_, zipPkg, exportErr := cmd.realmClient.Export(groupID, appID, realm.ExportRequest{IsTemplated: true})
 	if exportErr != nil {
 		return exportErr

@@ -6,20 +6,15 @@ import (
 )
 
 // Command is the `whoami` command
-var Command = cli.CommandDefinition{
-	Use:         "whoami",
-	Description: "Display the current user's details",
-	Help:        "whoami", // TODO(REALMC-7429): add help text description
-	Command:     &command{},
-}
+type Command struct{}
 
-type command struct{}
-
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+// Handler is the command handler
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil // commands without handlers show help text and usage when ran
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	user := profile.User()
 	session := profile.Session()
 

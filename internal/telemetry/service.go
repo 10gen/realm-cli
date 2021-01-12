@@ -25,7 +25,7 @@ func NewService(mode Mode, userID string, command string) *Service {
 	switch mode {
 	case ModeOff:
 		service.tracker = &noopTracker{}
-	case ModeNil, ModeOn:
+	case ModeEmpty, ModeOn:
 		service.tracker = &segmentTracker{}
 	case ModeStdout:
 		service.tracker = &stdoutTracker{}

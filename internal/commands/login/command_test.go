@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
@@ -19,7 +20,7 @@ func TestLoginSetup(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &command{inputs: inputs{
+		cmd := &Command{inputs: inputs{
 			PublicAPIKey:  "publicAPIKey",
 			PrivateAPIKey: "privateAPIKey",
 		}}
@@ -53,7 +54,7 @@ func TestLoginHandler(t *testing.T) {
 			}, nil
 		}
 
-		cmd := &command{
+		cmd := &Command{
 			realmClient: realmClient,
 			inputs: inputs{
 				PublicAPIKey:  "publicAPIKey",
@@ -65,8 +66,8 @@ func TestLoginHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui))
 
-		expectedUser := cli.User{"publicAPIKey", "privateAPIKey"}
-		expectedSession := realm.Session{"accessToken", "refreshToken"}
+		expectedUser := auth.User{"publicAPIKey", "privateAPIKey"}
+		expectedSession := auth.Session{"accessToken", "refreshToken"}
 
 		assert.Equal(t, expectedUser, profile.User())
 		assert.Equal(t, expectedSession, profile.Session())
@@ -83,8 +84,8 @@ func TestLoginHandler(t *testing.T) {
 
 			profile := mock.NewProfile(t)
 
-			profile.SetUser("existingUser", "existing-password")
-			profile.SetSession("existingAccessToken", "existingRefreshToken")
+			profile.SetUser(auth.User{"existingUser", "existing-password"})
+			profile.SetSession(auth.Session{"existingAccessToken", "existingRefreshToken"})
 			assert.Nil(t, profile.Save())
 
 			realmClient := mock.RealmClient{}
@@ -105,7 +106,7 @@ func TestLoginHandler(t *testing.T) {
 			profile, realmClient, teardown := setup(t)
 			defer teardown()
 
-			cmd := &command{
+			cmd := &Command{
 				realmClient: realmClient,
 				inputs: inputs{
 					PublicAPIKey:  "existingUser",
@@ -117,8 +118,8 @@ func TestLoginHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(profile, ui))
 
-			expectedUser := cli.User{"existingUser", "existing-password"}
-			expectedSession := realm.Session{"newAccessToken", "newRefreshToken"}
+			expectedUser := auth.User{"existingUser", "existing-password"}
+			expectedSession := auth.Session{"newAccessToken", "newRefreshToken"}
 
 			assert.Equal(t, expectedUser, profile.User())
 			assert.Equal(t, expectedSession, profile.Session())
@@ -130,27 +131,27 @@ func TestLoginHandler(t *testing.T) {
 			for _, tc := range []struct {
 				description     string
 				confirmAnswer   string
-				expectedUser    cli.User
-				expectedSession realm.Session
+				expectedUser    auth.User
+				expectedSession auth.Session
 			}{
 				{
 					description:     "And do nothing if the user does not want to proceed",
 					confirmAnswer:   "n",
-					expectedUser:    cli.User{"existingUser", "existing-password"},
-					expectedSession: realm.Session{"existingAccessToken", "existingRefreshToken"},
+					expectedUser:    auth.User{"existingUser", "existing-password"},
+					expectedSession: auth.Session{"existingAccessToken", "existingRefreshToken"},
 				},
 				{
 					description:     "And save a new session if the user does want to proceed",
 					confirmAnswer:   "y",
-					expectedUser:    cli.User{"newUser", "new-password"},
-					expectedSession: realm.Session{"newAccessToken", "newRefreshToken"},
+					expectedUser:    auth.User{"newUser", "new-password"},
+					expectedSession: auth.Session{"newAccessToken", "newRefreshToken"},
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
 					profile, realmClient, teardown := setup(t)
 					defer teardown()
 
-					cmd := &command{
+					cmd := &Command{
 						realmClient: realmClient,
 						inputs: inputs{
 							PublicAPIKey:  "newUser",
@@ -188,7 +189,7 @@ func TestLoginFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that login was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
-		cmd := &command{}
+		cmd := &Command{}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)
@@ -197,7 +198,7 @@ func TestLoginFeedback(t *testing.T) {
 	})
 }
 
-func ensureProfileContents(t *testing.T, profile *cli.Profile, user cli.User, session realm.Session) {
+func ensureProfileContents(t *testing.T, profile *cli.Profile, user auth.User, session auth.Session) {
 	contents, err := ioutil.ReadFile(profile.Path())
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(string(contents), fmt.Sprintf(`%s:

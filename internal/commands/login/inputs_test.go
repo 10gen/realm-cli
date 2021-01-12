@@ -3,6 +3,7 @@ package login
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -79,7 +80,7 @@ func TestLoginInputs(t *testing.T) {
 		{
 			description: "Should not prompt for inputs when profile provides the data",
 			prepareProfile: func(p *cli.Profile) {
-				p.SetUser("username", "password")
+				p.SetUser(auth.User{"username", "password"})
 			},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()

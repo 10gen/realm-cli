@@ -6,8 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/auth"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -24,14 +23,14 @@ func TestLogoutHandler(t *testing.T) {
 
 		profile := mock.NewProfile(t)
 
-		profile.SetUser("username", "password")
-		profile.SetSession("accessToken", "refreshToken")
+		profile.SetUser(auth.User{"username", "password"})
+		profile.SetSession(auth.Session{"accessToken", "refreshToken"})
 		assert.Nil(t, profile.Save())
 
 		user := profile.User()
 		session := profile.Session()
-		assert.Equal(t, cli.User{"username", "password"}, user)
-		assert.Equal(t, realm.Session{"accessToken", "refreshToken"}, session)
+		assert.Equal(t, auth.User{"username", "password"}, user)
+		assert.Equal(t, auth.Session{"accessToken", "refreshToken"}, session)
 
 		out, err := ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
@@ -44,12 +43,12 @@ func TestLogoutHandler(t *testing.T) {
 
 		_, ui := mock.NewUI()
 
-		cmd := &command{}
+		cmd := &Command{}
 
 		assert.Nil(t, cmd.Handler(profile, ui))
 
-		assert.Equal(t, cli.User{PublicAPIKey: "username"}, profile.User())
-		assert.Equal(t, realm.Session{}, profile.Session())
+		assert.Equal(t, auth.User{PublicAPIKey: "username"}, profile.User())
+		assert.Equal(t, auth.Session{}, profile.Session())
 
 		out, err = ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
@@ -66,7 +65,7 @@ func TestLogoutFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that logout was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
-		cmd := &command{}
+		cmd := &Command{}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)

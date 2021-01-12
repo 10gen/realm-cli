@@ -1,11 +1,11 @@
-package list
+package user
 
 import (
 	"errors"
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -16,7 +16,7 @@ func TestUserListSetup(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &command{inputs: inputs{}}
+		cmd := &CommandList{inputs: listInputs{}}
 		assert.Nil(t, cmd.realmClient)
 
 		assert.Nil(t, cmd.Setup(profile, nil))
@@ -52,9 +52,9 @@ func TestUserListHandler(t *testing.T) {
 			return testUsers, nil
 		}
 
-		cmd := &command{
-			inputs: inputs{
-				ProjectAppInputs: cli.ProjectAppInputs{
+		cmd := &CommandList{
+			inputs: listInputs{
+				ProjectInputs: app.ProjectInputs{
 					Project: projectID,
 					App:     appID,
 				},
@@ -104,7 +104,7 @@ func TestUserListHandler(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				realmClient := tc.setupClient()
 
-				cmd := &command{
+				cmd := &CommandList{
 					realmClient: realmClient,
 				}
 
@@ -124,12 +124,12 @@ func TestUserTableHeaders(t *testing.T) {
 		{
 			description:     "Should show name for apikey",
 			providerType:    "api-key",
-			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authentication"},
+			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 		{
 			description:     "Should show email for local-userpass",
 			providerType:    "local-userpass",
-			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authentication"},
+			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -158,11 +158,11 @@ func TestUserTableRow(t *testing.T) {
 				LastAuthenticationDate: 1111111111,
 			},
 			expectedRow: map[string]interface{}{
-				"Enabled":             true,
-				"ID":                  "id1",
-				"Last Authentication": "2005-03-18 01:58:31 +0000 UTC",
-				"Name":                "myName",
-				"Type":                "type1",
+				"Enabled":            true,
+				"ID":                 "id1",
+				"Last Authenticated": "2005-03-18 01:58:31 +0000 UTC",
+				"Name":               "myName",
+				"Type":               "type1",
 			},
 		},
 		{
@@ -178,11 +178,11 @@ func TestUserTableRow(t *testing.T) {
 				LastAuthenticationDate: 1111111111,
 			},
 			expectedRow: map[string]interface{}{
-				"Enabled":             true,
-				"ID":                  "id1",
-				"Last Authentication": "2005-03-18 01:58:31 +0000 UTC",
-				"Email":               "myEmail",
-				"Type":                "type1",
+				"Enabled":            true,
+				"ID":                 "id1",
+				"Last Authenticated": "2005-03-18 01:58:31 +0000 UTC",
+				"Email":              "myEmail",
+				"Type":               "type1",
 			},
 		},
 	} {
@@ -246,13 +246,13 @@ func TestUserListFeedback(t *testing.T) {
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: local-userpass",
-					"  Email     ID   Enabled  Type   Last Authentication          ",
+					"  Email     ID   Enabled  Type   Last Authenticated           ",
 					"  --------  ---  -------  -----  -----------------------------",
 					"  myEmail2  id2  true     type2  2005-03-20 15:42:13 +0000 UTC",
 					"  myEmail3  id3  true     type1  2005-03-19 08:50:22 +0000 UTC",
 					"  myEmail1  id1  true     type1  2005-03-18 01:58:31 +0000 UTC",
 					"01:23:45 UTC INFO  Provider type: api-key",
-					"  Name    ID   Enabled  Type   Last Authentication          ",
+					"  Name    ID   Enabled  Type   Last Authenticated           ",
 					"  ------  ---  -------  -----  -----------------------------",
 					"  myName  id4  true     type1  2005-03-18 01:58:31 +0000 UTC",
 					"",
@@ -264,7 +264,7 @@ func TestUserListFeedback(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
 
-			cmd := &command{
+			cmd := &CommandList{
 				users: tc.users,
 			}
 

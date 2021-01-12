@@ -1,4 +1,4 @@
-package initialize
+package app
 
 import (
 	"archive/zip"
@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -20,7 +20,7 @@ func TestAppInitSetup(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &command{inputs: inputs{
+		cmd := &CommandInit{inputs: initInputs{
 			Name: "test-app",
 		}}
 		assert.Nil(t, cmd.realmClient)
@@ -35,7 +35,7 @@ func TestAppInitHandler(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
-		cmd := &command{inputs: inputs{
+		cmd := &CommandInit{inputs: initInputs{
 			Name:            "test-app",
 			DeploymentModel: realm.DeploymentModelLocal,
 			Location:        realm.LocationSydney,
@@ -43,13 +43,13 @@ func TestAppInitHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
-		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, realm.FileAppConfig))
+		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig))
 		assert.Nil(t, readErr)
 
-		var config cli.AppConfig
+		var config app.Config
 		assert.Nil(t, json.Unmarshal(data, &config))
-		assert.Equal(t, cli.AppConfig{
-			AppData:         cli.AppData{Name: "test-app"},
+		assert.Equal(t, app.Config{
+			Data:            app.Data{Name: "test-app"},
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			Location:        realm.LocationSydney,
 			DeploymentModel: realm.DeploymentModelLocal,
@@ -60,7 +60,7 @@ func TestAppInitHandler(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
-		app := realm.App{
+		testApp := realm.App{
 			ID:          primitive.NewObjectID().Hex(),
 			GroupID:     primitive.NewObjectID().Hex(),
 			ClientAppID: "test-app-abcde",
@@ -72,7 +72,7 @@ func TestAppInitHandler(t *testing.T) {
 
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{app}, nil
+			return []realm.App{testApp}, nil
 		}
 		client.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			zipPkg, err := zip.OpenReader("testdata/project.zip")
@@ -81,21 +81,21 @@ func TestAppInitHandler(t *testing.T) {
 			return "", &zipPkg.Reader, err
 		}
 
-		cmd := &command{
-			inputs:      inputs{From: "test"},
+		cmd := &CommandInit{
+			inputs:      initInputs{From: "test"},
 			realmClient: client,
 		}
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
 		t.Run("Should have the expected contents in the app config file", func(t *testing.T) {
-			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, realm.FileAppConfig))
+			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig))
 			assert.Nil(t, readErr)
 
-			var config cli.AppConfig
+			var config app.Config
 			assert.Nil(t, json.Unmarshal(data, &config))
-			assert.Equal(t, cli.AppConfig{
-				AppData:         cli.AppData{Name: "from-app"},
+			assert.Equal(t, app.Config{
+				Data:            app.Data{Name: "from-app"},
 				ConfigVersion:   realm.DefaultAppConfigVersion,
 				Location:        realm.LocationIreland,
 				DeploymentModel: realm.DeploymentModelGlobal,
@@ -103,7 +103,7 @@ func TestAppInitHandler(t *testing.T) {
 		})
 
 		t.Run("Should have the expected contents in the api key auth provider config file", func(t *testing.T) {
-			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, realm.FileAuthProvider("api-key")))
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileAuthProvider("api-key")))
 			assert.Nil(t, err)
 			assert.Equal(t, `{
     "name": "api-key",
@@ -119,7 +119,7 @@ func TestAppInitFeedback(t *testing.T) {
 	t.Run("Feedback should print a message that app initialization was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
-		cmd := &command{}
+		cmd := &CommandInit{}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)

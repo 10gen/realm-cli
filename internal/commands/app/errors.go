@@ -1,4 +1,4 @@
-package initialize
+package app
 
 type errProjectExists struct{}
 

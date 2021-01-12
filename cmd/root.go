@@ -31,11 +31,11 @@ func Run() {
 
 	factory.SetGlobalFlags(cmd.PersistentFlags())
 
-	cmd.AddCommand(factory.Build(commands.AppCommand))
-	cmd.AddCommand(factory.Build(commands.LoginCommand))
-	cmd.AddCommand(factory.Build(commands.LogoutCommand))
-	cmd.AddCommand(factory.Build(commands.UserCommand))
-	cmd.AddCommand(factory.Build(commands.WhoamiCommand))
+	cmd.AddCommand(factory.Build(commands.App))
+	cmd.AddCommand(factory.Build(commands.Login))
+	cmd.AddCommand(factory.Build(commands.Logout))
+	cmd.AddCommand(factory.Build(commands.User))
+	cmd.AddCommand(factory.Build(commands.Whoami))
 
 	factory.Run(cmd)
 }

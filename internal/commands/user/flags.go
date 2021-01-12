@@ -1,4 +1,4 @@
-package list
+package user
 
 const (
 	flagState      = "state"

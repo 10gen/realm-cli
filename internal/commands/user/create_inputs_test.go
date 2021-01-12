@@ -1,4 +1,4 @@
-package create
+package user
 
 import (
 	"fmt"
@@ -10,16 +10,16 @@ import (
 	"github.com/Netflix/go-expect"
 )
 
-func TestUserCreateInputs(t *testing.T) {
+func TestCreateInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description string
-		inputs      inputs
+		inputs      createInputs
 		procedure   func(c *expect.Console)
-		test        func(t *testing.T, i inputs)
+		test        func(t *testing.T, i createInputs)
 	}{
 		{
 			description: "With user type set to email and email and password flags not set",
-			inputs:      inputs{UserType: userTypeEmailPassword},
+			inputs:      createInputs{UserType: userTypeEmailPassword},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Email")
 				c.SendLine("user@domain.com")
@@ -27,79 +27,79 @@ func TestUserCreateInputs(t *testing.T) {
 				c.SendLine("password")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "user@domain.com", i.Email)
 				assert.Equal(t, "password", i.Password)
 			},
 		},
 		{
 			description: "With user type set to email and only password flag not set",
-			inputs:      inputs{UserType: userTypeEmailPassword, Email: "user@domain.com"},
+			inputs:      createInputs{UserType: userTypeEmailPassword, Email: "user@domain.com"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Password")
 				c.SendLine("password")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "user@domain.com", i.Email)
 				assert.Equal(t, "password", i.Password)
 			},
 		},
 		{
 			description: "With user type set to email and only email flag not set",
-			inputs:      inputs{UserType: userTypeEmailPassword, Password: "password"},
+			inputs:      createInputs{UserType: userTypeEmailPassword, Password: "password"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Email")
 				c.SendLine("user@domain.com")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "user@domain.com", i.Email)
 				assert.Equal(t, "password", i.Password)
 			},
 		},
 		{
 			description: "With user type set to apiKey and api key name flag not set",
-			inputs:      inputs{UserType: userTypeAPIKey},
+			inputs:      createInputs{UserType: userTypeAPIKey},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key Name")
 				c.SendLine("publickey")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "publickey", i.APIKeyName)
 			},
 		},
 		{
 			description: "With user type set to apiKey and api key name flag set",
-			inputs:      inputs{UserType: userTypeAPIKey, APIKeyName: "publickey"},
+			inputs:      createInputs{UserType: userTypeAPIKey, APIKeyName: "publickey"},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "publickey", i.APIKeyName)
 			},
 		},
 		{
 			description: "With no user type set but email flag is set",
-			inputs:      inputs{Email: "user@domain.com"},
+			inputs:      createInputs{Email: "user@domain.com"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Password")
 				c.SendLine("password")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "user@domain.com", i.Email)
 				assert.Equal(t, "password", i.Password)
 			},
 		},
 		{
 			description: "With no user type set but api key flag is set",
-			inputs:      inputs{APIKeyName: "publickey"},
+			inputs:      createInputs{APIKeyName: "publickey"},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "publickey", i.APIKeyName)
 			},
 		},
@@ -114,7 +114,7 @@ func TestUserCreateInputs(t *testing.T) {
 				c.SendLine("password")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "user@domain.com", i.Email)
 				assert.Equal(t, "password", i.Password)
 			},
@@ -128,7 +128,7 @@ func TestUserCreateInputs(t *testing.T) {
 				c.SendLine("publickey")
 				c.ExpectEOF()
 			},
-			test: func(t *testing.T, i inputs) {
+			test: func(t *testing.T, i createInputs) {
 				assert.Equal(t, "publickey", i.APIKeyName)
 			},
 		},

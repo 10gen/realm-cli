@@ -12,7 +12,7 @@ func TestMode(t *testing.T) {
 	for _, tc := range []Mode{
 		// add all modes here
 		ModeOn,
-		ModeNil,
+		ModeEmpty,
 		ModeStdout,
 		ModeOff,
 	} {
@@ -32,7 +32,7 @@ func TestMode(t *testing.T) {
 		assert.Equal(t, ModeOn, tc.m)
 
 		assert.Nil(t, tc.m.Set(""))
-		assert.Equal(t, ModeNil, tc.m)
+		assert.Equal(t, ModeEmpty, tc.m)
 	})
 
 	t.Run("Should return an error when setting its value with an invalid output format", func(t *testing.T) {

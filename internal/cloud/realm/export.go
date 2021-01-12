@@ -31,14 +31,11 @@ type ExportRequest struct {
 }
 
 func (c *client) Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error) {
-	options := api.RequestOptions{
-		UseAuth: true,
-		Query: map[string]string{
-			exportQueryVersion: DefaultAppConfigVersion.String(),
-		},
-	}
+	options := api.RequestOptions{Query: map[string]string{
+		exportQueryVersion: DefaultAppConfigVersion.String(),
+	}}
 
-	if req.ConfigVersion != AppConfigVersionNil {
+	if req.ConfigVersion != AppConfigVersionZero {
 		options.Query[exportQueryVersion] = req.ConfigVersion.String()
 	}
 	if req.IsTemplated {

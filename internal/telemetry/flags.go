@@ -38,7 +38,7 @@ func (m *Mode) Set(val string) error {
 
 // set of supported telemetry modes
 const (
-	ModeNil    Mode = "" // zero-valued to be flag's default
+	ModeEmpty  Mode = "" // zero-valued to be flag's default
 	ModeOn     Mode = "on"
 	ModeStdout Mode = "stdout"
 	ModeOff    Mode = "off"
@@ -48,7 +48,7 @@ func isValidMode(mode Mode) bool {
 	switch mode {
 	case
 		ModeOn,
-		ModeNil,
+		ModeEmpty,
 		ModeStdout,
 		ModeOff:
 		return true

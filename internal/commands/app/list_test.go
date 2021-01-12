@@ -1,10 +1,10 @@
-package list
+package app
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
+	appcli "github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -17,7 +17,7 @@ func TestAppListSetup(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &command{}
+		cmd := &CommandList{}
 		assert.Nil(t, cmd.realmClient)
 
 		assert.Nil(t, cmd.Setup(profile, nil))
@@ -50,7 +50,7 @@ func TestAppListHandler(t *testing.T) {
 
 	for _, tc := range []struct {
 		description       string
-		inputs            cli.ProjectAppInputs
+		inputs            appcli.ProjectInputs
 		expectedAppFilter realm.AppFilter
 	}{
 		{
@@ -58,17 +58,17 @@ func TestAppListHandler(t *testing.T) {
 		},
 		{
 			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
-			inputs:            cli.ProjectAppInputs{App: "app1"},
+			inputs:            appcli.ProjectInputs{App: "app1"},
 			expectedAppFilter: realm.AppFilter{App: "app1"},
 		},
 		{
 			description:       "With a project flag set and no app flag set should return all project apps",
-			inputs:            cli.ProjectAppInputs{Project: groupID1},
+			inputs:            appcli.ProjectInputs{Project: groupID1},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1},
 		},
 		{
 			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
-			inputs:            cli.ProjectAppInputs{Project: groupID1, App: "app1"},
+			inputs:            appcli.ProjectInputs{Project: groupID1, App: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 		},
 	} {
@@ -81,7 +81,7 @@ func TestAppListHandler(t *testing.T) {
 				return apps, nil
 			}
 
-			cmd := &command{inputs: tc.inputs, realmClient: realmClient}
+			cmd := &CommandList{inputs: tc.inputs, realmClient: realmClient}
 			assert.Nil(t, cmd.Handler(nil, nil))
 
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
@@ -133,7 +133,7 @@ func TestAppListFeedback(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
 
-			cmd := &command{apps: tc.apps}
+			cmd := &CommandList{apps: tc.apps}
 
 			assert.Nil(t, cmd.Feedback(nil, ui))
 

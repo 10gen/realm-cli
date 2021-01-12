@@ -6,25 +6,20 @@ import (
 )
 
 // Command is the `logout` command
-var Command = cli.CommandDefinition{
-	Use:         "logout",
-	Description: "Terminate the current user’s session",
-	Help:        "logout", // TODO(REALMC-7429): add help text description
-	Command:     &command{},
-}
+type Command struct{}
 
-type command struct{}
-
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+// Handler is the command handler
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	user := profile.User()
 	user.PrivateAPIKey = "" // ensures subsequent `login` commands prompt for password
 
-	profile.SetUser(user.PublicAPIKey, user.PrivateAPIKey)
+	profile.SetUser(user)
 	profile.ClearSession()
 
 	return profile.Save()
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(terminal.NewTextLog("Successfully logged out"))
 }

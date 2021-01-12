@@ -1,4 +1,4 @@
-package cli
+package app
 
 import (
 	"fmt"
@@ -21,24 +21,24 @@ const (
 	flagProjectUsage = "the MongoDB cloud project id"
 )
 
-// ProjectAppInputs are the project/app inputs for a command
-type ProjectAppInputs struct {
+// ProjectInputs are the project/app inputs for a command
+type ProjectInputs struct {
 	Project string
 	App     string
 }
 
 // Filter returns a realm.AppFlter based on the inputs
-func (i ProjectAppInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App} }
+func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App} }
 
 // Flags registers the project app input flags to the provided flag set
-func (i *ProjectAppInputs) Flags(fs *pflag.FlagSet) {
+func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
 	fs.StringVar(&i.App, flagApp, "", flagAppUsage)
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
-func (i *ProjectAppInputs) Resolve(ui terminal.UI, wd string) error {
-	appData, appDataErr := ResolveAppData(wd)
+func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
+	appData, appDataErr := ResolveData(wd)
 	if appDataErr != nil {
 		return appDataErr
 	}
@@ -63,8 +63,8 @@ func (i *ProjectAppInputs) Resolve(ui terminal.UI, wd string) error {
 	return nil
 }
 
-// ResolveApp will use the provided Realm client to resolve the app specified by the filter
-func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
+// Resolve will use the provided Realm client to resolve the app specified by the filter
+func Resolve(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
 	apps, err := client.FindApps(filter)
 	if err != nil {
 		return realm.App{}, err
@@ -94,9 +94,9 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 	return appsByOption[selection], nil
 }
 
-func getAppString(appData AppData) string {
-	if appData.ID == "" {
-		return appData.Name
+func getAppString(data Data) string {
+	if data.ID == "" {
+		return data.Name
 	}
-	return appData.ID
+	return data.ID
 }

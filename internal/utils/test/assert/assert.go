@@ -44,7 +44,7 @@ func Equal(t testing.TB, x, y interface{}) {
 func Equalf(t testing.TB, x, y interface{}, format string, args ...interface{}) {
 	t.Helper()
 	if !cmp.Equal(x, y, getCmpOpts(x)...) {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 
@@ -60,7 +60,7 @@ func NotEqual(t testing.TB, x, y interface{}, format string, args ...interface{}
 func NotEqualf(t testing.TB, x, y interface{}, format string, args ...interface{}) {
 	t.Helper()
 	if cmp.Equal(x, y, getCmpOpts(x)...) {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 
@@ -69,7 +69,7 @@ func NotEqualf(t testing.TB, x, y interface{}, format string, args ...interface{
 func Match(t testing.TB, x, y interface{}) {
 	t.Helper()
 	if diff := cmp.Diff(x, y, getCmpOpts(x)...); diff != "" {
-		t.Fatalf(diff)
+		t.Fatalf("\n" + diff)
 	}
 }
 
@@ -79,7 +79,7 @@ func True(t testing.TB, o interface{}, format string, args ...interface{}) {
 	t.Helper()
 	b, ok := o.(bool)
 	if !ok || !b {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 
@@ -89,7 +89,7 @@ func False(t testing.TB, o interface{}, format string, args ...interface{}) {
 	t.Helper()
 	b, ok := o.(bool)
 	if !ok || b {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 
@@ -105,7 +105,7 @@ func Nil(t testing.TB, o interface{}) {
 func Nilf(t testing.TB, o interface{}, format string, args ...interface{}) {
 	t.Helper()
 	if !isNil(o) {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 
@@ -121,7 +121,7 @@ func NotNil(t testing.TB, o interface{}) {
 func NotNilf(t testing.TB, o interface{}, format string, args ...interface{}) {
 	t.Helper()
 	if isNil(o) {
-		t.Fatalf(format, args...)
+		t.Fatalf("\n"+format, args...)
 	}
 }
 

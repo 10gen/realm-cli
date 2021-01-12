@@ -17,7 +17,7 @@ var (
 )
 
 func (c *client) Status() error {
-	res, err := c.do(http.MethodGet, statusPath, api.RequestOptions{})
+	res, err := c.do(http.MethodGet, statusPath, api.RequestOptions{NoAuth: true})
 	if err != nil {
 		return ErrServerUnavailable
 	}
