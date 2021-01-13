@@ -9,6 +9,7 @@ import (
 	"github.com/Netflix/go-expect"
 )
 
+// TODO: Test on ui error
 func TestUserDeleteResolveInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description string
@@ -19,12 +20,11 @@ func TestUserDeleteResolveInputs(t *testing.T) {
 		{
 			description: "With no input set",
 			inputs:      inputs{},
-			procedure: func(c *expect.Console) {
-				c.ExpectEOF()
-			},
+			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i inputs) {
 				assert.Nil(t, i.Users)
 			},
+			// TODO: Test on valid inputs
 		},
 	} {
 		t.Run(fmt.Sprintf("%s Setup should prompt for the missing inputs, except Users", tc.description), func(t *testing.T) {

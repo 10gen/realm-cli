@@ -33,15 +33,17 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUsers, flagUsersShort, []string{}, flagUsersUsage)
-	fs.BoolVarP(&cmd.inputs.InteractiveFilter, shared.FlagInteractive, shared.FlagInteractiveShort, false, shared.FlagInteractiveUsage)
 	fs.VarP(
 		flags.NewEnumSet(&cmd.inputs.ProviderTypes, shared.ValidProviderTypes),
 		shared.FlagProvider,
 		shared.FlagProviderShort,
 		shared.FlagProviderUsage,
 	)
+	fs.Lookup(shared.FlagProvider).NoOptDefVal = shared.ProviderTypeInteractive
 	fs.VarP(&cmd.inputs.State, shared.FlagStateType, shared.FlagStateTypeShort, shared.FlagStateTypeUsage)
+	fs.Lookup(shared.FlagProvider).NoOptDefVal = shared.ProviderTypeInteractive
 	fs.VarP(&cmd.inputs.Status, shared.FlagStatusType, shared.FlagStatusTypeShort, shared.FlagStatusTypeUsage)
+	fs.Lookup(shared.FlagStatusType).NoOptDefVal = shared.StatusTypeInteractive.String()
 }
 
 func (cmd *command) Inputs() cli.InputResolver {

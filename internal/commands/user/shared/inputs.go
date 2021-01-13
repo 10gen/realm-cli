@@ -2,7 +2,6 @@ package shared
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -11,27 +10,30 @@ import (
 
 // UsersInputs are the filtering inputs for a user command
 type UsersInputs struct {
-	State             realm.UserState
-	ProviderTypes     []string
-	Status            StatusType
-	InteractiveFilter bool
+	State         UserStateType
+	ProviderTypes []string
+	Status        StatusType
 }
 
 // ResolveUsers will use the provided Realm client to resolve the users specified by the realm.App through inputs
 func (i *UsersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]string, error) {
 	var err error
 
-	userFilter := realm.UserFilter{}
-	if i.Status != StatusTypeNil {
-		userFilter.Pending = i.Status == StatusTypePending
+	if (len(i.ProviderTypes) == 1 && i.ProviderTypes[0] == ProviderTypeInteractive) || i.State == UserStateTypeInteractive || i.Status == StatusTypeInteractive {
+		// Interactive should have already occured
+		i.ProviderTypes = []string{}
+		i.State = UserStateTypeNil
+		i.Status = StatusTypeNil
 	}
+
+	userFilter := realm.UserFilter{}
 	if len(i.ProviderTypes) > 0 {
 		userFilter.Providers = i.ProviderTypes
 	}
-	if i.State != realm.UserStateNil {
-		userFilter.State = i.State
+	if i.State != UserStateTypeNil {
+		userFilter.State = realm.UserState(i.State.String())
 	}
-	selectableUsersSet := make(map[string]realm.User)
+	selectableUsersSet := map[string]realm.User{}
 	if i.Status == StatusTypeConfirmed || i.Status == StatusTypeNil {
 		foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
 		if err != nil {
@@ -42,6 +44,7 @@ func (i *UsersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 		}
 	}
 	if i.Status == StatusTypePending || i.Status == StatusTypeNil {
+		userFilter.Pending = true
 		foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
 		if err != nil {
 			return nil, err
@@ -52,29 +55,33 @@ func (i *UsersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	}
 
 	// Interactive User Selection
+	selectableUsers := map[string]string{}
 	selectableUserOptions := make([]string, len(selectableUsersSet))
 	userOptionPattern := "%s - %s"
-	x := 0
+	userOptIndex := 0
 	for _, user := range selectableUsersSet {
+		var opt string
 		switch user.Identities[0].ProviderType {
 		case ProviderTypeAnonymous:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Anonymous", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Anonymous", user.ID)
 		case ProviderTypeLocalUserPass:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, user.Data["email"], user.ID)
+			opt = fmt.Sprintf(userOptionPattern, user.Data["email"], user.ID)
 		case ProviderTypeAPIKey:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, user.Data["name"], user.ID)
+			opt = fmt.Sprintf(userOptionPattern, user.Data["name"], user.ID)
 		case ProviderTypeApple:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Apple", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Apple", user.ID)
 		case ProviderTypeGoogle:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Google", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Google", user.ID)
 		case ProviderTypeFacebook:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Facebook", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Facebook", user.ID)
 		case ProviderTypeCustom:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Custom JWT", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Custom JWT", user.ID)
 		case ProviderTypeCustomFunction:
-			selectableUserOptions[x] = fmt.Sprintf(userOptionPattern, "Custom Function", user.ID)
+			opt = fmt.Sprintf(userOptionPattern, "Custom Function", user.ID)
 		}
-		x++
+		selectableUserOptions[userOptIndex] = opt
+		selectableUsers[opt] = user.ID
+		userOptIndex++
 	}
 	selectedUsers := []string{}
 	err = ui.AskOne(
@@ -87,10 +94,9 @@ func (i *UsersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	if err != nil {
 		return nil, err
 	}
-	users := make([]string, len(selectedUsers))
-	for x, userPattern := range selectedUsers {
-		users[x] = strings.Split(userPattern, " - ")[1]
+	users := []string{}
+	for _, userOption := range selectedUsers {
+		users = append(users, selectableUsers[userOption])
 	}
-
 	return users, nil
 }

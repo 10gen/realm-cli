@@ -32,6 +32,7 @@ func TestUserDeleteHandler(t *testing.T) {
 		Name:        "eggcorn",
 	}
 
+	// TODO: Should test ResolveApp & ResolveUsers errors
 	t.Run("Should delete a user when a user id is provided", func(t *testing.T) {
 		testUsers := []realm.User{{ID: "user1"}}
 
