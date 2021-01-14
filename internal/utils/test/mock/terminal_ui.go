@@ -46,6 +46,7 @@ type UI struct {
 	AskOneFn func(answer interface{}, prompt survey.Prompt) error
 }
 
+// Print sets the time and then calls the terminal.UI.Print
 func (ui UI) Print(logs ...terminal.Log) error {
 	for i := range logs {
 		logs[i].Time = StaticTime
@@ -137,5 +138,5 @@ func (ui UI) AskOne(answer interface{}, prompt survey.Prompt) error {
 	if ui.AskOneFn != nil {
 		return ui.AskOneFn(answer, prompt)
 	}
-	return ui.AskOne(answer, prompt)
+	return ui.UI.AskOne(answer, prompt)
 }

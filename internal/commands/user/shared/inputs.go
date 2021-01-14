@@ -20,7 +20,7 @@ func (i *UsersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	var err error
 
 	if (len(i.ProviderTypes) == 1 && i.ProviderTypes[0] == ProviderTypeInteractive) || i.State == UserStateTypeInteractive || i.Status == StatusTypeInteractive {
-		// Interactive should have already occured
+		// Interactive should have already occurred
 		i.ProviderTypes = []string{}
 		i.State = UserStateTypeNil
 		i.Status = StatusTypeNil

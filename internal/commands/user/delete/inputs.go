@@ -8,14 +8,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-// input field names, per survey
-const (
-	inputFieldUser      = "user"
-	inputFieldProviders = "provider"
-	inputFieldState     = "state"
-	inputFieldStatus    = "status"
-)
-
 type inputs struct {
 	cli.ProjectAppInputs
 	shared.UsersInputs
@@ -33,7 +25,7 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		err := ui.AskOne(
 			&selectedStatuses,
 			&survey.MultiSelect{
-				Message: "Which user state would you like to filter confirmed users by? Selecting none is equivalent to selecting all.",
+				Message: "Which user status would you like to filter users by? Selecting none is equivalent to selecting all.",
 				Options: allUserStatuses,
 			},
 		)
@@ -49,12 +41,12 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	if i.Status == shared.StatusTypeConfirmed || i.Status == shared.StatusTypeNil {
 		// Interactive set Providers
 		if len(i.ProviderTypes) == 1 && i.ProviderTypes[0] == shared.ProviderTypeInteractive {
+			i.ProviderTypes = []string{}
 			err := ui.AskOne(
 				&i.ProviderTypes,
 				&survey.MultiSelect{
 					Message: "Which provider(s) would you like to filter confirmed users by? Selecting none is equivalent to selecting all.",
 					Options: shared.ValidProviderTypes,
-					Default: i.ProviderTypes,
 				},
 			)
 			if err != nil {

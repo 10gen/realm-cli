@@ -56,14 +56,19 @@ func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
-	}
-
-	users, err := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
+	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if err != nil {
 		return err
+	}
+
+	var users []string
+	if len(cmd.inputs.Users) < 1 {
+		users, err = cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
+		if err != nil {
+			return err
+		}
+	} else {
+		users = cmd.inputs.Users
 	}
 
 	for _, userID := range users {
@@ -76,8 +81,9 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.outputs.failed) > 0 {
-		return ui.Print(terminal.NewListLog("Unable to delete the following users:", cmd.outputs.failed))
+	if len(cmd.outputs.failed) == 0 {
+		return ui.Print(terminal.NewTextLog("Successfully deleted all selected users!"))
 	}
-	return nil
+
+	return ui.Print(terminal.NewListLog("Unable to delete the following users", cmd.outputs.failed))
 }
