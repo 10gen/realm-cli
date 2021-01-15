@@ -2,6 +2,7 @@ package delete
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -21,12 +22,13 @@ var Command = cli.CommandDefinition{
 
 type command struct {
 	inputs      inputs
-	outputs     outputs
+	outputs     []output
 	realmClient realm.Client
 }
 
-type outputs struct {
-	failed []error
+type output struct {
+	user realm.User
+	err  error
 }
 
 func (cmd *command) Flags(fs *pflag.FlagSet) {
@@ -61,29 +63,102 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	var users []string
+	var users []realm.User
 	if len(cmd.inputs.Users) < 1 {
 		users, err = cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
 		if err != nil {
 			return err
 		}
 	} else {
-		users = cmd.inputs.Users
+		for _, userID := range cmd.inputs.Users {
+			foundUser, err := cmd.realmClient.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: []string{userID}})
+			if err != nil {
+				return fmt.Errorf("Unable to find user with ID %s", userID)
+			}
+			users = append(users, foundUser[0])
+		}
 	}
 
-	for _, userID := range users {
-		err := cmd.realmClient.DeleteUser(app.GroupID, app.ID, userID)
-		if err != nil {
-			cmd.outputs.failed = append(cmd.outputs.failed, fmt.Errorf("failed to delete user (%s): %s", userID, err))
-		}
+	for _, user := range users {
+		err = cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
+		cmd.outputs = append(cmd.outputs, output{user: user, err: err})
 	}
 	return nil
 }
 
 func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.outputs.failed) == 0 {
-		return ui.Print(terminal.NewTextLog("Successfully deleted all selected users!"))
+	if len(cmd.outputs) == 0 {
+		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
 
-	return ui.Print(terminal.NewListLog("Unable to delete the following users", cmd.outputs.failed))
+	var outputByProviderType = make(map[string][]output)
+	for _, output := range cmd.outputs {
+		for _, identity := range output.user.Identities {
+			outputByProviderType[identity.ProviderType] = append(outputByProviderType[identity.ProviderType], output)
+		}
+	}
+	var logs []terminal.Log
+	for providerType, outputs := range outputByProviderType {
+
+		sort.Slice(outputs, getOutputComparerBySuccess(outputs))
+
+		logs = append(logs, terminal.NewTableLog(
+			fmt.Sprintf("Provider type: %s", providerType),
+			userTableHeaders(providerType),
+			userTableRows(providerType, outputs)...,
+		))
+	}
+	return ui.Print(logs...)
+}
+
+func getOutputComparerBySuccess(outputs []output) func(i, j int) bool {
+	return func(i, j int) bool {
+		return !(outputs[i].err != nil && outputs[i].err == nil)
+	}
+}
+
+func userTableHeaders(providerType string) []string {
+	var headers []string
+	switch providerType {
+	case shared.ProviderTypeAPIKey:
+		headers = append(headers, shared.HeaderName)
+	case shared.ProviderTypeLocalUserPass:
+		headers = append(headers, shared.HeaderEmail)
+	}
+	headers = append(
+		headers,
+		shared.HeaderID,
+		shared.HeaderType,
+		shared.HeaderDeleted,
+		shared.HeaderDetails,
+	)
+	return headers
+}
+
+func userTableRows(providerType string, outputs []output) []map[string]interface{} {
+	userTableRows := make([]map[string]interface{}, 0, len(outputs))
+	for _, output := range outputs {
+		userTableRows = append(userTableRows, userTableRow(providerType, output))
+	}
+	return userTableRows
+}
+
+func userTableRow(providerType string, output output) map[string]interface{} {
+	msg := "n/a"
+	if output.err != nil {
+		msg = output.err.Error()
+	}
+	row := map[string]interface{}{
+		shared.HeaderID:      output.user.ID,
+		shared.HeaderType:    output.user.Type,
+		shared.HeaderDeleted: output.err == nil,
+		shared.HeaderDetails: msg,
+	}
+	switch providerType {
+	case shared.ProviderTypeAPIKey:
+		row[shared.HeaderName] = output.user.Data[shared.UserDataName]
+	case shared.ProviderTypeLocalUserPass:
+		row[shared.HeaderEmail] = output.user.Data[shared.UserDataEmail]
+	}
+	return row
 }

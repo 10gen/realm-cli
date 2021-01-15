@@ -54,6 +54,12 @@ func TestUserDeleteHandler(t *testing.T) {
 			return []realm.App{testApp}, nil
 		}
 
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			capturedProjectID = groupID
+			capturedAppID = appID
+			return testUsers, nil
+		}
+
 		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
 			capturedProjectID = groupID
 			capturedAppID = appID
@@ -76,7 +82,8 @@ func TestUserDeleteHandler(t *testing.T) {
 		assert.Equal(t, projectID, capturedProjectID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Nil(t, cmd.outputs.failed)
+		assert.Nil(t, cmd.outputs[0].err)
+		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
 	})
 
 	t.Run("Should save failed deletion errors", func(t *testing.T) {
@@ -87,6 +94,12 @@ func TestUserDeleteHandler(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			capturedAppFilter = filter
 			return []realm.App{testApp}, nil
+		}
+
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			capturedProjectID = groupID
+			capturedAppID = appID
+			return testUsers, nil
 		}
 
 		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
@@ -111,7 +124,8 @@ func TestUserDeleteHandler(t *testing.T) {
 		assert.Equal(t, projectID, capturedProjectID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Equal(t, cmd.outputs.failed[0], errors.New("failed to delete user (user-1): client error"))
+		assert.Equal(t, cmd.outputs[0].err, errors.New("client error"))
+		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
 	})
 
 	t.Run("Should return an error", func(t *testing.T) {
@@ -161,27 +175,41 @@ func TestUserDeleteHandler(t *testing.T) {
 }
 
 func TestUserDeleteFeedback(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID: "user-1",
+			Identities: []realm.UserIdentity{
+				{ProviderType: shared.ProviderTypeLocalUserPass},
+			},
+			Data:     map[string]interface{}{"email": "user-1@test.com"},
+			Disabled: false,
+			Type:     "type-1",
+		},
+	}
 	for _, tc := range []struct {
 		description    string
-		failed         []error
+		outputs        []output
 		expectedOutput string
 	}{
 		{
-			description:    "Should show success message",
-			failed:         []error{},
-			expectedOutput: "01:23:45 UTC INFO  Successfully deleted all selected users!\n",
+			description:    "Should show indicate no users to delete",
+			outputs:        []output{},
+			expectedOutput: "01:23:45 UTC INFO  No users to delete\n",
 		},
 		{
 			description: "Should show 1 failed user",
-			failed: []error{
-				errors.New("failed to delete user (user-1): client error"),
+			outputs: []output{
+				{user: testUsers[0], err: errors.New("client error")},
 			},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Unable to delete the following users:",
-					"[failed to delete user (user-1): client error]\n",
+					"01:23:45 UTC INFO  Provider type: local-userpass",
+					"  Email            ID      Type    Deleted  Details     ",
+					"  ---------------  ------  ------  -------  ------------",
+					"  user-1@test.com  user-1  type-1  false    client error",
+					"",
 				},
-				" ",
+				"\n",
 			),
 		},
 	} {
@@ -189,13 +217,88 @@ func TestUserDeleteFeedback(t *testing.T) {
 			out, ui := mock.NewUI()
 
 			cmd := &command{
-				outputs: outputs{
-					failed: tc.failed,
-				},
+				outputs: tc.outputs,
 			}
 
 			assert.Nil(t, cmd.Feedback(nil, ui))
 			assert.Equal(t, tc.expectedOutput, out.String())
+		})
+	}
+}
+
+func TestUserTableHeaders(t *testing.T) {
+	for _, tc := range []struct {
+		description     string
+		providerType    string
+		expectedHeaders []string
+	}{
+		{
+			description:     "Should show name for apikey",
+			providerType:    shared.ProviderTypeAPIKey,
+			expectedHeaders: []string{"Name", "ID", "Type", "Deleted", "Details"},
+		},
+		{
+			description:     "Should show email for local-userpass",
+			providerType:    shared.ProviderTypeLocalUserPass,
+			expectedHeaders: []string{"Email", "ID", "Type", "Deleted", "Details"},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.providerType))
+		})
+	}
+}
+
+func TestUserTableRow(t *testing.T) {
+	for _, tc := range []struct {
+		description  string
+		providerType string
+		output       output
+		expectedRow  map[string]interface{}
+	}{
+		{
+			description:  "Should show name for apikey type user",
+			providerType: "api-key",
+			output: output{
+				user: realm.User{
+					ID:         "user-1",
+					Identities: []realm.UserIdentity{{ProviderType: shared.ProviderTypeAPIKey}},
+					Type:       "type-1",
+					Data:       map[string]interface{}{"name": "name-1"},
+				},
+				err: nil,
+			},
+			expectedRow: map[string]interface{}{
+				"ID":      "user-1",
+				"Name":    "name-1",
+				"Type":    "type-1",
+				"Deleted": true,
+				"Details": "n/a",
+			},
+		},
+		{
+			description:  "Should show email for local-userpass type user",
+			providerType: "local-userpass",
+			output: output{
+				user: realm.User{
+					ID:         "user-1",
+					Identities: []realm.UserIdentity{{ProviderType: shared.ProviderTypeLocalUserPass}},
+					Type:       "type-1",
+					Data:       map[string]interface{}{"email": "user-1@test.com"},
+				},
+				err: nil,
+			},
+			expectedRow: map[string]interface{}{
+				"ID":      "user-1",
+				"Email":   "user-1@test.com",
+				"Type":    "type-1",
+				"Deleted": true,
+				"Details": "n/a",
+			},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedRow, userTableRow(tc.providerType, tc.output))
 		})
 	}
 }

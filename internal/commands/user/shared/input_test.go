@@ -44,7 +44,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			inputs        UsersInputs
 			procedure     func(c *expect.Console)
 			users         []realm.User
-			expectedUsers []string
+			expectedUsers []realm.User
 		}{
 			{
 				description: "With no input set",
@@ -56,7 +56,7 @@ func TestResolveUsersInputs(t *testing.T) {
 					c.ExpectEOF()
 				},
 				users:         testUsers,
-				expectedUsers: []string{testUsers[0].ID},
+				expectedUsers: []realm.User{testUsers[0]},
 			},
 			{
 				description: "With providers set",
@@ -68,7 +68,7 @@ func TestResolveUsersInputs(t *testing.T) {
 					c.ExpectEOF()
 				},
 				users:         testUsers[1:],
-				expectedUsers: []string{testUsers[1].ID},
+				expectedUsers: []realm.User{testUsers[1]},
 			},
 			{
 				description: "With state set",
@@ -80,7 +80,7 @@ func TestResolveUsersInputs(t *testing.T) {
 					c.ExpectEOF()
 				},
 				users:         testUsers[1:],
-				expectedUsers: []string{testUsers[1].ID},
+				expectedUsers: []realm.User{testUsers[1]},
 			},
 			{
 				description: "With status set",
@@ -92,7 +92,7 @@ func TestResolveUsersInputs(t *testing.T) {
 					c.ExpectEOF()
 				},
 				users:         testUsers[2:],
-				expectedUsers: []string{testUsers[2].ID},
+				expectedUsers: []realm.User{testUsers[2]},
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
