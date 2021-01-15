@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
 func TestRealmAuthenticate(t *testing.T) {
@@ -58,12 +59,13 @@ func TestRealmAuthRefresh(t *testing.T) {
 		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 		assert.Equal(t, nil, err)
 
-		// invalidate the access token
+		// invalidate the session's access token
 		session.AccessToken = session.RefreshToken
 
-		client = realm.NewAuthClient(u.RealmServerURL(), session)
+		client = realm.NewAuthClient(mock.NewProfileWithSession(t, session))
 		_, err = client.AuthProfile()
-		serverError := err.(realm.ServerError)
+		serverError, ok := err.(realm.ServerError)
+		assert.True(t, ok, "expected %T to be server error", err)
 		assert.Equal(t, realm.ServerError{Message: "invalid session: valid Issuer required"}, serverError)
 	})
 
@@ -73,11 +75,11 @@ func TestRealmAuthRefresh(t *testing.T) {
 		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 		assert.Equal(t, nil, err)
 
-		// invalidate the refresh and access tokens
-		session.RefreshToken = session.AccessToken
+		// invalidate the session's tokens
 		session.AccessToken = ""
+		session.RefreshToken = session.AccessToken
 
-		client = realm.NewAuthClient(u.RealmServerURL(), session)
+		client = realm.NewAuthClient(mock.NewProfileWithSession(t, session))
 		_, err = client.AuthProfile()
 		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
@@ -92,5 +94,5 @@ func newAuthClient(t *testing.T) realm.Client {
 	session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 	assert.Nil(t, err)
 
-	return realm.NewAuthClient(u.RealmServerURL(), session)
+	return realm.NewAuthClient(mock.NewProfileWithSession(t, session))
 }

@@ -1,8 +1,9 @@
-package list
+package app
 
 import (
 	"fmt"
 
+	appcli "github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -10,32 +11,26 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Command is the `app list` command
-var Command = cli.CommandDefinition{
-	Use:         "list",
-	Aliases:     []string{"ls"},
-	Display:     "app list",
-	Description: "List the MongoDB Realm applications associated with the current user",
-	Help:        "list help", // TODO(REALMC-7429): add help text description
-	Command:     &command{},
-}
-
-type command struct {
+// CommandList is the `app list` command
+type CommandList struct {
 	apps        []realm.App
-	inputs      cli.ProjectAppInputs
+	inputs      appcli.ProjectInputs
 	realmClient realm.Client
 }
 
-func (cmd *command) Flags(fs *pflag.FlagSet) {
+// Flags is the command flags
+func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
+// Setup is the command setup
+func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
+	cmd.realmClient = realm.NewAuthClient(profile)
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+// Handler is the command handler
+func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 	apps, appsErr := cmd.realmClient.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
 	if appsErr != nil {
 		return fmt.Errorf("failed to get apps: %w", appsErr)
@@ -45,7 +40,8 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.apps) == 0 {
 		return ui.Print(terminal.NewTextLog("No available apps to show"))
 	}

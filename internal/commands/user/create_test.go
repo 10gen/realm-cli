@@ -1,4 +1,4 @@
-package create
+package user
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ func TestUserCreateSetup(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &command{inputs: inputs{
+		cmd := &CommandCreate{inputs: createInputs{
 			UserType: userTypeEmailPassword,
 			Email:    "user@domain.com",
 			Password: "password",
@@ -54,8 +54,8 @@ func TestUserCreateHandler(t *testing.T) {
 			return testUser, nil
 		}
 
-		cmd := &command{
-			inputs:      inputs{UserType: userTypeEmailPassword},
+		cmd := &CommandCreate{
+			inputs:      createInputs{UserType: userTypeEmailPassword},
 			realmClient: realmClient,
 		}
 
@@ -72,8 +72,8 @@ func TestUserCreateHandler(t *testing.T) {
 			return testAPIKey, nil
 		}
 
-		cmd := &command{
-			inputs:      inputs{UserType: userTypeAPIKey},
+		cmd := &CommandCreate{
+			inputs:      createInputs{UserType: userTypeAPIKey},
 			realmClient: realmClient,
 		}
 
@@ -134,8 +134,8 @@ func TestUserCreateHandler(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				realmClient := tc.setupClient()
 
-				cmd := &command{
-					inputs:      inputs{UserType: tc.userType},
+				cmd := &CommandCreate{
+					inputs:      createInputs{UserType: tc.userType},
 					realmClient: realmClient,
 				}
 
@@ -153,8 +153,8 @@ func TestUserCreateHandler(t *testing.T) {
 			return testAPIKey, nil
 		}
 
-		cmd := &command{
-			inputs:      inputs{UserType: userTypeAPIKey},
+		cmd := &CommandCreate{
+			inputs:      createInputs{UserType: userTypeAPIKey},
 			realmClient: realmClient,
 		}
 
@@ -207,8 +207,8 @@ func TestUserCreateFeedback(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
 
-			cmd := &command{
-				inputs:  inputs{UserType: tc.userType},
+			cmd := &CommandCreate{
+				inputs:  createInputs{UserType: tc.userType},
 				outputs: tc.outputs,
 			}
 

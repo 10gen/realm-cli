@@ -106,7 +106,7 @@ func (c *client) CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 		http.MethodPost,
 		fmt.Sprintf(apiKeysPathPattern, groupID, appID),
 		createAPIKeyRequest{apiKeyName},
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return APIKey{}, resErr
@@ -133,7 +133,7 @@ func (c *client) CreateUser(groupID, appID, email, password string) (User, error
 		http.MethodPost,
 		fmt.Sprintf(usersPathPattern, groupID, appID),
 		createUserRequest{email, password},
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return User{}, resErr
@@ -154,7 +154,7 @@ func (c *client) DeleteUser(groupID, appID, userID string) error {
 	res, resErr := c.do(
 		http.MethodDelete,
 		fmt.Sprintf(userPathPattern, groupID, appID, userID),
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return resErr
@@ -170,7 +170,7 @@ func (c *client) DisableUser(groupID, appID, userID string) error {
 	res, resErr := c.do(
 		http.MethodPut,
 		fmt.Sprintf(userDisablePathPattern, groupID, appID, userID),
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return resErr
@@ -204,7 +204,7 @@ func (c *client) RevokeUserSessions(groupID, appID, userID string) error {
 	res, resErr := c.do(
 		http.MethodPut,
 		fmt.Sprintf(userLogoutPathPattern, groupID, appID, userID),
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return resErr
@@ -220,7 +220,7 @@ func (c *client) getPendingUsers(groupID, appID string, userIDs []string) ([]Use
 	res, resErr := c.do(
 		http.MethodGet,
 		fmt.Sprintf(pendingUsersPathPattern, groupID, appID),
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return nil, resErr
@@ -258,7 +258,7 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 	res, resErr := c.do(
 		http.MethodGet,
 		fmt.Sprintf(userPathPattern, groupID, appID, userID),
-		api.RequestOptions{UseAuth: true},
+		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return User{}, resErr
@@ -276,10 +276,7 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 }
 
 func (c *client) getUsers(groupID, appID string, userState UserState, providerTypes []string) ([]User, error) {
-	options := api.RequestOptions{
-		UseAuth: true,
-		Query:   make(map[string]string),
-	}
+	options := api.RequestOptions{Query: make(map[string]string)}
 	if userState != UserStateNil {
 		options.Query[usersQueryStatus] = string(userState)
 	}

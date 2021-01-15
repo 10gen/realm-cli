@@ -7,13 +7,15 @@ import (
 )
 
 const (
-	profileDir = ".config/realm-cli"
+	// DirProfile is the CLI profile directory
+	DirProfile = ".config/realm-cli"
 )
 
-func homeDir() (string, error) {
+// HomeDir returns the CLI home directory
+func HomeDir() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s/%s", home, profileDir), nil
+	return fmt.Sprintf("%s/%s", home, DirProfile), nil
 }

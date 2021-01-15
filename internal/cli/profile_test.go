@@ -1,4 +1,4 @@
-package cli
+package cli_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
@@ -18,13 +19,12 @@ func TestProfile(t *testing.T) {
 	_, teardownHomeDir := u.SetupHomeDir(tmpDir)
 	defer teardownHomeDir()
 
-	profile, profileErr := NewDefaultProfile()
+	profile, profileErr := cli.NewDefaultProfile()
 	assert.Nil(t, profileErr)
 
 	t.Run("Should initialize as an empty, default profile", func(t *testing.T) {
-		assert.Equal(t, DefaultProfile, profile.Name)
-		assert.Equal(t, fmt.Sprintf("%s/%s", tmpDir, profileDir), profile.dir)
-		assert.NotNil(t, profile.fs)
+		assert.Equal(t, cli.DefaultProfile, profile.Name)
+		assert.Equal(t, fmt.Sprintf("%s/%s", tmpDir, cli.DirProfile), profile.Dir())
 	})
 
 	t.Run("Should load a config that does not exist without error", func(t *testing.T) {
@@ -48,41 +48,5 @@ func TestProfile(t *testing.T) {
   a: ayyy
   b: be
 `), "config must contain the expected contents")
-	})
-}
-
-func TestUser(t *testing.T) {
-	t.Run("User should redact its private API key by displaying only the last portion", func(t *testing.T) {
-		for _, tc := range []struct {
-			description   string
-			privateAPIKey string
-			display       string
-		}{
-			{
-				description:   "With an empty key",
-				privateAPIKey: "",
-				display:       "",
-			},
-			{
-				description:   "With a key that has no dashes",
-				privateAPIKey: "password",
-				display:       "********",
-			},
-			{
-				description:   "With a key that has one dash",
-				privateAPIKey: "api-key",
-				display:       "***-key",
-			},
-			{
-				description:   "With a key that has many dashes",
-				privateAPIKey: "some-super-secret-key",
-				display:       "****-*****-******-key",
-			},
-		} {
-			t.Run(tc.description, func(t *testing.T) {
-				user := User{PrivateAPIKey: tc.privateAPIKey}
-				assert.Equal(t, tc.display, user.RedactedPrivateAPIKey())
-			})
-		}
 	})
 }

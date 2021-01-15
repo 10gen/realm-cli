@@ -3,6 +3,7 @@ package whoami
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -10,7 +11,7 @@ import (
 
 func TestWhoamiHandler(t *testing.T) {
 	t.Run("Handler should run as a noop", func(t *testing.T) {
-		cmd := &command{}
+		cmd := &Command{}
 
 		err := cmd.Handler(nil, nil)
 		assert.Nil(t, err)
@@ -33,7 +34,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			{
 				description: "with a user that has no active session",
 				setup: func(t *testing.T, profile *cli.Profile) {
-					profile.SetUser("username", "my-super-secret-key")
+					profile.SetUser(auth.User{"username", "my-super-secret-key"})
 				},
 				test: func(t *testing.T, output string) {
 					assert.Equal(t, "01:23:45 UTC INFO  The user, username, is not currently logged in\n", output)
@@ -42,8 +43,8 @@ func TestWhoamiFeedback(t *testing.T) {
 			{
 				description: "with a user fully logged in",
 				setup: func(t *testing.T, profile *cli.Profile) {
-					profile.SetUser("username", "my-super-secret-key")
-					profile.SetSession("accessToken", "refreshToken")
+					profile.SetUser(auth.User{"username", "my-super-secret-key"})
+					profile.SetSession(auth.Session{"accessToken", "refreshToken"})
 				},
 				test: func(t *testing.T, output string) {
 					assert.Equal(t, "01:23:45 UTC INFO  Currently logged in user: username (**-*****-******-key)\n", output)
@@ -59,7 +60,7 @@ func TestWhoamiFeedback(t *testing.T) {
 
 				out, ui := mock.NewUI()
 
-				cmd := &command{}
+				cmd := &Command{}
 				err := cmd.Feedback(profile, ui)
 				assert.Nil(t, err)
 

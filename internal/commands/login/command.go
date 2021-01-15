@@ -1,6 +1,7 @@
 package login
 
 import (
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -9,33 +10,30 @@ import (
 )
 
 // Command is the `login` command
-var Command = cli.CommandDefinition{
-	Use:         "login",
-	Description: "Authenticate with an Atlas programmatic API Key",
-	Help:        "login", // TODO(REALMC-7429): add help text description
-	Command:     &command{},
-}
-
-type command struct {
+type Command struct {
 	inputs      inputs
 	realmClient realm.Client
 }
 
-func (cmd *command) Flags(fs *pflag.FlagSet) {
+// Flags is the command flags
+func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.PublicAPIKey, flagPublicAPIKey, flagPublicAPIKeyShort, "", flagPublicAPIKeyUsage)
 	fs.StringVarP(&cmd.inputs.PrivateAPIKey, flagPrivateAPIKey, flagPrivateAPIKeyShort, "", flagPrivateAPIKeyUsage)
 }
 
-func (cmd *command) Inputs() cli.InputResolver {
+// Inputs is the command inputs
+func (cmd *Command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
+// Setup is the command setup
+func (cmd *Command) Setup(profile *cli.Profile, ui terminal.UI) error {
 	cmd.realmClient = realm.NewClient(profile.RealmBaseURL())
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
+// Handler is the command handler
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	existingUser := profile.User()
 
 	if existingUser.PublicAPIKey != "" && existingUser.PublicAPIKey != cmd.inputs.PublicAPIKey {
@@ -52,17 +50,18 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		}
 	}
 
-	profile.SetUser(cmd.inputs.PublicAPIKey, cmd.inputs.PrivateAPIKey)
+	profile.SetUser(auth.User{cmd.inputs.PublicAPIKey, cmd.inputs.PrivateAPIKey})
 
-	auth, authErr := cmd.realmClient.Authenticate(cmd.inputs.PublicAPIKey, cmd.inputs.PrivateAPIKey)
-	if authErr != nil {
-		return authErr
+	session, sessionErr := cmd.realmClient.Authenticate(cmd.inputs.PublicAPIKey, cmd.inputs.PrivateAPIKey)
+	if sessionErr != nil {
+		return sessionErr
 	}
 
-	profile.SetSession(auth.AccessToken, auth.RefreshToken)
+	profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
 	return profile.Save()
 }
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(terminal.NewTextLog("Successfully logged in"))
 }

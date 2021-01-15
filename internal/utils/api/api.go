@@ -21,8 +21,8 @@ const (
 type RequestOptions struct {
 	Body           io.Reader
 	ContentType    string
+	NoAuth         bool
+	PreventRefresh bool
 	Query          map[string]string
 	RefreshAuth    bool
-	UseAuth        bool
-	PreventRefresh bool
 }

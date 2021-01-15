@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
@@ -41,17 +43,17 @@ type Client interface {
 
 // NewClient creates a new Realm client
 func NewClient(baseURL string) Client {
-	return &client{baseURL: baseURL}
+	return &client{baseURL, noopSessionManager{}}
 }
 
 // NewAuthClient creates a new Realm client with a session used for Authorization
-func NewAuthClient(baseURL string, session Session) Client {
-	return &client{baseURL, session}
+func NewAuthClient(profile *cli.Profile) Client {
+	return &client{profile.RealmBaseURL(), profile}
 }
 
 type client struct {
-	baseURL string
-	session Session
+	baseURL        string
+	sessionManager auth.SessionManager
 }
 
 func (c *client) doJSON(method, path string, payload interface{}, options api.RequestOptions) (*http.Response, error) {
@@ -90,11 +92,14 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	} else if auth != "" {
 		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
 	}
+
 	client := &http.Client{}
+
 	res, resErr := client.Do(req)
 	if resErr != nil {
 		return nil, resErr
 	}
+
 	if res.StatusCode >= 200 && res.StatusCode <= 299 {
 		return res, nil
 	}
@@ -107,13 +112,25 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
-	authToken, refreshErr := c.refreshAuth()
-	if refreshErr != nil {
+	if refreshErr := c.refreshAuth(); refreshErr != nil {
+		c.sessionManager.ClearSession()
+		if err := c.sessionManager.Save(); err != nil {
+			return nil, ErrInvalidSession{}
+		}
 		return nil, ErrInvalidSession{}
 	}
-	// TODO(REALMC-7719): save the new access token to prevent unnecessary retries
-	c.session.AccessToken = authToken
+
 	options.PreventRefresh = true
 
 	return c.do(method, path, options)
 }
+
+type noopSessionManager struct{}
+
+func (sm noopSessionManager) ClearSession() {}
+
+func (sm noopSessionManager) Save() error { return nil }
+
+func (sm noopSessionManager) Session() auth.Session { return auth.Session{} }
+
+func (sm noopSessionManager) SetSession(session auth.Session) {}

@@ -1,10 +1,11 @@
-package list
+package user
 
 import (
 	"fmt"
 	"sort"
 	"time"
 
+	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -13,21 +14,23 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Command is the `user list` command
-var Command = cli.CommandDefinition{
-	Use:         "list",
-	Description: "List the users of your Realm application",
-	Help:        "user list",
-	Command:     &command{},
-}
-
-type command struct {
-	inputs      inputs
+// CommandList is the `user list` command
+type CommandList struct {
+	inputs      listInputs
 	realmClient realm.Client
 	users       []realm.User
 }
 
-func (cmd *command) Flags(fs *pflag.FlagSet) {
+type listInputs struct {
+	app.ProjectInputs
+	UserState     realm.UserState
+	Pending       bool
+	ProviderTypes []string
+	Users         []string
+}
+
+// Flags is the command flags
+func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
@@ -41,17 +44,20 @@ func (cmd *command) Flags(fs *pflag.FlagSet) {
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserUsage)
 }
 
-func (cmd *command) Inputs() cli.InputResolver {
+// Inputs is the command inputs
+func (cmd *CommandList) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-func (cmd *command) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = realm.NewAuthClient(profile.RealmBaseURL(), profile.Session())
+// Setup is the command setup
+func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
+	cmd.realmClient = realm.NewAuthClient(profile)
 	return nil
 }
 
-func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+// Handler is the command handler
+func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
+	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}
@@ -75,18 +81,12 @@ func (cmd *command) Handler(profile *cli.Profile, ui terminal.UI) error {
 }
 
 const (
-	headerID                     = "ID"
-	headerName                   = "Name"
-	headerEmail                  = "Email"
-	headerEnabled                = "Enabled"
-	headerType                   = "Type"
-	headerLastAuthenticationDate = "Last Authentication"
-
 	userDataEmail = "email"
 	userDataName  = "name"
 )
 
-func (cmd *command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+// Feedback is the command feedback
+func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.users) == 0 {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
@@ -161,4 +161,12 @@ func userTableRow(providerType string, user realm.User) map[string]interface{} {
 		row[headerEmail] = user.Data[userDataEmail]
 	}
 	return row
+}
+
+func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
+		return err
+	}
+
+	return nil
 }

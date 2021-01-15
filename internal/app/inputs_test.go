@@ -1,4 +1,4 @@
-package cli_test
+package app
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -25,17 +24,17 @@ func TestProjectAppInputsResolve(t *testing.T) {
 
 	for _, tc := range []struct {
 		description string
-		inputs      cli.ProjectAppInputs
+		inputs      ProjectInputs
 		wd          string
 		procedure   func(c *expect.Console)
-		test        func(t *testing.T, i cli.ProjectAppInputs)
+		test        func(t *testing.T, i ProjectInputs)
 	}{
 		{
 			description: "Should not prompt for app when set by flag already",
-			inputs:      cli.ProjectAppInputs{App: "some-app"},
+			inputs:      ProjectInputs{App: "some-app"},
 			wd:          testRoot,
 			procedure:   func(c *expect.Console) {},
-			test: func(t *testing.T, i cli.ProjectAppInputs) {
+			test: func(t *testing.T, i ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
 			},
 		},
@@ -46,7 +45,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("some-app")
 			},
-			test: func(t *testing.T, i cli.ProjectAppInputs) {
+			test: func(t *testing.T, i ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
 			},
 		},
@@ -57,7 +56,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
 			},
-			test: func(t *testing.T, i cli.ProjectAppInputs) {
+			test: func(t *testing.T, i ProjectInputs) {
 				assert.Equal(t, "eggcorn-abcde", i.App)
 			},
 		},
@@ -68,7 +67,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
 			},
-			test: func(t *testing.T, i cli.ProjectAppInputs) {
+			test: func(t *testing.T, i ProjectInputs) {
 				assert.Equal(t, "eggcorn", i.App)
 			},
 		},
@@ -150,9 +149,9 @@ func TestResolveApp(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			inputs := cli.ProjectAppInputs{Project: "groupID", App: "app"}
+			inputs := ProjectInputs{Project: "groupID", App: "app"}
 
-			app, err := cli.ResolveApp(ui, realmClient, inputs.Filter())
+			app, err := Resolve(ui, realmClient, inputs.Filter())
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -169,7 +168,7 @@ func TestResolveApp(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		_, err := cli.ResolveApp(nil, realmClient, realm.AppFilter{})
+		_, err := Resolve(nil, realmClient, realm.AppFilter{})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }

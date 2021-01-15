@@ -1,4 +1,4 @@
-package cli
+package app
 
 import (
 	"fmt"
@@ -6,11 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestResolveAppData(t *testing.T) {
+func TestResolveData(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
@@ -19,31 +18,31 @@ func TestResolveAppData(t *testing.T) {
 
 	t.Run("With a working directory outside of the root of a project directory", func(t *testing.T) {
 		t.Run("Resolving the app directory should return an empty string", func(t *testing.T) {
-			path, insideProject, err := ResolveAppDirectory(testRoot)
+			path, insideProject, err := ResolveDirectory(testRoot)
 			assert.Nil(t, err)
 			assert.False(t, insideProject, "expected to be outside project")
 			assert.Equal(t, "", path)
 		})
 
 		t.Run("Resolving the app data should successfully return empty data", func(t *testing.T) {
-			data, err := ResolveAppData(testRoot)
+			data, err := ResolveData(testRoot)
 			assert.Nil(t, err)
-			assert.Equal(t, AppData{}, data)
+			assert.Equal(t, Data{}, data)
 		})
 	})
 
 	t.Run("With a working directory at the root of a project directory", func(t *testing.T) {
 		t.Run("Resolving the app directory should return the working directory", func(t *testing.T) {
-			path, insideProject, err := ResolveAppDirectory(projectRoot)
+			path, insideProject, err := ResolveDirectory(projectRoot)
 			assert.Nil(t, err)
 			assert.True(t, insideProject, "expected to be inside project")
 			assert.Equal(t, projectRoot, path)
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			data, err := ResolveAppData(projectRoot)
+			data, err := ResolveData(projectRoot)
 			assert.Nil(t, err)
-			assert.Equal(t, AppData{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
+			assert.Equal(t, Data{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
 		})
 	})
 
@@ -51,26 +50,24 @@ func TestResolveAppData(t *testing.T) {
 		nestedRoot := filepath.Join(projectRoot, "l1", "l2", "l3")
 
 		t.Run("Resolving the app directory should return the working directory", func(t *testing.T) {
-			path, insideProject, err := ResolveAppDirectory(nestedRoot)
+			path, insideProject, err := ResolveDirectory(nestedRoot)
 			assert.Nil(t, err)
 			assert.True(t, insideProject, "expected to be inside project")
 			assert.Equal(t, projectRoot, path)
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			data, err := ResolveAppData(nestedRoot)
+			data, err := ResolveData(nestedRoot)
 			assert.Nil(t, err)
-			assert.Equal(t, AppData{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
+			assert.Equal(t, Data{ID: "eggcorn-abcde", Name: "eggcorn"}, data)
 		})
 
 		t.Run("Resolving the app data should return empty data if it exceeds the max search depth", func(t *testing.T) {
-			origMaxDirectoryContainSearchDepth := maxDirectoryContainSearchDepth
-			maxDirectoryContainSearchDepth = 2
-			defer func() { maxDirectoryContainSearchDepth = origMaxDirectoryContainSearchDepth }()
+			superNestedRoot := filepath.Join(nestedRoot, "l4", "l5", "l6", "l7", "l8", "l9")
 
-			data, err := ResolveAppData(nestedRoot)
+			data, err := ResolveData(superNestedRoot)
 			assert.Nil(t, err)
-			assert.Equal(t, AppData{}, data)
+			assert.Equal(t, Data{}, data)
 		})
 	})
 
@@ -79,10 +76,10 @@ func TestResolveAppData(t *testing.T) {
 
 		expectedErr := fmt.Errorf(
 			"failed to read app data at %s",
-			filepath.Join(emptyProjectRoot, realm.FileAppConfig),
+			filepath.Join(emptyProjectRoot, FileConfig),
 		)
 
-		_, err := ResolveAppData(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
+		_, err := ResolveData(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
 		assert.Equal(t, expectedErr, err)
 	})
 }

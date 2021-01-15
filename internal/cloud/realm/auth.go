@@ -29,7 +29,7 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 		http.MethodPost,
 		authenticatePath,
 		authenticateRequest{publicAPIKey, privateAPIKey},
-		api.RequestOptions{PreventRefresh: true},
+		api.RequestOptions{NoAuth: true, PreventRefresh: true},
 	)
 	if resErr != nil {
 		return Session{}, resErr
@@ -57,7 +57,7 @@ type Role struct {
 }
 
 func (c *client) AuthProfile() (AuthProfile, error) {
-	res, resErr := c.do(http.MethodGet, authProfilePath, api.RequestOptions{UseAuth: true})
+	res, resErr := c.do(http.MethodGet, authProfilePath, api.RequestOptions{})
 	if resErr != nil {
 		return AuthProfile{}, resErr
 	}
@@ -74,38 +74,49 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 }
 
 func (c *client) getAuth(options api.RequestOptions) (string, error) {
-	if options.UseAuth {
-		if c.session.AccessToken == "" {
+	session := c.sessionManager.Session()
+
+	if !options.NoAuth {
+		if session.AccessToken == "" {
 			return "", ErrInvalidSession{}
 		}
-		return c.session.AccessToken, nil
+		return session.AccessToken, nil
 	}
 
 	if options.RefreshAuth {
-		if c.session.RefreshToken == "" {
+		if session.RefreshToken == "" {
 			return "", ErrInvalidSession{}
 		}
-		return c.session.RefreshToken, nil
+		return session.RefreshToken, nil
 	}
 
 	return "", nil
 }
 
-func (c *client) refreshAuth() (string, error) {
-	res, resErr := c.do(http.MethodPost, authSessionPath, api.RequestOptions{RefreshAuth: true, PreventRefresh: true})
+func (c *client) refreshAuth() error {
+	res, resErr := c.do(
+		http.MethodPost,
+		authSessionPath,
+		api.RequestOptions{RefreshAuth: true},
+	)
 	if resErr != nil {
-		return "", resErr
+		return resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return "", ErrInvalidSession{}
+		return ErrInvalidSession{}
 	}
 	defer res.Body.Close()
 
-	var session Session
-	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
-		return "", err
+	var s Session
+	if err := json.NewDecoder(res.Body).Decode(&s); err != nil {
+		return err
 	}
-	return session.AccessToken, nil
+
+	session := c.sessionManager.Session()
+	session.AccessToken = s.AccessToken
+	c.sessionManager.SetSession(session)
+
+	return c.sessionManager.Save()
 }
 
 // AllGroupIDs returns all group ids associated with the user's profile

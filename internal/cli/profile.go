@@ -3,9 +3,8 @@ package cli
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/telemetry"
 
 	"github.com/spf13/afero"
@@ -53,7 +52,7 @@ func NewDefaultProfile() (*Profile, error) {
 
 // NewProfile creates a new CLI profile
 func NewProfile(name string) (*Profile, error) {
-	dir, dirErr := homeDir()
+	dir, dirErr := HomeDir()
 	if dirErr != nil {
 		return nil, fmt.Errorf("failed to create CLI profile: %w", dirErr)
 	}
@@ -129,7 +128,7 @@ func (p *Profile) Save() error {
 }
 
 func (p Profile) resolveFlags() error {
-	if p.telemetryMode == telemetry.ModeNil {
+	if p.telemetryMode == telemetry.ModeEmpty {
 		p.telemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
 	}
 	p.SetString(keyTelemetryMode, string(p.telemetryMode))
@@ -155,6 +154,11 @@ func (p Profile) resolveFlags() error {
 	return p.Save()
 }
 
+// Dir returns the CLI profile directory
+func (p Profile) Dir() string {
+	return p.dir
+}
+
 // Path returns the CLI profile filepath
 func (p Profile) Path() string {
 	return fmt.Sprintf("%s/%s.%s", p.dir, p.Name, profileType)
@@ -172,63 +176,32 @@ const (
 	keyTelemetryMode = "telemetry_mode"
 )
 
-// User is the CLI profile user
-type User struct {
-	PublicAPIKey  string
-	PrivateAPIKey string
-}
-
-// RedactedPrivateAPIKey returns the user's private API key with sensitive information redacted
-func (user User) RedactedPrivateAPIKey() string {
-	redact := func(s string) string {
-		return strings.Repeat("*", len(s))
-	}
-
-	parts := strings.Split(user.PrivateAPIKey, "-")
-	switch len(parts) {
-	case 0:
-		return ""
-	case 1:
-		return redact(parts[0])
-	default:
-		lastIdx := len(parts) - 1
-
-		out := make([]string, len(parts))
-		for i := 0; i < lastIdx; i++ {
-			out[i] = redact(parts[i])
-		}
-		out[lastIdx] = parts[lastIdx]
-
-		return strings.Join(out, "-")
-	}
-}
-
 // User gets the CLI profile user
-func (p Profile) User() User {
-	return User{
+func (p Profile) User() auth.User {
+	return auth.User{
 		p.GetString(keyPublicAPIKey),
 		p.GetString(keyPrivateAPIKey),
 	}
 }
 
 // SetUser sets the CLI profile user
-func (p Profile) SetUser(publicAPIKey, privateAPIKey string) {
-	p.SetString(keyPublicAPIKey, publicAPIKey)
-	p.SetString(keyPrivateAPIKey, privateAPIKey)
+func (p Profile) SetUser(user auth.User) {
+	p.SetString(keyPublicAPIKey, user.PublicAPIKey)
+	p.SetString(keyPrivateAPIKey, user.PrivateAPIKey)
 }
 
 // Session gets the CLI profile session
-func (p Profile) Session() realm.Session {
-	return realm.Session{
+func (p Profile) Session() auth.Session {
+	return auth.Session{
 		p.GetString(keyAccessToken),
 		p.GetString(keyRefreshToken),
 	}
 }
 
 // SetSession sets the CLI profile session
-func (p Profile) SetSession(accessToken, refreshToken string) {
-	p.SetString(keyAccessToken, accessToken)
-	p.SetString(keyRefreshToken, refreshToken)
+func (p Profile) SetSession(session auth.Session) {
+	p.SetString(keyAccessToken, session.AccessToken)
+	p.SetString(keyRefreshToken, session.RefreshToken)
 }
 
 // ClearSession clears the CLI profile session
