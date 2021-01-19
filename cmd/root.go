@@ -35,6 +35,7 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Login))
 	cmd.AddCommand(factory.Build(commands.Logout))
 	cmd.AddCommand(factory.Build(commands.Push))
+	cmd.AddCommand(factory.Build(commands.Secrets))
 	cmd.AddCommand(factory.Build(commands.User))
 	cmd.AddCommand(factory.Build(commands.Whoami))
 

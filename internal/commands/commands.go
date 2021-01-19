@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/push"
+	"github.com/10gen/realm-cli/internal/commands/secrets"
 	"github.com/10gen/realm-cli/internal/commands/user"
 	"github.com/10gen/realm-cli/internal/commands/whoami"
 )
@@ -95,6 +96,21 @@ var (
 				Description: "List the users of your Realm application",
 				Help:        "user list",
 				Command:     &user.CommandList{},
+			},
+		},
+	}
+
+	Secrets = cli.CommandDefinition{
+		Use:         "secrets",
+		Aliases:     []string{"secrets"},
+		Description: "Manage the secrets of your MongoDB Realm application",
+		Help:        "secret", // TODO(REALMC-7429): add help text description
+		SubCommands: []cli.CommandDefinition{
+			cli.CommandDefinition{
+				Use:         "list",
+				Description: "List the secrets of your Realm application",
+				Help:        "secrets list", // TODO(REALMC-7429): add help text description
+				Command:     &secrets.CommandList{},
 			},
 		},
 	}
