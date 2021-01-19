@@ -69,6 +69,13 @@ var (
 				Command:     &user.CommandCreate{},
 			},
 			cli.CommandDefinition{
+				Use:         "delete",
+				Display:     "user delete",
+				Description: "Delete users from a Realm application",
+				Help:        "user delete",
+				Command:     &user.CommandDelete{},
+			},
+			cli.CommandDefinition{
 				Use:         "list",
 				Description: "List the users of your Realm application",
 				Help:        "user list",

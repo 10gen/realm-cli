@@ -1,4 +1,4 @@
-package shared
+package user
 
 import (
 	"errors"
@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/Netflix/go-expect"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -18,21 +19,21 @@ func TestResolveUsersInputs(t *testing.T) {
 		{
 			ID: "user-1",
 			Identities: []realm.UserIdentity{
-				{ProviderType: ProviderTypeAnonymous},
+				{ProviderType: providerTypeAnonymous},
 			},
 			Disabled: false,
 		},
 		{
 			ID: "user-2",
 			Identities: []realm.UserIdentity{
-				{ProviderType: ProviderTypeLocalUserPass},
+				{ProviderType: providerTypeLocalUserPass},
 			},
 			Disabled: true,
 		},
 		{
 			ID: "user-3",
 			Identities: []realm.UserIdentity{
-				{ProviderType: ProviderTypeLocalUserPass},
+				{ProviderType: providerTypeLocalUserPass},
 			},
 			Disabled: true,
 		},
@@ -41,14 +42,14 @@ func TestResolveUsersInputs(t *testing.T) {
 	t.Run("Setup should prompt for Users", func(t *testing.T) {
 		for _, tc := range []struct {
 			description   string
-			inputs        UsersInputs
+			inputs        usersInputs
 			procedure     func(c *expect.Console)
 			users         []realm.User
 			expectedUsers []realm.User
 		}{
 			{
 				description: "With no input set",
-				inputs:      UsersInputs{},
+				inputs:      usersInputs{},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-1")
@@ -60,7 +61,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "With providers set",
-				inputs:      UsersInputs{ProviderTypes: []string{ProviderTypeLocalUserPass}},
+				inputs:      usersInputs{ProviderTypes: []string{providerTypeLocalUserPass}},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-2")
@@ -72,7 +73,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "With state set",
-				inputs:      UsersInputs{State: UserStateTypeDisabled},
+				inputs:      usersInputs{State: userStateTypeDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-2")
@@ -84,7 +85,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "With status set",
-				inputs:      UsersInputs{State: UserStateTypeDisabled},
+				inputs:      usersInputs{State: userStateTypeDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-3")
@@ -128,7 +129,7 @@ func TestResolveUsersInputs(t *testing.T) {
 	t.Run("Setup should Error", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
-			inputs      UsersInputs
+			inputs      usersInputs
 			procedure   func(c *expect.Console)
 			expectedErr error
 			mockClient  func() realm.Client
@@ -136,7 +137,7 @@ func TestResolveUsersInputs(t *testing.T) {
 		}{
 			{
 				description: "From client",
-				inputs:      UsersInputs{},
+				inputs:      usersInputs{},
 				procedure:   func(c *expect.Console) {},
 				expectedErr: errors.New("client error"),
 				mockClient: func() realm.Client {
@@ -152,7 +153,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "From UI",
-				inputs:      UsersInputs{},
+				inputs:      usersInputs{},
 				procedure:   func(c *expect.Console) {},
 				expectedErr: errors.New("ui error"),
 				mockClient: func() realm.Client {

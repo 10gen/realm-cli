@@ -80,11 +80,6 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-const (
-	userDataEmail = "email"
-	userDataName  = "name"
-)
-
 // Feedback is the command feedback
 func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.users) == 0 {

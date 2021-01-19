@@ -8,4 +8,6 @@ const (
 	headerLastAuthenticationDate = "Last Authenticated"
 	headerName                   = "Name"
 	headerType                   = "Type"
+	headerDeleted                = "Deleted"
+	headerDetails                = "Details"
 )
