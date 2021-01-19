@@ -56,23 +56,6 @@ var (
 	}
 )
 
-// isValidProviderType checks string for valid Provider Types
-func isValidProviderType(pt string) bool {
-	switch pt {
-	case
-		providerTypeLocalUserPass,
-		providerTypeAPIKey,
-		providerTypeFacebook,
-		providerTypeGoogle,
-		providerTypeAnonymous,
-		providerTypeCustom,
-		providerTypeApple,
-		providerTypeCustomFunction:
-		return true
-	}
-	return false
-}
-
 // statusType enumset
 type statusType string
 
@@ -99,14 +82,6 @@ const (
 	statusTypeEmpty     statusType = ""
 	statusTypeConfirmed statusType = "confirmed"
 	statusTypePending   statusType = "pending"
-)
-
-// All valid statusTypes to filter users by
-var (
-	validStatusTypes = []statusType{
-		statusTypeConfirmed,
-		statusTypePending,
-	}
 )
 
 // statusType error msg
@@ -155,14 +130,6 @@ const (
 	userStateTypeEmpty    userStateType = ""
 	userStateTypeEnabled  userStateType = "enabled"
 	userStateTypeDisabled userStateType = "disabled"
-)
-
-// All valid user states to filter users by
-var (
-	validUserStateTypes = []userStateType{
-		userStateTypeEnabled,
-		userStateTypeDisabled,
-	}
 )
 
 var (
