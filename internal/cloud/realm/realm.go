@@ -19,7 +19,26 @@ var (
 // AppConfigVersion is the Realm application config version for import/export
 type AppConfigVersion int
 
-func (v AppConfigVersion) String() string { return strconv.Itoa(int(v)) }
+func (cv AppConfigVersion) String() string { return strconv.Itoa(int(cv)) }
+
+// Type returns the DeploymentModel type
+func (cv AppConfigVersion) Type() string { return flags.TypeInt }
+
+// Set validates and sets the deployment model value
+func (cv *AppConfigVersion) Set(val string) error {
+	v, err := strconv.Atoi(val)
+	if err != nil {
+		return err
+	}
+	newConfigVersion := AppConfigVersion(v)
+
+	if !isValidConfigVersion(newConfigVersion) {
+		return errInvalidConfigVersion
+	}
+
+	*cv = newConfigVersion
+	return nil
+}
 
 // set of supported app config versions
 const (
@@ -29,8 +48,29 @@ const (
 	AppConfigVersion20180301 AppConfigVersion = 20180301
 )
 
-// set of known location and deployment values
+func isValidConfigVersion(cv AppConfigVersion) bool {
+	switch cv {
+	case
+		AppConfigVersionZero, // allow ConfigVersion to be optional
+		AppConfigVersion20180301,
+		AppConfigVersion20200603,
+		AppConfigVersion20210101:
+		return true
+	}
+	return false
+}
+
+// set of known config version, location and deployment values
 var (
+	ConfigVersionValues = []string{
+		AppConfigVersion20180301.String(),
+		AppConfigVersion20200603.String(),
+		AppConfigVersion20210101.String(),
+	}
+	DeploymentModelValues = []string{
+		DeploymentModelGlobal.String(),
+		DeploymentModelLocal.String(),
+	}
 	LocationValues = []string{
 		LocationVirginia.String(),
 		LocationOregon.String(),
@@ -40,13 +80,10 @@ var (
 		LocationMumbai.String(),
 		LocationSingapore.String(),
 	}
-	DeploymentModelValues = []string{
-		DeploymentModelGlobal.String(),
-		DeploymentModelLocal.String(),
-	}
 
-	errInvalidLocation        = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(LocationValues, ", "))
+	errInvalidConfigVersion   = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(ConfigVersionValues, ", "))
 	errInvalidDeploymentModel = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(DeploymentModelValues, ", "))
+	errInvalidLocation        = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(LocationValues, ", "))
 )
 
 // DeploymentModel is the Realm app deployment model

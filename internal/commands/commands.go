@@ -5,6 +5,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
+	"github.com/10gen/realm-cli/internal/commands/pull"
 	"github.com/10gen/realm-cli/internal/commands/push"
 	"github.com/10gen/realm-cli/internal/commands/user"
 	"github.com/10gen/realm-cli/internal/commands/whoami"
@@ -34,7 +35,7 @@ var (
 	Push = cli.CommandDefinition{
 		Command:     &push.Command{},
 		Use:         "push",
-		Aliases:     []string{"export"},
+		Aliases:     []string{"import"},
 		Description: "Push and deploy changes from your local directory to your Realm app",
 		Help: `Push and deploy changes from your local directory to your Realm app
 
@@ -43,6 +44,19 @@ var (
 	application Client App ID of an existing Realm app you would like to update, or
 	the name of a new Realm app you would like to create. Changes pushed are
 	automatically deployed.`,
+	}
+
+	Pull = cli.CommandDefinition{
+		Command:     &pull.Command{},
+		Use:         "pull",
+		Aliases:     []string{"export"},
+		Description: "Pull the latest version of your Realm app into your local directory",
+		Help: `Pull the latest version of your Realm app into your local directory
+
+Updates a remote Realm app with your local directory by pulling changes from the
+former into the latter. Input a Realm app that you would like to have changes
+pushed from. If applicable, hosting and/or dependencies associated with your
+Realm app will be exported as well.`,
 	}
 
 	App = cli.CommandDefinition{

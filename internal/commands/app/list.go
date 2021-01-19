@@ -33,7 +33,7 @@ func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
 func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 	apps, appsErr := cmd.realmClient.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
 	if appsErr != nil {
-		return fmt.Errorf("failed to get apps: %w", appsErr)
+		return appsErr
 	}
 
 	cmd.apps = apps

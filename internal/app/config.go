@@ -8,6 +8,7 @@ import (
 
 // set of known Realm app config fields
 const (
+	FieldConfigVersion   = "config_version"
 	FieldDeploymentModel = "deployment_model"
 	FieldName            = "name"
 	FieldLocation        = "location"
@@ -23,6 +24,13 @@ type Config struct {
 	Security             SecurityConfig         `json:"security"`
 	CustomUserDataConfig CustomUserDataConfig   `json:"custom_user_data_config"`
 	Sync                 SyncConfig             `json:"sync"`
+}
+
+func (c Config) String() string {
+	if c.ID != "" {
+		return c.ID
+	}
+	return c.Name
 }
 
 // SecurityConfig ia the Realm app security config

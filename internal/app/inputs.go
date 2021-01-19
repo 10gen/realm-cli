@@ -40,7 +40,7 @@ func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
 func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
-	config, configErr := ResolveConfig(wd)
+	_, config, configErr := ResolveConfig(wd)
 	if configErr != nil {
 		return configErr
 	}

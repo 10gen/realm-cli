@@ -93,13 +93,13 @@ func unmarshalJSONInto(out interface{}, opts unmarshalOptions) error {
 }
 
 func unmarshalDirectoryInto(path string, name string, pkg map[string]interface{}) error {
-	var out []interface{}
+	var out []map[string]interface{}
 
 	fi := fileIterator{path: filepath.Join(path, name), onlyFiles: true}
 	if err := fi.forEach(func(file os.FileInfo, path string) error {
 		switch filepath.Ext(path) {
 		case extJSON:
-			var o interface{}
+			var o map[string]interface{}
 			if err := unmarshalJSONInto(&o, unmarshalOptions{path: path}); err != nil {
 				return err
 			}
@@ -133,7 +133,7 @@ const (
 )
 
 func unmarshalFunctionsInto(path, name string, pkg map[string]interface{}) error {
-	var out []interface{}
+	var out []map[string]interface{}
 
 	fi := fileIterator{path: filepath.Join(path, name), onlyDirs: true}
 	if err := fi.forEach(func(file os.FileInfo, path string) error {
@@ -153,7 +153,7 @@ func unmarshalFunctionsInto(path, name string, pkg map[string]interface{}) error
 
 		o := map[string]interface{}{}
 		o[NameConfig] = cfg
-		o[NameSource] = src
+		o[NameSource] = string(src)
 
 		out = append(out, o)
 		return nil
@@ -176,16 +176,16 @@ func unmarshalGraphQLInto(appDir Directory, pkg map[string]interface{}) error {
 	}
 	out[NameConfig] = cfg
 
-	out[NameCustomResolvers] = []interface{}{}
+	out[NameCustomResolvers] = []map[string]interface{}{}
 
 	fi := fileIterator{path: filepath.Join(appDir.Path, DirGraphQLCustomResolvers.String()), onlyFiles: true}
 	if err := fi.forEach(func(file os.FileInfo, path string) error {
-		var customResolver interface{}
+		var customResolver map[string]interface{}
 		if err := unmarshalJSONInto(&customResolver, unmarshalOptions{path: path}); err != nil {
 			return err
 		}
 
-		if customResolvers, ok := out[NameCustomResolvers].([]interface{}); ok {
+		if customResolvers, ok := out[NameCustomResolvers].([]map[string]interface{}); ok {
 			out[NameCustomResolvers] = append(customResolvers, customResolver)
 		}
 		return nil
@@ -211,7 +211,7 @@ func unmarshalSecretsInto(appDir Directory, pkg map[string]interface{}) error {
 }
 
 func unmarshalServicesInto(appDir Directory, pkg map[string]interface{}) error {
-	var out []interface{}
+	var out []map[string]interface{}
 
 	fi := fileIterator{path: filepath.Join(appDir.Path, NameServices), onlyDirs: true}
 	if err := fi.forEach(func(file os.FileInfo, path string) error {

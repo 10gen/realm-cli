@@ -188,8 +188,9 @@ func TestResolveData(t *testing.T) {
 		})
 
 		t.Run("Resolving the app data should successfully return empty data", func(t *testing.T) {
-			config, err := ResolveConfig(testRoot)
+			appDir, config, err := ResolveConfig(testRoot)
 			assert.Nil(t, err)
+			assert.Equal(t, "", appDir)
 			assert.Equal(t, Config{}, config)
 		})
 	})
@@ -203,8 +204,9 @@ func TestResolveData(t *testing.T) {
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			config, err := ResolveConfig(projectRoot)
+			appDir, config, err := ResolveConfig(projectRoot)
 			assert.Nil(t, err)
+			assert.Equal(t, projectRoot, appDir)
 			assert.Equal(t, projectConfig, config)
 		})
 	})
@@ -220,16 +222,18 @@ func TestResolveData(t *testing.T) {
 		})
 
 		t.Run("Resolving the app data should successfully return project data", func(t *testing.T) {
-			config, err := ResolveConfig(nestedRoot)
+			appDir, config, err := ResolveConfig(nestedRoot)
 			assert.Nil(t, err)
 			assert.Equal(t, projectConfig, config)
+			assert.Equal(t, projectRoot, appDir)
 		})
 
 		t.Run("Resolving the app data should return empty data if it exceeds the max search depth", func(t *testing.T) {
 			superNestedRoot := filepath.Join(nestedRoot, "l4", "l5", "l6", "l7", "l8", "l9")
 
-			config, err := ResolveConfig(superNestedRoot)
+			appDir, config, err := ResolveConfig(superNestedRoot)
 			assert.Nil(t, err)
+			assert.Equal(t, "", appDir)
 			assert.Equal(t, Config{}, config)
 		})
 	})
@@ -242,45 +246,45 @@ func TestResolveData(t *testing.T) {
 			filepath.Join(emptyProjectRoot, FileConfig.String()),
 		)
 
-		_, err := ResolveConfig(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
+		_, _, err := ResolveConfig(filepath.Join(emptyProjectRoot, "l1", "l2", "l3"))
 		assert.Equal(t, expectedErr, err)
 	})
 }
 
 var fullPkg = map[string]interface{}{
-	"config_version":     float64(20200603),
+	FieldConfigVersion:   float64(20200603),
 	"app_id":             "full-abcde",
 	FieldName:            "full",
 	FieldLocation:        "US-VA",
 	FieldDeploymentModel: "GLOBAL",
-	NameAuthProviders: []interface{}{
-		map[string]interface{}{
+	NameAuthProviders: []map[string]interface{}{
+		{
 			"name":     "api-key",
 			"type":     "api-key",
 			"disabled": bool(false),
 		},
 	},
-	NameFunctions: []interface{}{
-		map[string]interface{}{
+	NameFunctions: []map[string]interface{}{
+		{
 			NameConfig: map[string]interface{}{
 				"name":    "test",
 				"private": true,
 			},
-			NameSource: []byte(`exports = function(){
+			NameSource: `exports = function(){
   console.log('got heem!');
-};`),
+};`,
 		},
 	},
-	NameServices: []interface{}{
-		map[string]interface{}{
+	NameServices: []map[string]interface{}{
+		{
 			NameConfig: map[string]interface{}{
 				"name":    "http",
 				"type":    "http",
 				"config":  map[string]interface{}{},
 				"version": float64(1),
 			},
-			NameIncomingWebhooks: []interface{}{
-				map[string]interface{}{
+			NameIncomingWebhooks: []map[string]interface{}{
+				{
 					NameConfig: map[string]interface{}{
 						"name": "find",
 						"options": map[string]interface{}{
@@ -295,7 +299,7 @@ var fullPkg = map[string]interface{}{
 						"create_user_on_auth":          false,
 						"fetch_custom_user_data":       false,
 					},
-					NameSource: []byte(`
+					NameSource: `
 exports = function({ query }) {
     const {a, b, c} = query
 
@@ -316,11 +320,11 @@ exports = function({ query }) {
       .collection('coll2')
       .find(filter)
 };
-`),
+`,
 				},
 			},
-			NameRules: []interface{}{
-				map[string]interface{}{
+			NameRules: []map[string]interface{}{
+				{
 					"name":    "access",
 					"actions": []interface{}{"get", "post", "put", "delete", "patch", "head"},
 					"when": map[string]interface{}{
@@ -330,8 +334,8 @@ exports = function({ query }) {
 			},
 		},
 	},
-	NameTriggers: []interface{}{
-		map[string]interface{}{
+	NameTriggers: []map[string]interface{}{
+		{
 			"name":          "yell",
 			"type":          "SCHEDULED",
 			"config":        map[string]interface{}{"schedule": "0 0 * * 1"},
@@ -343,15 +347,15 @@ exports = function({ query }) {
 		NameConfig: map[string]interface{}{
 			"use_natural_pluralization": true,
 		},
-		NameCustomResolvers: []interface{}{},
+		NameCustomResolvers: []map[string]interface{}{},
 	},
-	NameValues: []interface{}{
-		map[string]interface{}{
+	NameValues: []map[string]interface{}{
+		{
 			"name":        "SECRET",
 			"value":       "secret",
 			"from_secret": true,
 		},
-		map[string]interface{}{
+		{
 			"name":        "VALUE",
 			"value":       "eggcorn",
 			"from_secret": false,

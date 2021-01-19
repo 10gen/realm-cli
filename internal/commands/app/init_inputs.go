@@ -14,7 +14,7 @@ const (
 	flagProjectUsage = "the MongoDB cloud project id"
 
 	flagFrom      = "from"
-	flagFromShort = "s"
+	flagFromShort = "a"
 	flagFromUsage = "choose an application or template to initialize the Realm app with"
 
 	flagName      = "name"
@@ -50,7 +50,7 @@ type initInputs struct {
 }
 
 func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	appConfig, appConfigErr := appcli.ResolveConfig(profile.WorkingDirectory)
+	_, appConfig, appConfigErr := appcli.ResolveConfig(profile.WorkingDirectory)
 	if appConfigErr != nil {
 		return appConfigErr
 	}

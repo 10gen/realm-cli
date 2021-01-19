@@ -43,6 +43,7 @@ const (
 	NameCustomResolvers  = "custom_resolvers"
 	NameFunctions        = "functions"
 	NameGraphQL          = "graphql"
+	NameHosting          = "hosting"
 	NameIncomingWebhooks = "incoming_webhooks"
 	NameRealmConfig      = "realm_config"
 	NameRules            = "rules"
@@ -51,6 +52,7 @@ const (
 	NameSource           = "source"
 	NameStitch           = "stitch"
 	NameTriggers         = "triggers"
+	NameType             = "type"
 	NameValues           = "values"
 )
 
