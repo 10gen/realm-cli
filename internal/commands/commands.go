@@ -102,12 +102,13 @@ var (
 
 	Secrets = cli.CommandDefinition{
 		Use:         "secrets",
-		Aliases:     []string{"secrets"},
+		Aliases:     []string{"secret"},
 		Description: "Manage the secrets of your MongoDB Realm application",
 		Help:        "secret", // TODO(REALMC-7429): add help text description
 		SubCommands: []cli.CommandDefinition{
 			cli.CommandDefinition{
 				Use:         "list",
+				Aliases:     []string{"ls"},
 				Description: "List the secrets of your Realm application",
 				Help:        "secrets list", // TODO(REALMC-7429): add help text description
 				Command:     &secrets.CommandList{},
