@@ -13,14 +13,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// Command is the `user delete` command
-// var Command = cli.CommandDefinition{
-// 	Use:         "delete",
-// 	Description: "Delete the user(s) from a Realm application",
-// 	Help:        "user delete",
-// 	Command:     &command{},
-// }
-
 // CommandDelete is the `user delete` command
 type CommandDelete struct {
 	inputs      deleteInputs
@@ -91,22 +83,24 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
 
-	var outputByProviderType = make(map[string][]userOutput)
+	var outputByProviderType = map[string][]userOutput{}
 	for _, output := range cmd.outputs {
 		for _, identity := range output.user.Identities {
 			outputByProviderType[identity.ProviderType] = append(outputByProviderType[identity.ProviderType], output)
 		}
 	}
-	var logs []terminal.Log
+	logs := make([]terminal.Log, len(outputByProviderType))
+	logIndex := 0
 	for providerType, outputs := range outputByProviderType {
 
 		sort.Slice(outputs, getUserOutputComparerBySuccess(outputs))
 
-		logs = append(logs, terminal.NewTableLog(
+		logs[logIndex] = terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType),
 			userDeleteTableHeaders(providerType),
 			userDeleteTableRows(providerType, outputs)...,
-		))
+		)
+		logIndex++
 	}
 	return ui.Print(logs...)
 }

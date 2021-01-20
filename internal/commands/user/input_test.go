@@ -39,7 +39,7 @@ func TestResolveUsersInputs(t *testing.T) {
 		},
 	}
 
-	t.Run("Setup should prompt for Users", func(t *testing.T) {
+	t.Run("setup should prompt for users", func(t *testing.T) {
 		for _, tc := range []struct {
 			description   string
 			inputs        usersInputs
@@ -48,7 +48,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			expectedUsers []realm.User
 		}{
 			{
-				description: "With no input set",
+				description: "with no input set",
 				inputs:      usersInputs{},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
@@ -60,7 +60,7 @@ func TestResolveUsersInputs(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[0]},
 			},
 			{
-				description: "With providers set",
+				description: "with providers set",
 				inputs:      usersInputs{ProviderTypes: []string{providerTypeLocalUserPass}},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
@@ -72,7 +72,7 @@ func TestResolveUsersInputs(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[1]},
 			},
 			{
-				description: "With state set",
+				description: "with state set",
 				inputs:      usersInputs{State: userStateTypeDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
@@ -84,7 +84,7 @@ func TestResolveUsersInputs(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[1]},
 			},
 			{
-				description: "With status set",
+				description: "with status set",
 				inputs:      usersInputs{State: userStateTypeDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
@@ -117,16 +117,17 @@ func TestResolveUsersInputs(t *testing.T) {
 					GroupID: primitive.NewObjectID().Hex(),
 				}
 
-				users, _ := tc.inputs.ResolveUsers(ui, realmClient, app)
+				users, err := tc.inputs.ResolveUsers(ui, realmClient, app)
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
 
+				assert.Nil(t, err)
 				assert.Equal(t, tc.expectedUsers, users)
 			})
 		}
 	})
-	t.Run("Setup should Error", func(t *testing.T) {
+	t.Run("setup should error", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
 			inputs      usersInputs
@@ -136,7 +137,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			mockUI      func(ui mock.UI) terminal.UI
 		}{
 			{
-				description: "From client",
+				description: "from client",
 				inputs:      usersInputs{},
 				procedure:   func(c *expect.Console) {},
 				expectedErr: errors.New("client error"),
@@ -152,7 +153,7 @@ func TestResolveUsersInputs(t *testing.T) {
 				},
 			},
 			{
-				description: "From UI",
+				description: "from ui",
 				inputs:      usersInputs{},
 				procedure:   func(c *expect.Console) {},
 				expectedErr: errors.New("ui error"),

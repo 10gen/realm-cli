@@ -2,7 +2,6 @@ package user
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -31,7 +30,7 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 		var users []realm.User
 		for _, userID := range i.Users {
 			foundUser, err := client.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: []string{userID}})
-			if err != nil {
+			if len(foundUser) == 0 || err != nil {
 				return nil, fmt.Errorf("Unable to find user with ID %s", userID)
 			}
 			users = append(users, foundUser[0])
@@ -70,27 +69,34 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	// Interactive User Selection
 	selectableUsers := map[string]realm.User{}
 	selectableUserOptions := make([]string, len(selectableUsersSet))
-	sep := " - "
+	patternShort := "%s - %s"
+	patternLong := "%s - %s - %s"
 	userOptIndex := 0
 	for _, user := range selectableUsersSet {
 		var opt string
-		switch user.Identities[0].ProviderType {
-		case providerTypeAnonymous:
-			opt = strings.Join([]string{"Anonymous", user.ID}, sep)
-		case providerTypeLocalUserPass:
-			opt = strings.Join([]string{"User/Password", fmt.Sprint(user.Data[userDataEmail]), user.ID}, sep)
-		case providerTypeAPIKey:
-			opt = strings.Join([]string{"ApiKey", fmt.Sprint(user.Data[userDataName]), user.ID}, sep)
-		// case providerTypeApple:
-		// 	opt = strings.Join([]string{"Apple", user.ID}, sep)
-		case providerTypeGoogle:
-			opt = strings.Join([]string{"Google", user.ID}, sep)
-		case providerTypeFacebook:
-			opt = strings.Join([]string{"Facebook", user.ID}, sep)
-		case providerTypeCustom:
-			opt = strings.Join([]string{"Custom JWT", user.ID}, sep)
-			// case providerTypeCustomFunction:
-			// 	opt = strings.Join([]string{"Custom Function", user.ID}, sep)
+		if len(user.Identities) == 0 {
+			opt = fmt.Sprintf(patternShort, "Unknown", user.ID)
+		} else {
+			switch user.Identities[0].ProviderType {
+			case providerTypeAnonymous:
+				opt = fmt.Sprintf(patternShort, "Anonymous", user.ID)
+			case providerTypeLocalUserPass:
+				opt = fmt.Sprintf(patternLong, "User/Password", fmt.Sprint(user.Data[userDataEmail]), user.ID)
+			case providerTypeAPIKey:
+				opt = fmt.Sprintf(patternLong, "ApiKey", fmt.Sprint(user.Data[userDataName]), user.ID)
+			case providerTypeApple:
+				opt = fmt.Sprintf(patternShort, "Apple", user.ID)
+			case providerTypeGoogle:
+				opt = fmt.Sprintf(patternShort, "Google", user.ID)
+			case providerTypeFacebook:
+				opt = fmt.Sprintf(patternShort, "Facebook", user.ID)
+			case providerTypeCustom:
+				opt = fmt.Sprintf(patternShort, "Custom JWT", user.ID)
+			case providerTypeCustomFunction:
+				opt = fmt.Sprintf(patternShort, "Custom Function", user.ID)
+			default:
+				opt = fmt.Sprintf(patternShort, "Unknown", user.ID)
+			}
 		}
 		selectableUserOptions[userOptIndex] = opt
 		selectableUsers[opt] = user
@@ -107,9 +113,9 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	if err != nil {
 		return nil, err
 	}
-	users := []realm.User{}
-	for _, userOption := range selectedUsers {
-		users = append(users, selectableUsers[userOption])
+	users := make([]realm.User, len(selectedUsers))
+	for userIndex, userOption := range selectedUsers {
+		users[userIndex] = selectableUsers[userOption]
 	}
 	return users, nil
 }

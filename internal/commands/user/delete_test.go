@@ -12,7 +12,7 @@ import (
 )
 
 func TestUserDeleteSetup(t *testing.T) {
-	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
+	t.Run("should construct a realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
@@ -43,7 +43,7 @@ func TestUserDeleteHandler(t *testing.T) {
 		},
 	}
 
-	t.Run("Should delete a user when a user id is provided", func(t *testing.T) {
+	t.Run("should delete a user when a user id is provided", func(t *testing.T) {
 		var capturedAppFilter realm.AppFilter
 		var capturedProjectID, capturedAppID string
 
@@ -87,7 +87,7 @@ func TestUserDeleteHandler(t *testing.T) {
 		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
 	})
 
-	t.Run("Should save failed deletion errors", func(t *testing.T) {
+	t.Run("should save failed deletion errors", func(t *testing.T) {
 		var capturedAppFilter realm.AppFilter
 		var capturedProjectID, capturedAppID string
 
@@ -131,14 +131,14 @@ func TestUserDeleteHandler(t *testing.T) {
 		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
 	})
 
-	t.Run("Should return an error", func(t *testing.T) {
+	t.Run("should return an error", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
 			setupClient func() realm.Client
 			expectedErr error
 		}{
 			{
-				description: "When resolving the app fails",
+				description: "when resolving the app fails",
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -149,7 +149,7 @@ func TestUserDeleteHandler(t *testing.T) {
 				expectedErr: errors.New("something bad happened"),
 			},
 			{
-				description: "When finding the users fails",
+				description: "when finding the users fails",
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -195,12 +195,12 @@ func TestUserDeleteFeedback(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			description:    "Should show indicate no users to delete",
+			description:    "should show indicate no users to delete",
 			outputs:        []userOutput{},
 			expectedOutput: "01:23:45 UTC INFO  No users to delete\n",
 		},
 		{
-			description: "Should show 1 failed user",
+			description: "should show 1 failed user",
 			outputs: []userOutput{
 				{user: testUsers[0], err: errors.New("client error")},
 			},
@@ -236,12 +236,12 @@ func TestUserDeleteTableHeaders(t *testing.T) {
 		expectedHeaders []string
 	}{
 		{
-			description:     "Should show name for apikey",
+			description:     "should show name for apikey",
 			providerType:    providerTypeAPIKey,
 			expectedHeaders: []string{"Name", "ID", "Type", "Deleted", "Details"},
 		},
 		{
-			description:     "Should show email for local-userpass",
+			description:     "should show email for local-userpass",
 			providerType:    providerTypeLocalUserPass,
 			expectedHeaders: []string{"Email", "ID", "Type", "Deleted", "Details"},
 		},
@@ -260,7 +260,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 		expectedRow  map[string]interface{}
 	}{
 		{
-			description:  "Should show name for apikey type user",
+			description:  "should show name for apikey type user",
 			providerType: "api-key",
 			output: userOutput{
 				user: realm.User{
@@ -280,7 +280,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 			},
 		},
 		{
-			description:  "Should show email for local-userpass type user",
+			description:  "should show email for local-userpass type user",
 			providerType: "local-userpass",
 			output: userOutput{
 				user: realm.User{
