@@ -109,7 +109,7 @@ var (
 			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
-				Description: "List the secrets of your Realm application",
+				Description: "List the secrets of a Realm application",
 				Help:        "secrets list", // TODO(REALMC-7429): add help text description
 				Command:     &secrets.CommandList{},
 			},

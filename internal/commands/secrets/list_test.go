@@ -90,7 +90,7 @@ func TestSecretsListHandler(t *testing.T) {
 		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
 		assert.Equal(t, projectID, capturedProjectID)
 		assert.Equal(t, appID, capturedAppID)
-		assert.Equal(t, testValues, cmd.secrets)
+		assert.Equal(t, testValues, cmd.values)
 	})
 
 	t.Run("Should return an error", func(t *testing.T) {
@@ -142,17 +142,17 @@ func TestSecretsListHandler(t *testing.T) {
 func TestSecretsListFeedback(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
-		secrets        []realm.Value
+		values         []realm.Value
 		expectedOutput string
 	}{
 		{
 			description:    "Should indicate no secrets found when none are found",
-			secrets:        []realm.Value{},
+			values:         []realm.Value{},
 			expectedOutput: "01:23:45 UTC INFO  No available secrets to show\n",
 		},
 		{
 			description: "Should display all found secrets",
-			secrets: []realm.Value{
+			values: []realm.Value{
 				{
 					ID:           "id1",
 					Name:         "test1",
@@ -193,13 +193,10 @@ func TestSecretsListFeedback(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
-
 			cmd := &CommandList{
-				secrets: tc.secrets,
+				values: tc.values,
 			}
-
 			assert.Nil(t, cmd.Feedback(nil, ui))
-
 			assert.Equal(t, tc.expectedOutput, out.String())
 		})
 	}
