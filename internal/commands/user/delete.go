@@ -24,13 +24,8 @@ import (
 // CommandDelete is the `user delete` command
 type CommandDelete struct {
 	inputs      deleteInputs
-	outputs     []deleteOutput
+	outputs     []userOutput
 	realmClient realm.Client
-}
-
-type deleteOutput struct {
-	user realm.User
-	err  error
 }
 
 type deleteInputs struct {
@@ -85,7 +80,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 	for _, user := range users {
 		err = cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
-		cmd.outputs = append(cmd.outputs, deleteOutput{user: user, err: err})
+		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
 	}
 	return nil
 }
@@ -96,7 +91,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
 
-	var outputByProviderType = make(map[string][]deleteOutput)
+	var outputByProviderType = make(map[string][]userOutput)
 	for _, output := range cmd.outputs {
 		for _, identity := range output.user.Identities {
 			outputByProviderType[identity.ProviderType] = append(outputByProviderType[identity.ProviderType], output)
@@ -105,7 +100,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	var logs []terminal.Log
 	for providerType, outputs := range outputByProviderType {
 
-		sort.Slice(outputs, getOutputComparerBySuccess(outputs))
+		sort.Slice(outputs, getUserOutputComparerBySuccess(outputs))
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType),
@@ -114,12 +109,6 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		))
 	}
 	return ui.Print(logs...)
-}
-
-func getOutputComparerBySuccess(outputs []deleteOutput) func(i, j int) bool {
-	return func(i, j int) bool {
-		return !(outputs[i].err != nil && outputs[i].err == nil)
-	}
 }
 
 func userDeleteTableHeaders(providerType string) []string {
@@ -140,7 +129,7 @@ func userDeleteTableHeaders(providerType string) []string {
 	return headers
 }
 
-func userDeleteTableRows(providerType string, outputs []deleteOutput) []map[string]interface{} {
+func userDeleteTableRows(providerType string, outputs []userOutput) []map[string]interface{} {
 	userDeleteTableRows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
 		userDeleteTableRows = append(userDeleteTableRows, userDeleteTableRow(providerType, output))
@@ -148,7 +137,7 @@ func userDeleteTableRows(providerType string, outputs []deleteOutput) []map[stri
 	return userDeleteTableRows
 }
 
-func userDeleteTableRow(providerType string, output deleteOutput) map[string]interface{} {
+func userDeleteTableRow(providerType string, output userOutput) map[string]interface{} {
 	msg := "n/a"
 	if output.err != nil {
 		msg = output.err.Error()

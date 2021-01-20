@@ -191,17 +191,17 @@ func TestUserDeleteFeedback(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		description    string
-		outputs        []deleteOutput
+		outputs        []userOutput
 		expectedOutput string
 	}{
 		{
 			description:    "Should show indicate no users to delete",
-			outputs:        []deleteOutput{},
+			outputs:        []userOutput{},
 			expectedOutput: "01:23:45 UTC INFO  No users to delete\n",
 		},
 		{
 			description: "Should show 1 failed user",
-			outputs: []deleteOutput{
+			outputs: []userOutput{
 				{user: testUsers[0], err: errors.New("client error")},
 			},
 			expectedOutput: strings.Join(
@@ -256,13 +256,13 @@ func TestUserDeleteTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description  string
 		providerType string
-		output       deleteOutput
+		output       userOutput
 		expectedRow  map[string]interface{}
 	}{
 		{
 			description:  "Should show name for apikey type user",
 			providerType: "api-key",
-			output: deleteOutput{
+			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
 					Identities: []realm.UserIdentity{{ProviderType: providerTypeAPIKey}},
@@ -282,7 +282,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 		{
 			description:  "Should show email for local-userpass type user",
 			providerType: "local-userpass",
-			output: deleteOutput{
+			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
 					Identities: []realm.UserIdentity{{ProviderType: providerTypeLocalUserPass}},
