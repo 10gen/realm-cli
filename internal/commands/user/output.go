@@ -1,6 +1,8 @@
 package user
 
-import "github.com/10gen/realm-cli/internal/cloud/realm"
+import (
+	"github.com/10gen/realm-cli/internal/cloud/realm"
+)
 
 const (
 	headerAPIKey                 = "API Key"

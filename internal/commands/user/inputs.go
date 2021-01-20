@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -16,7 +17,7 @@ const (
 
 // usersInputs are the filtering inputs for a user command
 type usersInputs struct {
-	State         userStateType
+	State         realm.UserState
 	ProviderTypes []string
 	Status        statusType
 	Users         []string
@@ -24,26 +25,24 @@ type usersInputs struct {
 
 // ResolveUsers will use the provided Realm client to resolve the users specified by the realm.App through inputs
 func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
-	var err error
-
 	if len(i.Users) > 0 {
-		var users []realm.User
-		for _, userID := range i.Users {
-			foundUser, err := client.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: []string{userID}})
-			if len(foundUser) == 0 || err != nil {
-				return nil, fmt.Errorf("Unable to find user with ID %s", userID)
-			}
-			users = append(users, foundUser[0])
+		filter := realm.UserFilter{IDs: i.Users}
+		foundUsers, err := client.FindUsers(app.GroupID, app.ID, filter)
+		if len(foundUsers) == 0 || err != nil {
+			return nil, err
 		}
-		return users, nil
+		if len(foundUsers) == 0 {
+			return nil, errors.New("No users found from provided IDs")
+		}
+		return foundUsers, nil
 	}
 
 	userFilter := realm.UserFilter{}
 	if len(i.ProviderTypes) > 0 {
 		userFilter.Providers = i.ProviderTypes
 	}
-	if i.State != userStateTypeEmpty {
-		userFilter.State = realm.UserState(i.State.String())
+	if i.State != realm.UserStateNil {
+		userFilter.State = i.State
 	}
 	selectableUsersSet := map[string]realm.User{}
 	if i.Status == statusTypeConfirmed || i.Status == statusTypeEmpty {
@@ -103,7 +102,7 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 		userOptIndex++
 	}
 	selectedUsers := []string{}
-	err = ui.AskOne(
+	err := ui.AskOne(
 		&selectedUsers,
 		&survey.MultiSelect{
 			Message: "Which user(s) would you like to delete?",

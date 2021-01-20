@@ -60,9 +60,9 @@ func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
-	if err != nil {
-		return err
+	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
+	if appErr != nil {
+		return appErr
 	}
 
 	users, err := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
@@ -71,8 +71,8 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	for _, user := range users {
-		err = cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
-		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
+		deleteErr := cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
+		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: deleteErr})
 	}
 	return nil
 }
@@ -132,7 +132,7 @@ func userDeleteTableRows(providerType string, outputs []userOutput) []map[string
 }
 
 func userDeleteTableRow(providerType string, output userOutput) map[string]interface{} {
-	msg := "n/a"
+	var msg string
 	if output.err != nil {
 		msg = output.err.Error()
 	}

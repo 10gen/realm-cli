@@ -71,8 +71,8 @@ var (
 			cli.CommandDefinition{
 				Use:         "delete",
 				Display:     "user delete",
-				Description: "Delete users from a Realm application",
-				Help:        "user delete",
+				Description: "Delete an application user from your Realm app",
+				Help:        "Removes a specific user from your Realm app.",
 				Command:     &user.CommandDelete{},
 			},
 			cli.CommandDefinition{

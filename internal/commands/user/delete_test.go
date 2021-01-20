@@ -45,7 +45,8 @@ func TestUserDeleteHandler(t *testing.T) {
 
 	t.Run("should delete a user when a user id is provided", func(t *testing.T) {
 		var capturedAppFilter realm.AppFilter
-		var capturedProjectID, capturedAppID string
+		var capturedFindProjectID, capturedFindAppID string
+		var capturedDeleteProjectID, capturedDeleteAppID string
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -54,14 +55,14 @@ func TestUserDeleteHandler(t *testing.T) {
 		}
 
 		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			capturedProjectID = groupID
-			capturedAppID = appID
+			capturedFindProjectID = groupID
+			capturedFindAppID = appID
 			return testUsers, nil
 		}
 
 		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
-			capturedProjectID = groupID
-			capturedAppID = appID
+			capturedDeleteProjectID = groupID
+			capturedDeleteAppID = appID
 			return nil
 		}
 
@@ -80,8 +81,10 @@ func TestUserDeleteHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, nil))
 		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedProjectID)
-		assert.Equal(t, appID, capturedAppID)
+		assert.Equal(t, projectID, capturedFindProjectID)
+		assert.Equal(t, appID, capturedFindAppID)
+		assert.Equal(t, projectID, capturedDeleteProjectID)
+		assert.Equal(t, appID, capturedDeleteAppID)
 		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
 		assert.Nil(t, cmd.outputs[0].err)
 		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
@@ -195,8 +198,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			description:    "should show indicate no users to delete",
-			outputs:        []userOutput{},
+			description:    "should show no users to delete",
 			expectedOutput: "01:23:45 UTC INFO  No users to delete\n",
 		},
 		{
@@ -276,7 +278,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 				"Name":    "name-1",
 				"Type":    "type-1",
 				"Deleted": true,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 		{
@@ -296,7 +298,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 				"Email":   "user-1@test.com",
 				"Type":    "type-1",
 				"Deleted": true,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 	} {

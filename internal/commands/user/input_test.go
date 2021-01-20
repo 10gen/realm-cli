@@ -5,11 +5,9 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
-	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/Netflix/go-expect"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -73,7 +71,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "with state set",
-				inputs:      usersInputs{State: userStateTypeDisabled},
+				inputs:      usersInputs{State: realm.UserStateDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-2")
@@ -85,7 +83,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "with status set",
-				inputs:      usersInputs{State: userStateTypeDisabled},
+				inputs:      usersInputs{State: realm.UserStateDisabled},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-3")
@@ -134,7 +132,6 @@ func TestResolveUsersInputs(t *testing.T) {
 			procedure   func(c *expect.Console)
 			expectedErr error
 			mockClient  func() realm.Client
-			mockUI      func(ui mock.UI) terminal.UI
 		}{
 			{
 				description: "from client",
@@ -147,28 +144,6 @@ func TestResolveUsersInputs(t *testing.T) {
 						return nil, errors.New("client error")
 					}
 					return realmClient
-				},
-				mockUI: func(ui mock.UI) terminal.UI {
-					return ui
-				},
-			},
-			{
-				description: "from ui",
-				inputs:      usersInputs{},
-				procedure:   func(c *expect.Console) {},
-				expectedErr: errors.New("ui error"),
-				mockClient: func() realm.Client {
-					realmClient := mock.RealmClient{}
-					realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-						return nil, nil
-					}
-					return realmClient
-				},
-				mockUI: func(ui mock.UI) terminal.UI {
-					ui.AskOneFn = func(answer interface{}, prompt survey.Prompt) error {
-						return errors.New("ui error")
-					}
-					return ui
 				},
 			},
 		} {
@@ -184,14 +159,12 @@ func TestResolveUsersInputs(t *testing.T) {
 					tc.procedure(console)
 				}()
 
-				mui := tc.mockUI(ui)
-
 				app := realm.App{
 					ID:      primitive.NewObjectID().Hex(),
 					GroupID: primitive.NewObjectID().Hex(),
 				}
 
-				_, err := tc.inputs.ResolveUsers(mui, tc.mockClient(), app)
+				_, err := tc.inputs.ResolveUsers(ui, tc.mockClient(), app)
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
