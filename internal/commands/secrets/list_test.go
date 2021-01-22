@@ -34,46 +34,33 @@ func TestSecretsListHandler(t *testing.T) {
 		Name:        "eggcorn",
 	}
 
-	t.Run("Should find app values and secrets", func(t *testing.T) {
-		testValues := []realm.Value{
+	t.Run("Should find app secrets", func(t *testing.T) {
+		testSecrets := []realm.Secret{
 			{
-				ID:           "user1",
-				Name:         "test1",
-				LastModified: 1111111111,
+				ID:   "secret1",
+				Name: "test1",
 			},
 			{
-				ID:           "user2",
-				Name:         "test2",
-				LastModified: 11111122,
-				Secret:       false,
+				ID:   "secret2",
+				Name: "test2",
 			},
 			{
-				ID:           "user3",
-				Name:         "duplicate",
-				LastModified: 11111122,
-				Secret:       false,
+				ID:   "secret3",
+				Name: "duplicate",
 			},
 			{
-				ID:           "user4",
-				Name:         "duplicate",
-				LastModified: 11111122,
-				Secret:       true,
+				ID:   "secret4",
+				Name: "duplicate",
 			},
 		}
-
-		var capturedAppFilter realm.AppFilter
-		var capturedProjectID, capturedAppID string
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			capturedAppFilter = filter
 			return []realm.App{testApp}, nil
 		}
 
-		realmClient.FindValuesFn = func(app realm.App) ([]realm.Value, error) {
-			capturedProjectID = app.GroupID
-			capturedAppID = app.ID
-			return testValues, nil
+		realmClient.FindSecretsFn = func(app realm.App) ([]realm.Secret, error) {
+			return testSecrets, nil
 		}
 
 		cmd := &CommandList{
@@ -87,10 +74,7 @@ func TestSecretsListHandler(t *testing.T) {
 		}
 
 		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedProjectID)
-		assert.Equal(t, appID, capturedAppID)
-		assert.Equal(t, testValues, cmd.values)
+		assert.Equal(t, testSecrets, cmd.secrets)
 	})
 
 	t.Run("Should return an error", func(t *testing.T) {
@@ -117,7 +101,7 @@ func TestSecretsListHandler(t *testing.T) {
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 						return []realm.App{testApp}, nil
 					}
-					realmClient.FindValuesFn = func(app realm.App) ([]realm.Value, error) {
+					realmClient.FindSecretsFn = func(app realm.App) ([]realm.Secret, error) {
 						return nil, errors.New("something bad happened")
 					}
 					return realmClient
@@ -142,49 +126,43 @@ func TestSecretsListHandler(t *testing.T) {
 func TestSecretsListFeedback(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
-		values         []realm.Value
+		secrets        []realm.Secret
 		expectedOutput string
 	}{
 		{
 			description:    "Should indicate no secrets found when none are found",
-			values:         []realm.Value{},
+			secrets:        []realm.Secret{},
 			expectedOutput: "01:23:45 UTC INFO  No available secrets to show\n",
 		},
 		{
 			description: "Should display all found secrets",
-			values: []realm.Value{
+			secrets: []realm.Secret{
 				{
-					ID:           "id1",
-					Name:         "test1",
-					LastModified: 1111111111,
-					Secret:       true,
+					ID:   "60066e14734d0b6c336ffc23",
+					Name: "test1",
 				},
 				{
-					ID:           "id2",
-					Name:         "test2",
-					LastModified: 1111333333,
+					ID:   "234566e14734d0b6c336ffc2",
+					Name: "test2",
 				},
 				{
-					ID:           "id3",
-					Name:         "dup",
-					LastModified: 1111222222,
-					Secret:       true,
+					ID:   "60066e14564d0b6c336ffc23",
+					Name: "dup",
 				},
 				{
-					ID:           "id4",
-					Name:         "dup",
-					LastModified: 1111111111,
+					ID:   "60066e14734d0b6c886ffc23",
+					Name: "dup",
 				},
 			},
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Found 4 secrets",
-					"  Name   ID   Is Secret  Last Modified                ",
-					"  -----  ---  ---------  -----------------------------",
-					"  test1  id1  true       2005-03-18 01:58:31 +0000 UTC",
-					"  test2  id2  false      2005-03-20 15:42:13 +0000 UTC",
-					"  dup    id3  true       2005-03-19 08:50:22 +0000 UTC",
-					"  dup    id4  false      2005-03-18 01:58:31 +0000 UTC",
+					"  ID                        Name ",
+					"  ------------------------  -----",
+					"  60066e14734d0b6c336ffc23  test1",
+					"  234566e14734d0b6c336ffc2  test2",
+					"  60066e14564d0b6c336ffc23  dup  ",
+					"  60066e14734d0b6c886ffc23  dup  ",
 					"",
 				},
 				"\n",
@@ -194,7 +172,7 @@ func TestSecretsListFeedback(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
 			cmd := &CommandList{
-				values: tc.values,
+				secrets: tc.secrets,
 			}
 			assert.Nil(t, cmd.Feedback(nil, ui))
 			assert.Equal(t, tc.expectedOutput, out.String())

@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
@@ -16,7 +15,7 @@ import (
 type CommandList struct {
 	inputs      listInputs
 	realmClient realm.Client
-	values      []realm.Value
+	secrets     []realm.Secret
 }
 
 type listInputs struct {
@@ -46,25 +45,25 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	values, findValuesErr := cmd.realmClient.FindValues(app)
-	if findValuesErr != nil {
-		return findValuesErr
+	secrets, FindSecretsErr := cmd.realmClient.FindSecrets(app)
+	if FindSecretsErr != nil {
+		return FindSecretsErr
 	}
-	cmd.values = values
+	cmd.secrets = secrets
 	return nil
 }
 
 // Feedback is the command feedback
 func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.values) == 0 {
+	if len(cmd.secrets) == 0 {
 		return ui.Print(terminal.NewTextLog("No available secrets to show"))
 	}
 
 	var logs []terminal.Log
 	logs = append(logs, terminal.NewTableLog(
-		fmt.Sprintf("Found %d secrets", len(cmd.values)),
+		fmt.Sprintf("Found %d secrets", len(cmd.secrets)),
 		secretTableHeaders(),
-		secretTableRows(cmd.values)...,
+		secretTableRows(cmd.secrets)...,
 	))
 	return ui.Print(logs...)
 }
@@ -73,34 +72,21 @@ func secretTableHeaders() []string {
 	var headers []string
 	headers = append(
 		headers,
-		headerName,
 		headerID,
-		headerSecret,
-		headerLastMofified,
+		headerName,
 	)
 	return headers
 }
 
-func secretTableRows(values []realm.Value) []map[string]interface{} {
-	secretTableRows := make([]map[string]interface{}, 0, len(values))
-	for _, value := range values {
-		secretTableRows = append(secretTableRows, secretTableRow(value))
+func secretTableRows(secrets []realm.Secret) []map[string]interface{} {
+	secretTableRows := make([]map[string]interface{}, 0, len(secrets))
+	for _, secret := range secrets {
+		secretTableRows = append(secretTableRows, map[string]interface{}{
+			headerName: secret.Name,
+			headerID:   secret.ID,
+		})
 	}
 	return secretTableRows
-}
-
-func secretTableRow(value realm.Value) map[string]interface{} {
-	timeString := "n/a"
-	if value.LastModified != 0 {
-		timeString = time.Unix(value.LastModified, 0).UTC().String()
-	}
-	row := map[string]interface{}{
-		headerName:         value.Name,
-		headerID:           value.ID,
-		headerLastMofified: timeString,
-		headerSecret:       value.Secret,
-	}
-	return row
 }
 
 func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {

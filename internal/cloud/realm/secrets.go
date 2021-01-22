@@ -9,21 +9,19 @@ import (
 )
 
 const (
-	valuesPathPattern = appPathPattern + "/values"
+	secretsPathPattern = appPathPattern + "/secrets"
 )
 
-// Value is a value or secret stored in a Realm application
-type Value struct {
-	ID           string `json:"_id"`
-	Name         string `json:"name"`
-	LastModified int64  `json:"last_modified"`
-	Secret       bool   `json:"from_secret"`
+// Secret is a secret stored in a Realm application
+type Secret struct {
+	ID   string `json:"_id"`
+	Name string `json:"name"`
 }
 
-func (c *client) FindValues(app App) ([]Value, error) {
+func (c *client) FindSecrets(app App) ([]Secret, error) {
 	res, resErr := c.do(
 		http.MethodGet,
-		fmt.Sprintf(valuesPathPattern, app.GroupID, app.ID),
+		fmt.Sprintf(secretsPathPattern, app.GroupID, app.ID),
 		api.RequestOptions{},
 	)
 	if resErr != nil {
@@ -34,9 +32,9 @@ func (c *client) FindValues(app App) ([]Value, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, parseResponseError(res)
 	}
-	var values []Value
-	if err := json.NewDecoder(res.Body).Decode(&values); err != nil {
+	var secrets []Secret
+	if err := json.NewDecoder(res.Body).Decode(&secrets); err != nil {
 		return nil, err
 	}
-	return values, nil
+	return secrets, nil
 }
