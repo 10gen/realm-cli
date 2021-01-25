@@ -36,7 +36,7 @@ func TestUserDeleteHandler(t *testing.T) {
 	testUsers := []realm.User{
 		{
 			ID:         "user-1",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAnonymous}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
 			Disabled:   false,
 		},
 	}
@@ -47,12 +47,10 @@ func TestUserDeleteHandler(t *testing.T) {
 		expectedOutputs []userOutput
 	}{
 		{
-			description:   "should delete a user when a user id is provided",
-			userDeleteErr: nil,
+			description: "should delete a user when a user id is provided",
 			expectedOutputs: []userOutput{
 				{
 					user: testUsers[0],
-					err:  nil,
 				},
 			},
 		},
@@ -164,31 +162,31 @@ func TestUserDeleteFeedback(t *testing.T) {
 	testUsers := []realm.User{
 		{
 			ID:         "user-1",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 			Type:       "type-1",
 			Data:       map[string]interface{}{"email": "user-1@test.com"},
 		},
 		{
 			ID:         "user-2",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 			Type:       "type-2",
 			Data:       map[string]interface{}{"email": "user-2@test.com"},
 		},
 		{
 			ID:         "user-3",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 			Type:       "type-1",
 			Data:       map[string]interface{}{"email": "user-3@test.com"},
 		},
 		{
 			ID:         "user-4",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 			Type:       "type-1",
 			Data:       map[string]interface{}{"name": "name-4"},
 		},
 		{
 			ID:         "user-5",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeCustomToken}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeCustomToken}},
 			Type:       "type-3",
 		},
 	}
@@ -264,17 +262,17 @@ func TestUserDeleteFeedback(t *testing.T) {
 func TestUserDeleteTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
-		providerType    realm.ProviderType
+		providerType    realm.AuthProviderType
 		expectedHeaders []string
 	}{
 		{
 			description:     "should show name for apikey",
-			providerType:    realm.ProviderTypeAPIKey,
+			providerType:    realm.AuthProviderTypeAPIKey,
 			expectedHeaders: []string{"Name", "ID", "Type", "Deleted", "Details"},
 		},
 		{
 			description:     "should show email for local-userpass",
-			providerType:    realm.ProviderTypeUserPassord,
+			providerType:    realm.AuthProviderTypeUserPassword,
 			expectedHeaders: []string{"Email", "ID", "Type", "Deleted", "Details"},
 		},
 	} {
@@ -287,17 +285,17 @@ func TestUserDeleteTableHeaders(t *testing.T) {
 func TestUserDeleteTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description  string
-		providerType realm.ProviderType
+		providerType realm.AuthProviderType
 		output       userOutput
 		expectedRow  map[string]interface{}
 	}{
 		{
 			description:  "should show name for apikey type user",
-			providerType: realm.ProviderTypeAPIKey,
+			providerType: realm.AuthProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 					Type:       "type-1",
 					Data:       map[string]interface{}{"name": "name-1"},
 				},
@@ -313,11 +311,11 @@ func TestUserDeleteTableRow(t *testing.T) {
 		},
 		{
 			description:  "should show email for local-userpass type user",
-			providerType: realm.ProviderTypeUserPassord,
+			providerType: realm.AuthProviderTypeUserPassword,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:       "type-1",
 					Data:       map[string]interface{}{"email": "user-1@test.com"},
 				},

@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -15,18 +16,18 @@ func TestResolveUsersInputs(t *testing.T) {
 	testUsers := []realm.User{
 		{
 			ID:         "user-1",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAnonymous}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
 			Disabled:   false,
 		},
 		{
 			ID:         "user-2",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 			Disabled:   true,
 			Data:       map[string]interface{}{"email": "user-2@test.com"},
 		},
 		{
 			ID:         "user-3",
-			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 			Disabled:   true,
 			Data:       map[string]interface{}{"email": "user-3@test.com"},
 		},
@@ -53,7 +54,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			},
 			{
 				description: "with providers set",
-				inputs:      usersInputs{ProviderTypes: []string{realm.ProviderTypeUserPassord.String()}},
+				inputs:      usersInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-2")
@@ -141,4 +142,93 @@ func TestResolveUsersInputs(t *testing.T) {
 
 		assert.Equal(t, errors.New("client error"), err)
 	})
+}
+
+func TestProviderTypeDisplayUser(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
+			Data:       map[string]interface{}{"name": "name-3"},
+		},
+		{
+			ID:         "user-4",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeApple}},
+		},
+		{
+			ID:         "user-5",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeGoogle}},
+		},
+		{
+			ID:         "user-6",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeFacebook}},
+		},
+		{
+			ID:         "user-7",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeCustomToken}},
+		},
+		{
+			ID:         "user-8",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeCustomFunction}},
+		},
+	}
+	for _, tc := range []struct {
+		pt             realm.AuthProviderType
+		user           realm.User
+		expectedOutput string
+	}{
+		{
+			pt:             realm.AuthProviderTypeAnonymous,
+			user:           testUsers[0],
+			expectedOutput: "Anonymous - user-1",
+		},
+		{
+			pt:             realm.AuthProviderTypeUserPassword,
+			user:           testUsers[1],
+			expectedOutput: "User/Password - user-2@test.com - user-2",
+		},
+		{
+			pt:             realm.AuthProviderTypeAPIKey,
+			user:           testUsers[2],
+			expectedOutput: "ApiKey - name-3 - user-3",
+		},
+		{
+			pt:             realm.AuthProviderTypeApple,
+			user:           testUsers[3],
+			expectedOutput: "Apple - user-4",
+		},
+		{
+			pt:             realm.AuthProviderTypeGoogle,
+			user:           testUsers[4],
+			expectedOutput: "Google - user-5",
+		},
+		{
+			pt:             realm.AuthProviderTypeFacebook,
+			user:           testUsers[5],
+			expectedOutput: "Facebook - user-6",
+		},
+		{
+			pt:             realm.AuthProviderTypeCustomToken,
+			user:           testUsers[6],
+			expectedOutput: "Custom JWT - user-7",
+		},
+		{
+			pt:             realm.AuthProviderTypeCustomFunction,
+			user:           testUsers[7],
+			expectedOutput: "Custom Function - user-8",
+		},
+	} {
+		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
+			assert.Equal(t, displayUser(tc.pt, tc.user), tc.expectedOutput)
+		})
+	}
 }

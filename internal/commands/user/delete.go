@@ -79,7 +79,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
-	var outputsByProviderType = map[realm.ProviderType][]userOutput{}
+	var outputsByProviderType = map[realm.AuthProviderType][]userOutput{}
 	for _, output := range cmd.outputs {
 		for _, identity := range output.user.Identities {
 			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
@@ -87,7 +87,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	}
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, pt := range realm.ValidProviderTypes {
-		providerType := realm.ProviderType(pt)
+		providerType := realm.AuthProviderType(pt)
 		outputs := outputsByProviderType[providerType]
 		if len(outputs) == 0 {
 			continue
@@ -102,12 +102,12 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(logs...)
 }
 
-func userDeleteTableHeaders(providerType realm.ProviderType) []string {
+func userDeleteTableHeaders(providerType realm.AuthProviderType) []string {
 	var headers []string
 	switch providerType {
-	case realm.ProviderTypeAPIKey:
+	case realm.AuthProviderTypeAPIKey:
 		headers = append(headers, headerName)
-	case realm.ProviderTypeUserPassord:
+	case realm.AuthProviderTypeUserPassword:
 		headers = append(headers, headerEmail)
 	}
 	headers = append(
@@ -120,15 +120,15 @@ func userDeleteTableHeaders(providerType realm.ProviderType) []string {
 	return headers
 }
 
-func userDeleteTableRows(providerType realm.ProviderType, outputs []userOutput) []map[string]interface{} {
-	userDeleteTableRows := make([]map[string]interface{}, 0, len(outputs))
+func userDeleteTableRows(providerType realm.AuthProviderType, outputs []userOutput) []map[string]interface{} {
+	rows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
-		userDeleteTableRows = append(userDeleteTableRows, userDeleteTableRow(providerType, output))
+		rows = append(rows, userDeleteTableRow(providerType, output))
 	}
-	return userDeleteTableRows
+	return rows
 }
 
-func userDeleteTableRow(providerType realm.ProviderType, output userOutput) map[string]interface{} {
+func userDeleteTableRow(providerType realm.AuthProviderType, output userOutput) map[string]interface{} {
 	var details string
 	if output.err != nil {
 		details = output.err.Error()
@@ -140,9 +140,9 @@ func userDeleteTableRow(providerType realm.ProviderType, output userOutput) map[
 		headerDetails: details,
 	}
 	switch providerType {
-	case realm.ProviderTypeAPIKey:
+	case realm.AuthProviderTypeAPIKey:
 		row[headerName] = output.user.Data[userDataName]
-	case realm.ProviderTypeUserPassord:
+	case realm.AuthProviderTypeUserPassword:
 		row[headerEmail] = output.user.Data[userDataEmail]
 	}
 	return row

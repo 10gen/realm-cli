@@ -118,17 +118,17 @@ func TestUserListHandler(t *testing.T) {
 func TestUserTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
-		providerType    realm.ProviderType
+		providerType    realm.AuthProviderType
 		expectedHeaders []string
 	}{
 		{
 			description:     "Should show name for apikey",
-			providerType:    realm.ProviderTypeAPIKey,
+			providerType:    realm.AuthProviderTypeAPIKey,
 			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 		{
 			description:     "Should show email for local-userpass",
-			providerType:    realm.ProviderTypeUserPassord,
+			providerType:    realm.AuthProviderTypeUserPassword,
 			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 	} {
@@ -141,16 +141,16 @@ func TestUserTableHeaders(t *testing.T) {
 func TestUserTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description  string
-		providerType realm.ProviderType
+		providerType realm.AuthProviderType
 		user         realm.User
 		expectedRow  map[string]interface{}
 	}{
 		{
 			description:  "Should show name for apikey type user",
-			providerType: realm.ProviderTypeAPIKey,
+			providerType: realm.AuthProviderTypeAPIKey,
 			user: realm.User{
 				ID:                     "id1",
-				Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 				Type:                   "type1",
 				Disabled:               false,
 				Data:                   map[string]interface{}{"name": "myName"},
@@ -167,10 +167,10 @@ func TestUserTableRow(t *testing.T) {
 		},
 		{
 			description:  "Should show email for local-userpass type user",
-			providerType: realm.ProviderTypeUserPassord,
+			providerType: realm.AuthProviderTypeUserPassword,
 			user: realm.User{
 				ID:                     "id1",
-				Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 				Type:                   "type1",
 				Disabled:               false,
 				Data:                   map[string]interface{}{"email": "myEmail"},
@@ -208,7 +208,7 @@ func TestUserListFeedback(t *testing.T) {
 			users: []realm.User{
 				{
 					ID:                     "id1",
-					Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail1"},
@@ -217,7 +217,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id2",
-					Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type2",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail2"},
@@ -226,7 +226,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id3",
-					Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail3"},
@@ -235,7 +235,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id4",
-					Identities:             []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"name": "myName"},

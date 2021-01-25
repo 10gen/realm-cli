@@ -86,7 +86,7 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
 
-	usersByProviderType := map[realm.ProviderType][]realm.User{}
+	usersByProviderType := map[realm.AuthProviderType][]realm.User{}
 	for _, user := range cmd.users {
 		for _, identity := range user.Identities {
 			usersByProviderType[identity.ProviderType] = append(usersByProviderType[identity.ProviderType], user)
@@ -95,7 +95,7 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 
 	var logs []terminal.Log
 	for _, pt := range realm.ValidProviderTypes {
-		providerType := realm.ProviderType(pt)
+		providerType := realm.AuthProviderType(pt)
 		users := usersByProviderType[providerType]
 		if len(users) == 0 {
 			continue
@@ -117,12 +117,12 @@ func getUserComparerByLastAuthentication(users []realm.User) func(i, j int) bool
 	}
 }
 
-func userTableHeaders(providerType realm.ProviderType) []string {
+func userTableHeaders(providerType realm.AuthProviderType) []string {
 	var headers []string
 	switch providerType {
-	case realm.ProviderTypeAPIKey:
+	case realm.AuthProviderTypeAPIKey:
 		headers = append(headers, headerName)
-	case realm.ProviderTypeUserPassord:
+	case realm.AuthProviderTypeUserPassword:
 		headers = append(headers, headerEmail)
 	}
 	headers = append(
@@ -135,7 +135,7 @@ func userTableHeaders(providerType realm.ProviderType) []string {
 	return headers
 }
 
-func userTableRows(providerType realm.ProviderType, users []realm.User) []map[string]interface{} {
+func userTableRows(providerType realm.AuthProviderType, users []realm.User) []map[string]interface{} {
 	userTableRows := make([]map[string]interface{}, 0, len(users))
 	for _, user := range users {
 		userTableRows = append(userTableRows, userTableRow(providerType, user))
@@ -143,7 +143,7 @@ func userTableRows(providerType realm.ProviderType, users []realm.User) []map[st
 	return userTableRows
 }
 
-func userTableRow(providerType realm.ProviderType, user realm.User) map[string]interface{} {
+func userTableRow(providerType realm.AuthProviderType, user realm.User) map[string]interface{} {
 	timeString := "n/a"
 	if user.LastAuthenticationDate != 0 {
 		timeString = time.Unix(user.LastAuthenticationDate, 0).UTC().String()
@@ -155,9 +155,9 @@ func userTableRow(providerType realm.ProviderType, user realm.User) map[string]i
 		headerLastAuthenticationDate: timeString,
 	}
 	switch providerType {
-	case realm.ProviderTypeAPIKey:
+	case realm.AuthProviderTypeAPIKey:
 		row[headerName] = user.Data[userDataName]
-	case realm.ProviderTypeUserPassord:
+	case realm.AuthProviderTypeUserPassword:
 		row[headerEmail] = user.Data[userDataEmail]
 	}
 	return row

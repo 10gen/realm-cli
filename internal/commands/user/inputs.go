@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -13,6 +14,36 @@ const (
 	userDataEmail = "email"
 	userDataName  = "name"
 )
+
+func displayUser(pt realm.AuthProviderType, user realm.User) string {
+	sep := " - "
+	display := pt.Display()
+	displayUserData, err := displayUserData(pt, user)
+	if err != nil {
+		return ""
+	}
+	if displayUserData != "" {
+		display += sep + displayUserData
+	}
+	return display + sep + user.ID
+}
+
+func displayUserData(pt realm.AuthProviderType, user realm.User) (string, error) {
+	var val interface{}
+	ok := false
+	switch pt {
+	case realm.AuthProviderTypeUserPassword:
+		val, ok = user.Data["email"]
+	case realm.AuthProviderTypeAPIKey:
+		val, ok = user.Data["name"]
+	default:
+		return "", nil
+	}
+	if ok {
+		return fmt.Sprint(val), nil
+	}
+	return "", errors.New("User does not have ProviderType Data")
+}
 
 // usersInputs are the filtering inputs for a user command
 type usersInputs struct {
@@ -36,7 +67,7 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	}
 	if len(i.Users) > 0 {
 		if len(foundUsers) == 0 {
-			return nil, errors.New("No users found")
+			return nil, errors.New("no users found")
 		}
 		return foundUsers, nil
 	}
@@ -44,13 +75,11 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	selectableUsers := map[string]realm.User{}
 	selectableUserOptions := make([]string, len(foundUsers))
 	for idx, user := range foundUsers {
-		var pt realm.ProviderType
-		if len(user.Identities) == 0 {
-			pt = ""
-		} else {
+		var pt realm.AuthProviderType
+		if len(user.Identities) > 0 {
 			pt = user.Identities[0].ProviderType
 		}
-		opt := pt.DisplayUser(user)
+		opt := displayUser(pt, user)
 		selectableUserOptions[idx] = opt
 		selectableUsers[opt] = user
 	}

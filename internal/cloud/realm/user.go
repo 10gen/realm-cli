@@ -25,7 +25,7 @@ const (
 	usersQueryProviderTypes = "provider_types"
 )
 
-// UserState is a Realm application user state
+// UserState is a Realm app user state
 type UserState string
 
 // String returns the user state string
@@ -71,7 +71,7 @@ func isValidUserState(us UserState) bool {
 	return false
 }
 
-// APIKey is a Realm application api key
+// APIKey is a Realm app api key
 type APIKey struct {
 	ID       string `json:"_id"`
 	Name     string `json:"name"`
@@ -79,7 +79,7 @@ type APIKey struct {
 	Key      string `json:"key"`
 }
 
-// User is a Realm application user
+// User is a Realm app user
 type User struct {
 	ID                     string                 `json:"_id"`
 	Identities             []UserIdentity         `json:"identities,omitempty"`
@@ -90,65 +90,65 @@ type User struct {
 	LastAuthenticationDate int64                  `json:"last_authentication_date"`
 }
 
-// UserIdentity is a Realm application user identity
+// UserIdentity is a Realm app user identity
 type UserIdentity struct {
 	UID          string                 `json:"id"`
-	ProviderType ProviderType           `json:"provider_type"`
+	ProviderType AuthProviderType       `json:"provider_type"`
 	ProviderID   primitive.ObjectID     `json:"provider_id"`
 	ProviderData map[string]interface{} `json:"provider_data,omitempty"`
 }
 
-// ProviderType is a Realm application provider type
-type ProviderType string
+// AuthProviderType is a Realm app provider type
+type AuthProviderType string
 
 // set of supported provider type values
 const (
-	ProviderTypeEmpty          ProviderType = ""
-	ProviderTypeUserPassord    ProviderType = "local-userpass"
-	ProviderTypeAPIKey         ProviderType = "api-key"
-	ProviderTypeFacebook       ProviderType = "oauth2-facebook"
-	ProviderTypeGoogle         ProviderType = "oauth2-google"
-	ProviderTypeAnonymous      ProviderType = "anon-user"
-	ProviderTypeCustomToken    ProviderType = "custom-token"
-	ProviderTypeApple          ProviderType = "oauth2-apple"
-	ProviderTypeCustomFunction ProviderType = "custom-function"
+	AuthProviderTypeEmpty          AuthProviderType = ""
+	AuthProviderTypeUserPassword   AuthProviderType = "local-userpass"
+	AuthProviderTypeAPIKey         AuthProviderType = "api-key"
+	AuthProviderTypeFacebook       AuthProviderType = "oauth2-facebook"
+	AuthProviderTypeGoogle         AuthProviderType = "oauth2-google"
+	AuthProviderTypeAnonymous      AuthProviderType = "anon-user"
+	AuthProviderTypeCustomToken    AuthProviderType = "custom-token"
+	AuthProviderTypeApple          AuthProviderType = "oauth2-apple"
+	AuthProviderTypeCustomFunction AuthProviderType = "custom-function"
 )
 
-// slice of supported provider type values as string slice
+// set of supported auth constants
 var (
 	ValidProviderTypes = []string{
-		ProviderTypeUserPassord.String(),
-		ProviderTypeAPIKey.String(),
-		ProviderTypeFacebook.String(),
-		ProviderTypeGoogle.String(),
-		ProviderTypeAnonymous.String(),
-		ProviderTypeCustomToken.String(),
-		ProviderTypeApple.String(),
-		ProviderTypeCustomFunction.String(),
+		AuthProviderTypeUserPassword.String(),
+		AuthProviderTypeAPIKey.String(),
+		AuthProviderTypeFacebook.String(),
+		AuthProviderTypeGoogle.String(),
+		AuthProviderTypeAnonymous.String(),
+		AuthProviderTypeCustomToken.String(),
+		AuthProviderTypeApple.String(),
+		AuthProviderTypeCustomFunction.String(),
 	}
 )
 
 // String returns the provider type string
-func (pt ProviderType) String() string { return string(pt) }
+func (pt AuthProviderType) String() string { return string(pt) }
 
 // Display returns the provider type display string
-func (pt ProviderType) Display() string {
+func (pt AuthProviderType) Display() string {
 	switch pt {
-	case ProviderTypeAnonymous:
+	case AuthProviderTypeAnonymous:
 		return "Anonymous"
-	case ProviderTypeUserPassord:
+	case AuthProviderTypeUserPassword:
 		return "User/Password"
-	case ProviderTypeAPIKey:
+	case AuthProviderTypeAPIKey:
 		return "ApiKey"
-	case ProviderTypeApple:
+	case AuthProviderTypeApple:
 		return "Apple"
-	case ProviderTypeGoogle:
+	case AuthProviderTypeGoogle:
 		return "Google"
-	case ProviderTypeFacebook:
+	case AuthProviderTypeFacebook:
 		return "Facebook"
-	case ProviderTypeCustomToken:
+	case AuthProviderTypeCustomToken:
 		return "Custom JWT"
-	case ProviderTypeCustomFunction:
+	case AuthProviderTypeCustomFunction:
 		return "Custom Function"
 	default:
 		return "Unknown"
@@ -156,64 +156,33 @@ func (pt ProviderType) Display() string {
 }
 
 // IsValid validates the provided provider type
-func (pt ProviderType) IsValid() error {
+func (pt AuthProviderType) IsValid() error {
 	switch pt {
-	case ProviderTypeAnonymous,
-		ProviderTypeUserPassord,
-		ProviderTypeAPIKey,
-		ProviderTypeApple,
-		ProviderTypeGoogle,
-		ProviderTypeFacebook,
-		ProviderTypeCustomToken,
-		ProviderTypeCustomFunction:
+	case AuthProviderTypeAnonymous,
+		AuthProviderTypeUserPassword,
+		AuthProviderTypeAPIKey,
+		AuthProviderTypeApple,
+		AuthProviderTypeGoogle,
+		AuthProviderTypeFacebook,
+		AuthProviderTypeCustomToken,
+		AuthProviderTypeCustomFunction:
 		return nil
 	default:
 		return errors.New("Invalid ProviderType")
 	}
 }
 
-// DisplayUser returns the display string for a user and provider type
-func (pt ProviderType) DisplayUser(user User) string {
-	sep := " - "
-	display := pt.Display()
-	displayUserData, err := pt.displayUserData(user)
-	if err != nil {
-		return ""
-	}
-	if displayUserData != "" {
-		display += sep + displayUserData
-	}
-	return display + sep + user.ID
-}
-
-func (pt ProviderType) displayUserData(user User) (string, error) {
-	var val interface{}
-	ok := false
-	switch pt {
-	case ProviderTypeUserPassord:
-		val, ok = user.Data["email"]
-	case ProviderTypeAPIKey:
-		val, ok = user.Data["name"]
-	default:
-		return "", nil
-	}
-	if ok {
-		return fmt.Sprint(val), nil
-	}
-	return "", errors.New("User does not have ProviderType Data")
-}
-
 // StringSliceToProviderTypes returns a provider type slice from provided strings
-func StringSliceToProviderTypes(pts ...string) []ProviderType {
-	providerTypes := make([]ProviderType, len(pts))
+func StringSliceToProviderTypes(pts ...string) []AuthProviderType {
+	providerTypes := make([]AuthProviderType, len(pts))
 	for i, pt := range pts {
-		providerTypes[i] = ProviderType(pt)
+		providerTypes[i] = AuthProviderType(pt)
 	}
 	return providerTypes
 }
 
 // JoinProviderTypes returns a string of provided provider types with the provided separator
-func JoinProviderTypes(sep string, providerTypes ...ProviderType) string {
+func JoinProviderTypes(sep string, providerTypes ...AuthProviderType) string {
 	if len(providerTypes) == 0 {
 		return ""
 	}
@@ -315,7 +284,7 @@ func (c *client) DisableUser(groupID, appID, userID string) error {
 type UserFilter struct {
 	IDs       []string
 	Pending   bool
-	Providers []ProviderType
+	Providers []AuthProviderType
 	State     UserState
 }
 
@@ -404,7 +373,7 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 	return user, nil
 }
 
-func (c *client) getUsers(groupID, appID string, userState UserState, providerTypes []ProviderType) ([]User, error) {
+func (c *client) getUsers(groupID, appID string, userState UserState, providerTypes []AuthProviderType) ([]User, error) {
 	options := api.RequestOptions{Query: make(map[string]string)}
 	if userState != UserStateNil {
 		options.Query[usersQueryStatus] = string(userState)
@@ -429,7 +398,7 @@ func (c *client) getUsers(groupID, appID string, userState UserState, providerTy
 	return users, nil
 }
 
-func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userState UserState, providerTypes []ProviderType) ([]User, error) {
+func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userState UserState, providerTypes []AuthProviderType) ([]User, error) {
 	users := make([]User, 0, len(userIDs))
 	for _, userID := range userIDs {
 		user, err := c.getUser(groupID, appID, userID)
@@ -446,7 +415,7 @@ func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userStat
 		return users, nil
 	}
 
-	providers := make(map[ProviderType]struct{}, len(providerTypes))
+	providers := make(map[AuthProviderType]struct{}, len(providerTypes))
 	for _, provider := range providerTypes {
 		providers[provider] = struct{}{}
 	}
