@@ -23,6 +23,6 @@ type userOutput struct {
 
 func getUserOutputComparerBySuccess(outputs []userOutput) func(i, j int) bool {
 	return func(i, j int) bool {
-		return !(outputs[i].err != nil && outputs[i].err == nil)
+		return outputs[i].err != nil && outputs[j].err == nil
 	}
 }

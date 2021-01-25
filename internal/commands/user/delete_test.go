@@ -35,104 +35,84 @@ func TestUserDeleteHandler(t *testing.T) {
 	}
 	testUsers := []realm.User{
 		{
-			ID: "user-1",
-			Identities: []realm.UserIdentity{
-				{ProviderType: providerTypeAnonymous},
-			},
-			Disabled: false,
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAnonymous}},
+			Disabled:   false,
 		},
 	}
 
-	t.Run("should delete a user when a user id is provided", func(t *testing.T) {
-		var capturedAppFilter realm.AppFilter
-		var capturedFindProjectID, capturedFindAppID string
-		var capturedDeleteProjectID, capturedDeleteAppID string
-
-		realmClient := mock.RealmClient{}
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			capturedAppFilter = filter
-			return []realm.App{testApp}, nil
-		}
-
-		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			capturedFindProjectID = groupID
-			capturedFindAppID = appID
-			return testUsers, nil
-		}
-
-		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
-			capturedDeleteProjectID = groupID
-			capturedDeleteAppID = appID
-			return nil
-		}
-
-		cmd := &CommandDelete{
-			inputs: deleteInputs{
-				ProjectInputs: app.ProjectInputs{
-					Project: projectID,
-					App:     appID,
-				},
-				usersInputs: usersInputs{
-					Users: []string{testUsers[0].ID},
+	for _, tc := range []struct {
+		description     string
+		userDeleteErr   error
+		expectedOutputs []userOutput
+	}{
+		{
+			description:   "should delete a user when a user id is provided",
+			userDeleteErr: nil,
+			expectedOutputs: []userOutput{
+				{
+					user: testUsers[0],
+					err:  nil,
 				},
 			},
-			realmClient: realmClient,
-		}
-
-		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedFindProjectID)
-		assert.Equal(t, appID, capturedFindAppID)
-		assert.Equal(t, projectID, capturedDeleteProjectID)
-		assert.Equal(t, appID, capturedDeleteAppID)
-		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Nil(t, cmd.outputs[0].err)
-		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
-	})
-
-	t.Run("should save failed deletion errors", func(t *testing.T) {
-		var capturedAppFilter realm.AppFilter
-		var capturedProjectID, capturedAppID string
-
-		realmClient := mock.RealmClient{}
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			capturedAppFilter = filter
-			return []realm.App{testApp}, nil
-		}
-
-		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			capturedProjectID = groupID
-			capturedAppID = appID
-			return testUsers, nil
-		}
-
-		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
-			capturedProjectID = groupID
-			capturedAppID = appID
-			return errors.New("client error")
-		}
-
-		cmd := &CommandDelete{
-			inputs: deleteInputs{
-				ProjectInputs: app.ProjectInputs{
-					Project: projectID,
-					App:     appID,
-				},
-				usersInputs: usersInputs{
-					Users: []string{testUsers[0].ID},
+		},
+		{
+			description:   "should save failed deletion errors",
+			userDeleteErr: errors.New("client error"),
+			expectedOutputs: []userOutput{
+				{
+					user: testUsers[0],
+					err:  errors.New("client error"),
 				},
 			},
-			realmClient: realmClient,
-		}
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			var capturedAppFilter realm.AppFilter
+			var capturedFindProjectID, capturedFindAppID string
+			var capturedDeleteProjectID, capturedDeleteAppID string
 
-		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedProjectID)
-		assert.Equal(t, appID, capturedAppID)
-		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Equal(t, cmd.outputs[0].err, errors.New("client error"))
-		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
-	})
+			realmClient := mock.RealmClient{}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				capturedAppFilter = filter
+				return []realm.App{testApp}, nil
+			}
+
+			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+				capturedFindProjectID = groupID
+				capturedFindAppID = appID
+				return testUsers, nil
+			}
+
+			realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
+				capturedDeleteProjectID = groupID
+				capturedDeleteAppID = appID
+				return tc.userDeleteErr
+			}
+
+			cmd := &CommandDelete{
+				inputs: deleteInputs{
+					ProjectInputs: app.ProjectInputs{
+						Project: projectID,
+						App:     appID,
+					},
+					usersInputs: usersInputs{
+						Users: []string{testUsers[0].ID},
+					},
+				},
+				realmClient: realmClient,
+			}
+
+			assert.Nil(t, cmd.Handler(nil, nil))
+			assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
+			assert.Equal(t, projectID, capturedFindProjectID)
+			assert.Equal(t, appID, capturedFindAppID)
+			assert.Equal(t, projectID, capturedDeleteProjectID)
+			assert.Equal(t, appID, capturedDeleteAppID)
+			assert.Equal(t, cmd.outputs[0].err, tc.expectedOutputs[0].err)
+			assert.Equal(t, cmd.outputs[0].user, tc.expectedOutputs[0].user)
+		})
+	}
 
 	t.Run("should return an error", func(t *testing.T) {
 		for _, tc := range []struct {
@@ -183,13 +163,33 @@ func TestUserDeleteHandler(t *testing.T) {
 func TestUserDeleteFeedback(t *testing.T) {
 	testUsers := []realm.User{
 		{
-			ID: "user-1",
-			Identities: []realm.UserIdentity{
-				{ProviderType: providerTypeLocalUserPass},
-			},
-			Data:     map[string]interface{}{"email": "user-1@test.com"},
-			Disabled: false,
-			Type:     "type-1",
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Type:       "type-1",
+			Data:       map[string]interface{}{"email": "user-1@test.com"},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Type:       "type-2",
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Type:       "type-1",
+			Data:       map[string]interface{}{"email": "user-3@test.com"},
+		},
+		{
+			ID:         "user-4",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+			Type:       "type-1",
+			Data:       map[string]interface{}{"name": "name-4"},
+		},
+		{
+			ID:         "user-5",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeCustomToken}},
+			Type:       "type-3",
 		},
 	}
 	for _, tc := range []struct {
@@ -208,10 +208,40 @@ func TestUserDeleteFeedback(t *testing.T) {
 			},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Provider type: local-userpass",
+					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Deleted  Details     ",
 					"  ---------------  ------  ------  -------  ------------",
 					"  user-1@test.com  user-1  type-1  false    client error",
+					"",
+				},
+				"\n",
+			),
+		},
+		{
+			description: "should show 2 failed users",
+			outputs: []userOutput{
+				{user: testUsers[0], err: nil},
+				{user: testUsers[1], err: errors.New("client error")},
+				{user: testUsers[2], err: nil},
+				{user: testUsers[3], err: errors.New("client error")},
+				{user: testUsers[4], err: nil},
+			},
+			expectedOutput: strings.Join(
+				[]string{
+					"01:23:45 UTC INFO  Provider type: User/Password",
+					"  Email            ID      Type    Deleted  Details     ",
+					"  ---------------  ------  ------  -------  ------------",
+					"  user-2@test.com  user-2  type-2  false    client error",
+					"  user-1@test.com  user-1  type-1  true                 ",
+					"  user-3@test.com  user-3  type-1  true                 ",
+					"01:23:45 UTC INFO  Provider type: ApiKey",
+					"  Name    ID      Type    Deleted  Details     ",
+					"  ------  ------  ------  -------  ------------",
+					"  name-4  user-4  type-1  false    client error",
+					"01:23:45 UTC INFO  Provider type: Custom JWT",
+					"  ID      Type    Deleted  Details",
+					"  ------  ------  -------  -------",
+					"  user-5  type-3  true            ",
 					"",
 				},
 				"\n",
@@ -234,17 +264,17 @@ func TestUserDeleteFeedback(t *testing.T) {
 func TestUserDeleteTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
-		providerType    string
+		providerType    realm.ProviderType
 		expectedHeaders []string
 	}{
 		{
 			description:     "should show name for apikey",
-			providerType:    providerTypeAPIKey,
+			providerType:    realm.ProviderTypeAPIKey,
 			expectedHeaders: []string{"Name", "ID", "Type", "Deleted", "Details"},
 		},
 		{
 			description:     "should show email for local-userpass",
-			providerType:    providerTypeLocalUserPass,
+			providerType:    realm.ProviderTypeUserPassord,
 			expectedHeaders: []string{"Email", "ID", "Type", "Deleted", "Details"},
 		},
 	} {
@@ -257,17 +287,17 @@ func TestUserDeleteTableHeaders(t *testing.T) {
 func TestUserDeleteTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description  string
-		providerType string
+		providerType realm.ProviderType
 		output       userOutput
 		expectedRow  map[string]interface{}
 	}{
 		{
 			description:  "should show name for apikey type user",
-			providerType: "api-key",
+			providerType: realm.ProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: providerTypeAPIKey}},
+					Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
 					Type:       "type-1",
 					Data:       map[string]interface{}{"name": "name-1"},
 				},
@@ -283,11 +313,11 @@ func TestUserDeleteTableRow(t *testing.T) {
 		},
 		{
 			description:  "should show email for local-userpass type user",
-			providerType: "local-userpass",
+			providerType: realm.ProviderTypeUserPassord,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: providerTypeLocalUserPass}},
+					Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
 					Type:       "type-1",
 					Data:       map[string]interface{}{"email": "user-1@test.com"},
 				},

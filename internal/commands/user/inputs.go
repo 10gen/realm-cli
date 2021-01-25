@@ -2,7 +2,6 @@ package user
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -19,102 +18,56 @@ const (
 type usersInputs struct {
 	State         realm.UserState
 	ProviderTypes []string
-	Status        statusType
+	Pending       bool
 	Users         []string
 }
 
 // ResolveUsers will use the provided Realm client to resolve the users specified by the realm.App through inputs
 func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
+	filter := realm.UserFilter{
+		IDs:       i.Users,
+		State:     i.State,
+		Pending:   i.Pending,
+		Providers: realm.StringSliceToProviderTypes(i.ProviderTypes...),
+	}
+	foundUsers, usersErr := client.FindUsers(app.GroupID, app.ID, filter)
+	if usersErr != nil {
+		return nil, usersErr
+	}
 	if len(i.Users) > 0 {
-		filter := realm.UserFilter{IDs: i.Users}
-		foundUsers, err := client.FindUsers(app.GroupID, app.ID, filter)
-		if len(foundUsers) == 0 || err != nil {
-			return nil, err
-		}
 		if len(foundUsers) == 0 {
-			return nil, errors.New("No users found from provided IDs")
+			return nil, errors.New("No users found")
 		}
 		return foundUsers, nil
 	}
 
-	userFilter := realm.UserFilter{}
-	if len(i.ProviderTypes) > 0 {
-		userFilter.Providers = i.ProviderTypes
-	}
-	if i.State != realm.UserStateNil {
-		userFilter.State = i.State
-	}
-	selectableUsersSet := map[string]realm.User{}
-	if i.Status == statusTypeConfirmed || i.Status == statusTypeEmpty {
-		foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
-		if err != nil {
-			return nil, err
-		}
-		for _, user := range foundUsers {
-			selectableUsersSet[user.ID] = user
-		}
-	}
-	if i.Status == statusTypePending || i.Status == statusTypeEmpty {
-		userFilter.Pending = true
-		foundUsers, err := client.FindUsers(app.GroupID, app.ID, userFilter)
-		if err != nil {
-			return nil, err
-		}
-		for _, user := range foundUsers {
-			selectableUsersSet[user.ID] = user
-		}
-	}
-
-	// Interactive User Selection
 	selectableUsers := map[string]realm.User{}
-	selectableUserOptions := make([]string, len(selectableUsersSet))
-	patternShort := "%s - %s"
-	patternLong := "%s - %s - %s"
-	userOptIndex := 0
-	for _, user := range selectableUsersSet {
-		var opt string
+	selectableUserOptions := make([]string, len(foundUsers))
+	for idx, user := range foundUsers {
+		var pt realm.ProviderType
 		if len(user.Identities) == 0 {
-			opt = fmt.Sprintf(patternShort, "Unknown", user.ID)
+			pt = ""
 		} else {
-			switch user.Identities[0].ProviderType {
-			case providerTypeAnonymous:
-				opt = fmt.Sprintf(patternShort, "Anonymous", user.ID)
-			case providerTypeLocalUserPass:
-				opt = fmt.Sprintf(patternLong, "User/Password", fmt.Sprint(user.Data[userDataEmail]), user.ID)
-			case providerTypeAPIKey:
-				opt = fmt.Sprintf(patternLong, "ApiKey", fmt.Sprint(user.Data[userDataName]), user.ID)
-			case providerTypeApple:
-				opt = fmt.Sprintf(patternShort, "Apple", user.ID)
-			case providerTypeGoogle:
-				opt = fmt.Sprintf(patternShort, "Google", user.ID)
-			case providerTypeFacebook:
-				opt = fmt.Sprintf(patternShort, "Facebook", user.ID)
-			case providerTypeCustom:
-				opt = fmt.Sprintf(patternShort, "Custom JWT", user.ID)
-			case providerTypeCustomFunction:
-				opt = fmt.Sprintf(patternShort, "Custom Function", user.ID)
-			default:
-				opt = fmt.Sprintf(patternShort, "Unknown", user.ID)
-			}
+			pt = user.Identities[0].ProviderType
 		}
-		selectableUserOptions[userOptIndex] = opt
+		opt := pt.DisplayUser(user)
+		selectableUserOptions[idx] = opt
 		selectableUsers[opt] = user
-		userOptIndex++
 	}
-	selectedUsers := []string{}
-	err := ui.AskOne(
+	var selectedUsers []string
+	askErr := ui.AskOne(
 		&selectedUsers,
 		&survey.MultiSelect{
 			Message: "Which user(s) would you like to delete?",
 			Options: selectableUserOptions,
 		},
 	)
-	if err != nil {
-		return nil, err
+	if askErr != nil {
+		return nil, askErr
 	}
 	users := make([]realm.User, len(selectedUsers))
-	for userIndex, userOption := range selectedUsers {
-		users[userIndex] = selectableUsers[userOption]
+	for idx, user := range selectedUsers {
+		users[idx] = selectableUsers[user]
 	}
 	return users, nil
 }

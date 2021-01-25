@@ -36,7 +36,7 @@ func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
 	fs.VarP(
-		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validProviderTypes),
+		flags.NewEnumSet(&cmd.inputs.ProviderTypes, realm.ValidProviderTypes),
 		flagProvider,
 		flagProviderShort,
 		flagProviderUsage,
@@ -67,7 +67,7 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 		realm.UserFilter{
 			State:     cmd.inputs.UserState,
 			Pending:   cmd.inputs.Pending,
-			Providers: cmd.inputs.ProviderTypes,
+			Providers: realm.StringSliceToProviderTypes(cmd.inputs.ProviderTypes...),
 			IDs:       cmd.inputs.Users,
 		},
 	)
@@ -86,7 +86,7 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
 
-	var usersByProviderType = make(map[string][]realm.User)
+	usersByProviderType := map[realm.ProviderType][]realm.User{}
 	for _, user := range cmd.users {
 		for _, identity := range user.Identities {
 			usersByProviderType[identity.ProviderType] = append(usersByProviderType[identity.ProviderType], user)
@@ -94,11 +94,16 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	var logs []terminal.Log
-	for providerType, users := range usersByProviderType {
+	for _, pt := range realm.ValidProviderTypes {
+		providerType := realm.ProviderType(pt)
+		users := usersByProviderType[providerType]
+		if len(users) == 0 {
+			continue
+		}
 		sort.Slice(users, getUserComparerByLastAuthentication(users))
 
 		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", providerType),
+			fmt.Sprintf("Provider type: %s", providerType.Display()),
 			userTableHeaders(providerType),
 			userTableRows(providerType, users)...,
 		))
@@ -112,12 +117,12 @@ func getUserComparerByLastAuthentication(users []realm.User) func(i, j int) bool
 	}
 }
 
-func userTableHeaders(providerType string) []string {
+func userTableHeaders(providerType realm.ProviderType) []string {
 	var headers []string
 	switch providerType {
-	case providerTypeAPIKey:
+	case realm.ProviderTypeAPIKey:
 		headers = append(headers, headerName)
-	case providerTypeLocalUserPass:
+	case realm.ProviderTypeUserPassord:
 		headers = append(headers, headerEmail)
 	}
 	headers = append(
@@ -130,7 +135,7 @@ func userTableHeaders(providerType string) []string {
 	return headers
 }
 
-func userTableRows(providerType string, users []realm.User) []map[string]interface{} {
+func userTableRows(providerType realm.ProviderType, users []realm.User) []map[string]interface{} {
 	userTableRows := make([]map[string]interface{}, 0, len(users))
 	for _, user := range users {
 		userTableRows = append(userTableRows, userTableRow(providerType, user))
@@ -138,7 +143,7 @@ func userTableRows(providerType string, users []realm.User) []map[string]interfa
 	return userTableRows
 }
 
-func userTableRow(providerType string, user realm.User) map[string]interface{} {
+func userTableRow(providerType realm.ProviderType, user realm.User) map[string]interface{} {
 	timeString := "n/a"
 	if user.LastAuthenticationDate != 0 {
 		timeString = time.Unix(user.LastAuthenticationDate, 0).UTC().String()
@@ -150,9 +155,9 @@ func userTableRow(providerType string, user realm.User) map[string]interface{} {
 		headerLastAuthenticationDate: timeString,
 	}
 	switch providerType {
-	case providerTypeAPIKey:
+	case realm.ProviderTypeAPIKey:
 		row[headerName] = user.Data[userDataName]
-	case providerTypeLocalUserPass:
+	case realm.ProviderTypeUserPassord:
 		row[headerEmail] = user.Data[userDataEmail]
 	}
 	return row

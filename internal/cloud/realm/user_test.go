@@ -1,6 +1,8 @@
 package realm_test
 
 import (
+	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -85,7 +87,7 @@ func TestRealmUsers(t *testing.T) {
 			})
 
 			t.Run("And find a certain type of user", func(t *testing.T) {
-				users, err := client.FindUsers(groupID, app.ID, realm.UserFilter{Providers: []string{"local-userpass"}})
+				users, err := client.FindUsers(groupID, app.ID, realm.UserFilter{Providers: []realm.ProviderType{"local-userpass"}})
 				assert.Nil(t, err)
 				assert.Equal(t, []realm.User{email1, email2, email3}, users)
 			})
@@ -115,7 +117,7 @@ func TestRealmUsers(t *testing.T) {
 				filter := realm.UserFilter{
 					IDs:       []string{email2.ID, email3.ID, apiKeyIDs[apiKey1.ID]},
 					State:     realm.UserStateDisabled,
-					Providers: []string{"local-userpass"},
+					Providers: []realm.ProviderType{"local-userpass"},
 				}
 				users, err := client.FindUsers(groupID, app.ID, filter)
 				assert.Nil(t, err)
@@ -139,4 +141,217 @@ func TestRealmUsers(t *testing.T) {
 			assert.Equal(t, []realm.User{}, users)
 		})
 	})
+}
+
+func TestProviderTypeIsValid(t *testing.T) {
+	for _, tc := range realm.ValidProviderTypes {
+		t.Run(fmt.Sprintf("%s should be valid", tc), func(t *testing.T) {
+			assert.Nil(t, realm.ProviderType(tc).IsValid())
+		})
+	}
+	t.Run(fmt.Sprintf("%s should be invalid", "invalid type"), func(t *testing.T) {
+		assert.Equal(t, realm.ProviderType("invalid type").IsValid(), errors.New("Invalid ProviderType"))
+	})
+}
+
+func TestProviderTypeDisplay(t *testing.T) {
+	for _, tc := range []struct {
+		pt             realm.ProviderType
+		expectedOutput string
+	}{
+		{
+			pt:             realm.ProviderTypeAnonymous,
+			expectedOutput: "Anonymous",
+		},
+		{
+			pt:             realm.ProviderTypeUserPassord,
+			expectedOutput: "User/Password",
+		},
+		{
+			pt:             realm.ProviderTypeAPIKey,
+			expectedOutput: "ApiKey",
+		},
+		{
+			pt:             realm.ProviderTypeApple,
+			expectedOutput: "Apple",
+		},
+		{
+			pt:             realm.ProviderTypeGoogle,
+			expectedOutput: "Google",
+		},
+		{
+			pt:             realm.ProviderTypeFacebook,
+			expectedOutput: "Facebook",
+		},
+		{
+			pt:             realm.ProviderTypeCustomToken,
+			expectedOutput: "Custom JWT",
+		},
+		{
+			pt:             realm.ProviderTypeCustomFunction,
+			expectedOutput: "Custom Function",
+		},
+		{
+			pt:             realm.ProviderType("invalid_provider_type"),
+			expectedOutput: "Unknown",
+		},
+	} {
+		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
+			assert.Equal(t, tc.pt.Display(), tc.expectedOutput)
+		})
+	}
+}
+
+func TestProviderTypeDisplayUser(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAnonymous}},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeUserPassord}},
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeAPIKey}},
+			Data:       map[string]interface{}{"name": "name-3"},
+		},
+		{
+			ID:         "user-4",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeApple}},
+		},
+		{
+			ID:         "user-5",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeGoogle}},
+		},
+		{
+			ID:         "user-6",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeFacebook}},
+		},
+		{
+			ID:         "user-7",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeCustomToken}},
+		},
+		{
+			ID:         "user-8",
+			Identities: []realm.UserIdentity{{ProviderType: realm.ProviderTypeCustomFunction}},
+		},
+	}
+	for _, tc := range []struct {
+		pt             realm.ProviderType
+		user           realm.User
+		expectedOutput string
+	}{
+		{
+			pt:             realm.ProviderTypeAnonymous,
+			user:           testUsers[0],
+			expectedOutput: "Anonymous - user-1",
+		},
+		{
+			pt:             realm.ProviderTypeUserPassord,
+			user:           testUsers[1],
+			expectedOutput: "User/Password - user-2@test.com - user-2",
+		},
+		{
+			pt:             realm.ProviderTypeAPIKey,
+			user:           testUsers[2],
+			expectedOutput: "ApiKey - name-3 - user-3",
+		},
+		{
+			pt:             realm.ProviderTypeApple,
+			user:           testUsers[3],
+			expectedOutput: "Apple - user-4",
+		},
+		{
+			pt:             realm.ProviderTypeGoogle,
+			user:           testUsers[4],
+			expectedOutput: "Google - user-5",
+		},
+		{
+			pt:             realm.ProviderTypeFacebook,
+			user:           testUsers[5],
+			expectedOutput: "Facebook - user-6",
+		},
+		{
+			pt:             realm.ProviderTypeCustomToken,
+			user:           testUsers[6],
+			expectedOutput: "Custom JWT - user-7",
+		},
+		{
+			pt:             realm.ProviderTypeCustomFunction,
+			user:           testUsers[7],
+			expectedOutput: "Custom Function - user-8",
+		},
+	} {
+		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
+			assert.Equal(t, tc.pt.DisplayUser(tc.user), tc.expectedOutput)
+		})
+	}
+}
+
+func TestStringSliceToProviderTypes(t *testing.T) {
+	for _, tc := range []struct {
+		inSlice  []string
+		outSlice []realm.ProviderType
+	}{
+		{
+			inSlice: []string{"anon-user", "local-userpass", "api-key"},
+			outSlice: []realm.ProviderType{
+				realm.ProviderTypeAnonymous,
+				realm.ProviderTypeUserPassord,
+				realm.ProviderTypeAPIKey,
+			},
+		},
+		{
+			inSlice: []string{"anon-user", "local-userpass", "api-key", "oauth2-facebook", "oauth2-google", "oauth2-apple"},
+			outSlice: []realm.ProviderType{
+				realm.ProviderTypeAnonymous,
+				realm.ProviderTypeUserPassord,
+				realm.ProviderTypeAPIKey,
+				realm.ProviderTypeFacebook,
+				realm.ProviderTypeGoogle,
+				realm.ProviderTypeApple,
+			},
+		},
+	} {
+		t.Run("should return provider type slice", func(t *testing.T) {
+			assert.Equal(t, realm.StringSliceToProviderTypes(tc.inSlice...), tc.outSlice)
+		})
+	}
+}
+
+func TestJoinProviderTypes(t *testing.T) {
+	for _, tc := range []struct {
+		pts            []realm.ProviderType
+		sep            string
+		expectedOutput string
+	}{
+		{
+			pts: []realm.ProviderType{
+				realm.ProviderTypeAnonymous,
+				realm.ProviderTypeUserPassord,
+				realm.ProviderTypeAPIKey,
+			},
+			sep:            ",",
+			expectedOutput: "anon-user,local-userpass,api-key",
+		},
+		{
+			pts: []realm.ProviderType{
+				realm.ProviderTypeAnonymous,
+				realm.ProviderTypeUserPassord,
+				realm.ProviderTypeAPIKey,
+				realm.ProviderTypeFacebook,
+				realm.ProviderTypeGoogle,
+				realm.ProviderTypeApple,
+			},
+			sep:            ", ",
+			expectedOutput: "anon-user, local-userpass, api-key, oauth2-facebook, oauth2-google, oauth2-apple",
+		},
+	} {
+		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
+			assert.Equal(t, realm.JoinProviderTypes(tc.sep, tc.pts...), tc.expectedOutput)
+		})
+	}
 }
