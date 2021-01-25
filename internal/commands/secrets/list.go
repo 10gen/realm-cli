@@ -45,9 +45,9 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	secrets, FindSecretsErr := cmd.realmClient.FindSecrets(app)
-	if FindSecretsErr != nil {
-		return FindSecretsErr
+	secrets, secretsErr := cmd.realmClient.FindSecrets(app.GroupID, app.ID)
+	if secretsErr != nil {
+		return secretsErr
 	}
 	cmd.secrets = secrets
 	return nil
@@ -62,31 +62,25 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	var logs []terminal.Log
 	logs = append(logs, terminal.NewTableLog(
 		fmt.Sprintf("Found %d secrets", len(cmd.secrets)),
-		secretTableHeaders(),
-		secretTableRows(cmd.secrets)...,
+		listSecretsTableHeaders,
+		listSecretTableRows(cmd.secrets)...,
 	))
 	return ui.Print(logs...)
 }
 
-func secretTableHeaders() []string {
-	var headers []string
-	headers = append(
-		headers,
-		headerID,
-		headerName,
-	)
-	return headers
-}
+var (
+	listSecretsTableHeaders = []string{headerID, headerName}
+)
 
-func secretTableRows(secrets []realm.Secret) []map[string]interface{} {
-	secretTableRows := make([]map[string]interface{}, 0, len(secrets))
+func listSecretTableRows(secrets []realm.Secret) []map[string]interface{} {
+	rows := make([]map[string]interface{}, 0, len(secrets))
 	for _, secret := range secrets {
-		secretTableRows = append(secretTableRows, map[string]interface{}{
+		rows = append(rows, map[string]interface{}{
 			headerName: secret.Name,
 			headerID:   secret.ID,
 		})
 	}
-	return secretTableRows
+	return rows
 }
 
 func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {

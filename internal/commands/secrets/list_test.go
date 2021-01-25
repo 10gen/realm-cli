@@ -33,33 +33,32 @@ func TestSecretsListHandler(t *testing.T) {
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
 	}
+	testSecrets := []realm.Secret{
+		{
+			ID:   "secret1",
+			Name: "test1",
+		},
+		{
+			ID:   "secret2",
+			Name: "test2",
+		},
+		{
+			ID:   "secret3",
+			Name: "duplicate",
+		},
+		{
+			ID:   "secret4",
+			Name: "duplicate",
+		},
+	}
 
 	t.Run("Should find app secrets", func(t *testing.T) {
-		testSecrets := []realm.Secret{
-			{
-				ID:   "secret1",
-				Name: "test1",
-			},
-			{
-				ID:   "secret2",
-				Name: "test2",
-			},
-			{
-				ID:   "secret3",
-				Name: "duplicate",
-			},
-			{
-				ID:   "secret4",
-				Name: "duplicate",
-			},
-		}
-
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{testApp}, nil
 		}
 
-		realmClient.FindSecretsFn = func(app realm.App) ([]realm.Secret, error) {
+		realmClient.FindSecretsFn = func(groupID, appID string) ([]realm.Secret, error) {
 			return testSecrets, nil
 		}
 
@@ -101,7 +100,7 @@ func TestSecretsListHandler(t *testing.T) {
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 						return []realm.App{testApp}, nil
 					}
-					realmClient.FindSecretsFn = func(app realm.App) ([]realm.Secret, error) {
+					realmClient.FindSecretsFn = func(groupID, appID string) ([]realm.Secret, error) {
 						return nil, errors.New("something bad happened")
 					}
 					return realmClient
@@ -124,6 +123,25 @@ func TestSecretsListHandler(t *testing.T) {
 }
 
 func TestSecretsListFeedback(t *testing.T) {
+	testSecrets := []realm.Secret{
+		{
+			ID:   "60066e14734d0b6c336ffc23",
+			Name: "test1",
+		},
+		{
+			ID:   "234566e14734d0b6c336ffc2",
+			Name: "test2",
+		},
+		{
+			ID:   "60066e14564d0b6c336ffc23",
+			Name: "dup",
+		},
+		{
+			ID:   "60066e14734d0b6c886ffc23",
+			Name: "dup",
+		},
+	}
+
 	for _, tc := range []struct {
 		description    string
 		secrets        []realm.Secret
@@ -136,24 +154,7 @@ func TestSecretsListFeedback(t *testing.T) {
 		},
 		{
 			description: "Should display all found secrets",
-			secrets: []realm.Secret{
-				{
-					ID:   "60066e14734d0b6c336ffc23",
-					Name: "test1",
-				},
-				{
-					ID:   "234566e14734d0b6c336ffc2",
-					Name: "test2",
-				},
-				{
-					ID:   "60066e14564d0b6c336ffc23",
-					Name: "dup",
-				},
-				{
-					ID:   "60066e14734d0b6c886ffc23",
-					Name: "dup",
-				},
-			},
+			secrets:     testSecrets,
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Found 4 secrets",

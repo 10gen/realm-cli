@@ -109,6 +109,7 @@ var (
 			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
+				Display:     "secrets list",
 				Description: "List the names of secrets in your Realm app",
 				// TODO(REALMC-7429): add help text description
 				Help:    "Displays a list of data tables. Each data table displays the Name and ID of one (1) secret.",

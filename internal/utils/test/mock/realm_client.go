@@ -27,7 +27,7 @@ type RealmClient struct {
 	DeployDraftFn func(groupID, appID, draftID string) (realm.AppDeployment, error)
 	DeploymentFn  func(groupID, appID, deploymentID string) (realm.AppDeployment, error)
 
-	FindSecretsFn func(app realm.App) ([]realm.Secret, error)
+	FindSecretsFn func(groupID, appID string) ([]realm.Secret, error)
 
 	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
 	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
@@ -180,11 +180,11 @@ func (rc RealmClient) CreateAPIKey(groupID, appID, apiKeyName string) (realm.API
 // FindSecrets calls the mocked FindSecrets implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) FindSecrets(app realm.App) ([]realm.Secret, error) {
+func (rc RealmClient) FindSecrets(groupID, appID string) ([]realm.Secret, error) {
 	if rc.FindSecretsFn != nil {
-		return rc.FindSecretsFn(app)
+		return rc.FindSecretsFn(groupID, appID)
 	}
-	return rc.Client.FindSecrets(app)
+	return rc.Client.FindSecrets(groupID, appID)
 }
 
 // CreateUser calls the mocked CreateUser implementation if provided,

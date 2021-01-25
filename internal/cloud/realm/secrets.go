@@ -18,10 +18,10 @@ type Secret struct {
 	Name string `json:"name"`
 }
 
-func (c *client) FindSecrets(app App) ([]Secret, error) {
+func (c *client) FindSecrets(groupID, appID string) ([]Secret, error) {
 	res, resErr := c.do(
 		http.MethodGet,
-		fmt.Sprintf(secretsPathPattern, app.GroupID, app.ID),
+		fmt.Sprintf(secretsPathPattern, groupID, appID),
 		api.RequestOptions{},
 	)
 	if resErr != nil {
