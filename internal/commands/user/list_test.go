@@ -117,40 +117,40 @@ func TestUserListHandler(t *testing.T) {
 
 func TestUserTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
-		description     string
-		providerType    string
-		expectedHeaders []string
+		description      string
+		authProviderType realm.AuthProviderType
+		expectedHeaders  []string
 	}{
 		{
-			description:     "Should show name for apikey",
-			providerType:    "api-key",
-			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
+			description:      "Should show name for apikey",
+			authProviderType: realm.AuthProviderTypeAPIKey,
+			expectedHeaders:  []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 		{
-			description:     "Should show email for local-userpass",
-			providerType:    "local-userpass",
-			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
+			description:      "Should show email for local-userpass",
+			authProviderType: realm.AuthProviderTypeUserPassword,
+			expectedHeaders:  []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.providerType))
+			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.authProviderType))
 		})
 	}
 }
 
 func TestUserTableRow(t *testing.T) {
 	for _, tc := range []struct {
-		description  string
-		providerType string
-		user         realm.User
-		expectedRow  map[string]interface{}
+		description      string
+		authProviderType realm.AuthProviderType
+		user             realm.User
+		expectedRow      map[string]interface{}
 	}{
 		{
-			description:  "Should show name for apikey type user",
-			providerType: "api-key",
+			description:      "Should show name for apikey type user",
+			authProviderType: realm.AuthProviderTypeAPIKey,
 			user: realm.User{
 				ID:                     "id1",
-				Identities:             []realm.UserIdentity{{ProviderType: "api-key"}},
+				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 				Type:                   "type1",
 				Disabled:               false,
 				Data:                   map[string]interface{}{"name": "myName"},
@@ -166,11 +166,11 @@ func TestUserTableRow(t *testing.T) {
 			},
 		},
 		{
-			description:  "Should show email for local-userpass type user",
-			providerType: "local-userpass",
+			description:      "Should show email for local-userpass type user",
+			authProviderType: realm.AuthProviderTypeUserPassword,
 			user: realm.User{
 				ID:                     "id1",
-				Identities:             []realm.UserIdentity{{ProviderType: "local-userpass"}},
+				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 				Type:                   "type1",
 				Disabled:               false,
 				Data:                   map[string]interface{}{"email": "myEmail"},
@@ -187,7 +187,7 @@ func TestUserTableRow(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userTableRow(tc.providerType, tc.user))
+			assert.Equal(t, tc.expectedRow, userTableRow(tc.authProviderType, tc.user))
 		})
 	}
 }
@@ -208,7 +208,7 @@ func TestUserListFeedback(t *testing.T) {
 			users: []realm.User{
 				{
 					ID:                     "id1",
-					Identities:             []realm.UserIdentity{{ProviderType: "local-userpass"}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail1"},
@@ -217,7 +217,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id2",
-					Identities:             []realm.UserIdentity{{ProviderType: "local-userpass"}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type2",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail2"},
@@ -226,7 +226,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id3",
-					Identities:             []realm.UserIdentity{{ProviderType: "local-userpass"}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"email": "myEmail3"},
@@ -235,7 +235,7 @@ func TestUserListFeedback(t *testing.T) {
 				},
 				{
 					ID:                     "id4",
-					Identities:             []realm.UserIdentity{{ProviderType: "api-key"}},
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 					Type:                   "type1",
 					Disabled:               false,
 					Data:                   map[string]interface{}{"name": "myName"},
@@ -245,13 +245,13 @@ func TestUserListFeedback(t *testing.T) {
 			},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Provider type: local-userpass",
+					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email     ID   Enabled  Type   Last Authenticated           ",
 					"  --------  ---  -------  -----  -----------------------------",
 					"  myEmail2  id2  true     type2  2005-03-20 15:42:13 +0000 UTC",
 					"  myEmail3  id3  true     type1  2005-03-19 08:50:22 +0000 UTC",
 					"  myEmail1  id1  true     type1  2005-03-18 01:58:31 +0000 UTC",
-					"01:23:45 UTC INFO  Provider type: api-key",
+					"01:23:45 UTC INFO  Provider type: ApiKey",
 					"  Name    ID   Enabled  Type   Last Authenticated           ",
 					"  ------  ---  -------  -----  -----------------------------",
 					"  myName  id4  true     type1  2005-03-18 01:58:31 +0000 UTC",

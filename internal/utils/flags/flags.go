@@ -3,6 +3,7 @@ package flags
 import (
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -21,20 +22,21 @@ var setMember struct{}
 type EnumSetValue struct {
 	values         *[]string
 	valuesSet      map[string]struct{}
-	validValues    []string
+	validValues    []interface{}
 	validValuesSet map[string]struct{}
 }
 
 // NewEnumSet creates an EnumSetValue.  Expects p to point to an empty
 // slice and will clear it otherwise.
-func NewEnumSet(p *[]string, validValues []string) *EnumSetValue {
+func NewEnumSet(p *[]string, validValues []interface{}) *EnumSetValue {
 	esv := new(EnumSetValue)
 	esv.values = p
 	*esv.values = nil
 	esv.validValues = validValues
 	esv.validValuesSet = make(map[string]struct{}, len(validValues))
 	for _, validValue := range validValues {
-		esv.validValuesSet[validValue] = setMember
+		sVal := fmt.Sprintf("%v", validValue)
+		esv.validValuesSet[sVal] = setMember
 	}
 	esv.valuesSet = make(map[string]struct{})
 	return esv
@@ -107,7 +109,16 @@ func (esv *EnumSetValue) validateAndRemoveDuplicates() error {
 }
 
 func (esv *EnumSetValue) errInvalidEnumValue() error {
-	return fmt.Errorf(`unsupported value, use one of ["%s"] instead`, strings.Join(esv.validValues, `", "`))
+	var sb strings.Builder
+	sb.WriteString(`unsupported value, use one of ["`)
+	for i, v := range esv.validValues {
+		if i != 0 {
+			sb.WriteString(`", "`)
+		}
+		sb.WriteString(fmt.Sprintf("%v", v))
+	}
+	sb.WriteString(`"] instead`)
+	return errors.New(sb.String())
 }
 
 // readAsCSV is copied from the cobra pflags package

@@ -19,6 +19,7 @@ type RealmClient struct {
 
 	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
 	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
+	DeleteUserFn   func(groupID, appID, userID string) error
 	FindUsersFn    func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
 
 	StatusFn func() error
@@ -92,6 +93,16 @@ func (rc RealmClient) CreateUser(groupID, appID, email, password string) (realm.
 		return rc.CreateUserFn(groupID, appID, email, password)
 	}
 	return rc.Client.CreateUser(groupID, appID, email, password)
+}
+
+// DeleteUser calls the mocked DeleteUser implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DeleteUser(groupID, appID, userID string) error {
+	if rc.DeleteUserFn != nil {
+		return rc.DeleteUserFn(groupID, appID, userID)
+	}
+	return rc.Client.DeleteUser(groupID, appID, userID)
 }
 
 // FindUsers calls the mocked FindUsers implementation if provided,
