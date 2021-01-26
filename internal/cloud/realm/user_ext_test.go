@@ -166,11 +166,11 @@ func TestAuthProviderTypeDisplay(t *testing.T) {
 func TestNewAuthProviderTypes(t *testing.T) {
 	for _, tc := range []struct {
 		inSlice  []string
-		outSlice []realm.AuthProviderType
+		outSlice realm.AuthProviderTypes
 	}{
 		{
 			inSlice: []string{"anon-user", "local-userpass", "api-key"},
-			outSlice: []realm.AuthProviderType{
+			outSlice: realm.AuthProviderTypes{
 				realm.AuthProviderTypeAnonymous,
 				realm.AuthProviderTypeUserPassword,
 				realm.AuthProviderTypeAPIKey,
@@ -178,7 +178,7 @@ func TestNewAuthProviderTypes(t *testing.T) {
 		},
 		{
 			inSlice: []string{"anon-user", "local-userpass", "api-key", "oauth2-facebook", "oauth2-google", "oauth2-apple"},
-			outSlice: []realm.AuthProviderType{
+			outSlice: realm.AuthProviderTypes{
 				realm.AuthProviderTypeAnonymous,
 				realm.AuthProviderTypeUserPassword,
 				realm.AuthProviderTypeAPIKey,
