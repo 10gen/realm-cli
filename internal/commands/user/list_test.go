@@ -117,37 +117,37 @@ func TestUserListHandler(t *testing.T) {
 
 func TestUserTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
-		description     string
-		providerType    realm.AuthProviderType
-		expectedHeaders []string
+		description      string
+		authProviderType realm.AuthProviderType
+		expectedHeaders  []string
 	}{
 		{
-			description:     "Should show name for apikey",
-			providerType:    realm.AuthProviderTypeAPIKey,
-			expectedHeaders: []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
+			description:      "Should show name for apikey",
+			authProviderType: realm.AuthProviderTypeAPIKey,
+			expectedHeaders:  []string{"Name", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 		{
-			description:     "Should show email for local-userpass",
-			providerType:    realm.AuthProviderTypeUserPassword,
-			expectedHeaders: []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
+			description:      "Should show email for local-userpass",
+			authProviderType: realm.AuthProviderTypeUserPassword,
+			expectedHeaders:  []string{"Email", "ID", "Enabled", "Type", "Last Authenticated"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.providerType))
+			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.authProviderType))
 		})
 	}
 }
 
 func TestUserTableRow(t *testing.T) {
 	for _, tc := range []struct {
-		description  string
-		providerType realm.AuthProviderType
-		user         realm.User
-		expectedRow  map[string]interface{}
+		description      string
+		authProviderType realm.AuthProviderType
+		user             realm.User
+		expectedRow      map[string]interface{}
 	}{
 		{
-			description:  "Should show name for apikey type user",
-			providerType: realm.AuthProviderTypeAPIKey,
+			description:      "Should show name for apikey type user",
+			authProviderType: realm.AuthProviderTypeAPIKey,
 			user: realm.User{
 				ID:                     "id1",
 				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
@@ -166,8 +166,8 @@ func TestUserTableRow(t *testing.T) {
 			},
 		},
 		{
-			description:  "Should show email for local-userpass type user",
-			providerType: realm.AuthProviderTypeUserPassword,
+			description:      "Should show email for local-userpass type user",
+			authProviderType: realm.AuthProviderTypeUserPassword,
 			user: realm.User{
 				ID:                     "id1",
 				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
@@ -187,7 +187,7 @@ func TestUserTableRow(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userTableRow(tc.providerType, tc.user))
+			assert.Equal(t, tc.expectedRow, userTableRow(tc.authProviderType, tc.user))
 		})
 	}
 }

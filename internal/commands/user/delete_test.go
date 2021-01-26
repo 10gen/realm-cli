@@ -261,37 +261,37 @@ func TestUserDeleteFeedback(t *testing.T) {
 
 func TestUserDeleteTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
-		description     string
-		providerType    realm.AuthProviderType
-		expectedHeaders []string
+		description      string
+		authProviderType realm.AuthProviderType
+		expectedHeaders  []string
 	}{
 		{
-			description:     "should show name for apikey",
-			providerType:    realm.AuthProviderTypeAPIKey,
-			expectedHeaders: []string{"Name", "ID", "Type", "Deleted", "Details"},
+			description:      "should show name for apikey",
+			authProviderType: realm.AuthProviderTypeAPIKey,
+			expectedHeaders:  []string{"Name", "ID", "Type", "Deleted", "Details"},
 		},
 		{
-			description:     "should show email for local-userpass",
-			providerType:    realm.AuthProviderTypeUserPassword,
-			expectedHeaders: []string{"Email", "ID", "Type", "Deleted", "Details"},
+			description:      "should show email for local-userpass",
+			authProviderType: realm.AuthProviderTypeUserPassword,
+			expectedHeaders:  []string{"Email", "ID", "Type", "Deleted", "Details"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userDeleteTableHeaders(tc.providerType))
+			assert.Equal(t, tc.expectedHeaders, userDeleteTableHeaders(tc.authProviderType))
 		})
 	}
 }
 
 func TestUserDeleteTableRow(t *testing.T) {
 	for _, tc := range []struct {
-		description  string
-		providerType realm.AuthProviderType
-		output       userOutput
-		expectedRow  map[string]interface{}
+		description      string
+		authProviderType realm.AuthProviderType
+		output           userOutput
+		expectedRow      map[string]interface{}
 	}{
 		{
-			description:  "should show name for apikey type user",
-			providerType: realm.AuthProviderTypeAPIKey,
+			description:      "should show name for apikey type user",
+			authProviderType: realm.AuthProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
@@ -310,8 +310,8 @@ func TestUserDeleteTableRow(t *testing.T) {
 			},
 		},
 		{
-			description:  "should show email for local-userpass type user",
-			providerType: realm.AuthProviderTypeUserPassword,
+			description:      "should show email for local-userpass type user",
+			authProviderType: realm.AuthProviderTypeUserPassword,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
@@ -331,7 +331,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userDeleteTableRow(tc.providerType, tc.output))
+			assert.Equal(t, tc.expectedRow, userDeleteTableRow(tc.authProviderType, tc.output))
 		})
 	}
 }

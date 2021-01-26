@@ -15,18 +15,18 @@ const (
 	userDataName  = "name"
 )
 
-func getValidAuthProviderTypes() []interface{} {
-	pts := make([]interface{}, 0, len(realm.ValidAuthProviderTypes))
-	for _, pt := range realm.ValidAuthProviderTypes {
-		pts = append(pts, pt)
+func validAuthProviderTypes() []interface{} {
+	apts := make([]interface{}, 0, len(realm.ValidAuthProviderTypes))
+	for _, apt := range realm.ValidAuthProviderTypes {
+		apts = append(apts, apt)
 	}
-	return pts
+	return apts
 }
 
-func displayUser(pt realm.AuthProviderType, user realm.User) string {
+func displayUser(apt realm.AuthProviderType, user realm.User) string {
 	sep := " - "
-	display := pt.Display()
-	displayUserData, err := displayUserData(pt, user)
+	display := apt.Display()
+	displayUserData, err := displayUserData(apt, user)
 	if err != nil {
 		return ""
 	}
@@ -36,10 +36,10 @@ func displayUser(pt realm.AuthProviderType, user realm.User) string {
 	return display + sep + user.ID
 }
 
-func displayUserData(pt realm.AuthProviderType, user realm.User) (string, error) {
+func displayUserData(apt realm.AuthProviderType, user realm.User) (string, error) {
 	var val interface{}
 	ok := false
-	switch pt {
+	switch apt {
 	case realm.AuthProviderTypeUserPassword:
 		val, ok = user.Data["email"]
 	case realm.AuthProviderTypeAPIKey:
@@ -67,7 +67,7 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 		IDs:       i.Users,
 		State:     i.State,
 		Pending:   i.Pending,
-		Providers: realm.StringSliceToProviderTypes(i.ProviderTypes...),
+		Providers: realm.NewAuthProviderTypes(i.ProviderTypes...),
 	}
 	foundUsers, usersErr := client.FindUsers(app.GroupID, app.ID, filter)
 	if usersErr != nil {
@@ -83,11 +83,11 @@ func (i *usersInputs) ResolveUsers(ui terminal.UI, client realm.Client, app real
 	selectableUsers := map[string]realm.User{}
 	selectableUserOptions := make([]string, len(foundUsers))
 	for idx, user := range foundUsers {
-		var pt realm.AuthProviderType
+		var apt realm.AuthProviderType
 		if len(user.Identities) > 0 {
-			pt = user.Identities[0].ProviderType
+			apt = user.Identities[0].ProviderType
 		}
-		opt := displayUser(pt, user)
+		opt := displayUser(apt, user)
 		selectableUserOptions[idx] = opt
 		selectableUsers[opt] = user
 	}

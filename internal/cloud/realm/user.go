@@ -97,10 +97,10 @@ type UserIdentity struct {
 	ProviderData map[string]interface{} `json:"provider_data,omitempty"`
 }
 
-// AuthProviderType is a Realm app provider type
+// AuthProviderType is a Realm app auth provider type
 type AuthProviderType string
 
-// set of supported provider type values
+// set of supported auth provider type values
 const (
 	AuthProviderTypeEmpty          AuthProviderType = ""
 	AuthProviderTypeUserPassword   AuthProviderType = "local-userpass"
@@ -127,10 +127,10 @@ var (
 	}
 )
 
-// String returns the provider type string
+// String returns the auth provider type string
 func (pt AuthProviderType) String() string { return string(pt) }
 
-// Display returns the provider type display string
+// Display returns the auth provider type display string
 func (pt AuthProviderType) Display() string {
 	switch pt {
 	case AuthProviderTypeAnonymous:
@@ -154,23 +154,25 @@ func (pt AuthProviderType) Display() string {
 	}
 }
 
-// StringSliceToProviderTypes returns a provider type slice from provided strings
-func StringSliceToProviderTypes(pts ...string) []AuthProviderType {
-	providerTypes := make([]AuthProviderType, len(pts))
-	for i, pt := range pts {
-		providerTypes[i] = AuthProviderType(pt)
+// AuthProviderTypes is a Realm app auth provider type slice
+type AuthProviderTypes []AuthProviderType
+
+// NewAuthProviderTypes returns an AuthProviderTypes from the provided strings
+func NewAuthProviderTypes(apts ...string) AuthProviderTypes {
+	authProviderTypes := make([]AuthProviderType, len(apts))
+	for i, apt := range apts {
+		authProviderTypes[i] = AuthProviderType(apt)
 	}
-	return providerTypes
+	return authProviderTypes
 }
 
-// JoinProviderTypes returns a string of provided provider types with the provided separator
-func JoinProviderTypes(sep string, providerTypes ...AuthProviderType) string {
-	if len(providerTypes) == 0 {
+func (apts AuthProviderTypes) join(sep string) string {
+	if len(apts) == 0 {
 		return ""
 	}
 	bSep := []byte(sep)
-	out := make([]byte, 0, (1+len(bSep))*len(providerTypes))
-	for _, s := range providerTypes {
+	out := make([]byte, 0, (1+len(bSep))*len(apts))
+	for _, s := range apts {
 		out = append(out, s...)
 		out = append(out, bSep...)
 	}
@@ -355,13 +357,13 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 	return user, nil
 }
 
-func (c *client) getUsers(groupID, appID string, userState UserState, providerTypes []AuthProviderType) ([]User, error) {
+func (c *client) getUsers(groupID, appID string, userState UserState, authProviderTypes AuthProviderTypes) ([]User, error) {
 	options := api.RequestOptions{Query: make(map[string]string)}
 	if userState != UserStateNil {
 		options.Query[usersQueryStatus] = string(userState)
 	}
-	if len(providerTypes) > 0 {
-		options.Query[usersQueryProviderTypes] = JoinProviderTypes(",", providerTypes...)
+	if len(authProviderTypes) > 0 {
+		options.Query[usersQueryProviderTypes] = authProviderTypes.join(",")
 	}
 
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(usersPathPattern, groupID, appID), options)
@@ -380,7 +382,7 @@ func (c *client) getUsers(groupID, appID string, userState UserState, providerTy
 	return users, nil
 }
 
-func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userState UserState, providerTypes []AuthProviderType) ([]User, error) {
+func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userState UserState, authProviderTypes []AuthProviderType) ([]User, error) {
 	users := make([]User, 0, len(userIDs))
 	for _, userID := range userIDs {
 		user, err := c.getUser(groupID, appID, userID)
@@ -393,12 +395,12 @@ func (c *client) getUsersByIDs(groupID, appID string, userIDs []string, userStat
 		}
 	}
 
-	if len(providerTypes) == 0 {
+	if len(authProviderTypes) == 0 {
 		return users, nil
 	}
 
-	providers := make(map[AuthProviderType]struct{}, len(providerTypes))
-	for _, provider := range providerTypes {
+	providers := make(map[AuthProviderType]struct{}, len(authProviderTypes))
+	for _, provider := range authProviderTypes {
 		providers[provider] = struct{}{}
 	}
 

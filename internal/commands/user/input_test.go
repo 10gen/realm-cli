@@ -182,53 +182,53 @@ func TestProviderTypeDisplayUser(t *testing.T) {
 		},
 	}
 	for _, tc := range []struct {
-		pt             realm.AuthProviderType
+		apt            realm.AuthProviderType
 		user           realm.User
 		expectedOutput string
 	}{
 		{
-			pt:             realm.AuthProviderTypeAnonymous,
+			apt:            realm.AuthProviderTypeAnonymous,
 			user:           testUsers[0],
 			expectedOutput: "Anonymous - user-1",
 		},
 		{
-			pt:             realm.AuthProviderTypeUserPassword,
+			apt:            realm.AuthProviderTypeUserPassword,
 			user:           testUsers[1],
 			expectedOutput: "User/Password - user-2@test.com - user-2",
 		},
 		{
-			pt:             realm.AuthProviderTypeAPIKey,
+			apt:            realm.AuthProviderTypeAPIKey,
 			user:           testUsers[2],
 			expectedOutput: "ApiKey - name-3 - user-3",
 		},
 		{
-			pt:             realm.AuthProviderTypeApple,
+			apt:            realm.AuthProviderTypeApple,
 			user:           testUsers[3],
 			expectedOutput: "Apple - user-4",
 		},
 		{
-			pt:             realm.AuthProviderTypeGoogle,
+			apt:            realm.AuthProviderTypeGoogle,
 			user:           testUsers[4],
 			expectedOutput: "Google - user-5",
 		},
 		{
-			pt:             realm.AuthProviderTypeFacebook,
+			apt:            realm.AuthProviderTypeFacebook,
 			user:           testUsers[5],
 			expectedOutput: "Facebook - user-6",
 		},
 		{
-			pt:             realm.AuthProviderTypeCustomToken,
+			apt:            realm.AuthProviderTypeCustomToken,
 			user:           testUsers[6],
 			expectedOutput: "Custom JWT - user-7",
 		},
 		{
-			pt:             realm.AuthProviderTypeCustomFunction,
+			apt:            realm.AuthProviderTypeCustomFunction,
 			user:           testUsers[7],
 			expectedOutput: "Custom Function - user-8",
 		},
 	} {
 		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
-			assert.Equal(t, displayUser(tc.pt, tc.user), tc.expectedOutput)
+			assert.Equal(t, displayUser(tc.apt, tc.user), tc.expectedOutput)
 		})
 	}
 }
