@@ -15,6 +15,14 @@ const (
 	userDataName  = "name"
 )
 
+func getValidAuthProviderTypes() []interface{} {
+	pts := make([]interface{}, 0, len(realm.ValidAuthProviderTypes))
+	for _, pt := range realm.ValidAuthProviderTypes {
+		pts = append(pts, pt)
+	}
+	return pts
+}
+
 func displayUser(pt realm.AuthProviderType, user realm.User) string {
 	sep := " - "
 	display := pt.Display()

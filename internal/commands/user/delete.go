@@ -37,7 +37,7 @@ func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserDeleteUsage)
 	fs.VarP(
-		flags.NewEnumSet(&cmd.inputs.ProviderTypes, realm.ValidProviderTypes),
+		flags.NewEnumSet(&cmd.inputs.ProviderTypes, getValidAuthProviderTypes()),
 		flagProvider,
 		flagProviderShort,
 		flagProviderUsage,
@@ -86,17 +86,16 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		}
 	}
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
-	for _, pt := range realm.ValidProviderTypes {
-		providerType := realm.AuthProviderType(pt)
-		outputs := outputsByProviderType[providerType]
+	for _, pt := range realm.ValidAuthProviderTypes {
+		outputs := outputsByProviderType[pt]
 		if len(outputs) == 0 {
 			continue
 		}
 		sort.SliceStable(outputs, getUserOutputComparerBySuccess(outputs))
 		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			userDeleteTableHeaders(providerType),
-			userDeleteTableRows(providerType, outputs)...,
+			fmt.Sprintf("Provider type: %s", pt.Display()),
+			userDeleteTableHeaders(pt),
+			userDeleteTableRows(pt, outputs)...,
 		))
 	}
 	return ui.Print(logs...)

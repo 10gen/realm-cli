@@ -2,7 +2,6 @@ package realm
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -116,15 +115,15 @@ const (
 
 // set of supported auth constants
 var (
-	ValidProviderTypes = []string{
-		AuthProviderTypeUserPassword.String(),
-		AuthProviderTypeAPIKey.String(),
-		AuthProviderTypeFacebook.String(),
-		AuthProviderTypeGoogle.String(),
-		AuthProviderTypeAnonymous.String(),
-		AuthProviderTypeCustomToken.String(),
-		AuthProviderTypeApple.String(),
-		AuthProviderTypeCustomFunction.String(),
+	ValidAuthProviderTypes = []AuthProviderType{
+		AuthProviderTypeUserPassword,
+		AuthProviderTypeAPIKey,
+		AuthProviderTypeFacebook,
+		AuthProviderTypeGoogle,
+		AuthProviderTypeAnonymous,
+		AuthProviderTypeCustomToken,
+		AuthProviderTypeApple,
+		AuthProviderTypeCustomFunction,
 	}
 )
 
@@ -152,23 +151,6 @@ func (pt AuthProviderType) Display() string {
 		return "Custom Function"
 	default:
 		return "Unknown"
-	}
-}
-
-// IsValid validates the provided provider type
-func (pt AuthProviderType) IsValid() error {
-	switch pt {
-	case AuthProviderTypeAnonymous,
-		AuthProviderTypeUserPassword,
-		AuthProviderTypeAPIKey,
-		AuthProviderTypeApple,
-		AuthProviderTypeGoogle,
-		AuthProviderTypeFacebook,
-		AuthProviderTypeCustomToken,
-		AuthProviderTypeCustomFunction:
-		return nil
-	default:
-		return errors.New("Invalid ProviderType")
 	}
 }
 

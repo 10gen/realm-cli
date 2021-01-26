@@ -1,7 +1,6 @@
 package realm_test
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -140,17 +139,6 @@ func TestRealmUsers(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, []realm.User{}, users)
 		})
-	})
-}
-
-func TestProviderTypeIsValid(t *testing.T) {
-	for _, tc := range realm.ValidProviderTypes {
-		t.Run(fmt.Sprintf("%s should be valid", tc), func(t *testing.T) {
-			assert.Nil(t, realm.AuthProviderType(tc).IsValid())
-		})
-	}
-	t.Run(fmt.Sprintf("%s should be invalid", "invalid type"), func(t *testing.T) {
-		assert.Equal(t, realm.AuthProviderType("invalid type").IsValid(), errors.New("Invalid ProviderType"))
 	})
 }
 

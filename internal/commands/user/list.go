@@ -36,7 +36,7 @@ func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
 	fs.VarP(
-		flags.NewEnumSet(&cmd.inputs.ProviderTypes, realm.ValidProviderTypes),
+		flags.NewEnumSet(&cmd.inputs.ProviderTypes, getValidAuthProviderTypes()),
 		flagProvider,
 		flagProviderShort,
 		flagProviderUsage,
@@ -94,18 +94,17 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	var logs []terminal.Log
-	for _, pt := range realm.ValidProviderTypes {
-		providerType := realm.AuthProviderType(pt)
-		users := usersByProviderType[providerType]
+	for _, pt := range realm.ValidAuthProviderTypes {
+		users := usersByProviderType[pt]
 		if len(users) == 0 {
 			continue
 		}
 		sort.Slice(users, getUserComparerByLastAuthentication(users))
 
 		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			userTableHeaders(providerType),
-			userTableRows(providerType, users)...,
+			fmt.Sprintf("Provider type: %s", pt.Display()),
+			userTableHeaders(pt),
+			userTableRows(pt, users)...,
 		))
 	}
 	return ui.Print(logs...)
