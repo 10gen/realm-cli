@@ -37,7 +37,8 @@ type Client interface {
 	DiscardDraft(groupID, appID, draftID string) error
 	Deployment(groupID, appID, deploymentID string) (AppDeployment, error)
 	Draft(groupID, appID string) (AppDraft, error)
-	FindSecrets(groupID, appID string) ([]Secret, error)
+
+	Secrets(groupID, appID string) ([]Secret, error)
 
 	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	CreateUser(groupID, appID, email, password string) (User, error)

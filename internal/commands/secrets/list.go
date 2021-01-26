@@ -45,7 +45,7 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	secrets, secretsErr := cmd.realmClient.FindSecrets(app.GroupID, app.ID)
+	secrets, secretsErr := cmd.realmClient.Secrets(app.GroupID, app.ID)
 	if secretsErr != nil {
 		return secretsErr
 	}

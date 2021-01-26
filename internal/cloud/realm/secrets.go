@@ -12,13 +12,13 @@ const (
 	secretsPathPattern = appPathPattern + "/secrets"
 )
 
-// Secret is a secret stored in a Realm application
+// Secret is a secret stored in a Realm app
 type Secret struct {
 	ID   string `json:"_id"`
 	Name string `json:"name"`
 }
 
-func (c *client) FindSecrets(groupID, appID string) ([]Secret, error) {
+func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 	res, resErr := c.do(
 		http.MethodGet,
 		fmt.Sprintf(secretsPathPattern, groupID, appID),

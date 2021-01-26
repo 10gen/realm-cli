@@ -104,16 +104,15 @@ var (
 		Use:         "secrets",
 		Aliases:     []string{"secret"},
 		Description: "Manage the secrets of your MongoDB Realm app",
-		Help:        "secret", // TODO(REALMC-7429): add help text description
+		Help:        "secrets",
 		SubCommands: []cli.CommandDefinition{
 			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "secrets list",
 				Description: "List the names of secrets in your Realm app",
-				// TODO(REALMC-7429): add help text description
-				Help:    "Displays a list of data tables. Each data table displays the Name and ID of one (1) secret.",
-				Command: &secrets.CommandList{},
+				Help:        "Displays a list of data tables. Each data table displays the Name and ID of one (1) secret.",
+				Command:     &secrets.CommandList{},
 			},
 		},
 	}
