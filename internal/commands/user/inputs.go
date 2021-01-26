@@ -3,6 +3,7 @@ package user
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -24,33 +25,30 @@ func validAuthProviderTypes() []interface{} {
 }
 
 func displayUser(apt realm.AuthProviderType, user realm.User) string {
-	sep := " - "
-	display := apt.Display()
-	displayUserData, err := displayUserData(apt, user)
-	if err != nil {
-		return ""
+	var sb strings.Builder
+	sb.WriteString(apt.Display() + terminal.DelimiterInline)
+	if data := displayUserData(apt, user); data != "" {
+		sb.WriteString(data + terminal.DelimiterInline)
 	}
-	if displayUserData != "" {
-		display += sep + displayUserData
-	}
-	return display + sep + user.ID
+	sb.WriteString(user.ID)
+	return sb.String()
 }
 
-func displayUserData(apt realm.AuthProviderType, user realm.User) (string, error) {
-	var val interface{}
-	ok := false
+func displayUserData(apt realm.AuthProviderType, user realm.User) string {
+	var (
+		val interface{}
+		ok  bool
+	)
 	switch apt {
 	case realm.AuthProviderTypeUserPassword:
 		val, ok = user.Data["email"]
 	case realm.AuthProviderTypeAPIKey:
 		val, ok = user.Data["name"]
-	default:
-		return "", nil
 	}
 	if ok {
-		return fmt.Sprint(val), nil
+		return fmt.Sprint(val)
 	}
-	return "", errors.New("User does not have ProviderType Data")
+	return ""
 }
 
 // usersInputs are the filtering inputs for a user command

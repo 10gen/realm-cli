@@ -3,6 +3,7 @@ package flags
 import (
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -108,14 +109,16 @@ func (esv *EnumSetValue) validateAndRemoveDuplicates() error {
 }
 
 func (esv *EnumSetValue) errInvalidEnumValue() error {
-	bSep := []byte(`", "`)
-	out := make([]byte, 0, (1+len(bSep))*len(esv.validValues))
-	for _, v := range esv.validValues {
-		s := fmt.Sprintf("%v", v)
-		out = append(out, s...)
-		out = append(out, bSep...)
+	var sb strings.Builder
+	sb.WriteString(`unsupported value, use one of ["`)
+	for i, v := range esv.validValues {
+		if i != 0 {
+			sb.WriteString(`", "`)
+		}
+		sb.WriteString(fmt.Sprintf("%v", v))
 	}
-	return fmt.Errorf(`unsupported value, use one of ["%s"] instead`, string(out[:len(out)-len(bSep)]))
+	sb.WriteString(`"] instead`)
+	return errors.New(sb.String())
 }
 
 // readAsCSV is copied from the cobra pflags package

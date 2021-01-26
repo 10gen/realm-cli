@@ -167,16 +167,15 @@ func NewAuthProviderTypes(apts ...string) AuthProviderTypes {
 }
 
 func (apts AuthProviderTypes) join(sep string) string {
-	if len(apts) == 0 {
-		return ""
+	var sb strings.Builder
+	for i, apt := range apts {
+		if i != 0 {
+			sb.WriteString(sep)
+		}
+		sb.WriteString(apt.String())
 	}
-	bSep := []byte(sep)
-	out := make([]byte, 0, (1+len(bSep))*len(apts))
-	for _, s := range apts {
-		out = append(out, s...)
-		out = append(out, bSep...)
-	}
-	return string(out[:len(out)-len(sep)])
+	return sb.String()
+
 }
 
 type createAPIKeyRequest struct {

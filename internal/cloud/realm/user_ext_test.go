@@ -1,7 +1,6 @@
 package realm_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -140,56 +139,4 @@ func TestRealmUsers(t *testing.T) {
 			assert.Equal(t, []realm.User{}, users)
 		})
 	})
-}
-
-func TestAuthProviderTypeDisplay(t *testing.T) {
-	for _, tc := range []struct {
-		apt            realm.AuthProviderType
-		expectedOutput string
-	}{
-		{realm.AuthProviderTypeAnonymous, "Anonymous"},
-		{realm.AuthProviderTypeUserPassword, "User/Password"},
-		{realm.AuthProviderTypeAPIKey, "ApiKey"},
-		{realm.AuthProviderTypeApple, "Apple"},
-		{realm.AuthProviderTypeGoogle, "Google"},
-		{realm.AuthProviderTypeFacebook, "Facebook"},
-		{realm.AuthProviderTypeCustomToken, "Custom JWT"},
-		{realm.AuthProviderTypeCustomFunction, "Custom Function"},
-		{realm.AuthProviderType("invalid_provider_type"), "Unknown"},
-	} {
-		t.Run(fmt.Sprintf("should return %s", tc.expectedOutput), func(t *testing.T) {
-			assert.Equal(t, tc.apt.Display(), tc.expectedOutput)
-		})
-	}
-}
-
-func TestNewAuthProviderTypes(t *testing.T) {
-	for _, tc := range []struct {
-		inSlice  []string
-		outSlice realm.AuthProviderTypes
-	}{
-		{
-			inSlice: []string{"anon-user", "local-userpass", "api-key"},
-			outSlice: realm.AuthProviderTypes{
-				realm.AuthProviderTypeAnonymous,
-				realm.AuthProviderTypeUserPassword,
-				realm.AuthProviderTypeAPIKey,
-			},
-		},
-		{
-			inSlice: []string{"anon-user", "local-userpass", "api-key", "oauth2-facebook", "oauth2-google", "oauth2-apple"},
-			outSlice: realm.AuthProviderTypes{
-				realm.AuthProviderTypeAnonymous,
-				realm.AuthProviderTypeUserPassword,
-				realm.AuthProviderTypeAPIKey,
-				realm.AuthProviderTypeFacebook,
-				realm.AuthProviderTypeGoogle,
-				realm.AuthProviderTypeApple,
-			},
-		},
-	} {
-		t.Run("should return provider type slice", func(t *testing.T) {
-			assert.Equal(t, realm.NewAuthProviderTypes(tc.inSlice...), tc.outSlice)
-		})
-	}
 }

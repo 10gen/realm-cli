@@ -26,6 +26,9 @@ const (
 	FlagOutputTargetUsage = "write output to the specified filepath"
 )
 
+// DelimiterInline is the prefered inline delimiter when presenting information
+const DelimiterInline = " - "
+
 // OutputFormat is the terminal output format
 type OutputFormat string
 
