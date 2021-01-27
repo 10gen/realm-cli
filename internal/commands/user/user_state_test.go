@@ -318,7 +318,7 @@ func TestUserStateFeedback(t *testing.T) {
 			},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Provider type: local-userpass",
+					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Enabled  Details     ",
 					"  ---------------  ------  ------  -------  ------------",
 					"  user-1@test.com  user-1  type-1  true     client error",
@@ -341,7 +341,7 @@ func TestUserStateFeedback(t *testing.T) {
 			},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Provider type: local-userpass",
+					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Enabled  Details     ",
 					"  ---------------  ------  ------  -------  ------------",
 					"  user-1@test.com  user-1  type-1  false    client error",
@@ -399,7 +399,7 @@ func TestUserStateTableRow(t *testing.T) {
 		{
 			description:      "should show name for apikey type user",
 			userEnable:       false,
-			authProviderType: "api-key",
+			authProviderType: realm.AuthProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
@@ -420,7 +420,7 @@ func TestUserStateTableRow(t *testing.T) {
 		{
 			description:      "should show email for local-userpass type user",
 			userEnable:       false,
-			authProviderType: "local-userpass",
+			authProviderType: realm.AuthProviderTypeUserPassword,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
@@ -441,7 +441,7 @@ func TestUserStateTableRow(t *testing.T) {
 		{
 			description:      "should show name for apikey type user",
 			userEnable:       true,
-			authProviderType: "api-key",
+			authProviderType: realm.AuthProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
@@ -462,7 +462,7 @@ func TestUserStateTableRow(t *testing.T) {
 		{
 			description:      "should show email for local-userpass type user",
 			userEnable:       true,
-			authProviderType: "local-userpass",
+			authProviderType: realm.AuthProviderTypeUserPassword,
 			output: userOutput{
 				user: realm.User{
 					ID:         "user-1",
