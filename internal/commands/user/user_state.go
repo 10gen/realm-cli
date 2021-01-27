@@ -158,9 +158,9 @@ func userStateTableRows(authProviderType realm.AuthProviderType, outputs []userO
 }
 
 func userStateTableRow(authProviderType realm.AuthProviderType, output userOutput, enableUser bool) map[string]interface{} {
-	msg := "n/a"
+	var details string
 	if output.err != nil {
-		msg = output.err.Error()
+		details = output.err.Error()
 	}
 	var success bool
 	if enableUser {
@@ -172,7 +172,7 @@ func userStateTableRow(authProviderType realm.AuthProviderType, output userOutpu
 		headerID:      output.user.ID,
 		headerType:    output.user.Type,
 		headerEnabled: success,
-		headerDetails: msg,
+		headerDetails: details,
 	}
 	switch authProviderType {
 	case realm.AuthProviderTypeAPIKey:

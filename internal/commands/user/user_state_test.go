@@ -293,9 +293,31 @@ func TestUserStateFeedback(t *testing.T) {
 		{
 			ID:         "user-1",
 			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-			Data:       map[string]interface{}{"email": "user-1@test.com"},
-			Disabled:   false,
 			Type:       "type-1",
+			Data:       map[string]interface{}{"email": "user-1@test.com"},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Type:       "type-2",
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Type:       "type-1",
+			Data:       map[string]interface{}{"email": "user-3@test.com"},
+		},
+		{
+			ID:         "user-4",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
+			Type:       "type-1",
+			Data:       map[string]interface{}{"name": "name-4"},
+		},
+		{
+			ID:         "user-5",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeCustomToken}},
+			Type:       "type-3",
 		},
 	}
 	for _, tc := range []struct {
@@ -345,6 +367,37 @@ func TestUserStateFeedback(t *testing.T) {
 					"  Email            ID      Type    Enabled  Details     ",
 					"  ---------------  ------  ------  -------  ------------",
 					"  user-1@test.com  user-1  type-1  false    client error",
+					"",
+				},
+				"\n",
+			),
+		},
+		{
+			description: "should show 2 failed users",
+			userEnable:  true,
+			outputs: []userOutput{
+				{user: testUsers[0], err: nil},
+				{user: testUsers[1], err: errors.New("client error")},
+				{user: testUsers[2], err: nil},
+				{user: testUsers[3], err: errors.New("client error")},
+				{user: testUsers[4], err: nil},
+			},
+			expectedOutput: strings.Join(
+				[]string{
+					"01:23:45 UTC INFO  Provider type: User/Password",
+					"  Email            ID      Type    Enabled  Details     ",
+					"  ---------------  ------  ------  -------  ------------",
+					"  user-2@test.com  user-2  type-2  false    client error",
+					"  user-1@test.com  user-1  type-1  true                 ",
+					"  user-3@test.com  user-3  type-1  true                 ",
+					"01:23:45 UTC INFO  Provider type: ApiKey",
+					"  Name    ID      Type    Enabled  Details     ",
+					"  ------  ------  ------  -------  ------------",
+					"  name-4  user-4  type-1  false    client error",
+					"01:23:45 UTC INFO  Provider type: Custom JWT",
+					"  ID      Type    Enabled  Details",
+					"  ------  ------  -------  -------",
+					"  user-5  type-3  true            ",
 					"",
 				},
 				"\n",
@@ -414,7 +467,7 @@ func TestUserStateTableRow(t *testing.T) {
 				"Name":    "name-1",
 				"Type":    "type-1",
 				"Enabled": false,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 		{
@@ -435,7 +488,7 @@ func TestUserStateTableRow(t *testing.T) {
 				"Email":   "user-1@test.com",
 				"Type":    "type-1",
 				"Enabled": false,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 		{
@@ -456,7 +509,7 @@ func TestUserStateTableRow(t *testing.T) {
 				"Name":    "name-1",
 				"Type":    "type-1",
 				"Enabled": true,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 		{
@@ -477,7 +530,7 @@ func TestUserStateTableRow(t *testing.T) {
 				"Email":   "user-1@test.com",
 				"Type":    "type-1",
 				"Enabled": true,
-				"Details": "n/a",
+				"Details": "",
 			},
 		},
 	} {
