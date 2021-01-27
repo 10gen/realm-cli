@@ -44,6 +44,7 @@ type Client interface {
 	CreateUser(groupID, appID, email, password string) (User, error)
 	DeleteUser(groupID, appID, userID string) error
 	DisableUser(groupID, appID, userID string) error
+	EnableUser(groupID, appID, userID string) error
 	FindUsers(groupID, appID string, filter UserFilter) ([]User, error)
 	RevokeUserSessions(groupID, appID, userID string) error
 

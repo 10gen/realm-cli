@@ -18,6 +18,7 @@ const (
 	usersPathPattern        = appPathPattern + "/users"
 	userPathPattern         = usersPathPattern + "/%s"
 	userDisablePathPattern  = userPathPattern + "/disable"
+	userEnablePathPattern   = userPathPattern + "/enable"
 	userLogoutPathPattern   = userPathPattern + "/logout"
 
 	usersQueryStatus        = "status"
@@ -251,6 +252,22 @@ func (c *client) DisableUser(groupID, appID, userID string) error {
 	res, resErr := c.do(
 		http.MethodPut,
 		fmt.Sprintf(userDisablePathPattern, groupID, appID, userID),
+		api.RequestOptions{},
+	)
+	if resErr != nil {
+		return resErr
+	}
+	if res.StatusCode != http.StatusNoContent {
+		defer res.Body.Close()
+		return parseResponseError(res)
+	}
+	return nil
+}
+
+func (c *client) EnableUser(groupID, appID, userID string) error {
+	res, resErr := c.do(
+		http.MethodPut,
+		fmt.Sprintf(userEnablePathPattern, groupID, appID, userID),
 		api.RequestOptions{},
 	)
 	if resErr != nil {

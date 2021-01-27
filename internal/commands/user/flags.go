@@ -15,8 +15,10 @@ const (
 		`["local-userpass", "api-key", "oauth2-facebook", "oauth2-google", "oauth2-apple", ` +
 		`"anon-user", "custom-token", "custom-function"]`
 
-	flagUser            = "user"
-	flagUserShort       = "u"
-	flagUserUsage       = `set the user ids for which to filter the list of app users with`
-	flagUserDeleteUsage = `set the user ids for which to delete from the app`
+	flagUser             = "user"
+	flagUserShort        = "u"
+	flagUserUsage        = `set the user ids for which to filter the list of app users with`
+	flagUserDeleteUsage  = `set the user ids for which to delete from the app`
+	flagUserDisableUsage = `set the user ids for which to disable in the app`
+	flagUserEnableUsage  = `set the user ids for which to enable in the app`
 )
