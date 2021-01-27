@@ -68,6 +68,8 @@ github.com/denis-tingajkin/go-header v0.3.1/go.mod h1:sq/2IxMhaZX+RRcgHfCRx/m0M5
 github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
+github.com/edaniels/digest v0.0.0-20170923160545-b81e9c4ee11c h1:wHelvKiSR4jpFyoa3ZABaAFOqO3wIJdlNMgUtagvILc=
+github.com/edaniels/digest v0.0.0-20170923160545-b81e9c4ee11c/go.mod h1:abhgQVy1pKRU/FrAN82hL3Vlks7BIKuv9rv0KfFm2uc=
 github.com/fatih/addlint v0.0.0-20190906181921-76b21bd409a2/go.mod h1:jDmgAsni5lF2hjg3Eozc5y+Uh9hE26oBfZ1fCLSet0U=
 github.com/fatih/camelcase v1.0.0 h1:hxNvNX/xYBp0ovncs8WyWZrOrpBNub/JfaMvbURyft8=
 github.com/fatih/camelcase v1.0.0/go.mod h1:yN2Sb0lFhZJUdVvtELVWefmrXpuZESvPmqwoZc+/fpc=

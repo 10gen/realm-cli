@@ -62,7 +62,9 @@ func TestRealmAuthRefresh(t *testing.T) {
 		// invalidate the session's access token
 		session.AccessToken = session.RefreshToken
 
-		client = realm.NewAuthClient(mock.NewProfileWithSession(t, session))
+		profile := mock.NewProfileWithSession(t, session)
+
+		client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 		_, err = client.AuthProfile()
 		serverError, ok := err.(realm.ServerError)
 		assert.True(t, ok, "expected %T to be server error", err)
@@ -79,7 +81,9 @@ func TestRealmAuthRefresh(t *testing.T) {
 		session.AccessToken = ""
 		session.RefreshToken = session.AccessToken
 
-		client = realm.NewAuthClient(mock.NewProfileWithSession(t, session))
+		profile := mock.NewProfileWithSession(t, session)
+
+		client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 		_, err = client.AuthProfile()
 		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
@@ -94,5 +98,7 @@ func newAuthClient(t *testing.T) realm.Client {
 	session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
 	assert.Nil(t, err)
 
-	return realm.NewAuthClient(mock.NewProfileWithSession(t, session))
+	profile := mock.NewProfileWithSession(t, session)
+
+	return realm.NewAuthClient(profile.RealmBaseURL(), profile)
 }

@@ -10,14 +10,16 @@ var (
 )
 
 type list struct {
-	message string
-	data    []string
+	message      string
+	data         []string
+	consolidated bool
 }
 
-func newList(message string, data []interface{}) list {
+func newList(message string, data []interface{}, consolidated bool) list {
 	l := list{
-		message: message,
-		data:    make([]string, 0, len(data)),
+		message:      message,
+		data:         make([]string, 0, len(data)),
+		consolidated: consolidated,
 	}
 	for _, item := range data {
 		l.data = append(l.data, parseValue(item))
@@ -30,7 +32,7 @@ func (l list) Message() (string, error) {
 		return l.message, nil
 	}
 
-	if len(l.data) == 1 {
+	if l.consolidated && len(l.data) == 1 {
 		if len(l.message) == 0 {
 			return l.data[0], nil
 		}

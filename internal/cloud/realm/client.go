@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/auth"
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
@@ -25,11 +24,19 @@ type Client interface {
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
-	Import(groupID, appID string, req ImportRequest) error
+	Import(groupID, appID string, pkg map[string]interface{}) error
+	Diff(groupID, appID string, pkg map[string]interface{}) ([]string, error)
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error
 	FindApps(filter AppFilter) ([]App, error)
+
+	CreateDraft(groupID, appID string) (AppDraft, error)
+	DeployDraft(groupID, appID, draftID string) (AppDeployment, error)
+	DiffDraft(groupID, appID, draftID string) (AppDraftDiff, error)
+	DiscardDraft(groupID, appID, draftID string) error
+	Deployment(groupID, appID, deploymentID string) (AppDeployment, error)
+	Draft(groupID, appID string) (AppDraft, error)
 
 	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	CreateUser(groupID, appID, email, password string) (User, error)
@@ -46,9 +53,9 @@ func NewClient(baseURL string) Client {
 	return &client{baseURL, noopSessionManager{}}
 }
 
-// NewAuthClient creates a new Realm client with a session used for Authorization
-func NewAuthClient(profile *cli.Profile) Client {
-	return &client{profile.RealmBaseURL(), profile}
+// NewAuthClient creates a new Realm client capable of managing the user's session
+func NewAuthClient(baseURL string, sessionManager auth.SessionManager) Client {
+	return &client{baseURL, sessionManager}
 }
 
 type client struct {
@@ -73,13 +80,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		return nil, err
 	}
 
-	if len(options.Query) > 0 {
-		query := req.URL.Query()
-		for key, value := range options.Query {
-			query.Add(key, value)
-		}
-		req.URL.RawQuery = query.Encode()
-	}
+	api.IncludeQuery(req, options.Query)
 
 	req.Header.Set(requestOriginHeader, cliHeaderValue)
 
@@ -108,7 +109,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	parsedErr := parseResponseError(res)
 	if err, ok := parsedErr.(ServerError); !ok {
 		return nil, parsedErr
-	} else if options.PreventRefresh || err.Code != invalidSessionCode {
+	} else if options.PreventRefresh || err.Code != errCodeInvalidSession {
 		return nil, err
 	}
 

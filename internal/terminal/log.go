@@ -64,7 +64,7 @@ func NewTableLog(message string, headers []string, data ...map[string]interface{
 
 // NewListLog creates a new log with a list
 func NewListLog(message string, data ...interface{}) Log {
-	return newLog(LogLevelInfo, newList(message, data))
+	return newLog(LogLevelInfo, newList(message, data, false))
 }
 
 // NewErrorLog creates a new error log
@@ -79,12 +79,12 @@ func NewWarningLog(format string, args ...interface{}) Log {
 
 // NewSuggestedCommandsLog creates a log with a follow up message about suggested commands for the error
 func NewSuggestedCommandsLog(commands ...interface{}) Log {
-	return newLog(LogLevelDebug, newList(commandMessage, commands))
+	return newLog(LogLevelDebug, newList(commandMessage, commands, true))
 }
 
 // NewReferenceLinksLog creates a log with a follow up message about reference links for the error
 func NewReferenceLinksLog(links ...interface{}) Log {
-	return newLog(LogLevelDebug, newList(linkMessage, links))
+	return newLog(LogLevelDebug, newList(linkMessage, links, true))
 }
 
 const (

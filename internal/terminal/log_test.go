@@ -44,7 +44,7 @@ func TestLogConstructor(t *testing.T) {
 			ctor:          "NewListLog",
 			log:           NewListLog("a list message", "ayyy"),
 			expectedLevel: LogLevelInfo,
-			expectedData:  list{"a list message", []string{"ayyy"}},
+			expectedData:  list{"a list message", []string{"ayyy"}, false},
 		},
 		{
 			ctor:          "NewErrorLog",

@@ -6,6 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.2.2
 	github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8
 	github.com/coreos/etcd v3.3.13+incompatible
+	github.com/edaniels/digest v0.0.0-20170923160545-b81e9c4ee11c
 	github.com/edaniels/golinters v0.0.3
 	github.com/fatih/color v1.10.0
 	github.com/golangci/golangci-lint v1.32.2

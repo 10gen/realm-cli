@@ -17,8 +17,9 @@ import (
 
 // UIOptions are the options to configure the mock terminal UI
 type UIOptions struct {
-	UseColors bool
-	UseJSON   bool
+	AutoConfirm bool
+	UseColors   bool
+	UseJSON     bool
 }
 
 func newUIConfig(options UIOptions) terminal.UIConfig {
@@ -28,6 +29,7 @@ func newUIConfig(options UIOptions) terminal.UIConfig {
 	}
 
 	return terminal.UIConfig{
+		AutoConfirm:   options.AutoConfirm,
 		DisableColors: !options.UseColors,
 		OutputFormat:  outputFormat,
 	}

@@ -10,6 +10,7 @@ import (
 
 // UI is a terminal UI
 type UI interface {
+	AutoConfirm() bool
 	Ask(answer interface{}, questions ...*survey.Question) error
 	AskOne(answer interface{}, prompt survey.Prompt) error
 	Confirm(format string, args ...interface{}) (bool, error)
@@ -39,6 +40,10 @@ type ui struct {
 	err    io.Writer
 }
 
+func (ui *ui) AutoConfirm() bool {
+	return ui.config.AutoConfirm
+}
+
 func (ui *ui) Ask(answer interface{}, questions ...*survey.Question) error {
 	return survey.Ask(
 		questions,
@@ -56,7 +61,7 @@ func (ui *ui) AskOne(answer interface{}, prompt survey.Prompt) error {
 }
 
 func (ui *ui) Confirm(format string, args ...interface{}) (bool, error) {
-	if ui.config.AutoConfirm {
+	if ui.AutoConfirm() {
 		return true, nil
 	}
 

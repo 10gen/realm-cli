@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
@@ -16,8 +18,10 @@ func MustSkipf(t *testing.T, format string, args ...interface{}) {
 }
 
 const (
-	defaultGroupID   = "5fd45718cface356de9d104d"
-	defaultServerURL = "http://localhost:8080"
+	defaultGroupID        = "5fd45718cface356de9d104d"
+	defaultGroupName      = "Project 0"
+	defaultAtlasServerURL = "https://cloud-dev.mongodb.com"
+	defaultRealmServerURL = "http://localhost:8080"
 )
 
 var realmServerRunning = false
@@ -33,6 +37,14 @@ func CloudGroupID() string {
 		return groupID
 	}
 	return defaultGroupID
+}
+
+// CloudGroupName returns the Cloud group id to use for testing
+func CloudGroupName() string {
+	if groupName := os.Getenv("BAAS_MONGODB_CLOUD_GROUP_NAME"); groupName != "" {
+		return groupName
+	}
+	return defaultGroupName
 }
 
 // Username returns the Cloud username to use for testing
@@ -63,7 +75,7 @@ func AtlasServerURL() string {
 	if uri := os.Getenv("BAAS_MONGODB_CLOUD_API_BASE_URL"); uri != "" {
 		return uri
 	}
-	return defaultServerURL
+	return defaultAtlasServerURL
 }
 
 // RealmServerURL returns the Realm server url to use for testing
@@ -74,7 +86,7 @@ func RealmServerURL() string {
 	if uri := os.Getenv("BAAS_SERVER_BASE_URL"); uri != "" {
 		return uri
 	}
-	return defaultServerURL
+	return defaultRealmServerURL
 }
 
 // SkipUnlessAtlasServerRunning skips tests if there is no Atlas server running
@@ -89,7 +101,7 @@ var SkipUnlessAtlasServerRunning = func() func(t *testing.T) {
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())
 			return
 		}
-		client := realm.NewClient(AtlasServerURL())
+		client := atlas.NewAuthClient(AtlasServerURL(), auth.User{CloudUsername(), CloudAPIKey()})
 		if err := client.Status(); err != nil {
 			atlasServerNotRunning = true
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())
