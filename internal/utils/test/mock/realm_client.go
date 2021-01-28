@@ -30,12 +30,13 @@ type RealmClient struct {
 	SecretsFn      func(groupID, appID string) ([]realm.Secret, error)
 	CreateSecretFn func(groupID, appID, name, value string) (realm.Secret, error)
 
-	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
-	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
-	DeleteUserFn   func(groupID, appID, userID string) error
-	DisableUserFn  func(groupID, appID, userID string) error
-	EnableUserFn   func(groupID, appID, userID string) error
-	FindUsersFn    func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
+	CreateAPIKeyFn       func(groupID, appID, apiKeyName string) (realm.APIKey, error)
+	CreateUserFn         func(groupID, appID, email, password string) (realm.User, error)
+	DeleteUserFn         func(groupID, appID, userID string) error
+	DisableUserFn        func(groupID, appID, userID string) error
+	EnableUserFn         func(groupID, appID, userID string) error
+	FindUsersFn          func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
+	RevokeUserSessionsFn func(groupID, appID, userID string) error
 
 	StatusFn func() error
 }
@@ -248,6 +249,16 @@ func (rc RealmClient) FindUsers(groupID, appID string, filter realm.UserFilter) 
 		return rc.FindUsersFn(groupID, appID, filter)
 	}
 	return rc.Client.FindUsers(groupID, appID, filter)
+}
+
+// RevokeUserSessions calls the mocked RevokeUserSessions implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) RevokeUserSessions(groupID, appID, userID string) error {
+	if rc.RevokeUserSessionsFn != nil {
+		return rc.RevokeUserSessionsFn(groupID, appID, userID)
+	}
+	return rc.Client.RevokeUserSessions(groupID, appID, userID)
 }
 
 // Status calls the mocked Status implementation if provided,

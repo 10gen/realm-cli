@@ -14,6 +14,7 @@ const (
 	headerType                   = "Type"
 	headerDeleted                = "Deleted"
 	headerDetails                = "Details"
+	headerRevoked                = "Revoked"
 )
 
 type userOutputs []userOutput
