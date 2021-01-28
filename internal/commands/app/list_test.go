@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	appcli "github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -50,7 +50,7 @@ func TestAppListHandler(t *testing.T) {
 
 	for _, tc := range []struct {
 		description       string
-		inputs            appcli.ProjectInputs
+		inputs            cli.ProjectInputs
 		expectedAppFilter realm.AppFilter
 	}{
 		{
@@ -58,17 +58,17 @@ func TestAppListHandler(t *testing.T) {
 		},
 		{
 			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
-			inputs:            appcli.ProjectInputs{App: "app1"},
+			inputs:            cli.ProjectInputs{App: "app1"},
 			expectedAppFilter: realm.AppFilter{App: "app1"},
 		},
 		{
 			description:       "With a project flag set and no app flag set should return all project apps",
-			inputs:            appcli.ProjectInputs{Project: groupID1},
+			inputs:            cli.ProjectInputs{Project: groupID1},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1},
 		},
 		{
 			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
-			inputs:            appcli.ProjectInputs{Project: groupID1, App: "app1"},
+			inputs:            cli.ProjectInputs{Project: groupID1, App: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 		},
 	} {

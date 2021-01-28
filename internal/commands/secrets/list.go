@@ -3,7 +3,6 @@ package secrets
 import (
 	"fmt"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -19,7 +18,7 @@ type CommandList struct {
 }
 
 type listInputs struct {
-	app.ProjectInputs
+	cli.ProjectInputs
 }
 
 // Flags are the command flags
@@ -40,7 +39,7 @@ func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
+	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -35,19 +35,25 @@ func TestPushSetup(t *testing.T) {
 	assert.NotNil(t, cmd.realmClient)
 }
 
-var projectPkg = map[string]interface{}{
-	"config_version":          float64(20200603),
-	"app_id":                  "eggcorn-abcde",
-	"name":                    "eggcorn",
-	"location":                "US-VA",
-	"deployment_model":        "GLOBAL",
-	"security":                map[string]interface{}{},
-	"custom_user_data_config": map[string]interface{}{"enabled": true},
-	"sync":                    map[string]interface{}{"development_mode_enabled": false},
-	"graphql":                 map[string]interface{}{"config": nil, "custom_resolvers": []map[string]interface{}{}},
-}
-
 func TestPushHandler(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	testApp := local.App{
+		RootDir: filepath.Join(wd, "testdata/project"),
+		Config:  local.FileConfig,
+		AppData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+			ConfigVersion:        realm.AppConfigVersion20200603,
+			ID:                   "eggcorn-abcde",
+			Name:                 "eggcorn",
+			Location:             realm.LocationVirginia,
+			DeploymentModel:      realm.DeploymentModelGlobal,
+			Security:             map[string]interface{}{},
+			CustomUserDataConfig: map[string]interface{}{"enabled": true},
+			Sync:                 map[string]interface{}{"development_mode_enabled": false},
+		}}},
+	}
+
 	t.Run("Should return an error if the command fails to resolve to", func(t *testing.T) {
 		var realmClient mock.RealmClient
 
@@ -101,7 +107,9 @@ func TestPushHandler(t *testing.T) {
 
 		var capturedGroupID, capturedName string
 		var capturedMeta realm.AppMeta
+		var i int
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			i++
 			capturedGroupID = groupID
 			capturedName = name
 			capturedMeta = meta
@@ -130,9 +138,9 @@ func TestPushHandler(t *testing.T) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
 		}
 
-		var capturedPkg map[string]interface{}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
-			capturedPkg = pkg
+		var capturedAppData interface{}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			capturedAppData = appData
 			return nil, errors.New("something bad happened")
 		}
 
@@ -145,7 +153,7 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("And should properly pass through the expected inputs")
-		assert.Equal(t, projectPkg, capturedPkg)
+		assert.Equal(t, testApp, capturedAppData)
 	})
 
 	t.Run("Should return an error if the command fails to create a new draft", func(t *testing.T) {
@@ -159,7 +167,7 @@ func TestPushHandler(t *testing.T) {
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{ID: "appID", GroupID: "groupID"}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1"}, nil
 		}
 
@@ -194,7 +202,7 @@ func TestPushHandler(t *testing.T) {
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{ID: "appID", GroupID: "groupID"}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1"}, nil
 		}
 		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
@@ -202,11 +210,11 @@ func TestPushHandler(t *testing.T) {
 		}
 
 		var capturedGroupID, capturedAppID string
-		var capturedPkg map[string]interface{}
-		realmClient.ImportFn = func(groupID, appID string, pkg map[string]interface{}) error {
+		var capturedAppData interface{}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
 			capturedGroupID = groupID
 			capturedAppID = appID
-			capturedPkg = pkg
+			capturedAppData = appData
 			return errors.New("something bad happened")
 		}
 
@@ -221,7 +229,7 @@ func TestPushHandler(t *testing.T) {
 		t.Log("And should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
-		assert.Equal(t, projectPkg, capturedPkg)
+		assert.Equal(t, testApp, capturedAppData)
 	})
 
 	t.Run("Should return an error if the command fails to deploy the draft", func(t *testing.T) {
@@ -235,13 +243,13 @@ func TestPushHandler(t *testing.T) {
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{ID: "appID", GroupID: "groupID"}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1"}, nil
 		}
 		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
 			return realm.AppDraft{ID: "draftID"}, nil
 		}
-		realmClient.ImportFn = func(groupID, appID string, pkg map[string]interface{}) error {
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
 
@@ -348,7 +356,7 @@ func TestPushHandler(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{}, nil
 		}
 
@@ -366,7 +374,7 @@ func TestPushHandler(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1", "diff2"}, nil
 		}
 
@@ -392,7 +400,7 @@ diff2
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
 		}
-		realmClient.DiffFn = func(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1", "diff2"}, nil
 		}
 
@@ -487,11 +495,11 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 	groupID := "groupID"
 	appID := primitive.NewObjectID().Hex()
 
-	fullPkg := map[string]interface{}{
-		app.FieldName:            "name",
-		app.FieldLocation:        "location",
-		app.FieldDeploymentModel: "deployment_model",
-	}
+	fullPkg := &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+		Name:            "name",
+		Location:        realm.Location("location"),
+		DeploymentModel: realm.DeploymentModel("deployment_model"),
+	}}}
 
 	t.Run("With a client that successfully creates apps", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
@@ -550,14 +558,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
     "config_version": 20200603,
     "name": "testApp",
     "location": "US-OR",
-    "deployment_model": "LOCAL",
-    "security": {},
-    "custom_user_data_config": {
-        "enabled": false
-    },
-    "sync": {
-        "development_mode_enabled": false
-    }
+    "deployment_model": "LOCAL"
 }`, string(configData))
 					},
 					expectedApp: realm.App{
@@ -589,16 +590,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						assert.Nil(t, readErr)
 						assert.Equal(t, `{
     "config_version": 20200603,
-    "name": "testApp",
-    "location": "",
-    "deployment_model": "",
-    "security": {},
-    "custom_user_data_config": {
-        "enabled": false
-    },
-    "sync": {
-        "development_mode_enabled": false
-    }
+    "name": "testApp"
 }`, string(configData))
 					},
 				},
@@ -624,15 +616,15 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						realmClient: realmClient,
 					}
 
-					created, err := cmd.createNewApp(ui, groupID, map[string]interface{}{})
+					app, err := cmd.createNewApp(ui, groupID, map[string]interface{}{})
 
 					console.Tty().Close() // flush the writers
 					<-doneCh              // wait for procedure to complete
 
 					assert.Nil(t, err)
-					assert.Equal(t, tc.expectedApp, created)
+					assert.Equal(t, tc.expectedApp, app)
 
-					tc.test(t, filepath.Join(tmpDir, app.FileConfig.String()))
+					tc.test(t, filepath.Join(tmpDir, local.FileConfig.String()))
 				})
 			}
 		})
@@ -643,16 +635,16 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 
 			for _, tc := range []struct {
 				description     string
-				pkg             map[string]interface{}
+				appData         interface{}
 				expectedAppMeta realm.AppMeta
 			}{
 				{
 					description: "Should use the package name when present and zero values for app meta",
-					pkg:         map[string]interface{}{app.FieldName: "name"},
+					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
 				},
 				{
 					description:     "Should use the package name location and deployment model when present",
-					pkg:             fullPkg,
+					appData:         fullPkg,
 					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model")},
 				},
 			} {
@@ -673,7 +665,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						realmClient: realmClient,
 					}
 
-					app, err := cmd.createNewApp(ui, "groupID", tc.pkg)
+					app, err := cmd.createNewApp(ui, "groupID", tc.appData)
 					assert.Nil(t, err)
 					assert.Equal(t, expectedApp, app)
 				})
@@ -683,17 +675,17 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 		t.Run("And an interactive ui that is set to auto confirm", func(t *testing.T) {
 			for _, tc := range []struct {
 				description     string
-				pkg             map[string]interface{}
+				appData         interface{}
 				expectedAppMeta realm.AppMeta
 			}{
 				{
 					description:     "Should prompt for name if not present in the package",
-					pkg:             map[string]interface{}{app.FieldLocation: "location", app.FieldDeploymentModel: "deployment_model"},
+					appData:         local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), DeploymentModel: realm.DeploymentModel("deployment_model")}}},
 					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model")},
 				},
 				{
 					description: "Should not prompt for location and deployment model even if not present in the package",
-					pkg:         map[string]interface{}{},
+					appData:     map[string]interface{}{},
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -720,7 +712,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						realmClient: realmClient,
 					}
 
-					app, err := cmd.createNewApp(ui, groupID, tc.pkg)
+					app, err := cmd.createNewApp(ui, groupID, tc.appData)
 					assert.Nil(t, err)
 
 					console.Tty().Close() // flush the writers

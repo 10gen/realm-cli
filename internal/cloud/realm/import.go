@@ -17,14 +17,8 @@ const (
 	importStrategyReplaceByName = "replace-by-name"
 )
 
-// ImportRequest is a Realm application import request
-type ImportRequest struct {
-	ConfigVersion AppConfigVersion `json:"config_version"`
-	AppPackage    map[string]interface{}
-}
-
-func (c *client) Diff(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
-	res, resErr := c.doImport(groupID, appID, pkg, true)
+func (c *client) Diff(groupID, appID string, appData interface{}) ([]string, error) {
+	res, resErr := c.doImport(groupID, appID, appData, true)
 	if resErr != nil {
 		return nil, resErr
 	}
@@ -40,8 +34,8 @@ func (c *client) Diff(groupID, appID string, pkg map[string]interface{}) ([]stri
 	return diffs, nil
 }
 
-func (c *client) Import(groupID, appID string, pkg map[string]interface{}) error {
-	res, resErr := c.doImport(groupID, appID, pkg, false)
+func (c *client) Import(groupID, appID string, appData interface{}) error {
+	res, resErr := c.doImport(groupID, appID, appData, false)
 	if resErr != nil {
 		return resErr
 	}
@@ -51,7 +45,7 @@ func (c *client) Import(groupID, appID string, pkg map[string]interface{}) error
 	return nil
 }
 
-func (c *client) doImport(groupID, appID string, pkg map[string]interface{}, diff bool) (*http.Response, error) {
+func (c *client) doImport(groupID, appID string, appData interface{}, diff bool) (*http.Response, error) {
 	query := map[string]string{importQueryStrategy: importStrategyReplaceByName}
 	if diff {
 		query[importQueryDiff] = trueVal
@@ -60,7 +54,7 @@ func (c *client) doImport(groupID, appID string, pkg map[string]interface{}, dif
 	return c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(importPathPattern, groupID, appID),
-		pkg,
+		appData,
 		api.RequestOptions{Query: query},
 	)
 }

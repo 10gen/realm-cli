@@ -19,7 +19,7 @@ func TestRealmApps(t *testing.T) {
 		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
 
-	t.Run("With an active session ", func(t *testing.T) {
+	t.Run("With an active session", func(t *testing.T) {
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 

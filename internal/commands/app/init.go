@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -43,12 +43,12 @@ func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if from.IsZero() {
-		return app.WriteDefaultConfig(profile.WorkingDirectory, app.Config{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-			Name:            cmd.inputs.Name,
-			Location:        cmd.inputs.Location,
-			DeploymentModel: cmd.inputs.DeploymentModel,
-		})
+		return local.NewApp(
+			profile.WorkingDirectory,
+			cmd.inputs.Name,
+			cmd.inputs.Location,
+			cmd.inputs.DeploymentModel,
+		).WriteConfig()
 	}
 
 	_, zipPkg, exportErr := cmd.realmClient.Export(
@@ -59,7 +59,7 @@ func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
 	if exportErr != nil {
 		return exportErr
 	}
-	return app.WriteZip(profile.WorkingDirectory, zipPkg)
+	return local.WriteZip(profile.WorkingDirectory, zipPkg)
 }
 
 // Feedback is the command feedback

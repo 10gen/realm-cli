@@ -1,7 +1,6 @@
 package secrets
 
 import (
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -22,7 +21,7 @@ const (
 )
 
 type createInputs struct {
-	app.ProjectInputs
+	cli.ProjectInputs
 	Name  string
 	Value string
 }

@@ -1,7 +1,6 @@
 package secrets
 
 import (
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -37,14 +36,18 @@ func (cmd *CommandCreate) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
+	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}
 
 	secret, secretErr := cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
+	if secretErr != nil {
+		return secretErr
+	}
+
 	cmd.secret = secret
-	return secretErr
+	return nil
 }
 
 // Feedback is the command feedback

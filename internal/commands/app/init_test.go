@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
@@ -43,24 +43,24 @@ func TestAppInitHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
-		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig.String()))
+		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileConfig.String()))
 		assert.Nil(t, readErr)
 
-		var config app.Config
+		var config local.AppConfigJSON
 		assert.Nil(t, json.Unmarshal(data, &config))
-		assert.Equal(t, app.Config{
+		assert.Equal(t, local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			Name:            "test-app",
 			Location:        realm.LocationSydney,
 			DeploymentModel: realm.DeploymentModelLocal,
-		}, config)
+		}}}, config)
 	})
 
 	t.Run("Should initialze a templated app when from type is specified to app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
-		testApp := realm.App{
+		app := realm.App{
 			ID:          primitive.NewObjectID().Hex(),
 			GroupID:     primitive.NewObjectID().Hex(),
 			ClientAppID: "test-app-abcde",
@@ -72,7 +72,7 @@ func TestAppInitHandler(t *testing.T) {
 
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{testApp}, nil
+			return []realm.App{app}, nil
 		}
 		client.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			zipPkg, err := zip.OpenReader("testdata/project.zip")
@@ -89,21 +89,24 @@ func TestAppInitHandler(t *testing.T) {
 		assert.Nil(t, cmd.Handler(profile, nil))
 
 		t.Run("Should have the expected contents in the app config file", func(t *testing.T) {
-			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileConfig.String()))
+			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileConfig.String()))
 			assert.Nil(t, readErr)
 
-			var config app.Config
+			var config local.AppConfigJSON
 			assert.Nil(t, json.Unmarshal(data, &config))
-			assert.Equal(t, app.Config{
-				ConfigVersion:   realm.DefaultAppConfigVersion,
-				Name:            "from-app",
-				Location:        realm.LocationIreland,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}, config)
+			assert.Equal(t, local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+				ConfigVersion:        realm.DefaultAppConfigVersion,
+				Name:                 "from-app",
+				Location:             realm.LocationIreland,
+				DeploymentModel:      realm.DeploymentModelGlobal,
+				Security:             map[string]interface{}{},
+				CustomUserDataConfig: map[string]interface{}{"enabled": false},
+				Sync:                 map[string]interface{}{"development_mode_enabled": false},
+			}}}, config)
 		})
 
 		t.Run("Should have the expected contents in the api key auth provider config file", func(t *testing.T) {
-			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, app.FileAuthProvider("api-key").String()))
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuthProviders, "api-key.json"))
 			assert.Nil(t, err)
 			assert.Equal(t, `{
     "name": "api-key",

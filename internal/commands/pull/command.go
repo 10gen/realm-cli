@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -63,7 +63,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return nil
 	}
 
-	if err := app.WriteZip(path, zipPkg); err != nil {
+	if err := local.WriteZip(path, zipPkg); err != nil {
 		return err
 	}
 

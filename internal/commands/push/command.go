@@ -4,10 +4,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -55,9 +55,9 @@ func (cmd *Command) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	pkg, pkgErr := app.ReadPackage(cmd.inputs.AppDirectory)
-	if pkgErr != nil {
-		return pkgErr
+	app, appErr := local.LoadApp(cmd.inputs.AppDirectory)
+	if appErr != nil {
+		return appErr
 	}
 
 	to, toErr := cmd.inputs.resolveTo(ui, cmd.realmClient)
@@ -66,7 +66,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if to.GroupID == "" {
-		groupID, err := app.ResolveGroupID(ui, cmd.atlasClient)
+		groupID, err := cli.ResolveGroupID(ui, cmd.atlasClient)
 		if err != nil {
 			return err
 		}
@@ -78,18 +78,18 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 			return nil
 		}
 
-		created, err := cmd.createNewApp(ui, to.GroupID, pkg)
+		app, err := cmd.createNewApp(ui, to.GroupID, app)
 		if err != nil {
 			return err
 		}
-		if created.ID == "" {
+		if app.ID == "" {
 			return nil
 		}
-		to.AppID = created.ID
+		to.AppID = app.ID
 		cmd.outputs.appCreated = true
 	}
 
-	diffs, diffsErr := cmd.realmClient.Diff(to.GroupID, to.AppID, pkg)
+	diffs, diffsErr := cmd.realmClient.Diff(to.GroupID, to.AppID, app)
 	if diffsErr != nil {
 		return diffsErr
 	}
@@ -141,7 +141,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return nil
 	}
 
-	if err := cmd.realmClient.Import(to.GroupID, to.AppID, pkg); err != nil {
+	if err := cmd.realmClient.Import(to.GroupID, to.AppID, app); err != nil {
 		return err
 	}
 
@@ -180,7 +180,11 @@ func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(terminal.NewTextLog("Successfully pushed app changes"))
 }
 
-func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]interface{}) (realm.App, error) {
+type namer interface{ Name() string }
+type locationer interface{ Location() realm.Location }
+type deploymentModeler interface{ DeploymentModel() realm.DeploymentModel }
+
+func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interface{}) (realm.App, error) {
 	if proceed, err := ui.Confirm("Do you wish to create a new app?"); err != nil {
 		return realm.App{}, err
 	} else if !proceed {
@@ -188,8 +192,8 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]
 	}
 
 	var name string
-	if n, ok := pkg[app.FieldName]; ok {
-		name = n.(string)
+	if n, ok := appData.(namer); ok {
+		name = n.Name()
 	}
 	if name == "" || !ui.AutoConfirm() {
 		if err := ui.AskOne(&name, &survey.Input{Message: "App Name", Default: name}); err != nil {
@@ -198,8 +202,8 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]
 	}
 
 	var location string
-	if l, ok := pkg[app.FieldLocation]; ok {
-		location = l.(string)
+	if l, ok := appData.(locationer); ok {
+		location = l.Location().String()
 	}
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
@@ -215,8 +219,8 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]
 	}
 
 	var deploymentModel string
-	if dm, ok := pkg[app.FieldDeploymentModel]; ok {
-		deploymentModel = dm.(string)
+	if dm, ok := appData.(deploymentModeler); ok {
+		deploymentModel = dm.DeploymentModel().String()
 	}
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
@@ -230,7 +234,7 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]
 		}
 	}
 
-	created, appErr := cmd.realmClient.CreateApp(
+	app, appErr := cmd.realmClient.CreateApp(
 		groupID,
 		name,
 		realm.AppMeta{Location: realm.Location(location), DeploymentModel: realm.DeploymentModel(deploymentModel)},
@@ -244,11 +248,11 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, pkg map[string]
 	}
 	cmd.outputs.appCreated = true
 
-	if err := app.WriteDefaultConfig(cmd.inputs.AppDirectory, app.ToDefaultConfig(created)); err != nil {
+	if err := local.AsApp(cmd.inputs.AppDirectory, app).WriteConfig(); err != nil {
 		return realm.App{}, err
 	}
 
-	return created, nil
+	return app, nil
 }
 
 func createNewDraft(ui terminal.UI, realmClient realm.Client, to to) (realm.AppDraft, bool, error) {

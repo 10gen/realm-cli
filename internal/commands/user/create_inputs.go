@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
@@ -39,7 +38,7 @@ const (
 )
 
 type createInputs struct {
-	app.ProjectInputs
+	cli.ProjectInputs
 	UserType   userType
 	Email      string
 	Password   string

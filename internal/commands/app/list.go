@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 
-	appcli "github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -14,7 +13,7 @@ import (
 // CommandList is the `app list` command
 type CommandList struct {
 	apps        []realm.App
-	inputs      appcli.ProjectInputs
+	inputs      cli.ProjectInputs
 	realmClient realm.Client
 }
 
