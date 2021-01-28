@@ -27,11 +27,10 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 	if resErr != nil {
 		return nil, resErr
 	}
-
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, parseResponseError(res)
+		return nil, api.ErrUnexpectedStatusCode{"secrets", res.StatusCode}
 	}
+	defer res.Body.Close()
 	var secrets []Secret
 	if err := json.NewDecoder(res.Body).Decode(&secrets); err != nil {
 		return nil, err
