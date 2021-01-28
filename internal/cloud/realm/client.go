@@ -38,6 +38,8 @@ type Client interface {
 	Deployment(groupID, appID, deploymentID string) (AppDeployment, error)
 	Draft(groupID, appID string) (AppDraft, error)
 
+	Secrets(groupID, appID string) ([]Secret, error)
+
 	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	CreateUser(groupID, appID, email, password string) (User, error)
 	DeleteUser(groupID, appID, userID string) error
