@@ -9,16 +9,146 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+	"github.com/Netflix/go-expect"
 )
+
+func TestResolveUsersInputs(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
+			Disabled:   false,
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-3@test.com"},
+		},
+	}
+
+	t.Run("should prompt for users", func(t *testing.T) {
+		for _, tc := range []struct {
+			description   string
+			inputs        deleteInputs
+			procedure     func(c *expect.Console)
+			users         []realm.User
+			expectedUsers []realm.User
+		}{
+			{
+				description: "with no input set",
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-1")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers,
+				expectedUsers: []realm.User{testUsers[0]},
+			},
+			{
+				description: "with providers set",
+				inputs:      deleteInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}},
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-2")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers[1:],
+				expectedUsers: []realm.User{testUsers[1]},
+			},
+			{
+				description: "with state set",
+				inputs:      deleteInputs{State: realm.UserStateDisabled},
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-2")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers[1:],
+				expectedUsers: []realm.User{testUsers[1]},
+			},
+			{
+				description: "with status set",
+				inputs:      deleteInputs{State: realm.UserStateDisabled},
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-3")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers[2:],
+				expectedUsers: []realm.User{testUsers[2]},
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				realmClient := mock.RealmClient{}
+				realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+					return tc.users, nil
+				}
+
+				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+				assert.Nil(t, consoleErr)
+				defer console.Close()
+
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					tc.procedure(console)
+				}()
+
+				var app realm.App
+				users, err := tc.inputs.ResolveUsers(ui, realmClient, app)
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedUsers, users)
+			})
+		}
+	})
+
+	t.Run("should error from client", func(t *testing.T) {
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+		}()
+
+		realmClient := mock.RealmClient{}
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return nil, errors.New("client error")
+		}
+		var app realm.App
+		inputs := deleteInputs{}
+		_, err := inputs.ResolveUsers(ui, realmClient, app)
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		assert.Equal(t, errors.New("client error"), err)
+	})
+}
 
 func TestUserDeleteSetup(t *testing.T) {
 	t.Run("should construct a realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
-
 		cmd := &CommandDelete{inputs: deleteInputs{}}
-		assert.Nil(t, cmd.realmClient)
 
+		assert.Nil(t, cmd.realmClient)
 		assert.Nil(t, cmd.Setup(profile, nil))
 		assert.NotNil(t, cmd.realmClient)
 	})
@@ -69,34 +199,28 @@ func TestUserDeleteHandler(t *testing.T) {
 			var capturedAppFilter realm.AppFilter
 			var capturedFindProjectID, capturedFindAppID string
 			var capturedDeleteProjectID, capturedDeleteAppID string
-
 			realmClient := mock.RealmClient{}
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				capturedAppFilter = filter
 				return []realm.App{testApp}, nil
 			}
-
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				capturedFindProjectID = groupID
 				capturedFindAppID = appID
 				return testUsers, nil
 			}
-
 			realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
 				capturedDeleteProjectID = groupID
 				capturedDeleteAppID = appID
 				return tc.userDeleteErr
 			}
-
 			cmd := &CommandDelete{
 				inputs: deleteInputs{
 					ProjectInputs: app.ProjectInputs{
 						Project: projectID,
 						App:     appID,
 					},
-					usersInputs: usersInputs{
-						Users: []string{testUsers[0].ID},
-					},
+					Users: []string{testUsers[0].ID},
 				},
 				realmClient: realmClient,
 			}
@@ -248,7 +372,6 @@ func TestUserDeleteFeedback(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
-
 			cmd := &CommandDelete{
 				outputs: tc.outputs,
 			}
@@ -259,30 +382,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 	}
 }
 
-func TestUserDeleteTableHeaders(t *testing.T) {
-	for _, tc := range []struct {
-		description      string
-		authProviderType realm.AuthProviderType
-		expectedHeaders  []string
-	}{
-		{
-			description:      "should show name for apikey",
-			authProviderType: realm.AuthProviderTypeAPIKey,
-			expectedHeaders:  []string{"Name", "ID", "Type", "Deleted", "Details"},
-		},
-		{
-			description:      "should show email for local-userpass",
-			authProviderType: realm.AuthProviderTypeUserPassword,
-			expectedHeaders:  []string{"Email", "ID", "Type", "Deleted", "Details"},
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userDeleteTableHeaders(tc.authProviderType))
-		})
-	}
-}
-
-func TestUserDeleteTableRow(t *testing.T) {
+func TestUserDeleteRow(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
 		authProviderType realm.AuthProviderType
@@ -290,7 +390,7 @@ func TestUserDeleteTableRow(t *testing.T) {
 		expectedRow      map[string]interface{}
 	}{
 		{
-			description:      "should show name for apikey type user",
+			description:      "should show successful disable user row",
 			authProviderType: realm.AuthProviderTypeAPIKey,
 			output: userOutput{
 				user: realm.User{
@@ -299,18 +399,14 @@ func TestUserDeleteTableRow(t *testing.T) {
 					Type:       "type-1",
 					Data:       map[string]interface{}{"name": "name-1"},
 				},
-				err: nil,
 			},
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Name":    "name-1",
-				"Type":    "type-1",
 				"Deleted": true,
 				"Details": "",
 			},
 		},
 		{
-			description:      "should show email for local-userpass type user",
+			description:      "should show failed disable user row",
 			authProviderType: realm.AuthProviderTypeUserPassword,
 			output: userOutput{
 				user: realm.User{
@@ -319,19 +415,19 @@ func TestUserDeleteTableRow(t *testing.T) {
 					Type:       "type-1",
 					Data:       map[string]interface{}{"email": "user-1@test.com"},
 				},
-				err: nil,
+				err: errors.New("client error"),
 			},
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Email":   "user-1@test.com",
-				"Type":    "type-1",
-				"Deleted": true,
-				"Details": "",
+				"Deleted": false,
+				"Details": "client error",
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userDeleteTableRow(tc.authProviderType, tc.output))
+			row := map[string]interface{}{}
+			userDeleteRow(tc.output, row)
+
+			assert.Equal(t, tc.expectedRow, row)
 		})
 	}
 }

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/spf13/pflag"
 )
@@ -22,7 +24,10 @@ type CommandDelete struct {
 
 type deleteInputs struct {
 	app.ProjectInputs
-	usersInputs
+	State         realm.UserState
+	ProviderTypes []string
+	Pending       bool
+	Users         []string
 }
 
 func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -30,6 +35,54 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 	return nil
+}
+
+// ResolveUsers will use the provided Realm client to resolve the users specified by the realm.App through inputs
+func (i *deleteInputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
+	filter := realm.UserFilter{
+		IDs:       i.Users,
+		State:     i.State,
+		Pending:   i.Pending,
+		Providers: realm.NewAuthProviderTypes(i.ProviderTypes...),
+	}
+	foundUsers, usersErr := client.FindUsers(app.GroupID, app.ID, filter)
+	if usersErr != nil {
+		return nil, usersErr
+	}
+	if len(i.Users) > 0 {
+		if len(foundUsers) == 0 {
+			return nil, errors.New("no users found")
+		}
+		return foundUsers, nil
+	}
+
+	selectableUsers := map[string]realm.User{}
+	selectableUserOptions := make([]string, len(foundUsers))
+	for idx, user := range foundUsers {
+		var apt realm.AuthProviderType
+		if len(user.Identities) > 0 {
+			apt = user.Identities[0].ProviderType
+		}
+		opt := displayUser(apt, user)
+		selectableUserOptions[idx] = opt
+		selectableUsers[opt] = user
+	}
+	var selectedUsers []string
+	askErr := ui.AskOne(
+		&selectedUsers,
+		&survey.MultiSelect{
+			Message: "Which user(s) would you like to delete?",
+			Options: selectableUserOptions,
+		},
+	)
+	if askErr != nil {
+		return nil, askErr
+	}
+	users := make([]realm.User, len(selectedUsers))
+	for idx, user := range selectedUsers {
+		users[idx] = selectableUsers[user]
+	}
+	return users, nil
 }
 
 // Flags is the command flags
@@ -94,55 +147,19 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		sort.SliceStable(outputs, getUserOutputComparerBySuccess(outputs))
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", apt.Display()),
-			userDeleteTableHeaders(apt),
-			userDeleteTableRows(apt, outputs)...,
+			append(userTableHeaders(apt), headerDeleted, headerDetails),
+			userTableRows(apt, outputs, userDeleteRow)...,
 		))
 	}
 	return ui.Print(logs...)
 }
 
-func userDeleteTableHeaders(authProviderType realm.AuthProviderType) []string {
-	var headers []string
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		headers = append(headers, headerName)
-	case realm.AuthProviderTypeUserPassword:
-		headers = append(headers, headerEmail)
-	}
-	headers = append(
-		headers,
-		headerID,
-		headerType,
-		headerDeleted,
-		headerDetails,
-	)
-	return headers
-}
-
-func userDeleteTableRows(authProviderType realm.AuthProviderType, outputs []userOutput) []map[string]interface{} {
-	rows := make([]map[string]interface{}, 0, len(outputs))
-	for _, output := range outputs {
-		rows = append(rows, userDeleteTableRow(authProviderType, output))
-	}
-	return rows
-}
-
-func userDeleteTableRow(authProviderType realm.AuthProviderType, output userOutput) map[string]interface{} {
-	var details string
+func userDeleteRow(output userOutput, row map[string]interface{}) {
 	if output.err != nil {
-		details = output.err.Error()
+		row[headerDeleted] = false
+		row[headerDetails] = output.err.Error()
+	} else {
+		row[headerDeleted] = true
+		row[headerDetails] = ""
 	}
-	row := map[string]interface{}{
-		headerID:      output.user.ID,
-		headerType:    output.user.Type,
-		headerDeleted: output.err == nil,
-		headerDetails: details,
-	}
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		row[headerName] = output.user.Data[userDataName]
-	case realm.AuthProviderTypeUserPassword:
-		row[headerEmail] = output.user.Data[userDataEmail]
-	}
-	return row
 }
