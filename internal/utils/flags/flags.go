@@ -9,8 +9,9 @@ import (
 	"strings"
 )
 
+// set of known flag types
 const (
-	//TypeString is the type of strings
+	TypeInt    = "int"
 	TypeString = "string"
 )
 

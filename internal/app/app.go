@@ -51,6 +51,9 @@ func WriteDefaultConfig(path string, config Config) error {
 
 // WriteZip writes the zip contents to the specified filepath
 func WriteZip(wd string, zipPkg *zip.Reader) error {
+	if err := mkdir(wd); err != nil {
+		return err
+	}
 	for _, zipFile := range zipPkg.File {
 		path := filepath.Join(wd, zipFile.Name)
 
@@ -77,20 +80,20 @@ func WriteZip(wd string, zipPkg *zip.Reader) error {
 // ResolveConfig resolves the MongoDB Realm application configuration
 // based on the current working directory
 // Empty data will be returned if called outside a project directory
-func ResolveConfig(wd string) (Config, error) {
+func ResolveConfig(wd string) (string, Config, error) {
 	appDir, appDirOK, appDirErr := ResolveDirectory(wd)
 	if appDirErr != nil {
-		return Config{}, appDirErr
+		return "", Config{}, appDirErr
 	}
 	if !appDirOK {
-		return Config{}, nil
+		return "", Config{}, nil
 	}
 
 	var config Config
 	if err := unmarshalAppConfigInto(appDir, &config); err != nil {
-		return Config{}, err
+		return "", Config{}, err
 	}
-	return config, nil
+	return appDir.Path, config, nil
 }
 
 // Directory represents the metadata associated with a Realm app project directory

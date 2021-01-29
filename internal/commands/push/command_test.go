@@ -44,7 +44,7 @@ var projectPkg = map[string]interface{}{
 	"security":                map[string]interface{}{},
 	"custom_user_data_config": map[string]interface{}{"enabled": true},
 	"sync":                    map[string]interface{}{"development_mode_enabled": false},
-	"graphql":                 map[string]interface{}{"config": nil, "custom_resolvers": []interface{}{}},
+	"graphql":                 map[string]interface{}{"config": nil, "custom_resolvers": []map[string]interface{}{}},
 }
 
 func TestPushHandler(t *testing.T) {

@@ -47,6 +47,11 @@ type Log struct {
 	Data  LogData
 }
 
+// NewDebugLog creates a new debug log with a text message
+func NewDebugLog(format string, args ...interface{}) Log {
+	return newLog(LogLevelDebug, newTextMessage(format, args...))
+}
+
 // NewTextLog creates a new log with a text message
 func NewTextLog(format string, args ...interface{}) Log {
 	return newLog(LogLevelInfo, newTextMessage(format, args...))

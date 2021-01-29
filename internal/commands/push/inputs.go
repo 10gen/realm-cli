@@ -25,19 +25,19 @@ const (
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "specify the command to run without pushing any changes to the Realm server"
+	flagDryRunUsage = "include to run without pushing any changes to the Realm server"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "specify the command to push Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "include to push Realm app dependencies changes as well"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "specify the command to push Realm app hosting changes as well"
+	flagIncludeHostingUsage = "include to push Realm app hosting changes as well"
 
 	flagResetCDNCache      = "reset-cdn-cache"
 	flagResetCDNCacheShort = "c"
-	flagResetCDNCacheUsage = "specify the command to reset the Realm app hosting CDN cache"
+	flagResetCDNCacheUsage = "include to reset the Realm app hosting CDN cache"
 )
 
 type to struct {
@@ -50,10 +50,10 @@ type inputs struct {
 	Project             string
 	To                  string
 	AsNew               bool
-	DryRun              bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
+	DryRun              bool
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -62,21 +62,20 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		wd = profile.WorkingDirectory
 	}
 
-	appConfig, appConfigErr := app.ResolveConfig(wd)
+	appDir, appConfig, appConfigErr := app.ResolveConfig(wd)
 	if appConfigErr != nil {
 		return appConfigErr
 	}
 
 	if i.AppDirectory == "" {
-		if appConfig.Name == "" {
+		if appDir == "" {
 			return errProjectNotFound{}
 		}
-		// TODO(REALMC-7166): set i.AppDirectory to appDir returned from app.ResolveConfig
-		i.AppDirectory = profile.WorkingDirectory
+		i.AppDirectory = appDir
 	}
 
 	if i.To == "" {
-		i.To = appConfig.ID
+		i.To = appConfig.String()
 	}
 
 	return nil
