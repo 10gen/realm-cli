@@ -107,6 +107,13 @@ var (
 		Help:        "secrets",
 		SubCommands: []cli.CommandDefinition{
 			cli.CommandDefinition{
+				Use:         "create",
+				Display:     "secrets create",
+				Description: "Creates a secret for a Realm application",
+				Help:        "Adds a new secret to your Realm app. You will be prompted to name your Secret, and define the value of your Secret.",
+				Command:     &secrets.CommandCreate{},
+			},
+			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "secrets list",

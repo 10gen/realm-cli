@@ -37,3 +37,25 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 	}
 	return secrets, nil
 }
+
+type createSecretRequest struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func (c *client) CreateSecret(groupID, appID, name, value string) error {
+	res, resErr := c.doJSON(
+		http.MethodPost,
+		fmt.Sprintf(secretsPathPattern, groupID, appID),
+		createSecretRequest{name, value},
+		api.RequestOptions{},
+	)
+	if resErr != nil {
+		return resErr
+	}
+	if res.StatusCode != http.StatusCreated {
+		return api.ErrUnexpectedStatusCode{"secrets create", res.StatusCode}
+	}
+
+	return nil
+}

@@ -27,7 +27,8 @@ type RealmClient struct {
 	DeployDraftFn func(groupID, appID, draftID string) (realm.AppDeployment, error)
 	DeploymentFn  func(groupID, appID, deploymentID string) (realm.AppDeployment, error)
 
-	SecretsFn func(groupID, appID string) ([]realm.Secret, error)
+	SecretsFn      func(groupID, appID string) ([]realm.Secret, error)
+	CreateSecretFn func(groupID, appID, name, value string) error
 
 	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
 	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
@@ -185,6 +186,16 @@ func (rc RealmClient) Secrets(groupID, appID string) ([]realm.Secret, error) {
 		return rc.SecretsFn(groupID, appID)
 	}
 	return rc.Client.Secrets(groupID, appID)
+}
+
+// CreateSecret calls the mocked CreateSecret implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) CreateSecret(groupID, appID, name, value string) error {
+	if rc.CreateSecretFn != nil {
+		return rc.CreateSecretFn(groupID, appID, name, value)
+	}
+	return rc.Client.CreateSecret(groupID, appID, name, value)
 }
 
 // CreateUser calls the mocked CreateUser implementation if provided,
