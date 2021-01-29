@@ -123,6 +123,21 @@ func TestRealmUsers(t *testing.T) {
 				assert.Equal(t, []realm.User{email3}, users)
 			})
 
+			t.Run("And enable users", func(t *testing.T) {
+				assert.Nil(t, client.EnableUser(groupID, testApp.ID, email1.ID))
+				assert.Nil(t, client.EnableUser(groupID, testApp.ID, email3.ID))
+			})
+
+			t.Run("And find all enabled user/password users", func(t *testing.T) {
+				users, err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{State: realm.UserStateEnabled, Providers: []realm.AuthProviderType{realm.AuthProviderTypeUserPassword}})
+				assert.Nil(t, err)
+
+				email1.Disabled = false
+				email3.Disabled = false
+
+				assert.Equal(t, []realm.User{email1, email2, email3}, users)
+			})
+
 			t.Run("And revoking a user session should succeed", func(t *testing.T) {
 				assert.Nil(t, client.RevokeUserSessions(groupID, testApp.ID, email1.ID))
 			})
