@@ -26,6 +26,8 @@ func TestSecretsCreateSetup(t *testing.T) {
 func TestSecretsCreateHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
+	secretName := "secretname"
+	secretValue := "secretvalue"
 	testApp := realm.App{
 		ID:          appID,
 		GroupID:     projectID,
@@ -35,11 +37,18 @@ func TestSecretsCreateHandler(t *testing.T) {
 
 	t.Run("should create app secrets", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
+		var capturedFilter realm.AppFilter
+		var capturedGroupID, capturedAppID, capturedName, capturedValue string
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			capturedFilter = filter
 			return []realm.App{testApp}, nil
 		}
 
 		realmClient.CreateSecretFn = func(groupID, appID, name, value string) error {
+			capturedGroupID = groupID
+			capturedAppID = appID
+			capturedName = name
+			capturedValue = value
 			return nil
 		}
 
@@ -49,13 +58,21 @@ func TestSecretsCreateHandler(t *testing.T) {
 					Project: projectID,
 					App:     appID,
 				},
-				Name:  "secretname",
-				Value: "secretvalue",
+				Name:  secretName,
+				Value: secretValue,
 			},
 			realmClient: realmClient,
 		}
 
 		assert.Nil(t, cmd.Handler(nil, nil))
+
+		t.Log("and should properly pass through the expected inputs")
+		assert.Equal(t, realm.AppFilter{projectID, appID}, capturedFilter)
+		assert.Equal(t, projectID, capturedGroupID)
+		assert.Equal(t, appID, capturedAppID)
+		assert.Equal(t, secretName, capturedName)
+		assert.Equal(t, secretValue, capturedValue)
+
 	})
 
 	t.Run("should return an error", func(t *testing.T) {

@@ -7,6 +7,19 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+const (
+	flagName      = "secret-name"
+	flagNameShort = "n"
+	flagNameUsage = `the name of the secret to add to your Realm App`
+
+	flagValue      = "secret-value"
+	flagValueShort = "v"
+	flagValueUsage = `the value of the secret to add to your Realm App`
+
+	createInputFieldSecretName  = "Name"
+	createInputFieldSecretValue = "Value"
+)
+
 type createInputs struct {
 	app.ProjectInputs
 	Name  string
@@ -14,16 +27,26 @@ type createInputs struct {
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	var questions []*survey.Question
+
 	if i.Name == "" {
-		if err := ui.AskOne(&i.Name, &survey.Input{Message: "Secret Name"}); err != nil {
-			return err
-		}
-	}
-	if i.Value == "" {
-		if err := ui.AskOne(&i.Value, &survey.Input{Message: "Secret Value"}); err != nil {
-			return err
-		}
+		questions = append(questions, &survey.Question{
+			Name:   createInputFieldSecretName,
+			Prompt: &survey.Input{Message: "Secret Name"},
+		})
 	}
 
+	if i.Value == "" {
+		questions = append(questions, &survey.Question{
+			Name:   createInputFieldSecretValue,
+			Prompt: &survey.Password{Message: "Secret Value"},
+		})
+	}
+
+	if len(questions) > 0 {
+		if err := ui.Ask(i, questions...); err != nil {
+			return err
+		}
+	}
 	return nil
 }

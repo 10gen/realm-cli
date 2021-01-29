@@ -54,7 +54,7 @@ func (c *client) CreateSecret(groupID, appID, name, value string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return api.ErrUnexpectedStatusCode{"secrets create", res.StatusCode}
+		return api.ErrUnexpectedStatusCode{"create secrets", res.StatusCode}
 	}
 
 	return nil

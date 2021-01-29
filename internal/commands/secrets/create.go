@@ -41,15 +41,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	if app.ID == "" {
-		return nil
-	}
-
-	secretsErr := cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
-	if secretsErr != nil {
-		return secretsErr
-	}
-	return nil
+	return cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
 }
 
 // Feedback is the command feedback

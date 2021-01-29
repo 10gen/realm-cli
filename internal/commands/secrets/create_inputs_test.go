@@ -3,52 +3,49 @@ package secrets
 import (
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"github.com/Netflix/go-expect"
 )
 
 func TestCreateInputs(t *testing.T) {
 	for _, tc := range []struct {
-		description    string
-		createInputs   createInputs
-		prepareProfile func(p *cli.Profile)
-		procedure      func(c *expect.Console)
-		test           func(t *testing.T, i createInputs)
+		description string
+		inputs      createInputs
+		procedure   func(c *expect.Console)
+		test        func(t *testing.T, i createInputs)
 	}{
 		{
 			description: "should prompt for secret name when not provided",
-			createInputs: createInputs{
+			inputs: createInputs{
 				Value: "value",
 			},
-			prepareProfile: func(p *cli.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Secret Name")
 				c.SendLine("name")
+				c.ExpectEOF()
 			},
 			test: func(t *testing.T, i createInputs) {
-				assert.Equal(t, "name", i.Name)
+				assert.Equal(t, createInputs{Name: "name", Value: "value"}, i)
 			},
 		},
 		{
 			description: "Should prompt for secret value when not provided",
-			createInputs: createInputs{
+			inputs: createInputs{
 				Name: "name",
 			},
-			prepareProfile: func(p *cli.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Secret Value")
 				c.SendLine("value")
 				c.ExpectEOF()
 			},
 			test: func(t *testing.T, i createInputs) {
-				assert.Equal(t, "value", i.Value)
+				assert.Equal(t, createInputs{Name: "name", Value: "value"}, i)
 			},
 		},
 		{
-			description:    "Should prompt for both secret name and secret value when not provided",
-			prepareProfile: func(p *cli.Profile) {},
+			description: "Should prompt for both secret name and secret value when not provided",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Secret Name")
 				c.SendLine("name")
@@ -57,23 +54,18 @@ func TestCreateInputs(t *testing.T) {
 				c.ExpectEOF()
 			},
 			test: func(t *testing.T, i createInputs) {
-				assert.Equal(t, "name", i.Name)
-				assert.Equal(t, "value", i.Value)
+				assert.Equal(t, createInputs{Name: "name", Value: "value"}, i)
 			},
 		},
 		{
 			description: "Should not prompt for inputs when flags provide the data",
-			createInputs: createInputs{
+			inputs: createInputs{
 				Name:  "name",
 				Value: "value",
 			},
-			prepareProfile: func(p *cli.Profile) {},
-			procedure: func(c *expect.Console) {
-				// c.ExpectEOF()
-			},
+			procedure: func(c *expect.Console) {},
 			test: func(t *testing.T, i createInputs) {
-				assert.Equal(t, "name", i.Name)
-				assert.Equal(t, "value", i.Value)
+				assert.Equal(t, createInputs{Name: "name", Value: "value"}, i)
 			},
 		},
 	} {
@@ -83,7 +75,6 @@ func TestCreateInputs(t *testing.T) {
 			defer console.Close()
 
 			profile := mock.NewProfile(t)
-			tc.prepareProfile(profile)
 
 			doneCh := make(chan (struct{}))
 			go func() {
@@ -91,12 +82,12 @@ func TestCreateInputs(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			assert.Nil(t, tc.createInputs.Resolve(profile, ui))
+			assert.Nil(t, tc.inputs.Resolve(profile, ui))
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
 
-			tc.test(t, tc.createInputs)
+			tc.test(t, tc.inputs)
 		})
 	}
 }
