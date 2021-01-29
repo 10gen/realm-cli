@@ -69,7 +69,7 @@ func (cmd *CommandUserState) Inputs() cli.InputResolver {
 
 // Setup is the command setup
 func (cmd *CommandUserState) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = realm.NewAuthClient(profile)
+	cmd.realmClient = profile.RealmAuthClient()
 	return nil
 }
 

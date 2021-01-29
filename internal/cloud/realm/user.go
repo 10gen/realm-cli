@@ -242,8 +242,7 @@ func (c *client) DeleteUser(groupID, appID, userID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{Action: "delete user", Actual: res.StatusCode}
 	}
 	return nil
 }
@@ -258,8 +257,7 @@ func (c *client) DisableUser(groupID, appID, userID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{Action: "disable user", Actual: res.StatusCode}
 	}
 	return nil
 }
@@ -274,8 +272,7 @@ func (c *client) EnableUser(groupID, appID, userID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{Action: "enable user", Actual: res.StatusCode}
 	}
 	return nil
 }
@@ -308,8 +305,7 @@ func (c *client) RevokeUserSessions(groupID, appID, userID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{Action: "revoke user", Actual: res.StatusCode}
 	}
 	return nil
 }
