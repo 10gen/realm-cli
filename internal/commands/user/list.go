@@ -18,7 +18,7 @@ import (
 type CommandList struct {
 	inputs      listInputs
 	realmClient realm.Client
-	outputs     []userOutput
+	outputs     userOutputs
 }
 
 type listInputs struct {
@@ -87,13 +87,7 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
-
-	var outputsByProviderType = map[realm.AuthProviderType][]userOutput{}
-	for _, output := range cmd.outputs {
-		for _, identity := range output.user.Identities {
-			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
-		}
-	}
+	outputsByProviderType := cmd.outputs.outputsByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -126,10 +120,10 @@ func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func userListRow(output userOutput, row map[string]interface{}) {
-	row[headerEnabled] = !output.user.Disabled
 	timeString := "n/a"
 	if output.user.LastAuthenticationDate != 0 {
 		timeString = time.Unix(output.user.LastAuthenticationDate, 0).UTC().String()
 	}
 	row[headerLastAuthenticationDate] = timeString
+	row[headerEnabled] = !output.user.Disabled
 }

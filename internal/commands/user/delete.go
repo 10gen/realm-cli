@@ -10,15 +10,15 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-	"github.com/AlecAivazis/survey/v2"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/pflag"
 )
 
 // CommandDelete is the `user delete` command
 type CommandDelete struct {
 	inputs      deleteInputs
-	outputs     []userOutput
+	outputs     userOutputs
 	realmClient realm.Client
 }
 
@@ -37,8 +37,7 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-// ResolveUsers will use the provided Realm client to resolve the users specified by the realm.App through inputs
-func (i *deleteInputs) ResolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
+func (i *deleteInputs) resolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
 	filter := realm.UserFilter{
 		IDs:       i.Users,
 		State:     i.State,
@@ -116,7 +115,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 	if appErr != nil {
 		return appErr
 	}
-	users, usersErr := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
+	users, usersErr := cmd.inputs.resolveUsers(ui, cmd.realmClient, app)
 	if usersErr != nil {
 		return usersErr
 	}
@@ -132,12 +131,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
-	var outputsByProviderType = map[realm.AuthProviderType][]userOutput{}
-	for _, output := range cmd.outputs {
-		for _, identity := range output.user.Identities {
-			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
-		}
-	}
+	outputsByProviderType := cmd.outputs.outputsByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -155,11 +149,15 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func userDeleteRow(output userOutput, row map[string]interface{}) {
+	var (
+		deleted bool
+		details string
+	)
 	if output.err != nil {
-		row[headerDeleted] = false
-		row[headerDetails] = output.err.Error()
+		details = output.err.Error()
 	} else {
-		row[headerDeleted] = true
-		row[headerDetails] = ""
+		deleted = true
 	}
+	row[headerDeleted] = deleted
+	row[headerDetails] = details
 }

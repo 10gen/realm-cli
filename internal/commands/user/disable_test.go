@@ -11,7 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestDisableSetup(t *testing.T) {
+func TestUserDisableSetup(t *testing.T) {
 	t.Run("should construct a realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -23,7 +23,7 @@ func TestDisableSetup(t *testing.T) {
 	})
 }
 
-func TestDisableHandler(t *testing.T) {
+func TestUserDisableHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
 	testApp := realm.App{
@@ -36,7 +36,6 @@ func TestDisableHandler(t *testing.T) {
 		{
 			ID:         "user-1",
 			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
-			Disabled:   false,
 		},
 		{
 			ID:         "user-2",
@@ -45,87 +44,54 @@ func TestDisableHandler(t *testing.T) {
 		},
 	}
 
-	t.Run("should disable a user when a user id is provided", func(t *testing.T) {
-		var capturedAppFilter realm.AppFilter
-		var capturedFindProjectID, capturedFindAppID string
-		var capturedDisableProjectID, capturedDisableAppID string
-		realmClient := mock.RealmClient{}
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			capturedAppFilter = filter
-			return []realm.App{testApp}, nil
-		}
-		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			capturedFindProjectID = groupID
-			capturedFindAppID = appID
-			return testUsers[:1], nil
-		}
-		realmClient.DisableUserFn = func(groupID, appID, userID string) error {
-			capturedDisableProjectID = groupID
-			capturedDisableAppID = appID
-			return nil
-		}
-		cmd := &CommandDisable{
-			inputs: disableInputs{
-				ProjectInputs: app.ProjectInputs{
-					Project: projectID,
-					App:     appID,
+	for _, tc := range []struct {
+		description    string
+		disableUserErr error
+	}{
+		{description: "should disable a user when a user id is provided"},
+		{description: "should save failed disable errors", disableUserErr: errors.New("client error")},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			var capturedAppFilter realm.AppFilter
+			var capturedFindProjectID, capturedFindAppID string
+			var capturedDisableProjectID, capturedDisableAppID string
+			realmClient := mock.RealmClient{}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				capturedAppFilter = filter
+				return []realm.App{testApp}, nil
+			}
+			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+				capturedFindProjectID = groupID
+				capturedFindAppID = appID
+				return testUsers[:1], nil
+			}
+			realmClient.DisableUserFn = func(groupID, appID, userID string) error {
+				capturedDisableProjectID = groupID
+				capturedDisableAppID = appID
+				return tc.disableUserErr
+			}
+			cmd := &CommandDisable{
+				inputs: disableInputs{
+					ProjectInputs: app.ProjectInputs{
+						Project: projectID,
+						App:     appID,
+					},
+					Users: []string{testUsers[0].ID},
 				},
-				Users: []string{testUsers[0].ID},
-			},
-			realmClient: realmClient,
-		}
+				realmClient: realmClient,
+			}
 
-		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedFindProjectID)
-		assert.Equal(t, appID, capturedFindAppID)
-		assert.Equal(t, projectID, capturedDisableProjectID)
-		assert.Equal(t, appID, capturedDisableAppID)
-		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Nil(t, cmd.outputs[0].err)
-		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
-	})
-
-	t.Run("should save failed disable errors", func(t *testing.T) {
-		var capturedAppFilter realm.AppFilter
-		var capturedFindProjectID, capturedFindAppID string
-		var capturedDisableProjectID, capturedDisableAppID string
-		realmClient := mock.RealmClient{}
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			capturedAppFilter = filter
-			return []realm.App{testApp}, nil
-		}
-		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			capturedFindProjectID = groupID
-			capturedFindAppID = appID
-			return testUsers[:1], nil
-		}
-		realmClient.DisableUserFn = func(groupID, appID, userID string) error {
-			capturedDisableProjectID = groupID
-			capturedDisableAppID = appID
-			return errors.New("client error")
-		}
-		cmd := &CommandDisable{
-			inputs: disableInputs{
-				ProjectInputs: app.ProjectInputs{
-					Project: projectID,
-					App:     appID,
-				},
-				Users: []string{testUsers[0].ID},
-			},
-			realmClient: realmClient,
-		}
-
-		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
-		assert.Equal(t, projectID, capturedFindProjectID)
-		assert.Equal(t, appID, capturedFindAppID)
-		assert.Equal(t, projectID, capturedDisableProjectID)
-		assert.Equal(t, appID, capturedDisableAppID)
-		assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-		assert.Equal(t, cmd.outputs[0].err, errors.New("client error"))
-		assert.Equal(t, cmd.outputs[0].user, testUsers[0])
-	})
+			assert.Nil(t, cmd.Handler(nil, nil))
+			assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
+			assert.Equal(t, projectID, capturedFindProjectID)
+			assert.Equal(t, appID, capturedFindAppID)
+			assert.Equal(t, projectID, capturedDisableProjectID)
+			assert.Equal(t, appID, capturedDisableAppID)
+			assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
+			assert.Equal(t, tc.disableUserErr, cmd.outputs[0].err)
+			assert.Equal(t, testUsers[0], cmd.outputs[0].user)
+		})
+	}
 
 	t.Run("should return an error", func(t *testing.T) {
 		for _, tc := range []struct {
@@ -172,7 +138,7 @@ func TestDisableHandler(t *testing.T) {
 	})
 }
 
-func TestDisableFeedback(t *testing.T) {
+func TestUserDisableFeedback(t *testing.T) {
 	testUsers := []realm.User{
 		{
 			ID:         "user-1",
@@ -205,21 +171,21 @@ func TestDisableFeedback(t *testing.T) {
 		},
 	}
 	for _, tc := range []struct {
-		description    string
-		outputs        []userOutput
-		expectedOutput string
+		description     string
+		outputs         []userOutput
+		expectedContent string
 	}{
 		{
-			description:    "should show indicate no users to disable",
-			outputs:        []userOutput{},
-			expectedOutput: "01:23:45 UTC INFO  No users to disable\n",
+			description:     "should show no users to disable",
+			outputs:         []userOutput{},
+			expectedContent: "01:23:45 UTC INFO  No users to disable\n",
 		},
 		{
-			description: "should show 1 failed user, command: user disable",
+			description: "should show 1 failed user",
 			outputs: []userOutput{
 				{user: testUsers[0], err: errors.New("client error")},
 			},
-			expectedOutput: strings.Join(
+			expectedContent: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Enabled  Details     ",
@@ -231,7 +197,7 @@ func TestDisableFeedback(t *testing.T) {
 			),
 		},
 		{
-			description: "should show 2 failed users",
+			description: "should show failures to disable 2 users amongst successful results across different auth provider types",
 			outputs: []userOutput{
 				{user: testUsers[0], err: nil},
 				{user: testUsers[1], err: errors.New("client error")},
@@ -239,7 +205,7 @@ func TestDisableFeedback(t *testing.T) {
 				{user: testUsers[3], err: errors.New("client error")},
 				{user: testUsers[4], err: nil},
 			},
-			expectedOutput: strings.Join(
+			expectedContent: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Enabled  Details     ",
@@ -266,48 +232,27 @@ func TestDisableFeedback(t *testing.T) {
 			cmd := &CommandDisable{outputs: tc.outputs}
 
 			assert.Nil(t, cmd.Feedback(nil, ui))
-			assert.Equal(t, tc.expectedOutput, out.String())
+			assert.Equal(t, tc.expectedContent, out.String())
 		})
 	}
 }
 
 func TestUserDisableRow(t *testing.T) {
 	for _, tc := range []struct {
-		description      string
-		authProviderType realm.AuthProviderType
-		output           userOutput
-		expectedRow      map[string]interface{}
+		description string
+		err         error
+		expectedRow map[string]interface{}
 	}{
 		{
-			description:      "should show successful disable user row",
-			authProviderType: realm.AuthProviderTypeAPIKey,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-					Type:       "type-1",
-					Disabled:   false,
-					Data:       map[string]interface{}{"name": "name-1"},
-				},
-			},
+			description: "should show successful disable user row",
 			expectedRow: map[string]interface{}{
 				"Enabled": false,
 				"Details": "",
 			},
 		},
 		{
-			description:      "should show failed disable user row",
-			authProviderType: realm.AuthProviderTypeUserPassword,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-					Type:       "type-1",
-					Disabled:   false,
-					Data:       map[string]interface{}{"email": "user-1@test.com"},
-				},
-				err: errors.New("client error"),
-			},
+			description: "should show failed disable user row",
+			err:         errors.New("client error"),
 			expectedRow: map[string]interface{}{
 				"Enabled": true,
 				"Details": "client error",
@@ -316,7 +261,8 @@ func TestUserDisableRow(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			row := map[string]interface{}{}
-			userDisableRow(tc.output, row)
+			output := userOutput{realm.User{}, tc.err}
+			userDisableRow(output, row)
 
 			assert.Equal(t, tc.expectedRow, row)
 		})

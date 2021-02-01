@@ -15,7 +15,7 @@ import (
 // CommandEnable is the `user enable` command
 type CommandEnable struct {
 	inputs      enableInputs
-	outputs     []userOutput
+	outputs     userOutputs
 	realmClient realm.Client
 }
 
@@ -30,17 +30,6 @@ func (i *enableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	return nil
-}
-
-func (i *enableInputs) resolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
-	filter := realm.UserFilter{
-		IDs: i.Users,
-	}
-	foundUsers, usersErr := client.FindUsers(app.GroupID, app.ID, filter)
-	if usersErr != nil {
-		return nil, usersErr
-	}
-	return foundUsers, nil
 }
 
 // Flags is the command flags
@@ -67,7 +56,7 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	users, usersErr := cmd.inputs.resolveUsers(ui, cmd.realmClient, app)
+	users, usersErr := cmd.realmClient.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: cmd.inputs.Users})
 	if usersErr != nil {
 		return usersErr
 	}
@@ -82,15 +71,9 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
 // Feedback is the command feedback
 func (cmd *CommandEnable) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
-		msg := "No users to enable"
-		return ui.Print(terminal.NewTextLog(msg))
+		return ui.Print(terminal.NewTextLog("No users to enable"))
 	}
-	var outputsByProviderType = map[realm.AuthProviderType][]userOutput{}
-	for _, output := range cmd.outputs {
-		for _, identity := range output.user.Identities {
-			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
-		}
-	}
+	outputsByProviderType := cmd.outputs.outputsByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -108,14 +91,16 @@ func (cmd *CommandEnable) Feedback(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func userEnableRow(output userOutput, row map[string]interface{}) {
-	if output.err != nil && output.user.Disabled {
-		row[headerEnabled] = false
-	} else {
-		row[headerEnabled] = true
+	var (
+		enabled bool
+		details string
+	)
+	if (output.err == nil && output.user.Disabled) || (output.err != nil && !output.user.Disabled) {
+		enabled = true
 	}
 	if output.err != nil {
-		row[headerDetails] = output.err.Error()
-	} else {
-		row[headerDetails] = ""
+		details = output.err.Error()
 	}
+	row[headerEnabled] = enabled
+	row[headerDetails] = details
 }

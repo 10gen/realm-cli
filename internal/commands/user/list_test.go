@@ -33,7 +33,7 @@ func TestUserListHandler(t *testing.T) {
 		Name:        "eggcorn",
 	}
 
-	t.Run("Should find app users", func(t *testing.T) {
+	t.Run("should find app users", func(t *testing.T) {
 		testUsers := []realm.User{{ID: "user1"}, {ID: "user2"}}
 		var capturedAppFilter realm.AppFilter
 		var capturedProjectID, capturedAppID string
@@ -65,14 +65,14 @@ func TestUserListHandler(t *testing.T) {
 		assert.Equal(t, testUsers[1], cmd.outputs[1].user)
 	})
 
-	t.Run("Should return an error", func(t *testing.T) {
+	t.Run("should return an error", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
 			setupClient func() realm.Client
 			expectedErr error
 		}{
 			{
-				description: "When resolving the app fails",
+				description: "when resolving the app fails",
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -83,7 +83,7 @@ func TestUserListHandler(t *testing.T) {
 				expectedErr: errors.New("something bad happened"),
 			},
 			{
-				description: "When finding the users fails",
+				description: "when finding the users fails",
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -111,23 +111,22 @@ func TestUserListHandler(t *testing.T) {
 
 func TestUserListFeedback(t *testing.T) {
 	for _, tc := range []struct {
-		description    string
-		outputs        []userOutput
-		expectedOutput string
+		description     string
+		outputs         []userOutput
+		expectedContent string
 	}{
 		{
-			description:    "Should indicate no users found when none are found",
-			expectedOutput: "01:23:45 UTC INFO  No available users to show\n",
+			description:     "whould indicate no users found when none are found",
+			expectedContent: "01:23:45 UTC INFO  No available users to show\n",
 		},
 		{
-			description: "Should group the users by provider type and sort by LastAuthenticationDate",
+			description: "whould group the users by provider type and sort by LastAuthenticationDate",
 			outputs: []userOutput{
 				{
 					user: realm.User{
 						ID:                     "id1",
 						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 						Type:                   "type1",
-						Disabled:               false,
 						Data:                   map[string]interface{}{"email": "myEmail1"},
 						CreationDate:           1111111111,
 						LastAuthenticationDate: 1111111111,
@@ -138,7 +137,6 @@ func TestUserListFeedback(t *testing.T) {
 						ID:                     "id2",
 						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 						Type:                   "type2",
-						Disabled:               false,
 						Data:                   map[string]interface{}{"email": "myEmail2"},
 						CreationDate:           1111333333,
 						LastAuthenticationDate: 1111333333,
@@ -149,7 +147,6 @@ func TestUserListFeedback(t *testing.T) {
 						ID:                     "id3",
 						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
 						Type:                   "type1",
-						Disabled:               false,
 						Data:                   map[string]interface{}{"email": "myEmail3"},
 						CreationDate:           1111222222,
 						LastAuthenticationDate: 1111222222,
@@ -160,14 +157,13 @@ func TestUserListFeedback(t *testing.T) {
 						ID:                     "id4",
 						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
 						Type:                   "type1",
-						Disabled:               false,
 						Data:                   map[string]interface{}{"name": "myName"},
 						CreationDate:           1111111111,
 						LastAuthenticationDate: 1111111111,
 					},
 				},
 			},
-			expectedOutput: strings.Join(
+			expectedContent: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email     ID   Type   Enabled  Last Authenticated           ",
@@ -192,7 +188,7 @@ func TestUserListFeedback(t *testing.T) {
 			}
 
 			assert.Nil(t, cmd.Feedback(nil, ui))
-			assert.Equal(t, tc.expectedOutput, out.String())
+			assert.Equal(t, tc.expectedContent, out.String())
 		})
 	}
 }
@@ -201,11 +197,6 @@ func TestUserListRow(t *testing.T) {
 	t.Run("should show successful list user row", func(t *testing.T) {
 		output := userOutput{
 			user: realm.User{
-				ID:                     "user-1",
-				Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-				Type:                   "type-1",
-				Disabled:               false,
-				Data:                   map[string]interface{}{"name": "name-1"},
 				LastAuthenticationDate: 1111111111,
 			},
 		}

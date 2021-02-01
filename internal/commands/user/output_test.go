@@ -33,23 +33,17 @@ func TestUserTableHeaders(t *testing.T) {
 func TestUserTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
-		userEnable       bool
 		authProviderType realm.AuthProviderType
-		output           userOutput
+		user             realm.User
 		expectedRow      map[string]interface{}
 	}{
 		{
 			description:      "should show name for apikey type user",
-			userEnable:       false,
 			authProviderType: realm.AuthProviderTypeAPIKey,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"name": "name-1"},
-				},
-				err: nil,
+			user: realm.User{
+				ID:   "user-1",
+				Type: "type-1",
+				Data: map[string]interface{}{"name": "name-1"},
 			},
 			expectedRow: map[string]interface{}{
 				"ID":   "user-1",
@@ -59,16 +53,11 @@ func TestUserTableRow(t *testing.T) {
 		},
 		{
 			description:      "should show email for local-userpass type user",
-			userEnable:       false,
 			authProviderType: realm.AuthProviderTypeUserPassword,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"email": "user-1@test.com"},
-				},
-				err: nil,
+			user: realm.User{
+				ID:   "user-1",
+				Type: "type-1",
+				Data: map[string]interface{}{"email": "user-1@test.com"},
 			},
 			expectedRow: map[string]interface{}{
 				"ID":    "user-1",
@@ -78,7 +67,9 @@ func TestUserTableRow(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userTableRow(tc.authProviderType, tc.output, func(uo userOutput, m map[string]interface{}) {}))
+			output := userOutput{user: tc.user}
+			row := userTableRow(tc.authProviderType, output, func(uo userOutput, m map[string]interface{}) {})
+			assert.Equal(t, tc.expectedRow, row)
 		})
 	}
 }
