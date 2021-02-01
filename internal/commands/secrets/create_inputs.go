@@ -4,20 +4,21 @@ import (
 	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/terminal"
+
 	"github.com/AlecAivazis/survey/v2"
 )
 
 const (
-	flagName      = "secret-name"
+	flagName      = "name"
 	flagNameShort = "n"
 	flagNameUsage = `the name of the secret to add to your Realm App`
 
-	flagValue      = "secret-value"
+	flagValue      = "value"
 	flagValueShort = "v"
 	flagValueUsage = `the value of the secret to add to your Realm App`
 
-	createInputFieldSecretName  = "Name"
-	createInputFieldSecretValue = "Value"
+	createInputFieldSecretName  = "name"
+	createInputFieldSecretValue = "value"
 )
 
 type createInputs struct {
@@ -44,9 +45,7 @@ func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if len(questions) > 0 {
-		if err := ui.Ask(i, questions...); err != nil {
-			return err
-		}
+		return ui.Ask(i, questions...)
 	}
 	return nil
 }

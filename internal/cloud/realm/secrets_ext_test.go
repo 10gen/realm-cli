@@ -3,7 +3,6 @@ package realm_test
 import (
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -28,19 +27,8 @@ func TestSecrets(t *testing.T) {
 		secretName := "secretName"
 		secretValue := "secretValue"
 
-		testApp, appErr := client.CreateApp(groupID, "secrets-test", realm.AppMeta{})
-		assert.Nil(t, appErr)
-		defer client.DeleteApp(groupID, testApp.ID)
-
-		assert.Nil(t, client.Import(groupID, testApp.ID, map[string]interface{}{
-			app.NameAuthProviders: []map[string]interface{}{
-				{"name": "api-key", "type": "api-key"},
-				{"name": "local-userpass", "type": "local-userpass", "config": map[string]interface{}{
-					"resetPasswordUrl":     "http://localhost:8080/reset_password",
-					"emailConfirmationUrl": "http://localhost:8080/confirm_email",
-				}},
-			},
-		}))
+		testApp, teardown := setupTestApp(t, client, groupID, "secrets-test")
+		defer teardown()
 
 		t.Run("should have no secrets upon app initialization", func(t *testing.T) {
 			secrets, secretsErr := client.Secrets(groupID, testApp.ID)
