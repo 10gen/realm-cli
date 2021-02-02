@@ -39,6 +39,7 @@ type Client interface {
 	Draft(groupID, appID string) (AppDraft, error)
 
 	Secrets(groupID, appID string) ([]Secret, error)
+	CreateSecret(groupID, appID, name, value string) (Secret, error)
 
 	CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	CreateUser(groupID, appID, email, password string) (User, error)

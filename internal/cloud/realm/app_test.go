@@ -50,3 +50,15 @@ func TestRealmApps(t *testing.T) {
 		})
 	})
 }
+
+func setupTestApp(t *testing.T, client realm.Client, groupID, name string) (realm.App, func()) {
+	t.Helper()
+	app, err := client.CreateApp(groupID, name, realm.AppMeta{})
+	assert.Nil(t, err)
+	teardown := func() {
+		if deleteErr := client.DeleteApp(groupID, app.ID); deleteErr != nil {
+			t.Logf("warning: failed to delete test app (id: %s): %s", app.ID, deleteErr)
+		}
+	}
+	return app, teardown
+}

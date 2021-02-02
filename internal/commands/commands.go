@@ -121,6 +121,13 @@ Realm app will be exported as well.`,
 		Help:        "secrets",
 		SubCommands: []cli.CommandDefinition{
 			cli.CommandDefinition{
+				Use:         "create",
+				Display:     "secrets create",
+				Description: "Create a secret for your Realm app",
+				Help:        "Adds a new secret to your Realm app. You will be prompted to name your Secret, and define the value of your Secret.",
+				Command:     &secrets.CommandCreate{},
+			},
+			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "secrets list",
