@@ -13,6 +13,7 @@ import (
 type CommandCreate struct {
 	inputs      createInputs
 	realmClient realm.Client
+	secret      realm.Secret
 }
 
 // Flags is the command flags
@@ -41,10 +42,12 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	return cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
+	secret, secretErr := cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
+	cmd.secret = secret
+	return secretErr
 }
 
 // Feedback is the command feedback
 func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	return ui.Print(terminal.NewTextLog("Secret created successfully"))
+	return ui.Print(terminal.NewTextLog("Successfully created secret, id: %s", cmd.secret.ID))
 }

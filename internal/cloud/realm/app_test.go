@@ -1,7 +1,6 @@
 package realm_test
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -57,9 +56,8 @@ func setupTestApp(t *testing.T, client realm.Client, groupID, name string) (real
 	app, err := client.CreateApp(groupID, name, realm.AppMeta{})
 	assert.Nil(t, err)
 	teardown := func() {
-		deleteErr := client.DeleteApp(groupID, app.ID)
-		if deleteErr != nil {
-			t.Log(fmt.Sprintf("failed to delete test app with groupID: %v and ID: %v", groupID, app.ID))
+		if deleteErr := client.DeleteApp(groupID, app.ID); deleteErr != nil {
+			t.Logf("warning: failed to delete test app (id: %s): %s", app.ID, deleteErr)
 		}
 	}
 	return app, teardown

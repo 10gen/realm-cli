@@ -35,14 +35,16 @@ func TestSecrets(t *testing.T) {
 			assert.Nil(t, secretsErr)
 			assert.Equal(t, 0, len(secrets))
 		})
+		var capturedSecretID string
 		t.Run("should create a secret", func(t *testing.T) {
-			assert.Nil(t, client.CreateSecret(groupID, testApp.ID, secretName, secretValue))
+			secret, secretErr := client.CreateSecret(groupID, testApp.ID, secretName, secretValue)
+			capturedSecretID = secret.ID
+			assert.Nil(t, secretErr)
 		})
 		t.Run("should list a created secret", func(t *testing.T) {
 			secrets, secretsErr := client.Secrets(groupID, testApp.ID)
 			assert.Nil(t, secretsErr)
-			assert.Equal(t, 1, len(secrets))
-			assert.Equal(t, secretName, secrets[0].Name)
+			assert.Equal(t, []realm.Secret{{capturedSecretID, secretName}}, secrets)
 		})
 	})
 }

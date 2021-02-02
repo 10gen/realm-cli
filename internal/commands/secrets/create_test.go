@@ -26,6 +26,7 @@ func TestSecretsCreateSetup(t *testing.T) {
 func TestSecretsCreateHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
+	secretID := "secretID"
 	secretName := "secretname"
 	secretValue := "secretvalue"
 	testApp := realm.App{
@@ -44,12 +45,12 @@ func TestSecretsCreateHandler(t *testing.T) {
 			return []realm.App{testApp}, nil
 		}
 
-		realmClient.CreateSecretFn = func(groupID, appID, name, value string) error {
+		realmClient.CreateSecretFn = func(groupID, appID, name, value string) (realm.Secret, error) {
 			capturedGroupID = groupID
 			capturedAppID = appID
 			capturedName = name
 			capturedValue = value
-			return nil
+			return realm.Secret{secretID, secretName}, nil
 		}
 
 		cmd := &CommandCreate{
@@ -65,6 +66,7 @@ func TestSecretsCreateHandler(t *testing.T) {
 		}
 
 		assert.Nil(t, cmd.Handler(nil, nil))
+		assert.Equal(t, realm.Secret{secretID, secretName}, cmd.secret)
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, realm.AppFilter{projectID, appID}, capturedFilter)
@@ -99,8 +101,8 @@ func TestSecretsCreateHandler(t *testing.T) {
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 						return []realm.App{testApp}, nil
 					}
-					realmClient.CreateSecretFn = func(groupID, appID, name, value string) error {
-						return errors.New("something bad happened")
+					realmClient.CreateSecretFn = func(groupID, appID, name, value string) (realm.Secret, error) {
+						return realm.Secret{}, errors.New("something bad happened")
 					}
 					return realmClient
 				},
@@ -125,11 +127,11 @@ func TestSecretsCreateFeedback(t *testing.T) {
 	t.Run("should print a message that secret creation was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
-		cmd := &CommandCreate{}
+		cmd := &CommandCreate{secret: realm.Secret{ID: "testID"}}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)
 
-		assert.Equal(t, "01:23:45 UTC INFO  Secret created successfully\n", out.String())
+		assert.Equal(t, "01:23:45 UTC INFO  Successfully created secret, id: testID\n", out.String())
 	})
 }

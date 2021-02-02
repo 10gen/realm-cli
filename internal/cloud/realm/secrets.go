@@ -43,7 +43,7 @@ type createSecretRequest struct {
 	Value string `json:"value"`
 }
 
-func (c *client) CreateSecret(groupID, appID, name, value string) error {
+func (c *client) CreateSecret(groupID, appID, name, value string) (Secret, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(secretsPathPattern, groupID, appID),
@@ -51,10 +51,15 @@ func (c *client) CreateSecret(groupID, appID, name, value string) error {
 		api.RequestOptions{},
 	)
 	if resErr != nil {
-		return resErr
+		return Secret{}, resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return api.ErrUnexpectedStatusCode{"create secret", res.StatusCode}
+		return Secret{}, api.ErrUnexpectedStatusCode{"create secret", res.StatusCode}
 	}
-	return nil
+	defer res.Body.Close()
+	var secret Secret
+	if err := json.NewDecoder(res.Body).Decode(&secret); err != nil {
+		return Secret{}, err
+	}
+	return secret, nil
 }
