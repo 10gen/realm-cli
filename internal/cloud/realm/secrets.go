@@ -10,6 +10,7 @@ import (
 
 const (
 	secretsPathPattern = appPathPattern + "/secrets"
+	secretIDPathPattern = secretsPathPattern + "/%s"
 )
 
 // Secret is a secret stored in a Realm app
@@ -62,4 +63,24 @@ func (c *client) CreateSecret(groupID, appID, name, value string) (Secret, error
 		return Secret{}, err
 	}
 	return secret, nil
+}
+
+func (c *client) DeleteSecret(groupID, appID, secretID string) error {
+	// TODO: REALMC-7156 Confirm if we can delete by ID this way
+	res, resErr := c.do(
+		http.MethodDelete,
+		fmt.Sprintf(secretIDPathPattern, groupID, appID, secretID),
+		api.RequestOptions{},
+	)
+	if resErr != nil {
+		return resErr
+	}
+
+	if res.StatusCode != http.StatusNoContent{
+		defer res.Body.Close()
+		return parseResponseError(res)
+	}
+
+	return nil
+
 }
