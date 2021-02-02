@@ -100,16 +100,22 @@ func TestRealmUsers(t *testing.T) {
 
 			t.Run("And disable users", func(t *testing.T) {
 				assert.Nil(t, client.DisableUser(groupID, testApp.ID, email1.ID))
-				assert.Nil(t, client.DisableUser(groupID, testApp.ID, email3.ID))
-			})
+				users1, users1Err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{IDs: []string{email1.ID}})
+				assert.Nil(t, users1Err)
+				email1Disabled := users1[0]
+				assert.True(t, email1Disabled.Disabled, fmt.Sprintf("expected %s to be disabled", email1Disabled.Data["email"]))
 
-			t.Run("And find all disabled users", func(t *testing.T) {
-				filter := realm.UserFilter{State: realm.UserStateEnabled, Providers: []realm.AuthProviderType{realm.AuthProviderTypeUserPassword}, IDs: []string{email1.ID, email3.ID}}
-				users, err := client.FindUsers(groupID, testApp.ID, filter)
-				assert.Nil(t, err)
-				for _, user := range users {
-					assert.True(t, user.Disabled, fmt.Sprintf("expected %s to be disabled", user.Data["email"]))
-				}
+				assert.Nil(t, client.DisableUser(groupID, testApp.ID, email3.ID))
+				users3, users3Err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{IDs: []string{email3.ID}})
+				assert.Nil(t, users3Err)
+				email3Disabled := users3[0]
+				assert.True(t, email3Disabled.Disabled, fmt.Sprintf("expected %s to be disabled", email3Disabled.Data["email"]))
+
+				t.Run("And find all disabled users", func(t *testing.T) {
+					users, err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{State: realm.UserStateDisabled})
+					assert.Nil(t, err)
+					assert.Equal(t, []realm.User{email1Disabled, email3Disabled}, users)
+				})
 			})
 
 			t.Run("And find specific user using all filter options", func(t *testing.T) {
@@ -128,7 +134,36 @@ func TestRealmUsers(t *testing.T) {
 
 			t.Run("And enable users", func(t *testing.T) {
 				assert.Nil(t, client.EnableUser(groupID, testApp.ID, email1.ID))
+				users1, users1Err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{IDs: []string{email1.ID}})
+				assert.Nil(t, users1Err)
+				email1Enabled := users1[0]
+				assert.False(t, email1Enabled.Disabled, fmt.Sprintf("expected %s to be enabled", email1Enabled.Data["email"]))
+
 				assert.Nil(t, client.EnableUser(groupID, testApp.ID, email3.ID))
+				users3, users3Err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{IDs: []string{email3.ID}})
+				assert.Nil(t, users3Err)
+				email3Enabled := users3[0]
+				assert.False(t, email3Enabled.Disabled, fmt.Sprintf("expected %s to be enabled", email3Enabled.Data["email"]))
+
+				t.Run("And find all enabled users", func(t *testing.T) {
+					users, err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{State: realm.UserStateEnabled})
+					assert.Nil(t, err)
+					assert.Equal(t, 5, len(users))
+
+					emailUsers := make([]realm.User, 0, 3)
+					apiKeyIDs := make([]string, 0, 2)
+					for _, user := range users {
+						assert.Equalf(t, 1, len(user.Identities), "expected user to have only one identity")
+						switch user.Identities[0].ProviderType {
+						case realm.AuthProviderTypeUserPassword:
+							emailUsers = append(emailUsers, user)
+						case realm.AuthProviderTypeAPIKey:
+							apiKeyIDs = append(apiKeyIDs, user.Identities[0].UID)
+						}
+					}
+					assert.Equal(t, []realm.User{email1Enabled, email2, email3Enabled}, emailUsers)
+					assert.Equal(t, []string{apiKey1.ID, apiKey2.ID}, apiKeyIDs)
+				})
 			})
 
 			t.Run("And find enabled user/password users", func(t *testing.T) {

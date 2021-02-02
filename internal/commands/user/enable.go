@@ -51,9 +51,9 @@ func (cmd *CommandEnable) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
-	if err != nil {
-		return err
+	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
+	if appErr != nil {
+		return appErr
 	}
 
 	users, usersErr := cmd.realmClient.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: cmd.inputs.Users})
@@ -63,7 +63,7 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 	for _, user := range users {
 		err := cmd.realmClient.EnableUser(app.GroupID, app.ID, user.ID)
-		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
+		cmd.outputs = append(cmd.outputs, userOutput{user, err})
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func (cmd *CommandEnable) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No users to enable"))
 	}
-	outputsByProviderType := cmd.outputs.outputsByProviderType()
+	outputsByProviderType := cmd.outputs.mapByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -91,14 +91,11 @@ func (cmd *CommandEnable) Feedback(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func userEnableRow(output userOutput, row map[string]interface{}) {
-	var (
-		enabled bool
-		details string
-	)
-	if (output.err == nil && output.user.Disabled) || (output.err != nil && !output.user.Disabled) {
+	var enabled bool
+	var details string
+	if output.err == nil || !output.user.Disabled {
 		enabled = true
-	}
-	if output.err != nil {
+	} else {
 		details = output.err.Error()
 	}
 	row[headerEnabled] = enabled

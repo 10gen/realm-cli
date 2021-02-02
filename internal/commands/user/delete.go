@@ -131,7 +131,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No users to delete"))
 	}
-	outputsByProviderType := cmd.outputs.outputsByProviderType()
+	outputsByProviderType := cmd.outputs.mapByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -149,10 +149,8 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func userDeleteRow(output userOutput, row map[string]interface{}) {
-	var (
-		deleted bool
-		details string
-	)
+	var deleted bool
+	var details string
 	if output.err != nil {
 		details = output.err.Error()
 	} else {

@@ -48,8 +48,8 @@ func TestUserEnableHandler(t *testing.T) {
 		description   string
 		enableUserErr error
 	}{
-		{description: "should enable a user when a user id is provided"},
-		{description: "should save failed enable errors", enableUserErr: errors.New("client error")},
+		{"should enable a user when a user id is provided", nil},
+		{"should save failed enable errors", errors.New("client error")},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			var capturedAppFilter realm.AppFilter
@@ -177,7 +177,7 @@ func TestUserEnableFeedback(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		description     string
-		outputs         []userOutput
+		outputs         userOutputs
 		expectedContent string
 	}{
 		{
@@ -186,9 +186,7 @@ func TestUserEnableFeedback(t *testing.T) {
 		},
 		{
 			description: "should show 1 failed user",
-			outputs: []userOutput{
-				{user: testUsers[0], err: errors.New("client error")},
-			},
+			outputs:     userOutputs{{testUsers[0], errors.New("client error")}},
 			expectedContent: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
@@ -202,12 +200,12 @@ func TestUserEnableFeedback(t *testing.T) {
 		},
 		{
 			description: "should show failures to enable 2 users amongst successful results across different auth provider types",
-			outputs: []userOutput{
-				{user: testUsers[0], err: nil},
-				{user: testUsers[1], err: errors.New("client error")},
-				{user: testUsers[2], err: nil},
-				{user: testUsers[3], err: errors.New("client error")},
-				{user: testUsers[4], err: nil},
+			outputs: userOutputs{
+				{testUsers[0], nil},
+				{testUsers[1], errors.New("client error")},
+				{testUsers[2], nil},
+				{testUsers[3], errors.New("client error")},
+				{testUsers[4], nil},
 			},
 			expectedContent: strings.Join(
 				[]string{

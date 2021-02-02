@@ -112,7 +112,7 @@ func TestUserListHandler(t *testing.T) {
 func TestUserListFeedback(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
-		outputs         []userOutput
+		outputs         userOutputs
 		expectedContent string
 	}{
 		{
@@ -121,47 +121,39 @@ func TestUserListFeedback(t *testing.T) {
 		},
 		{
 			description: "whould group the users by provider type and sort by LastAuthenticationDate",
-			outputs: []userOutput{
-				{
-					user: realm.User{
-						ID:                     "id1",
-						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-						Type:                   "type1",
-						Data:                   map[string]interface{}{"email": "myEmail1"},
-						CreationDate:           1111111111,
-						LastAuthenticationDate: 1111111111,
-					},
-				},
-				{
-					user: realm.User{
-						ID:                     "id2",
-						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-						Type:                   "type2",
-						Data:                   map[string]interface{}{"email": "myEmail2"},
-						CreationDate:           1111333333,
-						LastAuthenticationDate: 1111333333,
-					},
-				},
-				{
-					user: realm.User{
-						ID:                     "id3",
-						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-						Type:                   "type1",
-						Data:                   map[string]interface{}{"email": "myEmail3"},
-						CreationDate:           1111222222,
-						LastAuthenticationDate: 1111222222,
-					},
-				},
-				{
-					user: realm.User{
-						ID:                     "id4",
-						Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-						Type:                   "type1",
-						Data:                   map[string]interface{}{"name": "myName"},
-						CreationDate:           1111111111,
-						LastAuthenticationDate: 1111111111,
-					},
-				},
+			outputs: userOutputs{
+				{user: realm.User{
+					ID:                     "id1",
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+					Type:                   "type1",
+					Data:                   map[string]interface{}{"email": "myEmail1"},
+					CreationDate:           1111111111,
+					LastAuthenticationDate: 1111111111,
+				}},
+				{user: realm.User{
+					ID:                     "id2",
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+					Type:                   "type2",
+					Data:                   map[string]interface{}{"email": "myEmail2"},
+					CreationDate:           1111333333,
+					LastAuthenticationDate: 1111333333,
+				}},
+				{user: realm.User{
+					ID:                     "id3",
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+					Type:                   "type1",
+					Data:                   map[string]interface{}{"email": "myEmail3"},
+					CreationDate:           1111222222,
+					LastAuthenticationDate: 1111222222,
+				}},
+				{user: realm.User{
+					ID:                     "id4",
+					Identities:             []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
+					Type:                   "type1",
+					Data:                   map[string]interface{}{"name": "myName"},
+					CreationDate:           1111111111,
+					LastAuthenticationDate: 1111111111,
+				}},
 			},
 			expectedContent: strings.Join(
 				[]string{

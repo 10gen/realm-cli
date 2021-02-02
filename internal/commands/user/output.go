@@ -18,14 +18,14 @@ const (
 
 type userOutputs []userOutput
 
-func (uo userOutputs) outputsByProviderType() map[realm.AuthProviderType]userOutputs {
-	var outputsByProviderType = map[realm.AuthProviderType]userOutputs{}
-	for _, output := range uo {
+func (outputs userOutputs) mapByProviderType() map[realm.AuthProviderType]userOutputs {
+	var outputsM = map[realm.AuthProviderType]userOutputs{}
+	for _, output := range outputs {
 		for _, identity := range output.user.Identities {
-			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
+			outputsM[identity.ProviderType] = append(outputsM[identity.ProviderType], output)
 		}
 	}
-	return outputsByProviderType
+	return outputsM
 }
 
 type userOutput struct {
@@ -33,7 +33,7 @@ type userOutput struct {
 	err  error
 }
 
-func getUserOutputComparerBySuccess(outputs []userOutput) func(i, j int) bool {
+func getUserOutputComparerBySuccess(outputs userOutputs) func(i, j int) bool {
 	return func(i, j int) bool {
 		return outputs[i].err != nil && outputs[j].err == nil
 	}
@@ -49,15 +49,10 @@ func userTableHeaders(authProviderType realm.AuthProviderType) []string {
 	case realm.AuthProviderTypeUserPassword:
 		headers = append(headers, headerEmail)
 	}
-	headers = append(
-		headers,
-		headerID,
-		headerType,
-	)
-	return headers
+	return append(headers, headerID, headerType)
 }
 
-func userTableRows(authProviderType realm.AuthProviderType, outputs []userOutput, tableRowModifier userTableRowModifier) []map[string]interface{} {
+func userTableRows(authProviderType realm.AuthProviderType, outputs userOutputs, tableRowModifier userTableRowModifier) []map[string]interface{} {
 	userTableRows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
 		userTableRows = append(userTableRows, userTableRow(authProviderType, output, tableRowModifier))

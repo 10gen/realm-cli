@@ -191,25 +191,16 @@ func TestUserDeleteHandler(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
 		userDeleteErr   error
-		expectedOutputs []userOutput
+		expectedOutputs userOutputs
 	}{
 		{
-			description: "should delete a user when a user id is provided",
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-				},
-			},
+			description:     "should delete a user when a user id is provided",
+			expectedOutputs: userOutputs{{testUsers[0], nil}},
 		},
 		{
-			description:   "should save failed deletion errors",
-			userDeleteErr: errors.New("client error"),
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-					err:  errors.New("client error"),
-				},
-			},
+			description:     "should save failed deletion errors",
+			userDeleteErr:   errors.New("client error"),
+			expectedOutputs: userOutputs{{testUsers[0], errors.New("client error")}},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -333,7 +324,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		description    string
-		outputs        []userOutput
+		outputs        userOutputs
 		expectedOutput string
 	}{
 		{
@@ -342,9 +333,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 		},
 		{
 			description: "should show 1 failed user",
-			outputs: []userOutput{
-				{user: testUsers[0], err: errors.New("client error")},
-			},
+			outputs:     userOutputs{{testUsers[0], errors.New("client error")}},
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
@@ -358,12 +347,12 @@ func TestUserDeleteFeedback(t *testing.T) {
 		},
 		{
 			description: "should show 2 failed users",
-			outputs: []userOutput{
-				{user: testUsers[0], err: nil},
-				{user: testUsers[1], err: errors.New("client error")},
-				{user: testUsers[2], err: nil},
-				{user: testUsers[3], err: errors.New("client error")},
-				{user: testUsers[4], err: nil},
+			outputs: userOutputs{
+				{testUsers[0], nil},
+				{testUsers[1], errors.New("client error")},
+				{testUsers[2], nil},
+				{testUsers[3], errors.New("client error")},
+				{testUsers[4], nil},
 			},
 			expectedOutput: strings.Join(
 				[]string{
