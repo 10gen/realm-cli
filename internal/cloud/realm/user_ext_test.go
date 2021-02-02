@@ -1,6 +1,7 @@
 package realm_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/app"
@@ -103,13 +104,12 @@ func TestRealmUsers(t *testing.T) {
 			})
 
 			t.Run("And find all disabled users", func(t *testing.T) {
-				users, err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{State: realm.UserStateDisabled})
+				filter := realm.UserFilter{State: realm.UserStateEnabled, Providers: []realm.AuthProviderType{realm.AuthProviderTypeUserPassword}, IDs: []string{email1.ID, email3.ID}}
+				users, err := client.FindUsers(groupID, testApp.ID, filter)
 				assert.Nil(t, err)
-
-				email1.Disabled = true
-				email3.Disabled = true
-
-				assert.Equal(t, []realm.User{email1, email3}, users)
+				for _, user := range users {
+					assert.True(t, user.Disabled, fmt.Sprintf("expected %s to be disabled", user.Data["email"]))
+				}
 			})
 
 			t.Run("And find specific user using all filter options", func(t *testing.T) {
@@ -120,7 +120,10 @@ func TestRealmUsers(t *testing.T) {
 				}
 				users, err := client.FindUsers(groupID, testApp.ID, filter)
 				assert.Nil(t, err)
-				assert.Equal(t, []realm.User{email3}, users)
+				assert.Equal(t, 1, len(users))
+				assert.Equal(t, email3.ID, users[0].ID)
+				assert.True(t, users[0].Disabled, fmt.Sprintf("expected %s to be disabled", users[0].Data["email"]))
+				assert.Equal(t, email3.Identities[0].ProviderType, users[0].Identities[0].ProviderType)
 			})
 
 			t.Run("And enable users", func(t *testing.T) {
@@ -128,14 +131,13 @@ func TestRealmUsers(t *testing.T) {
 				assert.Nil(t, client.EnableUser(groupID, testApp.ID, email3.ID))
 			})
 
-			t.Run("And find all enabled user/password users", func(t *testing.T) {
-				users, err := client.FindUsers(groupID, testApp.ID, realm.UserFilter{State: realm.UserStateEnabled, Providers: []realm.AuthProviderType{realm.AuthProviderTypeUserPassword}})
+			t.Run("And find enabled user/password users", func(t *testing.T) {
+				filter := realm.UserFilter{State: realm.UserStateEnabled, Providers: []realm.AuthProviderType{realm.AuthProviderTypeUserPassword}, IDs: []string{email1.ID, email2.ID, email3.ID}}
+				users, err := client.FindUsers(groupID, testApp.ID, filter)
 				assert.Nil(t, err)
-
-				email1.Disabled = false
-				email3.Disabled = false
-
-				assert.Equal(t, []realm.User{email1, email2, email3}, users)
+				for _, user := range users {
+					assert.False(t, user.Disabled, fmt.Sprintf("expected %s to be enabled", user.Data["email"]))
+				}
 			})
 
 			t.Run("And revoking a user session should succeed", func(t *testing.T) {
