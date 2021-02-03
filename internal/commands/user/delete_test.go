@@ -53,8 +53,8 @@ func TestResolveUsersInputs(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[0]},
 			},
 			{
-				description: "with providers set",
-				inputs:      deleteInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}},
+				description: "with all input set, except users",
+				inputs:      deleteInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}, State: realm.UserStateDisabled, Pending: false},
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-2")
@@ -63,30 +63,6 @@ func TestResolveUsersInputs(t *testing.T) {
 				},
 				users:         testUsers[1:],
 				expectedUsers: []realm.User{testUsers[1]},
-			},
-			{
-				description: "with state set",
-				inputs:      deleteInputs{State: realm.UserStateDisabled},
-				procedure: func(c *expect.Console) {
-					c.ExpectString("Which user(s) would you like to delete?")
-					c.Send("user-2")
-					c.SendLine(" ")
-					c.ExpectEOF()
-				},
-				users:         testUsers[1:],
-				expectedUsers: []realm.User{testUsers[1]},
-			},
-			{
-				description: "with status set",
-				inputs:      deleteInputs{State: realm.UserStateDisabled},
-				procedure: func(c *expect.Console) {
-					c.ExpectString("Which user(s) would you like to delete?")
-					c.Send("user-3")
-					c.SendLine(" ")
-					c.ExpectEOF()
-				},
-				users:         testUsers[2:],
-				expectedUsers: []realm.User{testUsers[2]},
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
