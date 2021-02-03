@@ -76,11 +76,9 @@ func (c *client) DeleteSecret(groupID, appID, secretID string) error {
 		return resErr
 	}
 
-	if res.StatusCode != http.StatusNoContent{
+	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
 		return parseResponseError(res)
 	}
-
 	return nil
-
 }
