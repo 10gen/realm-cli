@@ -43,6 +43,16 @@ func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if from.IsZero() {
+		/*
+			TODO(REALMC-7886): initialize also the following:
+			  - auth/custom_user_data.json: { "enabled": false }
+			  - auth/providers.json: {}
+			  - data_sources/
+			  - http_endpoints/
+			  - sync/config.json: { "development_mode_enabled": false }
+
+			this logic probably wants to live in local.App, where ConfigVersion actually determines what gets written/initialized
+		*/
 		return local.NewApp(
 			profile.WorkingDirectory,
 			cmd.inputs.Name,

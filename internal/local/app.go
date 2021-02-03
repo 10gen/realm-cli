@@ -49,9 +49,9 @@ func NewApp(rootDir, name string, location realm.Location, deploymentModel realm
 func AsApp(rootDir string, app realm.App) App {
 	return App{
 		RootDir: rootDir,
-		Config:  FileConfig, // TODO(REALMC-7653): update default config file here
+		Config:  FileRealmConfig,
 		AppData: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-			ConfigVersion:   realm.AppConfigVersion20200603, // TODO(REALMC-7653): update default config version here
+			ConfigVersion:   realm.AppConfigVersion20210101,
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,

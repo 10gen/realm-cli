@@ -78,7 +78,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 			return nil
 		}
 
-		app, err := cmd.createNewApp(ui, to.GroupID, app)
+		app, err := cmd.createNewApp(ui, to.GroupID, app.AppData)
 		if err != nil {
 			return err
 		}
@@ -191,20 +191,27 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interfa
 		return realm.App{}, nil
 	}
 
-	var name string
-	if n, ok := appData.(namer); ok {
-		name = n.Name()
+	var name, location, deploymentModel string
+	if appData != nil {
+		if n, ok := appData.(namer); ok {
+			name = n.Name()
+		}
+
+		if l, ok := appData.(locationer); ok {
+			location = l.Location().String()
+		}
+
+		if dm, ok := appData.(deploymentModeler); ok {
+			deploymentModel = dm.DeploymentModel().String()
+		}
 	}
+
 	if name == "" || !ui.AutoConfirm() {
 		if err := ui.AskOne(&name, &survey.Input{Message: "App Name", Default: name}); err != nil {
 			return realm.App{}, err
 		}
 	}
 
-	var location string
-	if l, ok := appData.(locationer); ok {
-		location = l.Location().String()
-	}
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
 			&location,
@@ -218,10 +225,6 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interfa
 		}
 	}
 
-	var deploymentModel string
-	if dm, ok := appData.(deploymentModeler); ok {
-		deploymentModel = dm.DeploymentModel().String()
-	}
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
 			&deploymentModel,

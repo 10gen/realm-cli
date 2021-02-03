@@ -105,6 +105,10 @@ func mkdir(path string) error {
 }
 
 func writeFile(path string, perm os.FileMode, r io.Reader) error {
+	if err := mkdir(filepath.Dir(path)); err != nil {
+		return err
+	}
+
 	f, openErr := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
 	if openErr != nil {
 		return fmt.Errorf("failed to open file at %s: %s", path, openErr)

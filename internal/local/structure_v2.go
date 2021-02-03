@@ -1,7 +1,6 @@
 package local
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -17,7 +16,6 @@ type AppStructureV2 struct {
 	DeploymentModel       realm.DeploymentModel    `json:"deployment_model,omitempty"`
 	Environment           string                   `json:"environment,omitempty"`
 	AllowedRequestOrigins []string                 `json:"allowed_request_origins,omitempty"`
-	Secrets               map[string]interface{}   `json:"secrets,omitempty"`
 	Values                []map[string]interface{} `json:"values,omitempty"`
 	Auth                  *AuthStructure           `json:"auth,omitempty"`
 	Functions             *FunctionsStructure      `json:"functions,omitempty"`
@@ -29,8 +27,9 @@ type AppStructureV2 struct {
 
 // AuthStructure represents the v2 Realm app auth structure
 type AuthStructure struct {
-	Config    map[string]interface{}   `json:"config,omitempty"`
-	Providers []map[string]interface{} `json:"providers,omitempty"`
+	Config         map[string]interface{}            `json:"config,omitempty"`
+	CustomUserData map[string]interface{}            `json:"custom_user_data,omitempty"`
+	Providers      map[string]map[string]interface{} `json:"providers,omitempty"`
 }
 
 // FunctionsStructure represents the v2 Realm app functions structure
@@ -76,9 +75,6 @@ func (a AppDataV2) DeploymentModel() realm.DeploymentModel {
 
 // LoadData will load the local Realm app data
 func (a *AppDataV2) LoadData(rootDir string) error {
-	if err := a.unmarshalSecrets(rootDir); err != nil {
-		return err
-	}
 	if err := a.unmarshalValues(rootDir); err != nil {
 		return err
 	}
@@ -103,21 +99,6 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	return nil
 }
 
-func (a *AppDataV2) unmarshalSecrets(rootDir string) error {
-	path := filepath.Join(rootDir, FileSecrets.String())
-	if ok, err := fileExists(path); err != nil {
-		return err
-	} else if !ok {
-		return nil // if secrets.json does not exist, continue
-	}
-
-	data, dataErr := readFile(path)
-	if dataErr != nil {
-		return dataErr
-	}
-	return json.Unmarshal(data, &a.Secrets)
-}
-
 func (a *AppDataV2) unmarshalAuth(rootDir string) error {
 	dir := filepath.Join(rootDir, NameAuth)
 	if ok, err := fileExists(dir); err != nil {
@@ -127,21 +108,29 @@ func (a *AppDataV2) unmarshalAuth(rootDir string) error {
 	}
 
 	var auth AuthStructure
-
 	cfg, cfgErr := readFile(filepath.Join(dir, FileConfig.String()))
 	if cfgErr != nil {
 		return cfgErr
 	}
-
-	if err := json.Unmarshal(cfg, &auth.Config); err != nil {
+	if err := unmarshalJSON(cfg, &auth.Config); err != nil {
 		return err
 	}
 
-	authProviders, err := unmarshalDirectoryFlat(filepath.Join(dir, NameAuthProviders))
-	if err != nil {
+	customUserData, customUserDataErr := readFile(filepath.Join(dir, FileCustomUserData.String()))
+	if customUserDataErr != nil {
+		return customUserDataErr
+	}
+	if err := unmarshalJSON(customUserData, &auth.CustomUserData); err != nil {
 		return err
 	}
-	auth.Providers = authProviders
+
+	providers, providersErr := readFile(filepath.Join(dir, FileProviders.String()))
+	if providersErr != nil {
+		return providersErr
+	}
+	if err := unmarshalJSON(providers, &auth.Providers); err != nil {
+		return err
+	}
 
 	if len(auth.Config) > 0 || len(auth.Providers) > 0 {
 		a.Auth = &auth
@@ -150,7 +139,7 @@ func (a *AppDataV2) unmarshalAuth(rootDir string) error {
 }
 
 func (a *AppDataV2) unmarshalFunctions(rootDir string) error {
-	// TODO(REALMC-7653): actually unmarshal the functions directory exported by 20210101
+	// TODO(REALMC-7989): actually unmarshal the functions directory exported by 20210101
 	return nil
 }
 
@@ -169,7 +158,7 @@ func (a *AppDataV2) unmarshalGraphQL(rootDir string) error {
 		return cfgErr
 	}
 
-	if err := json.Unmarshal(cfg, &graphql.Config); err != nil {
+	if err := unmarshalJSON(cfg, &graphql.Config); err != nil {
 		return err
 	}
 
@@ -182,7 +171,7 @@ func (a *AppDataV2) unmarshalGraphQL(rootDir string) error {
 			return dataErr
 		}
 
-		if err := json.Unmarshal(data, &out); err != nil {
+		if err := unmarshalJSON(data, &out); err != nil {
 			return err
 		}
 
@@ -210,7 +199,7 @@ func (a *AppDataV2) unmarshalServices(rootDir string) error {
 			return cfgErr
 		}
 
-		if err := json.Unmarshal(cfg, &service.Config); err != nil {
+		if err := unmarshalJSON(cfg, &service.Config); err != nil {
 			return err
 		}
 
@@ -259,7 +248,7 @@ func (a *AppDataV2) unmarshalSync(rootDir string) error {
 		return cfgErr
 	}
 
-	if err := json.Unmarshal(cfg, &sync.Config); err != nil {
+	if err := unmarshalJSON(cfg, &sync.Config); err != nil {
 		return err
 	}
 

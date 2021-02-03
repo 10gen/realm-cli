@@ -1,7 +1,6 @@
 package local
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -113,7 +112,7 @@ func (a *AppDataV1) unmarshalSecrets(rootDir string) error {
 	if dataErr != nil {
 		return dataErr
 	}
-	return json.Unmarshal(data, &a.Secrets)
+	return unmarshalJSON(data, &a.Secrets)
 }
 
 func (a *AppDataV1) unmarshalAuthProviders(rootDir string) error {
@@ -149,7 +148,7 @@ func unmarshalFunctionsV1(path string) ([]map[string]interface{}, error) {
 		}
 
 		var config interface{}
-		if err := json.Unmarshal(cfg, &config); err != nil {
+		if err := unmarshalJSON(cfg, &config); err != nil {
 			return err
 		}
 
@@ -184,7 +183,7 @@ func (a *AppDataV1) unmarshalGraphQL(rootDir string) error {
 		return cfgErr
 	}
 
-	if err := json.Unmarshal(cfg, &a.GraphQL.Config); err != nil {
+	if err := unmarshalJSON(cfg, &a.GraphQL.Config); err != nil {
 		return err
 	}
 
@@ -198,7 +197,7 @@ func (a *AppDataV1) unmarshalGraphQL(rootDir string) error {
 			return dataErr
 		}
 
-		if err := json.Unmarshal(data, &out); err != nil {
+		if err := unmarshalJSON(data, &out); err != nil {
 			return err
 		}
 
@@ -223,7 +222,7 @@ func (a *AppDataV1) unmarshalServices(rootDir string) error {
 			return cfgErr
 		}
 
-		if err := json.Unmarshal(cfg, &out.Config); err != nil {
+		if err := unmarshalJSON(cfg, &out.Config); err != nil {
 			return err
 		}
 
