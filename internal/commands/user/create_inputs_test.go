@@ -18,7 +18,7 @@ func TestCreateInputs(t *testing.T) {
 		test        func(t *testing.T, i createInputs)
 	}{
 		{
-			description: "With user type set to email and email and password flags not set",
+			description: "with user type set to email and email and password flags not set",
 			inputs:      createInputs{UserType: userTypeEmailPassword},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Email")
@@ -33,7 +33,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With user type set to email and only password flag not set",
+			description: "with user type set to email and only password flag not set",
 			inputs:      createInputs{UserType: userTypeEmailPassword, Email: "user@domain.com"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Password")
@@ -46,7 +46,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With user type set to email and only email flag not set",
+			description: "with user type set to email and only email flag not set",
 			inputs:      createInputs{UserType: userTypeEmailPassword, Password: "password"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Email")
@@ -59,7 +59,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With user type set to apiKey and api key name flag not set",
+			description: "with user type set to apiKey and api key name flag not set",
 			inputs:      createInputs{UserType: userTypeAPIKey},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key Name")
@@ -71,7 +71,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With user type set to apiKey and api key name flag set",
+			description: "with user type set to apiKey and api key name flag set",
 			inputs:      createInputs{UserType: userTypeAPIKey, APIKeyName: "publickey"},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()
@@ -81,7 +81,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With no user type set but email flag is set",
+			description: "with no user type set but email flag is set",
 			inputs:      createInputs{Email: "user@domain.com"},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Password")
@@ -94,7 +94,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With no user type set but api key flag is set",
+			description: "with no user type set but api key flag is set",
 			inputs:      createInputs{APIKeyName: "publickey"},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()
@@ -104,7 +104,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With no flags set should be able to set details for a new email password user",
+			description: "with no flags set should be able to set details for a new email password user",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Which auth provider type are you creating a user for?")
 				c.SendLine("em") // type enough to filter, then hit enter
@@ -120,7 +120,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "With no flags set should be able to set details for a new api key user",
+			description: "with no flags set should be able to set details for a new api key user",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Which auth provider type are you creating a user for?")
 				c.SendLine("ap") // type enough to filter, then hit enter
@@ -133,7 +133,7 @@ func TestCreateInputs(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(fmt.Sprintf("%s Setup should prompt for the missing inputs", tc.description), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s setup should prompt for the missing inputs", tc.description), func(t *testing.T) {
 			profile := mock.NewProfile(t)
 
 			_, console, _, ui, consoleErr := mock.NewVT10XConsole()

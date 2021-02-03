@@ -33,6 +33,8 @@ type RealmClient struct {
 	CreateAPIKeyFn func(groupID, appID, apiKeyName string) (realm.APIKey, error)
 	CreateUserFn   func(groupID, appID, email, password string) (realm.User, error)
 	DeleteUserFn   func(groupID, appID, userID string) error
+	DisableUserFn  func(groupID, appID, userID string) error
+	EnableUserFn   func(groupID, appID, userID string) error
 	FindUsersFn    func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
 
 	StatusFn func() error
@@ -216,6 +218,26 @@ func (rc RealmClient) DeleteUser(groupID, appID, userID string) error {
 		return rc.DeleteUserFn(groupID, appID, userID)
 	}
 	return rc.Client.DeleteUser(groupID, appID, userID)
+}
+
+// DisableUser calls the mocked DisableUser implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DisableUser(groupID, appID, userID string) error {
+	if rc.DisableUserFn != nil {
+		return rc.DisableUserFn(groupID, appID, userID)
+	}
+	return rc.Client.DisableUser(groupID, appID, userID)
+}
+
+// EnableUser calls the mocked EnableUser implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) EnableUser(groupID, appID, userID string) error {
+	if rc.EnableUserFn != nil {
+		return rc.EnableUserFn(groupID, appID, userID)
+	}
+	return rc.Client.EnableUser(groupID, appID, userID)
 }
 
 // FindUsers calls the mocked FindUsers implementation if provided,

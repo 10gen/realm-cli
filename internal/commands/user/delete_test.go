@@ -9,16 +9,140 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
+	"github.com/Netflix/go-expect"
 )
+
+func TestResolveUsersInputs(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-3@test.com"},
+		},
+	}
+
+	t.Run("should prompt for users", func(t *testing.T) {
+		for _, tc := range []struct {
+			description   string
+			inputs        deleteInputs
+			procedure     func(c *expect.Console)
+			users         []realm.User
+			expectedUsers []realm.User
+		}{
+			{
+				description: "with no input set",
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-1")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers,
+				expectedUsers: []realm.User{testUsers[0]},
+			},
+			{
+				description: "with all input set, except users",
+				inputs:      deleteInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}, State: realm.UserStateDisabled, Pending: false},
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Which user(s) would you like to delete?")
+					c.Send("user-2")
+					c.SendLine(" ")
+					c.ExpectEOF()
+				},
+				users:         testUsers[1:],
+				expectedUsers: []realm.User{testUsers[1]},
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				realmClient := mock.RealmClient{}
+				realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+					return tc.users, nil
+				}
+
+				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+				assert.Nil(t, consoleErr)
+				defer console.Close()
+
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					tc.procedure(console)
+				}()
+
+				var app realm.App
+				users, err := tc.inputs.resolveUsers(ui, realmClient, app)
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedUsers, users)
+			})
+		}
+	})
+
+	for _, tc := range []struct {
+		description   string
+		users         []realm.User
+		expectedUsers []realm.User
+		expectedErr   error
+	}{
+		{
+			description: "should error when a user cannot be found from provided ids",
+			expectedErr: errors.New("no users found"),
+		},
+		{
+			description:   "should find users from provided ids",
+			users:         testUsers[:2],
+			expectedUsers: testUsers[:2],
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			realmClient := mock.RealmClient{}
+			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+				return tc.users, nil
+			}
+			var app realm.App
+			inputs := deleteInputs{Users: []string{testUsers[0].ID, testUsers[1].ID}}
+			users, err := inputs.resolveUsers(nil, realmClient, app)
+
+			assert.Equal(t, tc.expectedUsers, users)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
+
+	t.Run("should error from client", func(t *testing.T) {
+		realmClient := mock.RealmClient{}
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return nil, errors.New("client error")
+		}
+		var app realm.App
+		inputs := deleteInputs{}
+		_, err := inputs.resolveUsers(nil, realmClient, app)
+
+		assert.Equal(t, errors.New("client error"), err)
+	})
+}
 
 func TestUserDeleteSetup(t *testing.T) {
 	t.Run("should construct a realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
-
 		cmd := &CommandDelete{inputs: deleteInputs{}}
-		assert.Nil(t, cmd.realmClient)
 
+		assert.Nil(t, cmd.realmClient)
 		assert.Nil(t, cmd.Setup(profile, nil))
 		assert.NotNil(t, cmd.realmClient)
 	})
@@ -37,66 +161,50 @@ func TestUserDeleteHandler(t *testing.T) {
 		{
 			ID:         "user-1",
 			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
-			Disabled:   false,
 		},
 	}
 
 	for _, tc := range []struct {
 		description     string
 		userDeleteErr   error
-		expectedOutputs []userOutput
+		expectedOutputs userOutputs
 	}{
 		{
-			description: "should delete a user when a user id is provided",
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-				},
-			},
+			description:     "should delete a user when a user id is provided",
+			expectedOutputs: userOutputs{{testUsers[0], nil}},
 		},
 		{
-			description:   "should save failed deletion errors",
-			userDeleteErr: errors.New("client error"),
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-					err:  errors.New("client error"),
-				},
-			},
+			description:     "should save failed deletion errors",
+			userDeleteErr:   errors.New("client error"),
+			expectedOutputs: userOutputs{{testUsers[0], errors.New("client error")}},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			var capturedAppFilter realm.AppFilter
 			var capturedFindProjectID, capturedFindAppID string
 			var capturedDeleteProjectID, capturedDeleteAppID string
-
 			realmClient := mock.RealmClient{}
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				capturedAppFilter = filter
 				return []realm.App{testApp}, nil
 			}
-
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				capturedFindProjectID = groupID
 				capturedFindAppID = appID
 				return testUsers, nil
 			}
-
 			realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
 				capturedDeleteProjectID = groupID
 				capturedDeleteAppID = appID
 				return tc.userDeleteErr
 			}
-
 			cmd := &CommandDelete{
 				inputs: deleteInputs{
 					ProjectInputs: app.ProjectInputs{
 						Project: projectID,
 						App:     appID,
 					},
-					usersInputs: usersInputs{
-						Users: []string{testUsers[0].ID},
-					},
+					Users: []string{testUsers[0].ID},
 				},
 				realmClient: realmClient,
 			}
@@ -192,7 +300,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 	}
 	for _, tc := range []struct {
 		description    string
-		outputs        []userOutput
+		outputs        userOutputs
 		expectedOutput string
 	}{
 		{
@@ -201,9 +309,7 @@ func TestUserDeleteFeedback(t *testing.T) {
 		},
 		{
 			description: "should show 1 failed user",
-			outputs: []userOutput{
-				{user: testUsers[0], err: errors.New("client error")},
-			},
+			outputs:     userOutputs{{testUsers[0], errors.New("client error")}},
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
@@ -217,12 +323,12 @@ func TestUserDeleteFeedback(t *testing.T) {
 		},
 		{
 			description: "should show 2 failed users",
-			outputs: []userOutput{
-				{user: testUsers[0], err: nil},
-				{user: testUsers[1], err: errors.New("client error")},
-				{user: testUsers[2], err: nil},
-				{user: testUsers[3], err: errors.New("client error")},
-				{user: testUsers[4], err: nil},
+			outputs: userOutputs{
+				{testUsers[0], nil},
+				{testUsers[1], errors.New("client error")},
+				{testUsers[2], nil},
+				{testUsers[3], errors.New("client error")},
+				{testUsers[4], nil},
 			},
 			expectedOutput: strings.Join(
 				[]string{
@@ -248,7 +354,6 @@ func TestUserDeleteFeedback(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
-
 			cmd := &CommandDelete{
 				outputs: tc.outputs,
 			}
@@ -259,79 +364,38 @@ func TestUserDeleteFeedback(t *testing.T) {
 	}
 }
 
-func TestUserDeleteTableHeaders(t *testing.T) {
+func TestUserDeleteRow(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
 		authProviderType realm.AuthProviderType
-		expectedHeaders  []string
-	}{
-		{
-			description:      "should show name for apikey",
-			authProviderType: realm.AuthProviderTypeAPIKey,
-			expectedHeaders:  []string{"Name", "ID", "Type", "Deleted", "Details"},
-		},
-		{
-			description:      "should show email for local-userpass",
-			authProviderType: realm.AuthProviderTypeUserPassword,
-			expectedHeaders:  []string{"Email", "ID", "Type", "Deleted", "Details"},
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userDeleteTableHeaders(tc.authProviderType))
-		})
-	}
-}
-
-func TestUserDeleteTableRow(t *testing.T) {
-	for _, tc := range []struct {
-		description      string
-		authProviderType realm.AuthProviderType
-		output           userOutput
+		err              error
 		expectedRow      map[string]interface{}
 	}{
 		{
-			description:      "should show name for apikey type user",
+			description:      "should show successful delete user row",
 			authProviderType: realm.AuthProviderTypeAPIKey,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"name": "name-1"},
-				},
-				err: nil,
-			},
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Name":    "name-1",
-				"Type":    "type-1",
 				"Deleted": true,
 				"Details": "",
 			},
 		},
 		{
-			description:      "should show email for local-userpass type user",
+			description:      "should show failed delete user row",
 			authProviderType: realm.AuthProviderTypeUserPassword,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"email": "user-1@test.com"},
-				},
-				err: nil,
-			},
+			err:              errors.New("client error"),
+
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Email":   "user-1@test.com",
-				"Type":    "type-1",
-				"Deleted": true,
-				"Details": "",
+				"Deleted": false,
+				"Details": "client error",
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userDeleteTableRow(tc.authProviderType, tc.output))
+			row := map[string]interface{}{}
+			output := userOutput{realm.User{}, tc.err}
+			userDeleteRow(output, row)
+
+			assert.Equal(t, tc.expectedRow, row)
 		})
 	}
 }

@@ -18,7 +18,7 @@ import (
 type CommandList struct {
 	inputs      listInputs
 	realmClient realm.Client
-	users       []realm.User
+	outputs     userOutputs
 }
 
 type listInputs struct {
@@ -74,92 +74,41 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
 	if usersErr != nil {
 		return usersErr
 	}
-
-	cmd.users = users
+	cmd.outputs = make([]userOutput, 0, len(users))
+	for _, user := range users {
+		cmd.outputs = append(cmd.outputs, userOutput{user, nil})
+	}
 
 	return nil
 }
 
 // Feedback is the command feedback
 func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.users) == 0 {
+	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No available users to show"))
 	}
-
-	usersByProviderType := map[realm.AuthProviderType][]realm.User{}
-	for _, user := range cmd.users {
-		for _, identity := range user.Identities {
-			usersByProviderType[identity.ProviderType] = append(usersByProviderType[identity.ProviderType], user)
-		}
-	}
-
-	var logs []terminal.Log
+	outputsByProviderType := cmd.outputs.mapByProviderType()
+	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
-		users := usersByProviderType[apt]
-		if len(users) == 0 {
+		outputs := outputsByProviderType[apt]
+		if len(outputs) == 0 {
 			continue
 		}
-		sort.Slice(users, getUserComparerByLastAuthentication(users))
+		sort.Slice(outputs, getUserComparerByLastAuthentication(outputs))
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", apt.Display()),
-			userTableHeaders(apt),
-			userTableRows(apt, users)...,
+			append(userTableHeaders(apt), headerEnabled, headerLastAuthenticationDate),
+			userTableRows(apt, outputs, userListRow)...,
 		))
 	}
 	return ui.Print(logs...)
 }
 
-func getUserComparerByLastAuthentication(users []realm.User) func(i, j int) bool {
+func getUserComparerByLastAuthentication(outputs []userOutput) func(i, j int) bool {
 	return func(i, j int) bool {
-		return users[i].LastAuthenticationDate > users[j].LastAuthenticationDate
+		return outputs[i].user.LastAuthenticationDate > outputs[j].user.LastAuthenticationDate
 	}
-}
-
-func userTableHeaders(authProviderType realm.AuthProviderType) []string {
-	var headers []string
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		headers = append(headers, headerName)
-	case realm.AuthProviderTypeUserPassword:
-		headers = append(headers, headerEmail)
-	}
-	headers = append(
-		headers,
-		headerID,
-		headerEnabled,
-		headerType,
-		headerLastAuthenticationDate,
-	)
-	return headers
-}
-
-func userTableRows(authProviderType realm.AuthProviderType, users []realm.User) []map[string]interface{} {
-	userTableRows := make([]map[string]interface{}, 0, len(users))
-	for _, user := range users {
-		userTableRows = append(userTableRows, userTableRow(authProviderType, user))
-	}
-	return userTableRows
-}
-
-func userTableRow(authProviderType realm.AuthProviderType, user realm.User) map[string]interface{} {
-	timeString := "n/a"
-	if user.LastAuthenticationDate != 0 {
-		timeString = time.Unix(user.LastAuthenticationDate, 0).UTC().String()
-	}
-	row := map[string]interface{}{
-		headerID:                     user.ID,
-		headerEnabled:                !user.Disabled,
-		headerType:                   user.Type,
-		headerLastAuthenticationDate: timeString,
-	}
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		row[headerName] = user.Data[userDataName]
-	case realm.AuthProviderTypeUserPassword:
-		row[headerEmail] = user.Data[userDataEmail]
-	}
-	return row
 }
 
 func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -168,4 +117,13 @@ func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	return nil
+}
+
+func userListRow(output userOutput, row map[string]interface{}) {
+	timeString := "n/a"
+	if output.user.LastAuthenticationDate != 0 {
+		timeString = time.Unix(output.user.LastAuthenticationDate, 0).UTC().String()
+	}
+	row[headerLastAuthenticationDate] = timeString
+	row[headerEnabled] = !output.user.Disabled
 }
