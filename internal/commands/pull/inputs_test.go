@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -28,7 +28,7 @@ func TestPullInputsResolve(t *testing.T) {
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(profile.WorkingDirectory, app.FileConfig.String()),
+			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
 			[]byte(`{"config_version":20210101,"app_id":"eggcorn-abcde","name":"eggcorn"}`),
 			0666,
 		))

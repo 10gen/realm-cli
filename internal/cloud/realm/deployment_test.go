@@ -24,21 +24,21 @@ func TestRealmDeployments(t *testing.T) {
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 
-		testApp, appErr := client.CreateApp(groupID, "users-test", realm.AppMeta{})
+		app, appErr := client.CreateApp(groupID, "users-test", realm.AppMeta{})
 		assert.Nil(t, appErr)
 
-		draft, draftErr := client.CreateDraft(groupID, testApp.ID)
+		draft, draftErr := client.CreateDraft(groupID, app.ID)
 		assert.Nil(t, draftErr)
 
 		t.Run("Should be able to deploy an existing draft", func(t *testing.T) {
-			deployment, deploymentErr := client.DeployDraft(groupID, testApp.ID, draft.ID)
+			deployment, deploymentErr := client.DeployDraft(groupID, app.ID, draft.ID)
 			assert.Nil(t, deploymentErr)
 
 			assert.True(t, deployment.ID != "", "deployment id should not be empty")
 			assert.Equal(t, realm.DeploymentStatusCreated, deployment.Status)
 
 			t.Run("And be able to retrieve the deployment", func(t *testing.T) {
-				found, err := client.Deployment(groupID, testApp.ID, deployment.ID)
+				found, err := client.Deployment(groupID, app.ID, deployment.ID)
 				assert.Nil(t, err)
 				assert.Equal(t, deployment.ID, found.ID)
 			})

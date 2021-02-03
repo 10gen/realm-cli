@@ -31,7 +31,7 @@ func TestUserCreateSetup(t *testing.T) {
 }
 
 func TestUserCreateHandler(t *testing.T) {
-	testApp := realm.App{
+	app := realm.App{
 		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
 		ClientAppID: "eggcorn-abcde",
@@ -41,7 +41,7 @@ func TestUserCreateHandler(t *testing.T) {
 	newMockClient := func() mock.RealmClient {
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{testApp}, nil
+			return []realm.App{app}, nil
 		}
 		return realmClient
 	}
@@ -106,7 +106,7 @@ func TestUserCreateHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.CreateUserFn = func(groupID, appID, email, password string) (realm.User, error) {
 						return realm.User{}, errors.New("something bad happened")
@@ -121,7 +121,7 @@ func TestUserCreateHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.CreateAPIKeyFn = func(groupID, appID, apiKeyName string) (realm.APIKey, error) {
 						return realm.APIKey{}, errors.New("something bad happened")

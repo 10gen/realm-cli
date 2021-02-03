@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -114,6 +114,7 @@ func TestResolveUsersInputs(t *testing.T) {
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				return tc.users, nil
 			}
+
 			var app realm.App
 			inputs := deleteInputs{Users: []string{testUsers[0].ID, testUsers[1].ID}}
 			users, err := inputs.resolveUsers(nil, realmClient, app)
@@ -151,7 +152,7 @@ func TestUserDeleteSetup(t *testing.T) {
 func TestUserDeleteHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
-	testApp := realm.App{
+	app := realm.App{
 		ID:          appID,
 		GroupID:     projectID,
 		ClientAppID: "eggcorn-abcde",
@@ -180,27 +181,31 @@ func TestUserDeleteHandler(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			var capturedAppFilter realm.AppFilter
-			var capturedFindProjectID, capturedFindAppID string
-			var capturedDeleteProjectID, capturedDeleteAppID string
 			realmClient := mock.RealmClient{}
+
+			var capturedAppFilter realm.AppFilter
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				capturedAppFilter = filter
-				return []realm.App{testApp}, nil
+				return []realm.App{app}, nil
 			}
+
+			var capturedFindProjectID, capturedFindAppID string
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				capturedFindProjectID = groupID
 				capturedFindAppID = appID
 				return testUsers, nil
 			}
+
+			var capturedDeleteProjectID, capturedDeleteAppID string
 			realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
 				capturedDeleteProjectID = groupID
 				capturedDeleteAppID = appID
 				return tc.userDeleteErr
 			}
+
 			cmd := &CommandDelete{
 				inputs: deleteInputs{
-					ProjectInputs: app.ProjectInputs{
+					ProjectInputs: cli.ProjectInputs{
 						Project: projectID,
 						App:     appID,
 					},
@@ -210,13 +215,15 @@ func TestUserDeleteHandler(t *testing.T) {
 			}
 
 			assert.Nil(t, cmd.Handler(nil, nil))
+
+			assert.Equal(t, cmd.outputs[0].user, tc.expectedOutputs[0].user)
+			assert.Equal(t, cmd.outputs[0].err, tc.expectedOutputs[0].err)
+
 			assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
 			assert.Equal(t, projectID, capturedFindProjectID)
 			assert.Equal(t, appID, capturedFindAppID)
 			assert.Equal(t, projectID, capturedDeleteProjectID)
 			assert.Equal(t, appID, capturedDeleteAppID)
-			assert.Equal(t, cmd.outputs[0].err, tc.expectedOutputs[0].err)
-			assert.Equal(t, cmd.outputs[0].user, tc.expectedOutputs[0].user)
 		})
 	}
 
@@ -242,7 +249,7 @@ func TestUserDeleteHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 						return nil, errors.New("something bad happened")

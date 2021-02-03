@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -26,7 +26,7 @@ func TestUserDisableSetup(t *testing.T) {
 func TestUserDisableHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
-	testApp := realm.App{
+	app := realm.App{
 		ID:          appID,
 		GroupID:     projectID,
 		ClientAppID: "eggcorn-abcde",
@@ -52,27 +52,31 @@ func TestUserDisableHandler(t *testing.T) {
 		{"should save failed disable errors", errors.New("client error")},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			var capturedAppFilter realm.AppFilter
-			var capturedFindProjectID, capturedFindAppID string
-			var capturedDisableProjectID, capturedDisableAppID string
 			realmClient := mock.RealmClient{}
+
+			var capturedAppFilter realm.AppFilter
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				capturedAppFilter = filter
-				return []realm.App{testApp}, nil
+				return []realm.App{app}, nil
 			}
+
+			var capturedFindProjectID, capturedFindAppID string
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				capturedFindProjectID = groupID
 				capturedFindAppID = appID
 				return testUsers[:1], nil
 			}
+
+			var capturedDisableProjectID, capturedDisableAppID string
 			realmClient.DisableUserFn = func(groupID, appID, userID string) error {
 				capturedDisableProjectID = groupID
 				capturedDisableAppID = appID
 				return tc.disableUserErr
 			}
+
 			cmd := &CommandDisable{
 				inputs: disableInputs{
-					ProjectInputs: app.ProjectInputs{
+					ProjectInputs: cli.ProjectInputs{
 						Project: projectID,
 						App:     appID,
 					},
@@ -82,14 +86,16 @@ func TestUserDisableHandler(t *testing.T) {
 			}
 
 			assert.Nil(t, cmd.Handler(nil, nil))
+
+			assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
+			assert.Equal(t, testUsers[0], cmd.outputs[0].user)
+			assert.Equal(t, tc.disableUserErr, cmd.outputs[0].err)
+
 			assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
 			assert.Equal(t, projectID, capturedFindProjectID)
 			assert.Equal(t, appID, capturedFindAppID)
 			assert.Equal(t, projectID, capturedDisableProjectID)
 			assert.Equal(t, appID, capturedDisableAppID)
-			assert.Equal(t, testUsers[0].ID, cmd.inputs.Users[0])
-			assert.Equal(t, tc.disableUserErr, cmd.outputs[0].err)
-			assert.Equal(t, testUsers[0], cmd.outputs[0].user)
 		})
 	}
 
@@ -115,7 +121,7 @@ func TestUserDisableHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 						return nil, errors.New("something bad happened")

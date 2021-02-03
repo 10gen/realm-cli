@@ -1,9 +1,9 @@
 package app
 
 import (
-	appcli "github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -50,11 +50,11 @@ type initInputs struct {
 }
 
 func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	_, appConfig, appConfigErr := appcli.ResolveConfig(profile.WorkingDirectory)
-	if appConfigErr != nil {
-		return appConfigErr
+	app, appErr := local.LoadAppConfig(profile.WorkingDirectory)
+	if appErr != nil {
+		return appErr
 	}
-	if appConfig.Name != "" {
+	if app.RootDir != "" {
 		return errProjectExists{}
 	}
 
@@ -79,12 +79,12 @@ func (i *initInputs) resolveFrom(ui terminal.UI, client realm.Client) (from, err
 	var f from
 
 	if i.From != "" {
-		a, err := appcli.Resolve(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
+		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
 		if err != nil {
 			return from{}, err
 		}
-		f.GroupID = a.GroupID
-		f.AppID = a.ID
+		f.GroupID = app.GroupID
+		f.AppID = app.ID
 	}
 
 	return f, nil

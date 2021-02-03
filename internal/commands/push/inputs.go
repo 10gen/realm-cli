@@ -1,9 +1,9 @@
 package push
 
 import (
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 )
 
@@ -62,20 +62,20 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		wd = profile.WorkingDirectory
 	}
 
-	appDir, appConfig, appConfigErr := app.ResolveConfig(wd)
-	if appConfigErr != nil {
-		return appConfigErr
+	app, appErr := local.LoadAppConfig(wd)
+	if appErr != nil {
+		return appErr
 	}
 
 	if i.AppDirectory == "" {
-		if appDir == "" {
+		if app.RootDir == "" {
 			return errProjectNotFound{}
 		}
-		i.AppDirectory = appDir
+		i.AppDirectory = app.RootDir
 	}
 
 	if i.To == "" {
-		i.To = appConfig.String()
+		i.To = app.String()
 	}
 
 	return nil
@@ -88,14 +88,14 @@ func (i inputs) resolveTo(ui terminal.UI, client realm.Client) (to, error) {
 		return t, nil
 	}
 
-	a, err := app.Resolve(ui, client, realm.AppFilter{GroupID: i.Project, App: i.To})
+	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.To})
 	if err != nil {
-		if _, ok := err.(app.ErrAppNotFound); !ok {
+		if _, ok := err.(cli.ErrAppNotFound); !ok {
 			return to{}, err
 		}
 	}
 
-	t.GroupID = a.GroupID
-	t.AppID = a.ID
+	t.GroupID = app.GroupID
+	t.AppID = app.ID
 	return t, nil
 }

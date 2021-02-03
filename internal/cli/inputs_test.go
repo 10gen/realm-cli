@@ -1,4 +1,4 @@
-package app
+package cli_test
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -25,17 +26,17 @@ func TestProjectAppInputsResolve(t *testing.T) {
 
 	for _, tc := range []struct {
 		description string
-		inputs      ProjectInputs
+		inputs      cli.ProjectInputs
 		wd          string
 		procedure   func(c *expect.Console)
-		test        func(t *testing.T, i ProjectInputs)
+		test        func(t *testing.T, i cli.ProjectInputs)
 	}{
 		{
 			description: "Should not prompt for app when set by flag already",
-			inputs:      ProjectInputs{App: "some-app"},
+			inputs:      cli.ProjectInputs{App: "some-app"},
 			wd:          testRoot,
 			procedure:   func(c *expect.Console) {},
-			test: func(t *testing.T, i ProjectInputs) {
+			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
 			},
 		},
@@ -46,7 +47,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("some-app")
 			},
-			test: func(t *testing.T, i ProjectInputs) {
+			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
 			},
 		},
@@ -57,7 +58,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
 			},
-			test: func(t *testing.T, i ProjectInputs) {
+			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "eggcorn-abcde", i.App)
 			},
 		},
@@ -68,7 +69,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				c.ExpectString("App Filter")
 				c.SendLine("") // accept default
 			},
-			test: func(t *testing.T, i ProjectInputs) {
+			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "eggcorn", i.App)
 			},
 		},
@@ -97,7 +98,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 
 func TestResolveApp(t *testing.T) {
 	groupID := "groupID"
-	testApp := realm.App{
+	app := realm.App{
 		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
 		ClientAppID: "eggcorn-abcde",
@@ -115,30 +116,30 @@ func TestResolveApp(t *testing.T) {
 		{
 			description: "Should return the single app found from the client call",
 			appID:       "app",
-			apps:        []realm.App{testApp},
+			apps:        []realm.App{app},
 			procedure:   func(c *expect.Console) {},
-			expectedApp: testApp,
+			expectedApp: app,
 		},
 		{
 			description: "Should return an error when no apps are returned from the client call with no app id specified",
 			procedure:   func(c *expect.Console) {},
-			expectedErr: ErrAppNotFound{},
+			expectedErr: cli.ErrAppNotFound{},
 		},
 		{
 			description: "Should return an error when no apps are returned from the client call with an app id specified",
 			appID:       "app",
 			procedure:   func(c *expect.Console) {},
-			expectedErr: ErrAppNotFound{"app"},
+			expectedErr: cli.ErrAppNotFound{"app"},
 		},
 		{
 			description: "Should prompt user to select an app when more than one is returned from the client call",
 			appID:       "app",
-			apps:        []realm.App{testApp, testApp},
+			apps:        []realm.App{app, app},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Select App")
 				c.SendLine("egg")
 			},
-			expectedApp: testApp,
+			expectedApp: app,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -160,9 +161,9 @@ func TestResolveApp(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			inputs := ProjectInputs{Project: groupID, App: tc.appID}
+			inputs := cli.ProjectInputs{Project: groupID, App: tc.appID}
 
-			app, err := Resolve(ui, realmClient, inputs.Filter())
+			app, err := cli.ResolveApp(ui, realmClient, inputs.Filter())
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -179,7 +180,7 @@ func TestResolveApp(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		_, err := Resolve(nil, realmClient, realm.AppFilter{})
+		_, err := cli.ResolveApp(nil, realmClient, realm.AppFilter{})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }
@@ -206,7 +207,7 @@ func TestResolveGroupID(t *testing.T) {
 		{
 			description: "Should return an error when no groups are returned from the client call",
 			procedure:   func(c *expect.Console) {},
-			expectedErr: ErrGroupNotFound,
+			expectedErr: cli.ErrGroupNotFound,
 		},
 		{
 			description: "Should prompt user to select a group when more than one is returned from the client call",
@@ -234,7 +235,7 @@ func TestResolveGroupID(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			groupID, err := ResolveGroupID(ui, atlasClient)
+			groupID, err := cli.ResolveGroupID(ui, atlasClient)
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -250,7 +251,7 @@ func TestResolveGroupID(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		_, err := ResolveGroupID(nil, atlasClient)
+		_, err := cli.ResolveGroupID(nil, atlasClient)
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }

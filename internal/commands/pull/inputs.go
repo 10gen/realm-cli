@@ -3,9 +3,9 @@ package pull
 import (
 	"errors"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/mitchellh/go-homedir"
@@ -59,17 +59,17 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		wd = profile.WorkingDirectory
 	}
 
-	appDir, appConfig, appConfigErr := app.ResolveConfig(wd)
-	if appConfigErr != nil {
-		return appConfigErr
+	app, appErr := local.LoadAppConfig(wd)
+	if appErr != nil {
+		return appErr
 	}
 
 	var target string
 	if i.Target == "" {
-		if appDir == "" {
+		if app.RootDir == "" {
 			return errProjectNotFound{}
 		}
-		target = appDir
+		target = app.RootDir
 	} else {
 		t, err := homedir.Expand(i.Target)
 		if err != nil {
@@ -79,15 +79,15 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 	i.Target = target
 
-	if appDir != "" {
+	if app.RootDir != "" {
 		if i.AppVersion == realm.AppConfigVersionZero {
-			i.AppVersion = appConfig.ConfigVersion
-		} else if i.AppVersion != appConfig.ConfigVersion && appConfig.ConfigVersion != realm.AppConfigVersionZero {
+			i.AppVersion = app.ConfigVersion()
+		} else if i.AppVersion != app.ConfigVersion() && app.ConfigVersion() != realm.AppConfigVersionZero {
 			return errConfigVersionMismatch
 		}
 
 		if i.From == "" {
-			i.From = appConfig.String()
+			i.From = app.String()
 		}
 	}
 	return nil
@@ -105,14 +105,14 @@ func (i inputs) resolveFrom(ui terminal.UI, client realm.Client) (from, error) {
 		return f, nil
 	}
 
-	a, err := app.Resolve(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
+	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
 	if err != nil {
-		if _, ok := err.(app.ErrAppNotFound); !ok {
+		if _, ok := err.(cli.ErrAppNotFound); !ok {
 			return from{}, err
 		}
 	}
 
-	f.GroupID = a.GroupID
-	f.AppID = a.ID
+	f.GroupID = app.GroupID
+	f.AppID = app.ID
 	return f, nil
 }

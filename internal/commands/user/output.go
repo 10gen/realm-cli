@@ -43,21 +43,23 @@ type userTableRowModifier func(userOutput, map[string]interface{})
 
 func userTableHeaders(authProviderType realm.AuthProviderType) []string {
 	var headers []string
+
 	switch authProviderType {
 	case realm.AuthProviderTypeAPIKey:
 		headers = append(headers, headerName)
 	case realm.AuthProviderTypeUserPassword:
 		headers = append(headers, headerEmail)
 	}
+
 	return append(headers, headerID, headerType)
 }
 
 func userTableRows(authProviderType realm.AuthProviderType, outputs userOutputs, tableRowModifier userTableRowModifier) []map[string]interface{} {
-	userTableRows := make([]map[string]interface{}, 0, len(outputs))
+	rows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
-		userTableRows = append(userTableRows, userTableRow(authProviderType, output, tableRowModifier))
+		rows = append(rows, userTableRow(authProviderType, output, tableRowModifier))
 	}
-	return userTableRows
+	return rows
 }
 
 func userTableRow(authProviderType realm.AuthProviderType, output userOutput, tableRowModifier userTableRowModifier) map[string]interface{} {
@@ -65,12 +67,14 @@ func userTableRow(authProviderType realm.AuthProviderType, output userOutput, ta
 		headerID:   output.user.ID,
 		headerType: output.user.Type,
 	}
+
 	switch authProviderType {
 	case realm.AuthProviderTypeAPIKey:
 		row[headerName] = output.user.Data[userDataName]
 	case realm.AuthProviderTypeUserPassword:
 		row[headerEmail] = output.user.Data[userDataEmail]
 	}
+
 	tableRowModifier(output, row)
 	return row
 }

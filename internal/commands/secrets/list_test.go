@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -27,7 +27,7 @@ func TestSecretsListSetup(t *testing.T) {
 func TestSecretsListHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
-	testApp := realm.App{
+	app := realm.App{
 		ID:          appID,
 		GroupID:     projectID,
 		ClientAppID: "eggcorn-abcde",
@@ -43,7 +43,7 @@ func TestSecretsListHandler(t *testing.T) {
 	t.Run("Should find app secrets", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{testApp}, nil
+			return []realm.App{app}, nil
 		}
 
 		realmClient.SecretsFn = func(groupID, appID string) ([]realm.Secret, error) {
@@ -52,7 +52,7 @@ func TestSecretsListHandler(t *testing.T) {
 
 		cmd := &CommandList{
 			inputs: listInputs{
-				ProjectInputs: app.ProjectInputs{
+				ProjectInputs: cli.ProjectInputs{
 					Project: projectID,
 					App:     appID,
 				},
@@ -86,7 +86,7 @@ func TestSecretsListHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.SecretsFn = func(groupID, appID string) ([]realm.Secret, error) {
 						return nil, errors.New("something bad happened")

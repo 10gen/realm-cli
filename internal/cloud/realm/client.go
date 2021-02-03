@@ -24,8 +24,8 @@ type Client interface {
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
-	Import(groupID, appID string, pkg map[string]interface{}) error
-	Diff(groupID, appID string, pkg map[string]interface{}) ([]string, error)
+	Import(groupID, appID string, appData interface{}) error
+	Diff(groupID, appID string, appData interface{}) ([]string, error)
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error

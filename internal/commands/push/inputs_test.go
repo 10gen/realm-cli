@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -26,7 +26,7 @@ func TestPushInputsResolve(t *testing.T) {
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(profile.WorkingDirectory, app.FileConfig.String()),
+			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
 			[]byte(`{"app_id": "eggcorn-abcde", "name":"eggcorn"}`),
 			0666,
 		))

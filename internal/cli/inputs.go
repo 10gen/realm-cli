@@ -1,4 +1,4 @@
-package app
+package cli
 
 import (
 	"errors"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -40,9 +41,9 @@ func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
 func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
-	_, config, configErr := ResolveConfig(wd)
-	if configErr != nil {
-		return configErr
+	app, appErr := local.LoadAppConfig(wd)
+	if appErr != nil {
+		return appErr
 	}
 
 	var questions []*survey.Question
@@ -51,7 +52,7 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
 			Name: appFieldName,
 			Prompt: &survey.Input{
 				Message: "App Filter",
-				Default: getAppString(config),
+				Default: app.String(),
 			},
 		})
 	}
@@ -67,13 +68,13 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
 
 // ErrAppNotFound is an app not found error
 type ErrAppNotFound struct {
-	app string
+	App string
 }
 
 func (err ErrAppNotFound) Error() string {
 	errMsg := "failed to find app"
-	if err.app != "" {
-		errMsg += fmt.Sprintf(" '%s'", err.app)
+	if err.App != "" {
+		errMsg += fmt.Sprintf(" '%s'", err.App)
 	}
 
 	return errMsg
@@ -84,8 +85,8 @@ var (
 	ErrGroupNotFound = errors.New("failed to find group")
 )
 
-// Resolve will use the provided Realm client to resolve the app specified by the filter
-func Resolve(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
+// ResolveApp will use the provided Realm client to resolve the app specified by the filter
+func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
 	apps, err := client.FindApps(filter)
 	if err != nil {
 		return realm.App{}, err
@@ -147,13 +148,6 @@ func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
 	}
 
 	return groupIDsByOption[selection], nil
-}
-
-func getAppString(config Config) string {
-	if config.ID == "" {
-		return config.Name
-	}
-	return config.ID
 }
 
 func getGroupString(group atlas.Group) string {

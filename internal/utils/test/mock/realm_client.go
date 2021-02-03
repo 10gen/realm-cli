@@ -12,9 +12,9 @@ type RealmClient struct {
 	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
 
-	DiffFn   func(groupID, appID string, pkg map[string]interface{}) ([]string, error)
+	DiffFn   func(groupID, appID string, appData interface{}) ([]string, error)
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
-	ImportFn func(groupID, appID string, pkg map[string]interface{}) error
+	ImportFn func(groupID, appID string, appData interface{}) error
 
 	CreateAppFn func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	FindAppsFn  func(filter realm.AppFilter) ([]realm.App, error)
@@ -73,21 +73,21 @@ func (rc RealmClient) Export(groupID, appID string, req realm.ExportRequest) (st
 // Import calls the mocked Import implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) Import(groupID, appID string, pkg map[string]interface{}) error {
+func (rc RealmClient) Import(groupID, appID string, appData interface{}) error {
 	if rc.ImportFn != nil {
-		return rc.ImportFn(groupID, appID, pkg)
+		return rc.ImportFn(groupID, appID, appData)
 	}
-	return rc.Client.Import(groupID, appID, pkg)
+	return rc.Client.Import(groupID, appID, appData)
 }
 
 // Diff calls the mocked Diff implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) Diff(groupID, appID string, pkg map[string]interface{}) ([]string, error) {
+func (rc RealmClient) Diff(groupID, appID string, appData interface{}) ([]string, error) {
 	if rc.DiffFn != nil {
-		return rc.DiffFn(groupID, appID, pkg)
+		return rc.DiffFn(groupID, appID, appData)
 	}
-	return rc.Client.Diff(groupID, appID, pkg)
+	return rc.Client.Diff(groupID, appID, appData)
 }
 
 // CreateApp calls the mocked CreateApp implementation if provided,
