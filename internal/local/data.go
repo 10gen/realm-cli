@@ -30,6 +30,9 @@ const (
 	NameConfig      = "config"
 	NameStitch      = "stitch"
 
+	// environments
+	NameEnvironments = "environments"
+
 	// auth
 	NameAuth           = "auth"
 	NameAuthProviders  = "auth_providers"

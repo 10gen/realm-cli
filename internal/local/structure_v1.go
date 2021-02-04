@@ -11,23 +11,24 @@ import (
 
 // AppStructureV1 represents the v1 Realm app structure
 type AppStructureV1 struct {
-	ConfigVersion        realm.AppConfigVersion   `json:"config_version"`
-	ID                   string                   `json:"app_id,omitempty"`
-	Name                 string                   `json:"name"`
-	Location             realm.Location           `json:"location"`
-	DeploymentModel      realm.DeploymentModel    `json:"deployment_model"`
-	Security             map[string]interface{}   `json:"security"`
-	Hosting              map[string]interface{}   `json:"hosting,omitempty"`
-	CustomUserDataConfig map[string]interface{}   `json:"custom_user_data_config"`
-	Sync                 map[string]interface{}   `json:"sync"`
-	Environment          string                   `json:"environment,omitempty"`
-	Secrets              interface{}              `json:"secrets,omitempty"`
-	AuthProviders        []map[string]interface{} `json:"auth_providers,omitempty"`
-	Functions            []map[string]interface{} `json:"functions,omitempty"`
-	Triggers             []map[string]interface{} `json:"triggers,omitempty"`
-	GraphQL              GraphQLStructure         `json:"graphql,omitempty"`
-	Services             []ServiceStructure       `json:"services,omitempty"`
-	Values               []map[string]interface{} `json:"values,omitempty"`
+	ConfigVersion        realm.AppConfigVersion            `json:"config_version"`
+	ID                   string                            `json:"app_id,omitempty"`
+	Name                 string                            `json:"name"`
+	Location             realm.Location                    `json:"location"`
+	DeploymentModel      realm.DeploymentModel             `json:"deployment_model"`
+	Environment          string                            `json:"environment,omitempty"`
+	Environments         map[string]map[string]interface{} `json:"environments,omitempty"`
+	Security             map[string]interface{}            `json:"security"`
+	Hosting              map[string]interface{}            `json:"hosting,omitempty"`
+	CustomUserDataConfig map[string]interface{}            `json:"custom_user_data_config"`
+	Sync                 map[string]interface{}            `json:"sync"`
+	Secrets              interface{}                       `json:"secrets,omitempty"`
+	AuthProviders        []map[string]interface{}          `json:"auth_providers,omitempty"`
+	Functions            []map[string]interface{}          `json:"functions,omitempty"`
+	Triggers             []map[string]interface{}          `json:"triggers,omitempty"`
+	GraphQL              GraphQLStructure                  `json:"graphql,omitempty"`
+	Services             []ServiceStructure                `json:"services,omitempty"`
+	Values               []map[string]interface{}          `json:"values,omitempty"`
 }
 
 // GraphQLStructure represents the Realm app graphql structure
@@ -78,6 +79,9 @@ func (a *AppDataV1) LoadData(rootDir string) error {
 	if err := a.unmarshalSecrets(rootDir); err != nil {
 		return err
 	}
+	if err := a.unmarshalEnvironments(rootDir); err != nil {
+		return err
+	}
 	if err := a.unmarshalValues(rootDir); err != nil {
 		return err
 	}
@@ -113,6 +117,35 @@ func (a *AppDataV1) unmarshalSecrets(rootDir string) error {
 		return dataErr
 	}
 	return unmarshalJSON(data, &a.Secrets)
+}
+
+func (a *AppDataV1) unmarshalEnvironments(rootDir string) error {
+	dir := filepath.Join(rootDir, NameEnvironments)
+
+	environments := map[string]map[string]interface{}{}
+
+	dw := directoryWalker{path: dir, onlyFiles: true}
+	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
+		data, dataErr := readFile(path)
+		if dataErr != nil {
+			return dataErr
+		}
+
+		var out map[string]interface{}
+		if err := unmarshalJSON(data, &out); err != nil {
+			return err
+		}
+
+		environments[file.Name()] = out
+		return nil
+	}); walkErr != nil {
+		return walkErr
+	}
+
+	if len(environments) > 0 {
+		a.Environments = environments
+	}
+	return nil
 }
 
 func (a *AppDataV1) unmarshalAuthProviders(rootDir string) error {

@@ -9,20 +9,21 @@ import (
 
 // AppStructureV2 represents the v2 Realm app structure
 type AppStructureV2 struct {
-	ConfigVersion         realm.AppConfigVersion   `json:"config_version"`
-	ID                    string                   `json:"app_id,omitempty"`
-	Name                  string                   `json:"name,omitempty"`
-	Location              realm.Location           `json:"location,omitempty"`
-	DeploymentModel       realm.DeploymentModel    `json:"deployment_model,omitempty"`
-	Environment           string                   `json:"environment,omitempty"`
-	AllowedRequestOrigins []string                 `json:"allowed_request_origins,omitempty"`
-	Values                []map[string]interface{} `json:"values,omitempty"`
-	Auth                  *AuthStructure           `json:"auth,omitempty"`
-	Functions             *FunctionsStructure      `json:"functions,omitempty"`
-	Triggers              []map[string]interface{} `json:"triggers,omitempty"`
-	Services              []ServiceStructure       `json:"services,omitempty"`
-	GraphQL               *GraphQLStructure        `json:"graphql,omitempty"`
-	Sync                  *SyncStructure           `json:"sync,omitempty"`
+	ConfigVersion         realm.AppConfigVersion            `json:"config_version"`
+	ID                    string                            `json:"app_id,omitempty"`
+	Name                  string                            `json:"name,omitempty"`
+	Location              realm.Location                    `json:"location,omitempty"`
+	DeploymentModel       realm.DeploymentModel             `json:"deployment_model,omitempty"`
+	Environment           string                            `json:"environment,omitempty"`
+	Environments          map[string]map[string]interface{} `json:"environments,omitempty"`
+	AllowedRequestOrigins []string                          `json:"allowed_request_origins,omitempty"`
+	Values                []map[string]interface{}          `json:"values,omitempty"`
+	Auth                  *AuthStructure                    `json:"auth,omitempty"`
+	Functions             *FunctionsStructure               `json:"functions,omitempty"`
+	Triggers              []map[string]interface{}          `json:"triggers,omitempty"`
+	Services              []ServiceStructure                `json:"services,omitempty"`
+	GraphQL               *GraphQLStructure                 `json:"graphql,omitempty"`
+	Sync                  *SyncStructure                    `json:"sync,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -75,6 +76,9 @@ func (a AppDataV2) DeploymentModel() realm.DeploymentModel {
 
 // LoadData will load the local Realm app data
 func (a *AppDataV2) LoadData(rootDir string) error {
+	if err := a.unmarshalEnvironments(rootDir); err != nil {
+		return err
+	}
 	if err := a.unmarshalValues(rootDir); err != nil {
 		return err
 	}
@@ -95,6 +99,35 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	}
 	if err := a.unmarshalServices(rootDir); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (a *AppDataV2) unmarshalEnvironments(rootDir string) error {
+	dir := filepath.Join(rootDir, NameEnvironments)
+
+	environments := map[string]map[string]interface{}{}
+
+	dw := directoryWalker{path: dir, onlyFiles: true}
+	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
+		data, dataErr := readFile(path)
+		if dataErr != nil {
+			return dataErr
+		}
+
+		var out map[string]interface{}
+		if err := unmarshalJSON(data, &out); err != nil {
+			return err
+		}
+
+		environments[file.Name()] = out
+		return nil
+	}); walkErr != nil {
+		return walkErr
+	}
+
+	if len(environments) > 0 {
+		a.Environments = environments
 	}
 	return nil
 }

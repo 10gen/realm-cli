@@ -84,6 +84,14 @@ func appDataV1(configVersion realm.AppConfigVersion, app realm.App) local.AppDat
 		DeploymentModel:      app.DeploymentModel,
 		Sync:                 map[string]interface{}{"development_mode_enabled": false},
 		CustomUserDataConfig: map[string]interface{}{"enabled": false},
+		Environments: map[string]map[string]interface{}{
+			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{}},
+			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
+			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
+			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
+			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
+			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
+		},
 		AuthProviders: []map[string]interface{}{
 			{"name": realm.AuthProviderTypeAnonymous.String(), "type": realm.AuthProviderTypeAnonymous.String(), "disabled": false},
 			{"name": realm.AuthProviderTypeAPIKey.String(), "type": realm.AuthProviderTypeAPIKey.String(), "disabled": false},
@@ -127,11 +135,19 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		Name:            app.Name,
 		Location:        app.Location,
 		DeploymentModel: app.DeploymentModel,
-		// TODO(REALMC-7989): include auth, functions, triggers, allowed request origina, and graphql
-		// AllowedRequestOrigins: []string{"http://localhost:8080"},
+		Environments: map[string]map[string]interface{}{
+			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{}},
+			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
+			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
+			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
+			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
+			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
+		},
+		AllowedRequestOrigins: []string{"http://localhost:8080"},
 		Sync: &local.SyncStructure{
 			Config: map[string]interface{}{"development_mode_enabled": false},
 		},
+		// TODO(REALMC-7989): include auth, functions, triggers, and graphql
 		// in 20210101 round-trip test once its supported in export on the backend
 		// Auth: &local.AuthStructure{
 		// 	CustomUserData: map[string]interface{}{"enabled": false},
