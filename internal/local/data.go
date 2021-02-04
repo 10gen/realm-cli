@@ -2,7 +2,7 @@ package local
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -30,17 +30,16 @@ const (
 	NameConfig      = "config"
 	NameStitch      = "stitch"
 
-	// misc files
-	NameSecrets = "secrets"
-	NameSource  = "source"
-
 	// auth
-	NameAuth          = "auth"
-	NameAuthProviders = "auth_providers"
+	NameAuth           = "auth"
+	NameAuthProviders  = "auth_providers"
+	NameCustomUserData = "custom_user_data"
+	NameProviders      = "providers"
 
 	// functions
 	NameFunctions   = "functions"
 	nameNodeModules = "node_modules"
+	NameSource      = "source"
 
 	// graphql
 	NameGraphQL         = "graphql"
@@ -61,18 +60,26 @@ const (
 	NameSync = "sync"
 
 	// values
-	NameValues = "values"
+	NameSecrets = "secrets"
+	NameValues  = "values"
 )
 
 // set of supported local files
 var (
+	// app configs
 	FileRealmConfig = File{NameRealmConfig, extJSON}
 	FileConfig      = File{NameConfig, extJSON}
 	FileStitch      = File{NameStitch, extJSON}
 
-	FileSecrets = File{NameSecrets, extJSON}
+	// auth
+	FileCustomUserData = File{NameCustomUserData, extJSON}
+	FileProviders      = File{NameProviders, extJSON}
 
+	// functions
 	FileSource = File{NameSource, extJS}
+
+	// values
+	FileSecrets = File{NameSecrets, extJSON}
 )
 
 func fileExists(path string) (bool, error) {
@@ -94,7 +101,7 @@ type File struct {
 
 func (f File) String() string { return f.Name + f.Ext }
 
-// TODO(REALMC-7653): recursively walk the functions directory and collect all .js files
+// TODO(REALMC-7989): recursively walk the functions directory and collect all .js files
 // func walk(rootDir string, fn func(file os.FileInfo, path string) error) error {
 // 	dw := directoryWalker{path: rootDir}
 // 	if err := dw.walk(func(f os.FileInfo, p string) error {
@@ -168,34 +175,30 @@ func unmarshalDirectoryFlat(path string) ([]map[string]interface{}, error) {
 	return out, nil
 }
 
-type optionsUnmarshalJSON struct {
-	failOnEmpty   bool
-	failOnMissing bool
-}
-
 func readFile(path string) ([]byte, error) {
-	return readFileWithOptions(path, optionsUnmarshalJSON{})
+	return readFileWithOptions(path, false)
 }
 
-func readFileWithOptions(path string, opts optionsUnmarshalJSON) ([]byte, error) {
+func readFileWithOptions(path string, failOnMissing bool) ([]byte, error) {
 	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) && !opts.failOnMissing {
+		if os.IsNotExist(err) && !failOnMissing {
 			return nil, nil
 		}
 		return nil, err
 	}
+	return ioutil.ReadFile(path)
+}
 
-	data, readErr := ioutil.ReadFile(path)
-	if readErr != nil {
-		return nil, fmt.Errorf("failed to read file at %s: %w", path, readErr)
-	}
+func unmarshalJSON(data []byte, out interface{}) error {
+	return unmarshalJSONWithOptions(data, out, false)
+}
 
+func unmarshalJSONWithOptions(data []byte, out interface{}, failOnEmpty bool) error {
 	if len(data) == 0 {
-		if opts.failOnEmpty {
-			return nil, fmt.Errorf("no file contents at %s", path)
+		if failOnEmpty {
+			return errors.New("no file contents")
 		}
-		return nil, nil
+		return nil
 	}
-
-	return data, nil
+	return json.Unmarshal(data, out)
 }

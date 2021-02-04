@@ -16,9 +16,9 @@ func TestNewApp(t *testing.T) {
 	t.Run("new app should create an instance of the realm config json", func(t *testing.T) {
 		expectedApp := App{
 			RootDir: "/path/to/project",
-			Config:  FileConfig,
+			Config:  FileRealmConfig,
 			AppData: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-				ConfigVersion:   realm.AppConfigVersion20200603,
+				ConfigVersion:   realm.AppConfigVersion20210101,
 				ID:              "",
 				Name:            "testName",
 				Location:        realm.LocationOregon,

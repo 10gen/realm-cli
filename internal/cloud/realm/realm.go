@@ -12,8 +12,7 @@ import (
 
 var (
 	// DefaultAppConfigVersion is the default app config version
-	// TODO(REALMC-7653): switch this default version to AppConfigVersion20210101
-	DefaultAppConfigVersion = AppConfigVersion20200603
+	DefaultAppConfigVersion = AppConfigVersion20210101
 )
 
 // AppConfigVersion is the Realm application config version for import/export

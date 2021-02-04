@@ -555,7 +555,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						configData, readErr := ioutil.ReadFile(configPath)
 						assert.Nil(t, readErr)
 						assert.Equal(t, `{
-    "config_version": 20200603,
+    "config_version": 20210101,
     "name": "testApp",
     "location": "US-OR",
     "deployment_model": "LOCAL"
@@ -589,7 +589,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						configData, readErr := ioutil.ReadFile(configPath)
 						assert.Nil(t, readErr)
 						assert.Equal(t, `{
-    "config_version": 20200603,
+    "config_version": 20210101,
     "name": "testApp"
 }`, string(configData))
 					},
@@ -624,7 +624,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					assert.Nil(t, err)
 					assert.Equal(t, tc.expectedApp, app)
 
-					tc.test(t, filepath.Join(tmpDir, local.FileConfig.String()))
+					tc.test(t, filepath.Join(tmpDir, local.FileRealmConfig.String()))
 				})
 			}
 		})

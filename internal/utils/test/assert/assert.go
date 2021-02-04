@@ -29,47 +29,52 @@ func RegisterOpts(t reflect.Type, opts ...cmp.Option) {
 
 // Equal compares x and y for equality
 // and fails with the test if not
-func Equal(t testing.TB, x, y interface{}) {
+func Equal(t testing.TB, expected, actual interface{}) {
 	t.Helper()
-	switch x.(type) {
+	switch expected.(type) {
 	case string:
-		Equalf(t, x, y, "expected %q to equal %q", y, x)
+		Equalf(t, expected, actual, "failed to assert equals ( actual, expected )\n\t%q\n\t%q", actual, expected)
 	default:
-		Equalf(t, x, y, "expected %T{%v} to equal %T{%v}", y, y, x, x)
+		Equalf(t, expected, actual, "failed to assert equals ( actual, expected )\n\t%T{%+v}\n\t%T{%+v}", actual, actual, expected, expected)
 	}
 }
 
 // Equalf compares x and y for equality
 // and fails with the test with the provided formatted message if not
-func Equalf(t testing.TB, x, y interface{}, format string, args ...interface{}) {
+func Equalf(t testing.TB, expected, actual interface{}, format string, args ...interface{}) {
 	t.Helper()
-	if !cmp.Equal(x, y, getCmpOpts(x)...) {
+	if !cmp.Equal(expected, actual, getCmpOpts(expected)...) {
 		t.Fatalf("\n"+format, args...)
 	}
 }
 
 // NotEqual compares x and y for inequality
 // and fails with the test if not
-func NotEqual(t testing.TB, x, y interface{}, format string, args ...interface{}) {
+func NotEqual(t testing.TB, expected, actual interface{}, format string, args ...interface{}) {
 	t.Helper()
-	NotEqualf(t, x, y, "expected %T{%v} to not equal %T{%v}", y, y, x, x)
+	switch expected.(type) {
+	case string:
+		NotEqualf(t, expected, actual, "failed to assert not equals ( actual, expected )\n\t%q\n\t%q", actual, expected)
+	default:
+		NotEqualf(t, expected, actual, "failed to assert not equals ( actual, expected )\n\t%T{%+v}\n\t%T{%+v}", actual, actual, expected, expected)
+	}
 }
 
 // NotEqualf compares x and y for inequality
 // and fails with the test with the provided formatted message if not
-func NotEqualf(t testing.TB, x, y interface{}, format string, args ...interface{}) {
+func NotEqualf(t testing.TB, expected, actual interface{}, format string, args ...interface{}) {
 	t.Helper()
-	if cmp.Equal(x, y, getCmpOpts(x)...) {
+	if cmp.Equal(expected, actual, getCmpOpts(expected)...) {
 		t.Fatalf("\n"+format, args...)
 	}
 }
 
 // Match compares x and y and ensures there is no diff
 // and fails with the test with the reported differences if not
-func Match(t testing.TB, x, y interface{}) {
+func Match(t testing.TB, expected, actual interface{}) {
 	t.Helper()
-	if diff := cmp.Diff(x, y, getCmpOpts(x)...); diff != "" {
-		t.Fatalf("\n" + diff)
+	if diff := cmp.Diff(expected, actual, getCmpOpts(expected)...); diff != "" {
+		t.Fatalf("\nfailed to assert no diff:\n" + diff)
 	}
 }
 
@@ -97,7 +102,7 @@ func False(t testing.TB, o interface{}, format string, args ...interface{}) {
 // and fails with the test if not
 func Nil(t testing.TB, o interface{}) {
 	t.Helper()
-	Nilf(t, o, "expected %T to be <nil>, but it was not: %v", o, o)
+	Nilf(t, o, "failed to assert nil: %T{%+v}", o, o)
 }
 
 // Nilf asserts that the o parameter is nil
@@ -113,7 +118,7 @@ func Nilf(t testing.TB, o interface{}, format string, args ...interface{}) {
 // and fails with the test if not
 func NotNil(t testing.TB, o interface{}) {
 	t.Helper()
-	NotNilf(t, o, "expected %T to be not <nil>, but it was", o)
+	NotNilf(t, o, "failed to assert not nil: %T", o)
 }
 
 // NotNilf asserts that the o parameter is not nil

@@ -43,12 +43,12 @@ func TestAppInitHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
-		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileConfig.String()))
+		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
 		assert.Nil(t, readErr)
 
-		var config local.AppConfigJSON
+		var config local.AppRealmConfigJSON
 		assert.Nil(t, json.Unmarshal(data, &config))
-		assert.Equal(t, local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+		assert.Equal(t, local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			Name:            "test-app",
 			Location:        realm.LocationSydney,
@@ -89,32 +89,57 @@ func TestAppInitHandler(t *testing.T) {
 		assert.Nil(t, cmd.Handler(profile, nil))
 
 		t.Run("Should have the expected contents in the app config file", func(t *testing.T) {
-			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileConfig.String()))
+			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
 			assert.Nil(t, readErr)
 
-			var config local.AppConfigJSON
+			var config local.AppRealmConfigJSON
 			assert.Nil(t, json.Unmarshal(data, &config))
-			assert.Equal(t, local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
-				ConfigVersion:        realm.DefaultAppConfigVersion,
-				Name:                 "from-app",
-				Location:             realm.LocationIreland,
-				DeploymentModel:      realm.DeploymentModelGlobal,
-				Security:             map[string]interface{}{},
-				CustomUserDataConfig: map[string]interface{}{"enabled": false},
-				Sync:                 map[string]interface{}{"development_mode_enabled": false},
+			assert.Equal(t, local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+				ConfigVersion:   realm.DefaultAppConfigVersion,
+				Name:            "from-app",
+				Location:        realm.LocationIreland,
+				DeploymentModel: realm.DeploymentModelGlobal,
 			}}}, config)
 		})
 
-		t.Run("Should have the expected contents in the api key auth provider config file", func(t *testing.T) {
-			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuthProviders, "api-key.json"))
-			assert.Nil(t, err)
-			assert.Equal(t, `{
-    "name": "api-key",
-    "type": "api-key",
-    "disabled": false
-}
-`, string(config))
-		})
+		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
+		// 		t.Run("Should have the expected contents in the auth custom user data file", func(t *testing.T) {
+		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
+		// 			assert.Nil(t, err)
+		// 			assert.Equal(t, `{
+		//     "enabled": false
+		// }
+		// `, string(config))
+		// 		})
+
+		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
+		// 		t.Run("Should have the expected contents in the auth providers file", func(t *testing.T) {
+		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileProviders.String()))
+		// 			assert.Nil(t, err)
+		// 			assert.Equal(t, `{
+		//     "api-key": {
+		//         "name": "api-key",
+		//         "type": "api-key",
+		//         "enabled": false
+		//     },
+		// }
+		// `, string(config))
+		// 		})
+
+		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
+		// 		t.Run("Should have the expected contents in the sync config file", func(t *testing.T) {
+		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
+		// 			assert.Nil(t, err)
+		// 			assert.Equal(t, `{
+		//     "development_mode_enabled": false
+		// }
+		// `, string(config))
+		// 		})
+
+		// TODO(REALMC-7886): once a full, minimal app is initialized, implement these tests
+		// should have an empty http_endpoints directory
+		// should have an empty data_sources directory
+		// should have an empty services directory
 	})
 }
 
