@@ -12,7 +12,6 @@ import (
 type CommandDelete struct {
 	inputs      deleteInputs
 	realmClient realm.Client
-	idToSecret  map[string]realm.Secret
 	outputs     secretOutputs
 }
 
@@ -48,15 +47,15 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return secretListErr
 	}
 
-	resolve, resolveErr := cmd.resolveDelete(cmd.inputs.secrets, secretList, ui)
+	toDelete, resolveErr := cmd.inputs.resolveDelete(cmd.inputs.secrets, secretList, ui)
 	if resolveErr != nil {
 		return resolveErr
 	}
 
-	for _, deleteId := range resolve {
-		deleteErr := cmd.realmClient.DeleteSecret(app.GroupID, app.ID, deleteId)
+	for _, secret := range toDelete {
+		deleteErr := cmd.realmClient.DeleteSecret(app.GroupID, app.ID, secret.ID)
 		cmd.outputs = append(cmd.outputs, secretOutput{
-			secret: cmd.idToSecret[deleteId],
+			secret: secret,
 			err:    deleteErr,
 		})
 	}
@@ -65,25 +64,24 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 }
 
 func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	//ui.Print(terminal.NewTextLog("Successfully deleted secret: %s", cmd.inputs.secretID))
 	if len(cmd.inputs.secrets) == 0 {
 		return ui.Print(terminal.NewTextLog("No secrets to delete"))
 	}
 
 	sort.SliceStable(cmd.outputs, secretOutputComparerBySuccess(cmd.outputs))
 	logs := terminal.NewTableLog(
-		"",
+		secretDeleteMessage,
 		secretHeaders(),
 		secretTableRows(cmd.outputs, secretDeleteRow)...,
 	)
 	return ui.Print(logs)
 }
 
-func (cmd *CommandDelete) resolveDelete(args []string, secrets []realm.Secret, ui terminal.UI) ([]string, error) {
-	var toDelete []string
+func (i *deleteInputs) resolveDelete(args []string, secrets []realm.Secret, ui terminal.UI) ([]realm.Secret, error) {
+	var toDelete []realm.Secret
 
 	if len(args) != 0 {
-		toDelete = make([]string, len(args))
+		toDelete = make([]realm.Secret, len(args))
 
 		ids := make(map[string]realm.Secret, len(secrets))
 		names := make(map[string]realm.Secret, len(secrets))
@@ -94,11 +92,9 @@ func (cmd *CommandDelete) resolveDelete(args []string, secrets []realm.Secret, u
 
 		for i, arg := range args {
 			if _, ok := ids[arg]; ok {
-				cmd.idToSecret[arg] = ids[arg]
-				toDelete[i] = arg
+				toDelete[i] = ids[arg]
 			} else if _, ok := names[arg]; ok {
-				cmd.idToSecret[names[arg].ID] = names[arg]
-				toDelete[i] = names[arg].ID
+				toDelete[i] = names[arg]
 			}
 		}
 	} else {
@@ -121,11 +117,11 @@ func (cmd *CommandDelete) resolveDelete(args []string, secrets []realm.Secret, u
 			return nil, askErr
 		}
 
-		toDelete = make([]string, len(selectedSecrets))
+		toDelete = make([]realm.Secret, len(selectedSecrets))
+
 		for i, secret := range selectedSecrets {
 			s := selectableSecrets[secret]
-			cmd.idToSecret[s.ID] = s
-			toDelete[i] = s.ID
+			toDelete[i] = s
 		}
 	}
 
@@ -139,4 +135,3 @@ func secretDeleteRow(output secretOutput, row map[string]interface{}) {
 		row[headerDeleted] = true
 	}
 }
-
