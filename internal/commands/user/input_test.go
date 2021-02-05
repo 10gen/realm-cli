@@ -168,13 +168,14 @@ func TestResolveMultiUsersInputs(t *testing.T) {
 					tc.procedure(console)
 				}()
 
-				resolved, err := tc.inputs.resolveUsers(realmClient, "groupID", "appID")
-				users, err := tc.inputs.selectUsers(ui, resolved, "delete")
+				resolved, resolveErr := tc.inputs.resolveUsers(realmClient, "groupID", "appID")
+				assert.Nil(t, resolveErr)
+				users, selectErr := tc.inputs.selectUsers(ui, resolved, "delete")
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
 
-				assert.Nil(t, err)
+				assert.Nil(t, selectErr)
 				assert.Equal(t, tc.expectedUsers, users)
 			})
 		}

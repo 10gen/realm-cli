@@ -1,7 +1,6 @@
 package user
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/pflag"
 )
 
@@ -23,10 +21,7 @@ type CommandDelete struct {
 
 type deleteInputs struct {
 	cli.ProjectInputs
-	State         realm.UserState
-	ProviderTypes []string
-	Pending       bool
-	Users         []string
+	multiUserInputs
 }
 
 // Flags is the command flags
@@ -60,11 +55,18 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 	if appErr != nil {
 		return appErr
 	}
-	users, usersErr := cmd.inputs.resolveUsers(ui, cmd.realmClient, app)
-	if usersErr != nil {
-		return usersErr
+
+	resolvedUsers, resolveErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
+	if resolveErr != nil {
+		return resolveErr
 	}
-	for _, user := range users {
+
+	selectedUsers, selectErr := cmd.inputs.selectUsers(ui, resolvedUsers, "delete")
+	if selectErr != nil {
+		return selectErr
+	}
+
+	for _, user := range selectedUsers {
 		err := cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
 		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
 	}
@@ -98,53 +100,6 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 	return nil
-}
-
-func (i *deleteInputs) resolveUsers(ui terminal.UI, client realm.Client, app realm.App) ([]realm.User, error) {
-	filter := realm.UserFilter{
-		IDs:       i.Users,
-		State:     i.State,
-		Pending:   i.Pending,
-		Providers: realm.NewAuthProviderTypes(i.ProviderTypes...),
-	}
-	foundUsers, usersErr := client.FindUsers(app.GroupID, app.ID, filter)
-	if usersErr != nil {
-		return nil, usersErr
-	}
-	if len(i.Users) > 0 {
-		if len(foundUsers) == 0 {
-			return nil, errors.New("no users found")
-		}
-		return foundUsers, nil
-	}
-
-	selectableUsers := map[string]realm.User{}
-	selectableUserOptions := make([]string, len(foundUsers))
-	for idx, user := range foundUsers {
-		var apt realm.AuthProviderType
-		if len(user.Identities) > 0 {
-			apt = user.Identities[0].ProviderType
-		}
-		opt := displayUser(apt, user)
-		selectableUserOptions[idx] = opt
-		selectableUsers[opt] = user
-	}
-	var selectedUsers []string
-	askErr := ui.AskOne(
-		&selectedUsers,
-		&survey.MultiSelect{
-			Message: "Which user(s) would you like to delete?",
-			Options: selectableUserOptions,
-		},
-	)
-	if askErr != nil {
-		return nil, askErr
-	}
-	users := make([]realm.User, len(selectedUsers))
-	for idx, user := range selectedUsers {
-		users[idx] = selectableUsers[user]
-	}
-	return users, nil
 }
 
 func userDeleteRow(output userOutput, row map[string]interface{}) {

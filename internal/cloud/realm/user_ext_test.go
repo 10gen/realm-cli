@@ -26,7 +26,7 @@ func TestRealmUsers(t *testing.T) {
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 
-		app, teardown := setupTestApp(t, client, groupID, "secrets-test")
+		app, teardown := setupTestApp(t, client, groupID, "users-test")
 		defer teardown()
 
 		assert.Nil(t, client.Import(groupID, app.ID, map[string]interface{}{

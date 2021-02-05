@@ -131,6 +131,12 @@ func parseValue(value interface{}) string {
 	case nil: // leave zero-value
 	case string:
 		parsed = v
+	case bool:
+		if value == true {
+			parsed = "yes"
+		} else {
+			parsed = "no"
+		}
 	case fmt.Stringer:
 		parsed = v.String()
 	default:
