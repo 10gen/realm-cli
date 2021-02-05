@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/app"
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -15,10 +15,9 @@ func TestUserRevokeSetup(t *testing.T) {
 	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
-
 		cmd := &CommandRevoke{inputs: revokeInputs{}}
-		assert.Nil(t, cmd.realmClient)
 
+		assert.Nil(t, cmd.realmClient)
 		assert.Nil(t, cmd.Setup(profile, nil))
 		assert.NotNil(t, cmd.realmClient)
 	})
@@ -47,7 +46,7 @@ func TestUserRevokeHandler(t *testing.T) {
 		expectedOutputs []userOutput
 	}{
 		{
-			description: "should revoke a user's sesions when a user id is provided",
+			description: "should revoke user sessions when a user id is provided",
 			expectedOutputs: []userOutput{
 				{
 					user: testUsers[0],
@@ -90,11 +89,11 @@ func TestUserRevokeHandler(t *testing.T) {
 
 			cmd := &CommandRevoke{
 				inputs: revokeInputs{
-					ProjectInputs: app.ProjectInputs{
+					ProjectInputs: cli.ProjectInputs{
 						Project: projectID,
 						App:     appID,
 					},
-					usersInputs: usersInputs{
+					multiUserInputs: multiUserInputs{
 						Users: []string{testUsers[0].ID},
 					},
 				},
@@ -259,79 +258,34 @@ func TestUserRevokeFeedback(t *testing.T) {
 	}
 }
 
-func TestUserRevokeTableHeaders(t *testing.T) {
-	for _, tc := range []struct {
-		description      string
-		authProviderType realm.AuthProviderType
-		expectedHeaders  []string
-	}{
-		{
-			description:      "should show name for apikey",
-			authProviderType: realm.AuthProviderTypeAPIKey,
-			expectedHeaders:  []string{"Name", "ID", "Type", "Revoked", "Details"},
-		},
-		{
-			description:      "should show email for local-userpass",
-			authProviderType: realm.AuthProviderTypeUserPassword,
-			expectedHeaders:  []string{"Email", "ID", "Type", "Revoked", "Details"},
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userRevokeTableHeaders(tc.authProviderType))
-		})
-	}
-}
-
 func TestUserRevokeTableRow(t *testing.T) {
 	for _, tc := range []struct {
-		description      string
-		authProviderType realm.AuthProviderType
-		output           userOutput
-		expectedRow      map[string]interface{}
+		description string
+		err         error
+		expectedRow map[string]interface{}
 	}{
 		{
-			description:      "should show name for apikey type user",
-			authProviderType: realm.AuthProviderTypeAPIKey,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"name": "name-1"},
-				},
-				err: nil,
-			},
+			description: "should show successful revoke user row",
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Name":    "name-1",
-				"Type":    "type-1",
-				"Revoked": true,
+				"Enabled": false,
 				"Details": "",
 			},
 		},
 		{
-			description:      "should show email for local-userpass type user",
-			authProviderType: realm.AuthProviderTypeUserPassword,
-			output: userOutput{
-				user: realm.User{
-					ID:         "user-1",
-					Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-					Type:       "type-1",
-					Data:       map[string]interface{}{"email": "user-1@test.com"},
-				},
-				err: nil,
-			},
+			description: "should show failed revoke user row",
+			err:         errors.New("client error"),
 			expectedRow: map[string]interface{}{
-				"ID":      "user-1",
-				"Email":   "user-1@test.com",
-				"Type":    "type-1",
-				"Revoked": true,
-				"Details": "",
+				"Enabled": true,
+				"Details": "client error",
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedRow, userRevokeTableRow(tc.authProviderType, tc.output))
+			row := map[string]interface{}{}
+			output := userOutput{realm.User{}, tc.err}
+			userDisableRow(output, row)
+
+			assert.Equal(t, tc.expectedRow, row)
 		})
 	}
 }

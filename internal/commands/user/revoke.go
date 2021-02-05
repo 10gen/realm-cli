@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/10gen/realm-cli/internal/app"
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -15,13 +14,13 @@ import (
 // CommandRevoke is the `user revoke` command
 type CommandRevoke struct {
 	inputs      revokeInputs
-	outputs     []userOutput
+	outputs     userOutputs
 	realmClient realm.Client
 }
 
 type revokeInputs struct {
-	app.ProjectInputs
-	usersInputs
+	cli.ProjectInputs
+	multiUserInputs
 }
 
 func (i *revokeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -58,11 +57,17 @@ func (cmd *CommandRevoke) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := app.Resolve(ui, cmd.realmClient, cmd.inputs.Filter())
+	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}
-	users, usersErr := cmd.inputs.ResolveUsers(ui, cmd.realmClient, app)
+
+	resolvedUsers, resolveErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
+	if resolveErr != nil {
+		return resolveErr
+	}
+
+	users, usersErr := cmd.inputs.selectUsers(ui, resolvedUsers, "revoke")
 	if usersErr != nil {
 		return usersErr
 	}
@@ -78,12 +83,7 @@ func (cmd *CommandRevoke) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
 		return ui.Print(terminal.NewTextLog("No users to revoke, try changing the --user input"))
 	}
-	var outputsByProviderType = map[realm.AuthProviderType][]userOutput{}
-	for _, output := range cmd.outputs {
-		for _, identity := range output.user.Identities {
-			outputsByProviderType[identity.ProviderType] = append(outputsByProviderType[identity.ProviderType], output)
-		}
-	}
+	outputsByProviderType := cmd.outputs.mapByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))
 	for _, apt := range realm.ValidAuthProviderTypes {
 		outputs := outputsByProviderType[apt]
@@ -93,59 +93,21 @@ func (cmd *CommandRevoke) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		sort.SliceStable(outputs, getUserOutputComparerBySuccess(outputs))
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", apt.Display()),
-			userRevokeTableHeaders(apt),
-			userRevokeTableRows(apt, outputs)...,
+			append(userTableHeaders(apt), headerRevoked, headerDetails),
+			userTableRows(apt, outputs, userRevokeRow)...,
 		))
 	}
 	return ui.Print(logs...)
 }
 
-func userRevokeTableHeaders(authProviderType realm.AuthProviderType) []string {
-	var headers []string
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		headers = append(headers, headerName)
-	case realm.AuthProviderTypeUserPassword:
-		headers = append(headers, headerEmail)
-	}
-	headers = append(
-		headers,
-		headerID,
-		headerType,
-		headerRevoked,
-		headerDetails,
-	)
-	return headers
-}
-
-func userRevokeTableRows(authProviderType realm.AuthProviderType, outputs []userOutput) []map[string]interface{} {
-	rows := make([]map[string]interface{}, 0, len(outputs))
-	for _, output := range outputs {
-		rows = append(rows, userRevokeTableRow(authProviderType, output))
-	}
-	return rows
-}
-
-func userRevokeTableRow(authProviderType realm.AuthProviderType, output userOutput) map[string]interface{} {
+func userRevokeRow(output userOutput, row map[string]interface{}) {
+	var revoked bool
 	var details string
 	if output.err != nil {
 		details = output.err.Error()
+	} else {
+		revoked = true
 	}
-	success := "no"
-	if output.err == nil {
-		success = "yes"
-	}
-	row := map[string]interface{}{
-		headerID:      output.user.ID,
-		headerType:    output.user.Type,
-		headerRevoked: success,
-		headerDetails: details,
-	}
-	switch authProviderType {
-	case realm.AuthProviderTypeAPIKey:
-		row[headerName] = output.user.Data[userDataName]
-	case realm.AuthProviderTypeUserPassword:
-		row[headerEmail] = output.user.Data[userDataEmail]
-	}
-	return row
+	row[headerRevoked] = revoked
+	row[headerDetails] = details
 }
