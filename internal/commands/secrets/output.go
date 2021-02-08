@@ -11,6 +11,8 @@ const (
 	headerDeleted = "Deleted"
 	headerDetails = "Details"
 
+	commandDelete = "DELETE"
+
 	secretDeleteMessage = "Deleted Secrets"
 )
 
@@ -21,6 +23,7 @@ type secretOutput struct {
 	err error
 }
 
+type secretTableHeaderModifier func()[]string
 type secretTableRowModifier func(secretOutput, map[string]interface{})
 
 func secretOutputComparerBySuccess(outputs secretOutputs) func(i, j int) bool{
@@ -29,8 +32,8 @@ func secretOutputComparerBySuccess(outputs secretOutputs) func(i, j int) bool{
 	}
 }
 
-func secretHeaders() []string{
-	return []string {headerID, headerName, headerDetails}
+func secretHeaders(modifier secretTableHeaderModifier) []string{
+	return append([]string{headerID, headerName}, modifier()...)
 }
 
 func secretTableRows(outputs secretOutputs, modifier secretTableRowModifier) []map[string]interface{} {

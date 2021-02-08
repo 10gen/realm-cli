@@ -1,12 +1,13 @@
 package secrets
 
 import (
+	"sort"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/AlecAivazis/survey/v2"
+
 	"github.com/spf13/pflag"
-	"sort"
 )
 
 type CommandDelete struct {
@@ -22,13 +23,6 @@ func (cmd *CommandDelete) Inputs() cli.InputResolver {
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsage)
-}
-
-func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
@@ -47,17 +41,14 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return secretListErr
 	}
 
-	toDelete, resolveErr := cmd.inputs.resolveDelete(cmd.inputs.secrets, secretList, ui)
+	toDelete, resolveErr := cmd.inputs.resolveDelete(secretList, ui)
 	if resolveErr != nil {
 		return resolveErr
 	}
 
 	for _, secret := range toDelete {
-		deleteErr := cmd.realmClient.DeleteSecret(app.GroupID, app.ID, secret.ID)
-		cmd.outputs = append(cmd.outputs, secretOutput{
-			secret: secret,
-			err:    deleteErr,
-		})
+		err := cmd.realmClient.DeleteSecret(app.GroupID, app.ID, secret.ID)
+		cmd.outputs = append(cmd.outputs, secretOutput{secret: secret, err: err})
 	}
 
 	return nil
@@ -71,67 +62,22 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	sort.SliceStable(cmd.outputs, secretOutputComparerBySuccess(cmd.outputs))
 	logs := terminal.NewTableLog(
 		secretDeleteMessage,
-		secretHeaders(),
+		secretHeaders(secretDeleteHeader),
 		secretTableRows(cmd.outputs, secretDeleteRow)...,
 	)
 	return ui.Print(logs)
 }
 
-func (i *deleteInputs) resolveDelete(args []string, secrets []realm.Secret, ui terminal.UI) ([]realm.Secret, error) {
-	var toDelete []realm.Secret
-
-	if len(args) != 0 {
-		toDelete = make([]realm.Secret, len(args))
-
-		ids := make(map[string]realm.Secret, len(secrets))
-		names := make(map[string]realm.Secret, len(secrets))
-		for _, secret := range secrets {
-			ids[secret.ID] = secret
-			names[secret.Name] = secret
-		}
-
-		for i, arg := range args {
-			if _, ok := ids[arg]; ok {
-				toDelete[i] = ids[arg]
-			} else if _, ok := names[arg]; ok {
-				toDelete[i] = names[arg]
-			}
-		}
-	} else {
-		selectableSecrets := map[string]realm.Secret{}
-		selectableSecretOptions := make([]string, len(secrets))
-		for i, secret := range secrets {
-			option := displaySecretOption(secret)
-			selectableSecretOptions[i] = option
-			selectableSecrets[option] = secret
-		}
-		var selectedSecrets []string
-		askErr := ui.AskOne(
-			&selectedSecrets,
-			&survey.MultiSelect{
-				Message: "Which secret(s) would you like to delete?",
-				Options: selectableSecretOptions,
-			},
-		)
-		if askErr != nil {
-			return nil, askErr
-		}
-
-		toDelete = make([]realm.Secret, len(selectedSecrets))
-
-		for i, secret := range selectedSecrets {
-			s := selectableSecrets[secret]
-			toDelete[i] = s
-		}
-	}
-
-	return toDelete, nil
+func secretDeleteHeader()[]string {
+	return []string{headerDeleted, headerDetails}
 }
 
 func secretDeleteRow(output secretOutput, row map[string]interface{}) {
+	deleted := false
 	if output.err != nil {
 		row[headerDetails] = output.err.Error()
 	} else {
-		row[headerDeleted] = true
+		deleted = true
 	}
+	row[headerDeleted] = deleted
 }
