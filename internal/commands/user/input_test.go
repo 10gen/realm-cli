@@ -266,6 +266,17 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 				},
 				expectedUsers: nil,
 			},
+			{
+				description: "unless users inputs are resolved",
+				procedure: func(c *expect.Console) {
+					console, err := c.ExpectEOF()
+					assert.Equal(t, "", console)
+					assert.Nil(t, err)
+				},
+				inputs:        multiUserInputs{Users: []string{"user-1"}},
+				users:         testUsers[:1],
+				expectedUsers: testUsers[:1],
+			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
@@ -277,7 +288,7 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 					defer close(doneCh)
 					tc.procedure(console)
 				}()
-				users, selectErr := selectUsers(ui, tc.users, "delete")
+				users, selectErr := tc.inputs.selectUsers(ui, tc.users, "delete")
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
@@ -287,4 +298,5 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 			})
 		}
 	})
+
 }

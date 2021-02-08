@@ -61,7 +61,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return resolvedErr
 	}
 
-	selected, selectedErr := selectUsers(ui, resolved, "delete")
+	selected, selectedErr := cmd.inputs.selectUsers(ui, resolved, "delete")
 	if selectedErr != nil {
 		return selectedErr
 	}

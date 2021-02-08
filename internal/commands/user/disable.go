@@ -52,7 +52,7 @@ func (cmd *CommandDisable) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return resolvedErr
 	}
 
-	selected, selectedErr := selectUsers(ui, resolved, "disable")
+	selected, selectedErr := cmd.inputs.selectUsers(ui, resolved, "disable")
 	if selectedErr != nil {
 		return selectedErr
 	}

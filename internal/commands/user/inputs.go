@@ -78,13 +78,13 @@ func (i multiUserInputs) resolveUsers(realmClient realm.Client, groupID, appID s
 	return foundUsers, nil
 }
 
-func selectUsers(ui terminal.UI, users []realm.User, action string) ([]realm.User, error) {
-	if len(users) == 0 {
-		return nil, nil
+func (i multiUserInputs) selectUsers(ui terminal.UI, resolvedUsers []realm.User, action string) ([]realm.User, error) {
+	if len(i.Users) > 0 || len(resolvedUsers) == 0 {
+		return resolvedUsers, nil
 	}
 	selectableUsers := map[string]realm.User{}
-	selectableUserOptions := make([]string, len(users))
-	for idx, user := range users {
+	selectableUserOptions := make([]string, len(resolvedUsers))
+	for idx, user := range resolvedUsers {
 		var apt realm.AuthProviderType
 		if len(user.Identities) > 0 {
 			apt = user.Identities[0].ProviderType

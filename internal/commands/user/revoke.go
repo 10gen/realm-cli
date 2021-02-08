@@ -68,7 +68,7 @@ func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return resolvedErr
 	}
 
-	selected, selectedErr := selectUsers(ui, resolved, "revoke")
+	selected, selectedErr := cmd.inputs.selectUsers(ui, resolved, "revoke")
 	if selectedErr != nil {
 		return selectedErr
 	}
