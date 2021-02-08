@@ -154,10 +154,13 @@ func TestResolveMultiUsersInputs(t *testing.T) {
 				expectedUsers: testUsers,
 			},
 			{
-				description:   "with all input set, except users",
+				description:   "with no users",
 				inputs:        multiUserInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}, State: realm.UserStateDisabled, Pending: false},
-				users:         testUsers,
-				expectedUsers: testUsers,
+				expectedUsers: nil,
+			},
+			{
+				description:   "with no users and no input",
+				expectedUsers: nil,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -257,9 +260,10 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 			{
 				description: "unless no users are found",
 				procedure: func(c *expect.Console) {
-					c.ExpectEOF()
+					console, err := c.ExpectEOF()
+					assert.Equal(t, "", console)
+					assert.Nil(t, err)
 				},
-				users:         nil,
 				expectedUsers: nil,
 			},
 		} {
