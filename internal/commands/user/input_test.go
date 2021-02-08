@@ -260,18 +260,16 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 			{
 				description: "unless no users are found",
 				procedure: func(c *expect.Console) {
-					console, err := c.ExpectEOF()
+					console, _ := c.ExpectEOF()
 					assert.Equal(t, "", console)
-					assert.Nil(t, err)
 				},
 				expectedUsers: nil,
 			},
 			{
 				description: "unless users inputs are resolved",
 				procedure: func(c *expect.Console) {
-					console, err := c.ExpectEOF()
+					console, _ := c.ExpectEOF()
 					assert.Equal(t, "", console)
-					assert.Nil(t, err)
 				},
 				inputs:        multiUserInputs{Users: []string{"user-1"}},
 				users:         testUsers[:1],
