@@ -1,0 +1,9 @@
+{
+    "function_name": "addOne",
+    "on_type": "Query",
+    "field_name": "result",
+    "input_type_format": "scalar",
+    "input_type": "number",
+    "payload_type_format": "scalar",
+    "payload_type": "number"
+}

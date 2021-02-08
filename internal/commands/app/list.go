@@ -46,7 +46,7 @@ func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	}
 	apps := make([]interface{}, 0, len(cmd.apps))
 	for _, app := range cmd.apps {
-		apps = append(apps, app)
+		apps = append(apps, app.Option())
 	}
 	return ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d apps", len(apps)), apps...))
 }

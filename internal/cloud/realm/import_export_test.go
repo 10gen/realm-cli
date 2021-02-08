@@ -256,6 +256,7 @@ console.log('got heem!');
 				"http://localhost:8080",
 			},
 		},
+		Values: []map[string]interface{}{},
 	}}
 }
 
@@ -277,7 +278,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		},
 		Auth: &local.AuthStructure{
 			CustomUserData: map[string]interface{}{"enabled": true, "mongo_service_name": "mdb", "database_name": "db", "collection_name": "coll", "user_id_field": "uid"},
-			Providers: map[string]map[string]interface{}{
+			Providers: map[string]interface{}{
 				realm.AuthProviderTypeAnonymous.String(): map[string]interface{}{
 					"name":     realm.AuthProviderTypeAnonymous.String(),
 					"type":     realm.AuthProviderTypeAnonymous.String(),
@@ -297,10 +298,30 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				"wireProtocolEnabled": false,
 			}}},
 		},
+		HTTPEndpoints: []local.HTTPEndpointStructure{
+			{
+				Config: map[string]interface{}{"name": "api", "type": "http", "config": map[string]interface{}{}},
+				IncomingWebhooks: []map[string]interface{}{
+					{
+						"config": map[string]interface{}{
+							"name":                         "api_webhook",
+							"options":                      map[string]interface{}{"validationMethod": "VERIFY_PAYLOAD", "secret": "the_secret"},
+							"run_as_user_id":               "",
+							"run_as_user_id_script_source": "",
+							"run_as_authed_user":           false,
+							"create_user_on_auth":          false,
+							"fetch_custom_user_data":       false,
+							"respond_result":               false,
+						},
+						"source": "exports = function() { return false }",
+					},
+				},
+			},
+		},
 		Sync: &local.SyncStructure{
 			Config: map[string]interface{}{"development_mode_enabled": true},
 		},
-		// TODO(REALMC-7989): include auth, functions, triggers, and graphql
+		// TODO(REALMC-7989): include functions, triggers, and graphql
 		// in 20210101 round-trip test once its supported in export on the backend
 		// 		Functions: &local.FunctionsStructure{
 		// 			Config: map[string]interface{}{
@@ -323,6 +344,17 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		// },
 		// GraphQL: &local.GraphQLStructure{
 		// 	Config: map[string]interface{}{"use_natural_pluralization": true},
+		//  CustomResolvers: []map[string]interface{}{
+		// 	{
+		// 		"function_name":       "test",
+		// 		"on_type":             "Query",
+		// 		"field_name":          "result",
+		// 		"input_type_format":   "scalar",
+		// 		"input_type":          "number",
+		// 		"payload_type_format": "scalar",
+		// 		"payload_type":        "number",
+		// 	},
+		// },
 		// },
 	}}
 }

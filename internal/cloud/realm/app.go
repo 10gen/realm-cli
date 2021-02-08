@@ -34,7 +34,8 @@ type App struct {
 	Product      string `json:"product"`
 }
 
-func (app App) String() string {
+// Option returns the Realm app data displayed as a selectable option
+func (app App) Option() string {
 	return fmt.Sprintf("%s (%s)", app.ClientAppID, app.GroupID)
 }
 

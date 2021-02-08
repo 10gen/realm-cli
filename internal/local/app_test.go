@@ -375,7 +375,17 @@ exports = function({ query }) {
 		Config: map[string]interface{}{
 			"use_natural_pluralization": true,
 		},
-		CustomResolvers: []map[string]interface{}{},
+		CustomResolvers: []map[string]interface{}{
+			{
+				"function_name":       "addOne",
+				"on_type":             "Query",
+				"field_name":          "result",
+				"input_type_format":   "scalar",
+				"input_type":          "number",
+				"payload_type_format": "scalar",
+				"payload_type":        "number",
+			},
+		},
 	},
 	Values: []map[string]interface{}{
 		{
