@@ -100,7 +100,121 @@ func TestProviderTypeDisplayUser(t *testing.T) {
 	}
 }
 
+func TestUserFilter(t *testing.T) {
+	t.Run("should create a user filter from inputs", func(t *testing.T) {
+		state := realm.UserStateDisabled
+		providerTypes := []string{"testProvider"}
+		users := []string{"testUser"}
+		inputs := multiUserInputs{
+			State:         state,
+			ProviderTypes: providerTypes,
+			Pending:       true,
+			Users:         users,
+		}
+		assert.Equal(t, realm.UserFilter{
+			IDs:       users,
+			State:     state,
+			Pending:   true,
+			Providers: realm.NewAuthProviderTypes(providerTypes...),
+		}, inputs.filter())
+	})
+}
+
 func TestResolveMultiUsersInputs(t *testing.T) {
+	testUsers := []realm.User{
+		{
+			ID:         "user-1",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
+		},
+		{
+			ID:         "user-2",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-2@test.com"},
+		},
+		{
+			ID:         "user-3",
+			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
+			Disabled:   true,
+			Data:       map[string]interface{}{"email": "user-3@test.com"},
+		},
+	}
+
+	t.Run("should resolve users", func(t *testing.T) {
+		for _, tc := range []struct {
+			description   string
+			inputs        multiUserInputs
+			users         []realm.User
+			expectedUsers []realm.User
+		}{
+			{
+				description:   "with no input set",
+				users:         testUsers,
+				expectedUsers: testUsers,
+			},
+			{
+				description:   "with all input set, except users",
+				inputs:        multiUserInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}, State: realm.UserStateDisabled, Pending: false},
+				users:         testUsers,
+				expectedUsers: testUsers,
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				realmClient := mock.RealmClient{}
+				realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+					return tc.users, nil
+				}
+
+				users, err := tc.inputs.resolveUsers(realmClient, "groupID", "appID")
+				assert.Nil(t, err)
+				assert.Equal(t, tc.expectedUsers, users)
+			})
+		}
+	})
+
+	for _, tc := range []struct {
+		description   string
+		users         []realm.User
+		expectedUsers []realm.User
+		expectedErr   error
+	}{
+		{
+			description: "should error when a user cannot be found from provided ids",
+			expectedErr: errors.New("no users found"),
+		},
+		{
+			description:   "should find users from provided ids",
+			users:         testUsers[:2],
+			expectedUsers: testUsers[:2],
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			realmClient := mock.RealmClient{}
+			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+				return tc.users, nil
+			}
+
+			inputs := multiUserInputs{Users: []string{testUsers[0].ID, testUsers[1].ID}}
+			users, err := inputs.resolveUsers(realmClient, "groupID", "appID")
+
+			assert.Equal(t, tc.expectedUsers, users)
+			assert.Equal(t, tc.expectedErr, err)
+		})
+	}
+
+	t.Run("should error from client", func(t *testing.T) {
+		realmClient := mock.RealmClient{}
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return nil, errors.New("client error")
+		}
+		inputs := multiUserInputs{}
+		_, err := inputs.resolveUsers(realmClient, "groupID", "appID")
+
+		assert.Equal(t, errors.New("client error"), err)
+	})
+}
+
+func TestSelectMultiUsersInputs(t *testing.T) {
 	testUsers := []realm.User{
 		{
 			ID:         "user-1",
@@ -153,11 +267,6 @@ func TestResolveMultiUsersInputs(t *testing.T) {
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
-				realmClient := mock.RealmClient{}
-				realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-					return tc.users, nil
-				}
-
 				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 				assert.Nil(t, consoleErr)
 				defer console.Close()
@@ -167,10 +276,7 @@ func TestResolveMultiUsersInputs(t *testing.T) {
 					defer close(doneCh)
 					tc.procedure(console)
 				}()
-
-				resolved, resolveErr := tc.inputs.resolveUsers(realmClient, "groupID", "appID")
-				assert.Nil(t, resolveErr)
-				users, selectErr := tc.inputs.selectUsers(ui, resolved, "delete")
+				users, selectErr := tc.inputs.selectUsers(ui, tc.users, "delete")
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
@@ -179,46 +285,5 @@ func TestResolveMultiUsersInputs(t *testing.T) {
 				assert.Equal(t, tc.expectedUsers, users)
 			})
 		}
-	})
-
-	for _, tc := range []struct {
-		description   string
-		users         []realm.User
-		expectedUsers []realm.User
-		expectedErr   error
-	}{
-		{
-			description: "should error when a user cannot be found from provided ids",
-			expectedErr: errors.New("no users found"),
-		},
-		{
-			description:   "should find users from provided ids",
-			users:         testUsers[:2],
-			expectedUsers: testUsers[:2],
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			realmClient := mock.RealmClient{}
-			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-				return tc.users, nil
-			}
-
-			inputs := multiUserInputs{Users: []string{testUsers[0].ID, testUsers[1].ID}}
-			users, err := inputs.resolveUsers(realmClient, "groupID", "appID")
-
-			assert.Equal(t, tc.expectedUsers, users)
-			assert.Equal(t, tc.expectedErr, err)
-		})
-	}
-
-	t.Run("should error from client", func(t *testing.T) {
-		realmClient := mock.RealmClient{}
-		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
-			return nil, errors.New("client error")
-		}
-		inputs := multiUserInputs{}
-		_, err := inputs.resolveUsers(realmClient, "groupID", "appID")
-
-		assert.Equal(t, errors.New("client error"), err)
 	})
 }

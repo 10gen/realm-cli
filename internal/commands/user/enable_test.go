@@ -200,7 +200,7 @@ func TestUserEnableFeedback(t *testing.T) {
 					"01:23:45 UTC INFO  Provider type: User/Password",
 					"  Email            ID      Type    Enabled  Details     ",
 					"  ---------------  ------  ------  -------  ------------",
-					"  user-1@test.com  user-1  type-1  false    client error",
+					"  user-1@test.com  user-1  type-1  no       client error",
 					"",
 				},
 				"\n",
