@@ -196,7 +196,7 @@ func TestUserRevokeFeedback(t *testing.T) {
 	}{
 		{
 			description:    "should show no users to revoke",
-			expectedOutput: "01:23:45 UTC INFO  No users to revoke, try changing the --user input\n",
+			expectedOutput: "01:23:45 UTC INFO  No users to revoke sessions for\n",
 		},
 		{
 			description: "should show 1 failed user",
@@ -206,9 +206,9 @@ func TestUserRevokeFeedback(t *testing.T) {
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
-					"  Email            ID      Type    Revoked  Details     ",
-					"  ---------------  ------  ------  -------  ------------",
-					"  user-1@test.com  user-1  type-1  no       client error",
+					"  Email            ID      Type    Session Revoked  Details     ",
+					"  ---------------  ------  ------  ---------------  ------------",
+					"  user-1@test.com  user-1  type-1  no               client error",
 					"",
 				},
 				"\n",
@@ -226,19 +226,19 @@ func TestUserRevokeFeedback(t *testing.T) {
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Provider type: User/Password",
-					"  Email            ID      Type    Revoked  Details     ",
-					"  ---------------  ------  ------  -------  ------------",
-					"  user-2@test.com  user-2  type-2  no       client error",
-					"  user-1@test.com  user-1  type-1  yes                  ",
-					"  user-3@test.com  user-3  type-1  yes                  ",
+					"  Email            ID      Type    Session Revoked  Details     ",
+					"  ---------------  ------  ------  ---------------  ------------",
+					"  user-2@test.com  user-2  type-2  no               client error",
+					"  user-1@test.com  user-1  type-1  yes                          ",
+					"  user-3@test.com  user-3  type-1  yes                          ",
 					"01:23:45 UTC INFO  Provider type: ApiKey",
-					"  Name    ID      Type    Revoked  Details     ",
-					"  ------  ------  ------  -------  ------------",
-					"  name-4  user-4  type-1  no       client error",
+					"  Name    ID      Type    Session Revoked  Details     ",
+					"  ------  ------  ------  ---------------  ------------",
+					"  name-4  user-4  type-1  no               client error",
 					"01:23:45 UTC INFO  Provider type: Custom JWT",
-					"  ID      Type    Revoked  Details",
-					"  ------  ------  -------  -------",
-					"  user-5  type-3  yes             ",
+					"  ID      Type    Session Revoked  Details",
+					"  ------  ------  ---------------  -------",
+					"  user-5  type-3  yes                     ",
 					"",
 				},
 				"\n",

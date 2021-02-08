@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+
 	"github.com/spf13/pflag"
 )
 
@@ -62,16 +63,16 @@ func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	resolvedUsers, resolveErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
-	if resolveErr != nil {
-		return resolveErr
+	resolved, resolvedErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
+	if resolvedErr != nil {
+		return resolvedErr
 	}
 
-	users, usersErr := cmd.inputs.selectUsers(ui, resolvedUsers, "revoke")
-	if usersErr != nil {
-		return usersErr
+	selected, selectedErr := selectUsers(ui, resolved, "revoke")
+	if selectedErr != nil {
+		return selectedErr
 	}
-	for _, user := range users {
+	for _, user := range selected {
 		err := cmd.realmClient.RevokeUserSessions(app.GroupID, app.ID, user.ID)
 		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
 	}
@@ -81,7 +82,7 @@ func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
 // Feedback is the command feedback
 func (cmd *CommandRevoke) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.outputs) == 0 {
-		return ui.Print(terminal.NewTextLog("No users to revoke, try changing the --user input"))
+		return ui.Print(terminal.NewTextLog("No users to revoke sessions for"))
 	}
 	outputsByProviderType := cmd.outputs.mapByProviderType()
 	logs := make([]terminal.Log, 0, len(outputsByProviderType))

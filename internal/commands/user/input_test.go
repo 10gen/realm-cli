@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"github.com/Netflix/go-expect"
 )
 
@@ -254,16 +255,12 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[0]},
 			},
 			{
-				description: "with all input set, except users",
-				inputs:      multiUserInputs{ProviderTypes: []string{realm.AuthProviderTypeUserPassword.String()}, State: realm.UserStateDisabled, Pending: false},
+				description: "unless no users are found",
 				procedure: func(c *expect.Console) {
-					c.ExpectString("Which user(s) would you like to delete?")
-					c.Send("user-2")
-					c.SendLine(" ")
 					c.ExpectEOF()
 				},
-				users:         testUsers[1:],
-				expectedUsers: []realm.User{testUsers[1]},
+				users:         nil,
+				expectedUsers: nil,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -276,7 +273,7 @@ func TestSelectMultiUsersInputs(t *testing.T) {
 					defer close(doneCh)
 					tc.procedure(console)
 				}()
-				users, selectErr := tc.inputs.selectUsers(ui, tc.users, "delete")
+				users, selectErr := selectUsers(ui, tc.users, "delete")
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete

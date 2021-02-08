@@ -47,17 +47,17 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	resolvedUsers, resolveErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
-	if resolveErr != nil {
-		return resolveErr
+	resolved, resolvedErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
+	if resolvedErr != nil {
+		return resolvedErr
 	}
 
-	selectedUsers, selectErr := cmd.inputs.selectUsers(ui, resolvedUsers, "enable")
-	if selectErr != nil {
-		return selectErr
+	selected, selectedErr := selectUsers(ui, resolved, "enable")
+	if selectedErr != nil {
+		return selectedErr
 	}
 
-	for _, user := range selectedUsers {
+	for _, user := range selected {
 		err := cmd.realmClient.EnableUser(app.GroupID, app.ID, user.ID)
 		cmd.outputs = append(cmd.outputs, userOutput{user, err})
 	}

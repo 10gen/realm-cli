@@ -68,9 +68,9 @@ func (i multiUserInputs) filter() realm.UserFilter {
 }
 
 func (i multiUserInputs) resolveUsers(realmClient realm.Client, groupID, appID string) ([]realm.User, error) {
-	foundUsers, findErr := realmClient.FindUsers(groupID, appID, i.filter())
-	if findErr != nil {
-		return nil, findErr
+	foundUsers, err := realmClient.FindUsers(groupID, appID, i.filter())
+	if err != nil {
+		return nil, err
 	}
 	if len(i.Users) > 0 && len(foundUsers) == 0 {
 		return nil, errors.New("no users found")
@@ -78,13 +78,13 @@ func (i multiUserInputs) resolveUsers(realmClient realm.Client, groupID, appID s
 	return foundUsers, nil
 }
 
-func (i multiUserInputs) selectUsers(ui terminal.UI, resolvedUsers []realm.User, action string) ([]realm.User, error) {
-	if len(i.Users) > 0 {
-		return resolvedUsers, nil
+func selectUsers(ui terminal.UI, users []realm.User, action string) ([]realm.User, error) {
+	if len(users) == 0 {
+		return nil, nil
 	}
 	selectableUsers := map[string]realm.User{}
-	selectableUserOptions := make([]string, len(resolvedUsers))
-	for idx, user := range resolvedUsers {
+	selectableUserOptions := make([]string, len(users))
+	for idx, user := range users {
 		var apt realm.AuthProviderType
 		if len(user.Identities) > 0 {
 			apt = user.Identities[0].ProviderType
@@ -104,9 +104,9 @@ func (i multiUserInputs) selectUsers(ui terminal.UI, resolvedUsers []realm.User,
 	if askErr != nil {
 		return nil, askErr
 	}
-	users := make([]realm.User, len(selectedUsers))
+	selected := make([]realm.User, len(selectedUsers))
 	for idx, user := range selectedUsers {
-		users[idx] = selectableUsers[user]
+		selected[idx] = selectableUsers[user]
 	}
-	return users, nil
+	return selected, nil
 }

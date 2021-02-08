@@ -132,7 +132,7 @@ func parseValue(value interface{}) string {
 	case string:
 		parsed = v
 	case bool:
-		if value == true {
+		if v {
 			parsed = "yes"
 		} else {
 			parsed = "no"
