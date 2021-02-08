@@ -23,6 +23,11 @@ type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
+	CreateAppService(groupID, appID string, service ServiceDescData) (ServiceDescData, error)
+
+	ListClusters(groupID, appID string) ([]PartialAtlasCluster, error)
+	ListDataSources(groupID, appID string) ([]PartialDataSource, error)
+
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
 	Import(groupID, appID string, appData interface{}) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)

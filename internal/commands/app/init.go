@@ -37,6 +37,14 @@ func (cmd *CommandInit) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
+	app, appErr := local.LoadAppConfig(profile.WorkingDirectory)
+	if appErr != nil {
+		return appErr
+	}
+	if app.RootDir != "" {
+		return errProjectExists{}
+	}
+
 	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient)
 	if fromErr != nil {
 		return fromErr
