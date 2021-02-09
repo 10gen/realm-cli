@@ -56,6 +56,9 @@ const (
 	NameRules            = "rules"
 	NameServices         = "services"
 
+	// data sources
+	NameDataSources = "data_sources"
+
 	// triggers
 	NameTriggers = "triggers"
 

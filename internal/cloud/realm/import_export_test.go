@@ -1,7 +1,9 @@
 package realm_test
 
 import (
+	"archive/zip"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -16,7 +18,6 @@ func TestRealmImportExportRoundTrip(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
 	for _, tc := range []struct {
-		description   string
 		configVersion realm.AppConfigVersion
 		importData    func(app realm.App) local.AppData
 	}{
@@ -71,6 +72,136 @@ func TestRealmImportExportRoundTrip(t *testing.T) {
 			localApp, localAppErr := local.LoadApp(wd)
 			assert.Nil(t, localAppErr)
 			assert.Equal(t, appData, localApp.AppData)
+		})
+	}
+}
+
+func TestRealmImport20210101(t *testing.T) {
+	u.SkipUnlessRealmServerRunning(t)
+
+	client := newAuthClient(t)
+
+	groupID := u.CloudGroupID()
+
+	app, appErr := client.CreateApp(groupID, "import20210101", realm.AppMeta{})
+	assert.Nil(t, appErr)
+
+	t.Run("Should import a service with a secret successfully", func(t *testing.T) {
+		assert.Nil(t, client.Import(groupID, app.ID, local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.AppConfigVersion20210101,
+			ID:              app.ClientAppID,
+			Name:            app.Name,
+			Location:        app.Location,
+			DeploymentModel: app.DeploymentModel,
+			Services: []local.ServiceStructure{
+				{
+					Config: map[string]interface{}{"name": "twilio_svc", "type": "twilio", "config": map[string]interface{}{"sid": "my_sid"}},
+					IncomingWebhooks: []map[string]interface{}{
+						{
+							"config": map[string]interface{}{
+								"name":                         "twilioWebhook",
+								"create_user_on_auth":          false,
+								"fetch_custom_user_data":       false,
+								"respond_result":               false,
+								"run_as_authed_user":           false,
+								"run_as_user_id_script_source": "",
+							},
+							"source": "exports = function() { return false }",
+						},
+					},
+				},
+			},
+			Secrets: &local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
+		}}))
+
+		secrets, secretsErr := client.Secrets(groupID, app.ID)
+		assert.Nil(t, secretsErr)
+		assert.Equal(t, 1, len(secrets))
+		assert.Equal(t, "__twilio_svc_auth_token", secrets[0].Name)
+
+		_, zipPkg, exportErr := client.Export(groupID, app.ID, realm.ExportRequest{ConfigVersion: realm.AppConfigVersion20210101})
+		assert.Nil(t, exportErr)
+
+		exported := parseZipPkg(t, zipPkg)
+
+		twilioConfig, twilioConfigOK := exported[filepath.Join(local.NameServices, "twilio_svc", local.FileConfig.String())]
+		assert.True(t, twilioConfigOK, "expected to have twilio config file")
+		assert.Equal(t, `{
+    "name": "twilio_svc",
+    "type": "twilio",
+    "config": {
+        "sid": "my_sid"
+    },
+    "secret_config": {
+        "auth_token": "__twilio_svc_auth_token"
+    }
+}
+`, twilioConfig)
+	})
+}
+
+func TestRealmImportLegacy(t *testing.T) {
+	u.SkipUnlessRealmServerRunning(t)
+
+	client := newAuthClient(t)
+
+	groupID := u.CloudGroupID()
+
+	app, appErr := client.CreateApp(groupID, "import20210101", realm.AppMeta{})
+	assert.Nil(t, appErr)
+
+	for _, configVersion := range []realm.AppConfigVersion{realm.AppConfigVersion20180301, realm.AppConfigVersion20200603} {
+		t.Run(fmt.Sprintf("Should import a service with a secret successfully for config version %d", configVersion), func(t *testing.T) {
+			assert.Nil(t, client.Import(groupID, app.ID, local.AppDataV1{local.AppStructureV1{
+				ConfigVersion:   configVersion,
+				ID:              app.ClientAppID,
+				Name:            app.Name,
+				Location:        app.Location,
+				DeploymentModel: app.DeploymentModel,
+				Services: []local.ServiceStructure{
+					{
+						Config: map[string]interface{}{"name": "twilio_svc", "type": "twilio", "config": map[string]interface{}{"sid": "my_sid"}},
+						IncomingWebhooks: []map[string]interface{}{
+							{
+								"config": map[string]interface{}{
+									"name":                         "twilioWebhook",
+									"create_user_on_auth":          false,
+									"fetch_custom_user_data":       false,
+									"respond_result":               false,
+									"run_as_authed_user":           false,
+									"run_as_user_id_script_source": "",
+								},
+								"source": "exports = function() { return false }",
+							},
+						},
+					},
+				},
+				Secrets: &local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
+			}}))
+
+			secrets, secretsErr := client.Secrets(groupID, app.ID)
+			assert.Nil(t, secretsErr)
+			assert.Equal(t, 1, len(secrets))
+			assert.Equal(t, "__twilio_svc_auth_token", secrets[0].Name)
+
+			_, zipPkg, exportErr := client.Export(groupID, app.ID, realm.ExportRequest{ConfigVersion: configVersion})
+			assert.Nil(t, exportErr)
+
+			exported := parseZipPkg(t, zipPkg)
+
+			twilioConfig, twilioConfigOK := exported[filepath.Join(local.NameServices, "twilio_svc", local.FileConfig.String())]
+			assert.True(t, twilioConfigOK, "expected to have twilio config file")
+			assert.Equal(t, `{
+    "name": "twilio_svc",
+    "type": "twilio",
+    "config": {
+        "sid": "my_sid"
+    },
+    "secret_config": {
+        "auth_token": "__twilio_svc_auth_token"
+    }
+}
+`, twilioConfig)
 		})
 	}
 }
@@ -130,11 +261,12 @@ console.log('got heem!');
 
 func appDataV2(app realm.App) local.AppDataV2 {
 	return local.AppDataV2{local.AppStructureV2{
-		ConfigVersion:   realm.AppConfigVersion20210101,
-		ID:              app.ClientAppID,
-		Name:            app.Name,
-		Location:        app.Location,
-		DeploymentModel: app.DeploymentModel,
+		ConfigVersion:         realm.AppConfigVersion20210101,
+		ID:                    app.ClientAppID,
+		Name:                  app.Name,
+		Location:              app.Location,
+		DeploymentModel:       app.DeploymentModel,
+		AllowedRequestOrigins: []string{"http://localhost:8080"},
 		Environments: map[string]map[string]interface{}{
 			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{}},
 			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
@@ -143,27 +275,33 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
 		},
-		AllowedRequestOrigins: []string{"http://localhost:8080"},
+		Auth: &local.AuthStructure{
+			CustomUserData: map[string]interface{}{"enabled": true, "mongo_service_name": "mdb", "database_name": "db", "collection_name": "coll", "user_id_field": "uid"},
+			Providers: map[string]map[string]interface{}{
+				realm.AuthProviderTypeAnonymous.String(): map[string]interface{}{
+					"name":     realm.AuthProviderTypeAnonymous.String(),
+					"type":     realm.AuthProviderTypeAnonymous.String(),
+					"disabled": false,
+				},
+				realm.AuthProviderTypeAPIKey.String(): map[string]interface{}{
+					"name":     realm.AuthProviderTypeAPIKey.String(),
+					"type":     realm.AuthProviderTypeAPIKey.String(),
+					"disabled": false,
+				},
+			},
+		},
+		DataSources: []local.DataSourceStructure{
+			{Config: map[string]interface{}{"name": "mdb", "type": "mongodb-atlas", "config": map[string]interface{}{
+				"clusterName":         "Cluster0",
+				"readPreference":      "primary",
+				"wireProtocolEnabled": false,
+			}}},
+		},
 		Sync: &local.SyncStructure{
-			Config: map[string]interface{}{"development_mode_enabled": false},
+			Config: map[string]interface{}{"development_mode_enabled": true},
 		},
 		// TODO(REALMC-7989): include auth, functions, triggers, and graphql
 		// in 20210101 round-trip test once its supported in export on the backend
-		// Auth: &local.AuthStructure{
-		// 	CustomUserData: map[string]interface{}{"enabled": false},
-		// 	Providers: map[string]map[string]interface{}{
-		// 		realm.AuthProviderTypeAnonymous.String(): map[string]interface{}{
-		// 			"name":     realm.AuthProviderTypeAnonymous.String(),
-		// 			"type":     realm.AuthProviderTypeAnonymous.String(),
-		// 			"disabled": false,
-		// 		},
-		// 		realm.AuthProviderTypeAPIKey.String(): map[string]interface{}{
-		// 			"name":     realm.AuthProviderTypeAPIKey.String(),
-		// 			"type":     realm.AuthProviderTypeAPIKey.String(),
-		// 			"disabled": false,
-		// 		},
-		// 	},
-		// },
 		// 		Functions: &local.FunctionsStructure{
 		// 			Config: map[string]interface{}{
 		// 				"test.js": map[string]interface{}{"private": true},
@@ -187,4 +325,26 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		// 	Config: map[string]interface{}{"use_natural_pluralization": true},
 		// },
 	}}
+}
+
+func parseZipPkg(t *testing.T, zipPkg *zip.Reader) map[string]string {
+	t.Helper()
+
+	out := make(map[string]string)
+	for _, file := range zipPkg.File {
+		out[file.Name] = parseZipFile(t, file)
+	}
+	return out
+}
+
+func parseZipFile(t *testing.T, file *zip.File) string {
+	t.Helper()
+
+	r, openErr := file.Open()
+	assert.Nil(t, openErr)
+
+	data, readErr := ioutil.ReadAll(r)
+	assert.Nil(t, readErr)
+
+	return string(data)
 }

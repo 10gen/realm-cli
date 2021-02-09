@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,7 +23,7 @@ type AppStructureV1 struct {
 	Hosting              map[string]interface{}            `json:"hosting,omitempty"`
 	CustomUserDataConfig map[string]interface{}            `json:"custom_user_data_config"`
 	Sync                 map[string]interface{}            `json:"sync"`
-	Secrets              interface{}                       `json:"secrets,omitempty"`
+	Secrets              *SecretsStructure                 `json:"secrets,omitempty"`
 	AuthProviders        []map[string]interface{}          `json:"auth_providers,omitempty"`
 	Functions            []map[string]interface{}          `json:"functions,omitempty"`
 	Triggers             []map[string]interface{}          `json:"triggers,omitempty"`
@@ -35,6 +36,12 @@ type AppStructureV1 struct {
 type GraphQLStructure struct {
 	Config          map[string]interface{}   `json:"config,omitempty"`
 	CustomResolvers []map[string]interface{} `json:"custom_resolvers,omitempty"`
+}
+
+// SecretsStructure represents the Realm app secrets
+type SecretsStructure struct {
+	AuthProviders map[string]map[string]string `json:"auth_providers,omitempty"`
+	Services      map[string]map[string]string `json:"services,omitempty"`
 }
 
 // ServiceStructure represents the Realm app service structure
@@ -116,7 +123,13 @@ func (a *AppDataV1) unmarshalSecrets(rootDir string) error {
 	if dataErr != nil {
 		return dataErr
 	}
-	return unmarshalJSON(data, &a.Secrets)
+
+	var secrets SecretsStructure
+	if err := json.Unmarshal(data, &secrets); err != nil {
+		return err
+	}
+	a.Secrets = &secrets
+	return nil
 }
 
 func (a *AppDataV1) unmarshalEnvironments(rootDir string) error {

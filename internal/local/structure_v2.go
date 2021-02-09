@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -21,9 +22,12 @@ type AppStructureV2 struct {
 	Auth                  *AuthStructure                    `json:"auth,omitempty"`
 	Functions             *FunctionsStructure               `json:"functions,omitempty"`
 	Triggers              []map[string]interface{}          `json:"triggers,omitempty"`
+	DataSources           []DataSourceStructure             `json:"data_sources,omitempty"`
 	Services              []ServiceStructure                `json:"services,omitempty"`
 	GraphQL               *GraphQLStructure                 `json:"graphql,omitempty"`
+	Hosting               map[string]interface{}            `json:"hosting,omitempty"`
 	Sync                  *SyncStructure                    `json:"sync,omitempty"`
+	Secrets               *SecretsStructure                 `json:"secrets,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -31,6 +35,12 @@ type AuthStructure struct {
 	Config         map[string]interface{}            `json:"config,omitempty"`
 	CustomUserData map[string]interface{}            `json:"custom_user_data,omitempty"`
 	Providers      map[string]map[string]interface{} `json:"providers,omitempty"`
+}
+
+// DataSourceStructure represents the v2 Realm app data source structure
+type DataSourceStructure struct {
+	Config map[string]interface{} `json:"config,omitempty"`
+	// TODO(REALMC-8016): include latest rules/schema for a data source
 }
 
 // FunctionsStructure represents the v2 Realm app functions structure
@@ -76,6 +86,9 @@ func (a AppDataV2) DeploymentModel() realm.DeploymentModel {
 
 // LoadData will load the local Realm app data
 func (a *AppDataV2) LoadData(rootDir string) error {
+	if err := a.unmarshalSecrets(rootDir); err != nil {
+		return err
+	}
 	if err := a.unmarshalEnvironments(rootDir); err != nil {
 		return err
 	}
@@ -100,6 +113,31 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	if err := a.unmarshalServices(rootDir); err != nil {
 		return err
 	}
+	if err := a.unmarshalDataSources(rootDir); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *AppDataV2) unmarshalSecrets(rootDir string) error {
+	path := filepath.Join(rootDir, FileSecrets.String())
+
+	if ok, err := fileExists(path); err != nil {
+		return err
+	} else if !ok {
+		return nil // if secrets.json does not exist, continue
+	}
+
+	data, dataErr := readFile(path)
+	if dataErr != nil {
+		return dataErr
+	}
+
+	var secrets SecretsStructure
+	if err := json.Unmarshal(data, &secrets); err != nil {
+		return err
+	}
+	a.Secrets = &secrets
 	return nil
 }
 
@@ -227,7 +265,7 @@ func (a *AppDataV2) unmarshalServices(rootDir string) error {
 	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
 		var service ServiceStructure
 
-		cfg, cfgErr := readFile(filepath.Join(dir, FileConfig.String()))
+		cfg, cfgErr := readFile(filepath.Join(path, FileConfig.String()))
 		if cfgErr != nil {
 			return cfgErr
 		}
@@ -236,7 +274,7 @@ func (a *AppDataV2) unmarshalServices(rootDir string) error {
 			return err
 		}
 
-		dirIncomingWebhooks := filepath.Join(dir, NameIncomingWebhooks)
+		dirIncomingWebhooks := filepath.Join(path, NameIncomingWebhooks)
 		if ok, err := fileExists(dirIncomingWebhooks); err != nil {
 			return err
 		} else if ok {
@@ -247,7 +285,7 @@ func (a *AppDataV2) unmarshalServices(rootDir string) error {
 			service.IncomingWebhooks = incomingWebhooks
 		}
 
-		dirRules := filepath.Join(dir, NameRules)
+		dirRules := filepath.Join(path, NameRules)
 		if ok, err := fileExists(dirRules); err != nil {
 			return err
 		} else if ok {
@@ -264,6 +302,35 @@ func (a *AppDataV2) unmarshalServices(rootDir string) error {
 		return walkErr
 	}
 	return nil
+}
+
+func (a *AppDataV2) unmarshalDataSources(rootDir string) error {
+	dir := filepath.Join(rootDir, NameDataSources)
+
+	dw := directoryWalker{path: dir, onlyDirs: true}
+
+	return dw.walk(func(file os.FileInfo, path string) error {
+		var dataSource DataSourceStructure
+
+		cfg, cfgErr := readFile(filepath.Join(path, FileConfig.String()))
+		if cfgErr != nil {
+			return cfgErr
+		}
+
+		if err := unmarshalJSON(cfg, &dataSource.Config); err != nil {
+			return err
+		}
+
+		dirRules := filepath.Join(path, NameRules)
+		if _, err := fileExists(dirRules); err != nil {
+			return err
+			// } else if ok {
+			// TODO(REALMC-8016): include latest rules/schema for a data source
+		}
+
+		a.DataSources = append(a.DataSources, dataSource)
+		return nil
+	})
 }
 
 func (a *AppDataV2) unmarshalSync(rootDir string) error {
