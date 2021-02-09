@@ -47,7 +47,7 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	resolved, resolvedErr := cmd.inputs.resolveUsers(cmd.realmClient, app.GroupID, app.ID)
+	resolved, resolvedErr := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
 	if resolvedErr != nil {
 		return resolvedErr
 	}

@@ -67,7 +67,7 @@ func (i multiUserInputs) filter() realm.UserFilter {
 	}
 }
 
-func (i multiUserInputs) resolveUsers(realmClient realm.Client, groupID, appID string) ([]realm.User, error) {
+func (i multiUserInputs) findUsers(realmClient realm.Client, groupID, appID string) ([]realm.User, error) {
 	foundUsers, err := realmClient.FindUsers(groupID, appID, i.filter())
 	if err != nil {
 		return nil, err
