@@ -63,5 +63,19 @@ func TestAppLoadFromDirectory(t *testing.T) {
 			u.So(t, svcMap["rules"], gc.ShouldNotBeEmpty)
 			u.So(t, svcMap["incoming_webhooks"], gc.ShouldNotBeEmpty)
 		}
+
+		u.So(t, app["environments"], gc.ShouldHaveLength, 5)
+		for _, env := range app["environments"].(map[string]interface{}) {
+			envMap := env.(map[string]interface{})
+			u.So(t, envMap["values"], gc.ShouldNotBeEmpty)
+
+			values, ok := envMap["values"].(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
+
+			greeting, ok := values["greeting"]
+			u.So(t, ok, gc.ShouldBeTrue)
+
+			u.So(t, greeting, gc.ShouldNotBeEmpty)
+		}
 	})
 }
