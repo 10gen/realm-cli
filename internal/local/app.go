@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -24,7 +25,8 @@ type App struct {
 	AppData
 }
 
-func (a App) String() string {
+// Option returns the Realm app data displayed as a selectable option
+func (a App) Option() string {
 	if a.AppData == nil {
 		return a.RootDir
 	}
@@ -145,13 +147,14 @@ func FindApp(path string) (App, bool, error) {
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
 		for _, config := range allConfigFiles {
-			ok, err := fileExists(filepath.Join(wd, config.String()))
+			_, err := os.Stat(filepath.Join(wd, config.String()))
 			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
 				return App{}, false, err
 			}
-			if ok {
-				return App{RootDir: wd, Config: config}, true, nil
-			}
+			return App{RootDir: wd, Config: config}, true, nil
 		}
 		if wd == "/" {
 			break

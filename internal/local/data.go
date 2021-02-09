@@ -52,12 +52,11 @@ const (
 	NameHosting = "hosting"
 
 	// services
+	NameDataSources      = "data_sources"
+	NameHTTPEndpoints    = "http_endpoints"
 	NameIncomingWebhooks = "incoming_webhooks"
 	NameRules            = "rules"
 	NameServices         = "services"
-
-	// data sources
-	NameDataSources = "data_sources"
 
 	// triggers
 	NameTriggers = "triggers"
@@ -87,17 +86,6 @@ var (
 	// values
 	FileSecrets = File{NameSecrets, extJSON}
 )
-
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
 
 // File is a local Realm app file
 type File struct {
@@ -153,32 +141,6 @@ func (dw directoryWalker) walk(fn func(file os.FileInfo, path string) error) err
 		}
 	}
 	return nil
-}
-
-func unmarshalDirectoryFlat(path string) ([]map[string]interface{}, error) {
-	var out []map[string]interface{}
-
-	dw := directoryWalker{path: path, onlyFiles: true}
-	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
-		switch filepath.Ext(path) {
-		case extJSON:
-			data, dataErr := readFile(path)
-			if dataErr != nil {
-				return dataErr
-			}
-
-			var o map[string]interface{}
-			if err := json.Unmarshal(data, &o); err != nil {
-				return err
-			}
-			out = append(out, o)
-		}
-		return nil
-	}); walkErr != nil {
-		return nil, walkErr
-	}
-
-	return out, nil
 }
 
 func readFile(path string) ([]byte, error) {

@@ -1,11 +1,7 @@
 package local
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -30,25 +26,6 @@ type AppStructureV1 struct {
 	GraphQL              GraphQLStructure                  `json:"graphql,omitempty"`
 	Services             []ServiceStructure                `json:"services,omitempty"`
 	Values               []map[string]interface{}          `json:"values,omitempty"`
-}
-
-// GraphQLStructure represents the Realm app graphql structure
-type GraphQLStructure struct {
-	Config          map[string]interface{}   `json:"config,omitempty"`
-	CustomResolvers []map[string]interface{} `json:"custom_resolvers,omitempty"`
-}
-
-// SecretsStructure represents the Realm app secrets
-type SecretsStructure struct {
-	AuthProviders map[string]map[string]string `json:"auth_providers,omitempty"`
-	Services      map[string]map[string]string `json:"services,omitempty"`
-}
-
-// ServiceStructure represents the Realm app service structure
-type ServiceStructure struct {
-	Config           map[string]interface{}   `json:"config,omitempty"`
-	IncomingWebhooks []map[string]interface{} `json:"incoming_webhooks"`
-	Rules            []map[string]interface{} `json:"rules"`
 }
 
 // AppDataV1 is the v1 local Realm app data
@@ -83,239 +60,53 @@ func (a AppDataV1) DeploymentModel() realm.DeploymentModel {
 
 // LoadData will load the local Realm app data
 func (a *AppDataV1) LoadData(rootDir string) error {
-	if err := a.unmarshalSecrets(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalEnvironments(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalValues(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalAuthProviders(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalFunctions(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalTriggers(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalGraphQL(rootDir); err != nil {
-		return err
-	}
-	if err := a.unmarshalServices(rootDir); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *AppDataV1) unmarshalSecrets(rootDir string) error {
-	path := filepath.Join(rootDir, FileSecrets.String())
-
-	if ok, err := fileExists(path); err != nil {
-		return err
-	} else if !ok {
-		return nil // if secrets.json does not exist, continue
-	}
-
-	data, dataErr := readFile(path)
-	if dataErr != nil {
-		return dataErr
-	}
-
-	var secrets SecretsStructure
-	if err := json.Unmarshal(data, &secrets); err != nil {
-		return err
-	}
-	a.Secrets = &secrets
-	return nil
-}
-
-func (a *AppDataV1) unmarshalEnvironments(rootDir string) error {
-	dir := filepath.Join(rootDir, NameEnvironments)
-
-	environments := map[string]map[string]interface{}{}
-
-	dw := directoryWalker{path: dir, onlyFiles: true}
-	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
-		data, dataErr := readFile(path)
-		if dataErr != nil {
-			return dataErr
-		}
-
-		var out map[string]interface{}
-		if err := unmarshalJSON(data, &out); err != nil {
-			return err
-		}
-
-		environments[file.Name()] = out
-		return nil
-	}); walkErr != nil {
-		return walkErr
-	}
-
-	if len(environments) > 0 {
-		a.Environments = environments
-	}
-	return nil
-}
-
-func (a *AppDataV1) unmarshalAuthProviders(rootDir string) error {
-	authProviders, err := unmarshalDirectoryFlat(filepath.Join(rootDir, NameAuthProviders))
+	secrets, err := parseSecrets(rootDir)
 	if err != nil {
 		return err
 	}
-	a.AuthProviders = authProviders
-	return nil
-}
+	a.Secrets = secrets
 
-func (a *AppDataV1) unmarshalFunctions(rootDir string) error {
-	functions, err := unmarshalFunctionsV1(filepath.Join(rootDir, NameFunctions))
+	environments, err := parseEnvironments(rootDir)
 	if err != nil {
 		return err
 	}
-	a.Functions = functions
-	return nil
-}
+	a.Environments = environments
 
-func unmarshalFunctionsV1(path string) ([]map[string]interface{}, error) {
-	var out []map[string]interface{}
-
-	dw := directoryWalker{path: path, onlyDirs: true}
-	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
-		if strings.Contains(path, nameNodeModules) {
-			return nil // skip node_modules since we upload that as a single entity
-		}
-
-		cfg, cfgErr := readFile(filepath.Join(path, FileConfig.String()))
-		if cfgErr != nil {
-			return cfgErr
-		}
-
-		var config interface{}
-		if err := unmarshalJSON(cfg, &config); err != nil {
-			return err
-		}
-
-		src, srcErr := ioutil.ReadFile(filepath.Join(path, FileSource.String()))
-		if srcErr != nil {
-			return srcErr
-		}
-
-		o := map[string]interface{}{
-			NameConfig: config,
-			NameSource: string(src),
-		}
-		out = append(out, o)
-		return nil
-	}); walkErr != nil {
-		return nil, walkErr
-	}
-
-	return out, nil
-}
-
-func (a *AppDataV1) unmarshalGraphQL(rootDir string) error {
-	dir := filepath.Join(rootDir, NameGraphQL)
-	if ok, err := fileExists(dir); err != nil {
-		return err
-	} else if !ok {
-		return nil // graphql directory does not exist, continue
-	}
-
-	cfg, cfgErr := readFile(filepath.Join(dir, FileConfig.String()))
-	if cfgErr != nil {
-		return cfgErr
-	}
-
-	if err := unmarshalJSON(cfg, &a.GraphQL.Config); err != nil {
-		return err
-	}
-
-	customResolvers := []map[string]interface{}{}
-	dw := directoryWalker{path: filepath.Join(dir, NameCustomResolvers), onlyFiles: true}
-	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
-		var out map[string]interface{}
-
-		data, dataErr := readFile(path)
-		if dataErr != nil {
-			return dataErr
-		}
-
-		if err := unmarshalJSON(data, &out); err != nil {
-			return err
-		}
-
-		customResolvers = append(customResolvers, out)
-		return nil
-	}); walkErr != nil {
-		return walkErr
-	}
-	a.GraphQL.CustomResolvers = customResolvers
-	return nil
-}
-
-func (a *AppDataV1) unmarshalServices(rootDir string) error {
-	dir := filepath.Join(rootDir, NameServices)
-
-	dw := directoryWalker{path: dir, onlyDirs: true}
-	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
-		var out ServiceStructure
-
-		cfg, cfgErr := readFile(filepath.Join(path, FileConfig.String()))
-		if cfgErr != nil {
-			return cfgErr
-		}
-
-		if err := unmarshalJSON(cfg, &out.Config); err != nil {
-			return err
-		}
-
-		dirIncomingWebhooks := filepath.Join(path, NameIncomingWebhooks)
-		if ok, err := fileExists(dirIncomingWebhooks); err != nil {
-			return err
-		} else if ok {
-			incomingWebhooks, err := unmarshalFunctionsV1(dirIncomingWebhooks)
-			if err != nil {
-				return err
-			}
-			out.IncomingWebhooks = incomingWebhooks
-		}
-
-		dirRules := filepath.Join(path, NameRules)
-		if ok, err := fileExists(dirRules); err != nil {
-			return err
-		} else if ok {
-			rules, err := unmarshalDirectoryFlat(dirRules)
-			if err != nil {
-				return err
-			}
-			out.Rules = rules
-		}
-
-		a.Services = append(a.Services, out)
-		return nil
-	}); walkErr != nil {
-		return walkErr
-	}
-	return nil
-}
-
-func (a *AppDataV1) unmarshalTriggers(rootDir string) error {
-	triggers, err := unmarshalDirectoryFlat(filepath.Join(rootDir, NameTriggers))
-	if err != nil {
-		return err
-	}
-	a.Triggers = triggers
-	return nil
-}
-
-func (a *AppDataV1) unmarshalValues(rootDir string) error {
-	values, err := unmarshalDirectoryFlat(filepath.Join(rootDir, NameValues))
+	values, err := parseJSONFiles(filepath.Join(rootDir, NameValues))
 	if err != nil {
 		return err
 	}
 	a.Values = values
+
+	authProviders, err := parseJSONFiles(filepath.Join(rootDir, NameAuthProviders))
+	if err != nil {
+		return err
+	}
+	a.AuthProviders = authProviders
+
+	functions, err := parseFunctions(filepath.Join(rootDir, NameFunctions))
+	if err != nil {
+		return err
+	}
+	a.Functions = functions
+
+	triggers, err := parseJSONFiles(filepath.Join(rootDir, NameTriggers))
+	if err != nil {
+		return err
+	}
+	a.Triggers = triggers
+
+	graphql, ok, err := parseGraphQL(rootDir)
+	if err != nil {
+		return err
+	} else if ok {
+		a.GraphQL = graphql
+	}
+
+	services, err := parseServices(rootDir)
+	if err != nil {
+		return err
+	}
+	a.Services = services
 	return nil
 }

@@ -52,7 +52,7 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
 			Name: appFieldName,
 			Prompt: &survey.Input{
 				Message: "App Filter",
-				Default: app.String(),
+				Default: app.Option(),
 			},
 		})
 	}
@@ -102,8 +102,8 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 	appsByOption := make(map[string]realm.App, len(apps))
 	appOptions := make([]string, len(apps))
 	for i, app := range apps {
-		appsByOption[app.String()] = app
-		appOptions[i] = app.String()
+		appsByOption[app.Option()] = app
+		appOptions[i] = app.Option()
 	}
 
 	var selection string

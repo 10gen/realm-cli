@@ -75,7 +75,7 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if i.To == "" {
-		i.To = app.String()
+		i.To = app.Option()
 	}
 
 	return nil
