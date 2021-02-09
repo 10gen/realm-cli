@@ -54,10 +54,10 @@ func (c *client) CreateApp(groupID, name string, meta AppMeta) (App, error) {
 	if resErr != nil {
 		return App{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return App{}, parseResponseError(res)
+		return App{}, api.ErrUnexpectedStatusCode{"create app", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var app App
 	if err := json.NewDecoder(res.Body).Decode(&app); err != nil {
@@ -76,8 +76,7 @@ func (c *client) DeleteApp(groupID, appID string) error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{"delete app", res.StatusCode}
 	}
 	return nil
 }
@@ -146,10 +145,10 @@ func (c *client) getApps(groupID string) ([]App, error) {
 	if res.StatusCode == http.StatusNotFound {
 		return nil, errors.New("group could not be found")
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, parseResponseError(res)
+		return nil, api.ErrUnexpectedStatusCode{"get apps", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var apps []App
 	if err := json.NewDecoder(res.Body).Decode(&apps); err != nil {

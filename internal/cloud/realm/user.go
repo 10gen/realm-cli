@@ -193,10 +193,10 @@ func (c *client) CreateAPIKey(groupID, appID, apiKeyName string) (APIKey, error)
 	if resErr != nil {
 		return APIKey{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return APIKey{}, parseResponseError(res)
+		return APIKey{}, api.ErrUnexpectedStatusCode{"create api key", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var apiKey APIKey
 	if err := json.NewDecoder(res.Body).Decode(&apiKey); err != nil {
@@ -220,10 +220,10 @@ func (c *client) CreateUser(groupID, appID, email, password string) (User, error
 	if resErr != nil {
 		return User{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
-		return User{}, parseResponseError(res)
+		return User{}, api.ErrUnexpectedStatusCode{"create user", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var user User
 	if err := json.NewDecoder(res.Body).Decode(&user); err != nil {
@@ -319,10 +319,10 @@ func (c *client) getPendingUsers(groupID, appID string, userIDs []string) ([]Use
 	if resErr != nil {
 		return nil, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, parseResponseError(res)
+		return nil, api.ErrUnexpectedStatusCode{"get pending users", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var users []User
 	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {
@@ -357,10 +357,10 @@ func (c *client) getUser(groupID, appID, userID string) (User, error) {
 	if resErr != nil {
 		return User{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return User{}, parseResponseError(res)
+		return User{}, api.ErrUnexpectedStatusCode{"get user", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var user User
 	if err := json.NewDecoder(res.Body).Decode(&user); err != nil {
@@ -382,10 +382,10 @@ func (c *client) getUsers(groupID, appID string, userState UserState, authProvid
 	if resErr != nil {
 		return nil, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, parseResponseError(res)
+		return nil, api.ErrUnexpectedStatusCode{"get users", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var users []User
 	if err := json.NewDecoder(res.Body).Decode(&users); err != nil {

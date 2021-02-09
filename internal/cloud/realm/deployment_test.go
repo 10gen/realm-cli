@@ -30,6 +30,12 @@ func TestRealmDeployments(t *testing.T) {
 		draft, draftErr := client.CreateDraft(groupID, app.ID)
 		assert.Nil(t, draftErr)
 
+		t.Run("Should initially find no deployments", func(t *testing.T) {
+			deployments, err := client.Deployments(groupID, app.ID)
+			assert.Nil(t, err)
+			assert.Equal(t, 0, len(deployments))
+		})
+
 		t.Run("Should be able to deploy an existing draft", func(t *testing.T) {
 			deployment, deploymentErr := client.DeployDraft(groupID, app.ID, draft.ID)
 			assert.Nil(t, deploymentErr)
@@ -41,6 +47,10 @@ func TestRealmDeployments(t *testing.T) {
 				found, err := client.Deployment(groupID, app.ID, deployment.ID)
 				assert.Nil(t, err)
 				assert.Equal(t, deployment.ID, found.ID)
+
+				all, err := client.Deployments(groupID, app.ID)
+				assert.Nil(t, err)
+				assert.Equal(t, []realm.AppDeployment{found}, all)
 			})
 		})
 	})

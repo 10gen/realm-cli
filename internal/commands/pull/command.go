@@ -67,7 +67,17 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	// TODO(REALMC-7868): include dependencies
+	if cmd.inputs.IncludeDependencies {
+		archiveName, archivePkg, archiveErr := cmd.realmClient.ExportDependencies(from.GroupID, from.AppID)
+		if archiveErr != nil {
+			return archiveErr
+		}
+
+		archivePath := filepath.Join(path, local.NameFunctions, archiveName)
+		if err := local.WriteFile(archivePath, 0755, archivePkg); err != nil {
+			return err
+		}
+	}
 
 	// TODO(REALMC-7177): include hosting
 

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/auth"
@@ -24,7 +25,9 @@ type Client interface {
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
+	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData interface{}) error
+	ImportDependencies(groupID, appID, uploadPath string) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
@@ -35,6 +38,7 @@ type Client interface {
 	DeployDraft(groupID, appID, draftID string) (AppDeployment, error)
 	DiffDraft(groupID, appID, draftID string) (AppDraftDiff, error)
 	DiscardDraft(groupID, appID, draftID string) error
+	Deployments(groupID, appID string) ([]AppDeployment, error)
 	Deployment(groupID, appID, deploymentID string) (AppDeployment, error)
 	Draft(groupID, appID string) (AppDraft, error)
 

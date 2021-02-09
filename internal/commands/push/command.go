@@ -1,6 +1,7 @@
 package push
 
 import (
+	"os"
 	"strings"
 	"time"
 
@@ -151,7 +152,22 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 	// TODO(REALMC-7177): import hosting
 
-	// TODO(REALMC-7868): import dependencies
+	if cmd.inputs.IncludeDependencies {
+		dependencies, dependenciesErr := local.FindAppDependencies(app.RootDir)
+		if dependenciesErr != nil {
+			return dependenciesErr
+		}
+
+		uploadPath, uploadErr := dependencies.PrepareUpload()
+		if uploadErr != nil {
+			return uploadErr
+		}
+		defer os.Remove(uploadPath) //nolint:errcheck
+
+		if err := cmd.realmClient.ImportDependencies(to.GroupID, to.AppID, uploadPath); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

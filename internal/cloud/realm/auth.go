@@ -34,10 +34,10 @@ func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, erro
 	if resErr != nil {
 		return Session{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return Session{}, parseResponseError(res)
+		return Session{}, api.ErrUnexpectedStatusCode{"authenticate", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var session Session
 	if err := json.NewDecoder(res.Body).Decode(&session); err != nil {
@@ -61,10 +61,10 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	if resErr != nil {
 		return AuthProfile{}, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return AuthProfile{}, parseResponseError(res)
+		return AuthProfile{}, api.ErrUnexpectedStatusCode{"get auth profile", res.StatusCode}
 	}
+	defer res.Body.Close()
 
 	var profile AuthProfile
 	if err := json.NewDecoder(res.Body).Decode(&profile); err != nil {

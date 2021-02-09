@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	deploymentPathPattern = appPathPattern + "/deployments/%s"
+	deploymentsPathPattern = appPathPattern + "/deployments"
+	deploymentPathPattern  = deploymentsPathPattern + "/%s"
 )
 
 // AppDeployment is a Realm app deployment
@@ -28,6 +29,27 @@ const (
 	DeploymentStatusFailed     DeploymentStatus = "failed"
 	DeploymentStatusPending    DeploymentStatus = "pending"
 )
+
+func (c *client) Deployments(groupID, appID string) ([]AppDeployment, error) {
+	res, resErr := c.do(
+		http.MethodGet,
+		fmt.Sprintf(deploymentsPathPattern, groupID, appID),
+		api.RequestOptions{},
+	)
+	if resErr != nil {
+		return nil, resErr
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, api.ErrUnexpectedStatusCode{"get deployments", res.StatusCode}
+	}
+	defer res.Body.Close()
+
+	var deployments []AppDeployment
+	if err := json.NewDecoder(res.Body).Decode(&deployments); err != nil {
+		return nil, err
+	}
+	return deployments, nil
+}
 
 func (c *client) Deployment(groupID, appID, deploymentID string) (AppDeployment, error) {
 	res, resErr := c.do(

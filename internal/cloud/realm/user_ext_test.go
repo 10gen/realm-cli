@@ -26,18 +26,25 @@ func TestRealmUsers(t *testing.T) {
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 
-		app, appErr := client.CreateApp(groupID, "users-test", realm.AppMeta{})
-		assert.Nil(t, appErr)
+		app, teardown := setupTestApp(t, client, groupID, "users-test")
+		defer teardown()
 
-		assert.Nil(t, client.Import(groupID, app.ID, map[string]interface{}{
-			local.NameAuthProviders: []map[string]interface{}{
-				{"name": "api-key", "type": "api-key"},
-				{"name": "local-userpass", "type": "local-userpass", "config": map[string]interface{}{
-					"resetPasswordUrl":     "http://localhost:8080/reset_password",
-					"emailConfirmationUrl": "http://localhost:8080/confirm_email",
-				}},
+		assert.Nil(t, client.Import(groupID, app.ID, local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.AppConfigVersion20210101,
+			ID:              app.ClientAppID,
+			Name:            app.Name,
+			Location:        app.Location,
+			DeploymentModel: app.DeploymentModel,
+			Auth: &local.AuthStructure{
+				Providers: map[string]interface{}{
+					"api-key": map[string]interface{}{"name": "api-key", "type": "api-key"},
+					"local-userpass": map[string]interface{}{"name": "local-userpass", "type": "local-userpass", "config": map[string]interface{}{
+						"resetPasswordUrl":     "http://localhost:8080/reset_password",
+						"emailConfirmationUrl": "http://localhost:8080/confirm_email",
+					}},
+				},
 			},
-		}))
+		}}))
 
 		t.Run("Should create users", func(t *testing.T) {
 			email1, createErr := client.CreateUser(groupID, app.ID, "one@domain.com", "password1")
