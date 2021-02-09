@@ -367,6 +367,9 @@ func parseZipPkg(t *testing.T, zipPkg *zip.Reader) map[string]string {
 
 	out := make(map[string]string)
 	for _, file := range zipPkg.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
 		out[file.Name] = parseZipFile(t, file)
 	}
 	return out

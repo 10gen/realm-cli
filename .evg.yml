@@ -16,6 +16,29 @@ functions:
           curl --silent -OL ${yarn_url}
           tar zvxf latest.tar.gz
           mv yarn-* yarn
+  "fetch_baas_artifacts": &fetch_baas_artifacts
+    - command: shell.exec
+      params:
+        shell: "bash"
+        script: | # find all baas release branches, sort them, and grab the latest release's commit id
+          git ls-remote git@github.com:10gen/baas.git | grep refs/heads/v20 | sort -k2 | awk '{ print "baas_revision: \""$1"\"" }' | tail -n 1 > baas.yml
+    - command: expansions.update
+      params:
+        file: baas.yml
+    - command: s3.get
+      params:
+        aws_key: ${stitch_cloud_aws_key}
+        aws_secret: ${stitch_cloud_aws_secret}
+        remote_file: ${baas_revision}-race.tgz
+        bucket: stitch-cloud-versions
+        local_file: baas_artifacts.tgz
+    - command: shell.exec
+      params:
+        shell: "bash"
+        script: |
+          set -e
+          mkdir baas_artifacts
+          tar zvxf baas_artifacts.tgz -C baas_artifacts
   "setup_node": &setup_node
       command: shell.exec
       params:
@@ -31,6 +54,15 @@ functions:
           fi
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
           nvm install ${node_version}
+          nvm use ${node_version}
+  "setup_transpiler":
+      command: shell.exec
+      params:
+        shell: "bash"
+        script: |
+          set -e
+          mkdir -p realm-cli/etc/bin
+          cp baas_artifacts/transpiler realm-cli/etc/bin
   "setup_project":
     - command: git.get_project
       params:
@@ -63,21 +95,6 @@ functions:
             ./bin/mongo --nodb --eval 'assert.soon(function(x){try{var d = new Mongo("localhost:26000"); return true}catch(e){return false}}, "timed out connecting")'
             ./bin/mongo --port 26000 --eval 'rs.initiate()'
             echo "mongod is up."
-  "setup_transpiler": &setup_transpiler
-      - *setup_node
-      - command: shell.exec
-        params:
-          shell: "bash"
-          script: |
-            set -e
-            set -v
-            export ROOT_DIR=`pwd`
-            export PATH="$ROOT_DIR/yarn/bin:$PATH"
-            export NVM_DIR="$ROOT_DIR/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm use ${node_version}
-            cd realm-cli/etc/transpiler
-            yarn && yarn run build -t ${transpiler_target}
   "setup_baas_server":
     - command: shell.exec
       params:
@@ -104,16 +121,8 @@ functions:
         shell: "bash"
         script: |
           set -e
-          export ROOT_DIR=`pwd`
-          export PATH="$ROOT_DIR/yarn/bin:$PATH"
-          export NVM_DIR="$ROOT_DIR/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-          nvm use ${node_version}
-          cd baas/etc/transpiler
-          curl --silent -OL ${yarn_url}
-          tar zvxf latest.tar.gz
-          mv yarn-* yarn
-          yarn install && yarn run build -t ${transpiler_target}
+          mkdir -p baas/etc/transpiler/bin
+          cp baas_artifacts/transpiler baas/etc/transpiler/bin/
   "start_server":
     - command: shell.exec
       params:
@@ -127,26 +136,7 @@ functions:
           cd $ROOT_DIR/baas
           export PATH="$ROOT_DIR/baas/etc/transpiler/bin:$PATH"
           export LD_LIBRARY_PATH="$ROOT_DIR/baas/etc/dylib/lib"
-          which transpiler
-          cat > atlas_config.json <<EOF
-          {
-            "admin": {
-              "authProviders": [
-                {
-                  "name": "mongodb-cloud",
-                  "type": "mongodb-cloud",
-                  "config": {
-                      "baseUrl": "https://cloud-dev.mongodb.com",
-                      "adminUsername": "${baas_mongodb_cloud_atlas_admin_username}",
-                      "adminAPIKey": "${baas_mongodb_cloud_atlas_admin_api_key}"
-                    },
-                    "metadataFields": [{ "name": "name", "required": false}]
-                }
-              ]
-            }
-          }
-          EOF
-          go run cmd/server/main.go --configFile $ROOT_DIR/baas/etc/configs/test_cli_config.json --configFile ./atlas_config.json
+          go run cmd/server/main.go --configFile $ROOT_DIR/baas/etc/configs/test_cli_config.json
     - command: shell.exec
       params:
         shell: "bash"
@@ -167,6 +157,7 @@ tasks:
     commands:
       - func: "fetch_go113"
       - func: "fetch_yarn"
+      - func: "fetch_baas_artifacts"
       - func: "setup_project"
       - func: "setup_transpiler"
       - command: shell.exec
@@ -177,6 +168,7 @@ tasks:
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
+            export PATH="$ROOT_DIR/realm-cli/etc/bin:$PATH"
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             cd $ROOT_DIR/realm-cli
@@ -196,8 +188,9 @@ tasks:
     commands:
       - func: "fetch_go113"
       - func: "fetch_yarn"
+      - func: "fetch_baas_artifacts"
+      - func: "setup_node"
       - func: "setup_project"
-      - func: "setup_transpiler"
       - func: "setup_mongod"
       - func: "setup_baas_server"
       - func: "start_server"
@@ -261,8 +254,8 @@ buildvariants:
   expansions:
     atlas_server_url: "https://cloud-dev.mongodb.com"
     baas_supportlib_url: "https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz"
-    go_url: "https://dl.google.com/go/go1.14.10.linux-amd64.tar.gz"
-    libmongo_url: "https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_752d3ad5fa6c559e22ba1215acbe80b5c9567753_5fa1b8110305b929df995244_20_11_03_20_05_38/libmongo.so"
+    go_url: "https://dl.google.com/go/go1.14.13.linux-amd64.tar.gz"
+    libmongo_url: "https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_9d94a997898b85fada11e619139c648e0b4be73f_5ff760db3627e064e1499e92_21_01_07_19_28_28/libmongo.so"
     mongodb_url: "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz"
     realm_server_url: "http://localhost:8080"
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"

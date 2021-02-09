@@ -66,7 +66,7 @@ func (a App) WriteConfig() error {
 	if err != nil {
 		return err
 	}
-	return writeFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
+	return WriteFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
 }
 
 // WriteZip writes the zip contents to the specified filepath
@@ -90,7 +90,7 @@ func WriteZip(wd string, zipPkg *zip.Reader) error {
 		}
 		defer data.Close()
 
-		if err := writeFile(path, zipFile.Mode(), data); err != nil {
+		if err := WriteFile(path, zipFile.Mode(), data); err != nil {
 			return err
 		}
 	}
@@ -104,7 +104,8 @@ func mkdir(path string) error {
 	return nil
 }
 
-func writeFile(path string, perm os.FileMode, r io.Reader) error {
+// WriteFile writes the file to the specified path with the specified permissions
+func WriteFile(path string, perm os.FileMode, r io.Reader) error {
 	if err := mkdir(filepath.Dir(path)); err != nil {
 		return err
 	}
