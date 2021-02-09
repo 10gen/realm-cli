@@ -32,6 +32,7 @@ const (
 	rulesName            = "rules"
 	secretsName          = "secrets"
 	servicesName         = "services"
+	environmentsName     = "environments"
 	sourceName           = "source"
 	valuesName           = "values"
 	graphQLName          = "graphql"
@@ -222,8 +223,13 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 	if err != nil {
 		return app, err
 	}
-
 	app[servicesName] = services
+
+	environments, err := unmarshalJSONFilesWithFilenames(filepath.Join(path, environmentsName))
+	if err != nil {
+		return app, err
+	}
+	app[environmentsName] = environments
 
 	return app, nil
 }
@@ -247,6 +253,30 @@ func unmarshalJSONFiles(path string, ignoreDirErr bool) ([]interface{}, error) {
 		}
 
 		files = append(files, f)
+	}
+
+	return files, nil
+}
+
+func unmarshalJSONFilesWithFilenames(path string) (map[string]interface{}, error) {
+	fileInfos, err := ioutil.ReadDir(path)
+	if err != nil {
+		return map[string]interface{}{}, err
+	}
+	files := make(map[string]interface{}, len(fileInfos))
+
+	for _, fileInfo := range fileInfos {
+		jsonFilePath := filepath.Join(path, fileInfo.Name())
+		if filepath.Ext(jsonFilePath) != jsonExt {
+			continue
+		}
+
+		var f interface{}
+		if err := readAndUnmarshalJSONInto(jsonFilePath, &f); err != nil {
+			return map[string]interface{}{}, err
+		}
+
+		files[fileInfo.Name()] = f
 	}
 
 	return files, nil
