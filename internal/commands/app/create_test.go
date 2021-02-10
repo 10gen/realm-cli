@@ -11,6 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
