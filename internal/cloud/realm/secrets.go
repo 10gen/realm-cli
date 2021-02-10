@@ -29,8 +29,8 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 		return nil, resErr
 	}
 
-	if res.StatusCode != http.StatusNoContent {
-		return nil, api.ErrUnexpectedStatusCode{"delete secret", res.StatusCode}
+	if res.StatusCode != http.StatusOK {
+		return nil, api.ErrUnexpectedStatusCode{"secrets", res.StatusCode}
 	}
 
 	var secrets []Secret
@@ -72,13 +72,15 @@ func (c *client) DeleteSecret(groupID, appID, secretID string) error {
 		fmt.Sprintf(secretPathPattern, groupID, appID, secretID),
 		api.RequestOptions{},
 	)
+
 	if resErr != nil {
 		return resErr
 	}
 
 	if res.StatusCode != http.StatusNoContent {
 		defer res.Body.Close()
-		return parseResponseError(res)
+		return api.ErrUnexpectedStatusCode{"delete secret", res.StatusCode}
 	}
+
 	return nil
 }
