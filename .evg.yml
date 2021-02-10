@@ -146,7 +146,7 @@ functions:
             }
           }
           EOF
-          go run cmd/server/main.go --configFile $ROOT_DIR/realm-cli/etc/testdata/baas_server_test_config.json --configFile ./atlas_config.json
+          go run cmd/server/main.go --configFile $ROOT_DIR/baas/etc/configs/test_cli_config.json --configFile ./atlas_config.json
     - command: shell.exec
       params:
         shell: "bash"
