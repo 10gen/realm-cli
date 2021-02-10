@@ -8,8 +8,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-
-	"github.com/Netflix/go-expect"
 )
 
 func TestProviderTypeDisplayUser(t *testing.T) {
@@ -155,15 +153,13 @@ func TestMultiUsersInputsFind(t *testing.T) {
 				expectedUsers: testUsers,
 			},
 			{
-				description:   "should error with input users and no found users",
-				inputs:        multiUserInputs{Users: []string{"user-1"}},
-				expectedUsers: nil,
-				expectedErr:   errors.New("no users found"),
+				description: "should error with input users and no found users",
+				inputs:      multiUserInputs{Users: []string{"user-1"}},
+				expectedErr: errors.New("no users found"),
 			},
 
 			{
-				description:   "should return an empty users slice with no found users or input users",
-				expectedUsers: nil,
+				description: "should return an empty users slice with no found users or input users",
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -211,63 +207,49 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 		},
 	}
 
-	t.Run("when selecting users", func(t *testing.T) {
+	t.Run("should prompt with no input set", func(t *testing.T) {
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("Which user(s) would you like to delete?")
+			console.Send("user-1")
+			console.SendLine(" ")
+			console.ExpectEOF()
+		}()
+
+		var i multiUserInputs
+		users, err := i.selectUsers(ui, testUsers, "delete")
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		assert.Nil(t, err)
+		assert.Equal(t, testUsers[0:1], users)
+	})
+
+	t.Run("should not prompt the user", func(t *testing.T) {
 		for _, tc := range []struct {
-			description   string
-			inputs        multiUserInputs
-			procedure     func(c *expect.Console)
-			users         []realm.User
-			expectedUsers []realm.User
+			description string
+			inputs      multiUserInputs
+			users       []realm.User
 		}{
+			{description: "with no inputs set and no users found"},
 			{
-				description: "should prompt with no input set",
-				procedure: func(c *expect.Console) {
-					c.ExpectString("Which user(s) would you like to delete?")
-					c.Send("user-1")
-					c.SendLine(" ")
-					c.ExpectEOF()
-				},
-				users:         testUsers,
-				expectedUsers: []realm.User{testUsers[0]},
-			},
-			{
-				description: "should not prompt if no users are found",
-				procedure: func(c *expect.Console) {
-					console, _ := c.ExpectEOF()
-					assert.Equal(t, "", console)
-				},
-				expectedUsers: nil,
-			},
-			{
-				description: "should not prompt if user inputs are provided",
-				procedure: func(c *expect.Console) {
-					console, _ := c.ExpectEOF()
-					assert.Equal(t, "", console)
-				},
-				inputs:        multiUserInputs{Users: []string{"user-1"}},
-				users:         testUsers[:1],
-				expectedUsers: testUsers[:1],
+				"with user inputs set and some users found",
+				multiUserInputs{Users: []string{"user-1"}},
+				testUsers,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
-				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-				assert.Nil(t, consoleErr)
-				defer console.Close()
-
-				doneCh := make(chan (struct{}))
-				go func() {
-					defer close(doneCh)
-					tc.procedure(console)
-				}()
-				users, selectErr := tc.inputs.selectUsers(ui, tc.users, "delete")
-
-				console.Tty().Close() // flush the writers
-				<-doneCh              // wait for procedure to complete
-
-				assert.Nil(t, selectErr)
-				assert.Equal(t, tc.expectedUsers, users)
+				users, err := tc.inputs.selectUsers(nil, tc.users, "")
+				assert.Nil(t, err)
+				assert.Equal(t, tc.users, users)
 			})
 		}
 	})
-
 }

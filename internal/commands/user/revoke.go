@@ -58,14 +58,19 @@ func (cmd *CommandRevoke) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
 
-	users, userErr := cmd.inputs.resolveUsers(ui, cmd.realmClient, app)
-	if userErr != nil {
-		return userErr
+	found, err := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
+	if err != nil {
+		return err
+	}
+
+	users, err := cmd.inputs.selectUsers(ui, found, "revoke")
+	if err != nil {
+		return err
 	}
 
 	for _, user := range users {
@@ -107,13 +112,4 @@ func userRevokeRow(output userOutput, row map[string]interface{}) {
 	}
 	row[headerRevoked] = revoked
 	row[headerDetails] = details
-}
-
-func (i revokeInputs) resolveUsers(ui terminal.UI, realmClient realm.Client, app realm.App) ([]realm.User, error) {
-	found, foundErr := i.findUsers(realmClient, app.GroupID, app.ID)
-	if foundErr != nil {
-		return nil, foundErr
-	}
-
-	return i.selectUsers(ui, found, "revoke")
 }

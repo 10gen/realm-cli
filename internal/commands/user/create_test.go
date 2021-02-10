@@ -185,7 +185,7 @@ func TestUserCreateFeedback(t *testing.T) {
 				"01:23:45 UTC INFO  Successfully created user",
 				"  ID                        Enabled  Email            Type  ",
 				"  ------------------------  -------  ---------------  ------",
-				fmt.Sprintf("  %s  yes      user@domain.com  normal\n", id),
+				fmt.Sprintf("  %s  true     user@domain.com  normal\n", id),
 			}, "\n"),
 		},
 		{
@@ -200,7 +200,7 @@ func TestUserCreateFeedback(t *testing.T) {
 				"01:23:45 UTC INFO  Successfully created api key",
 				"  ID                        Enabled  Name  API Key",
 				"  ------------------------  -------  ----  -------",
-				fmt.Sprintf("  %s  yes      name  key    \n", id),
+				fmt.Sprintf("  %s  true     name  key    \n", id),
 			}, "\n"),
 		},
 	} {
