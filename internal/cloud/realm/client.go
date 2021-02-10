@@ -23,8 +23,6 @@ type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
-	CreateAppService(groupID, appID string, service ServiceDescData) (ServiceDescData, error)
-
 	ListClusters(groupID, appID string) ([]PartialAtlasCluster, error)
 	ListDataSources(groupID, appID string) ([]PartialDataSource, error)
 

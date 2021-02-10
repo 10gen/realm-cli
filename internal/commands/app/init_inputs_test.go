@@ -11,11 +11,10 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
 	"github.com/Netflix/go-expect"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestAppInitInputsResolve(t *testing.T) {
-	t.Run("Should return an error if ran from a directory that already has a project", func(t *testing.T) {
+	t.Run("should return an error if ran from a directory that already has a project", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()
 
@@ -36,7 +35,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		test        func(t *testing.T, i initInputs)
 	}{
 		{
-			description: "With no flags set should prompt for just name and set realm.Location and deployment model to defaults",
+			description: "with no flags set should prompt for just name and set realm.Location and deployment model to defaults",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Name")
 				c.SendLine("test-app")
@@ -49,8 +48,8 @@ func TestAppInitInputsResolve(t *testing.T) {
 			},
 		},
 		{
-			description: "With a name flag set should prompt for nothing else and set realm.Location and deployment model to defaults",
-			inputs:      initInputs{Name: "test-app"},
+			description: "with a name flag set should prompt for nothing else and set realm.Location and deployment model to defaults",
+			inputs:      initInputs{newAppInputs{Name: "test-app"}},
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
@@ -59,12 +58,12 @@ func TestAppInitInputsResolve(t *testing.T) {
 			},
 		},
 		{
-			description: "With name realm.Location and deployment model flags set should prompt for nothing else",
-			inputs: initInputs{
+			description: "with name realm.Location and deployment model flags set should prompt for nothing else",
+			inputs: initInputs{newAppInputs{
 				Name:            "test-app",
 				DeploymentModel: realm.DeploymentModelLocal,
 				Location:        realm.LocationOregon,
-			},
+			}},
 			procedure: func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
@@ -94,37 +93,4 @@ func TestAppInitInputsResolve(t *testing.T) {
 			tc.test(t, tc.inputs)
 		})
 	}
-}
-
-func TestAppInitInputsResolveApp(t *testing.T) {
-	t.Run("Should do nothing if from is not set", func(t *testing.T) {
-		var i initInputs
-		f, err := i.resolveFrom(nil, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, from{}, f)
-	})
-
-	t.Run("Should return the app id and group id of specified app if from is set to app", func(t *testing.T) {
-		var appFilter realm.AppFilter
-		app := realm.App{
-			ID:          primitive.NewObjectID().Hex(),
-			GroupID:     primitive.NewObjectID().Hex(),
-			ClientAppID: "test-app-abcde",
-			Name:        "test-app",
-		}
-
-		client := mock.RealmClient{}
-		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			appFilter = filter
-			return []realm.App{app}, nil
-		}
-
-		i := initInputs{Project: app.GroupID, From: app.ClientAppID}
-
-		f, err := i.resolveFrom(nil, client)
-		assert.Nil(t, err)
-
-		assert.Equal(t, from{GroupID: app.GroupID, AppID: app.ID}, f)
-		assert.Equal(t, realm.AppFilter{GroupID: app.GroupID, App: app.ClientAppID}, appFilter)
-	})
 }

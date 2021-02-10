@@ -16,13 +16,13 @@ import (
 )
 
 func TestAppInitSetup(t *testing.T) {
-	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
+	t.Run("should construct a Realm client with the configured base url", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		cmd := &CommandInit{inputs: initInputs{
+		cmd := &CommandInit{inputs: initInputs{newAppInputs{
 			Name: "test-app",
-		}}
+		}}}
 		assert.Nil(t, cmd.realmClient)
 
 		assert.Nil(t, cmd.Setup(profile, nil))
@@ -31,15 +31,16 @@ func TestAppInitSetup(t *testing.T) {
 }
 
 func TestAppInitHandler(t *testing.T) {
-	t.Run("Should initialize an empty project when no from type is specified", func(t *testing.T) {
+	t.Run("should initialize an empty project when no from type is specified", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
-		cmd := &CommandInit{inputs: initInputs{
+		cmd := &CommandInit{inputs: initInputs{newAppInputs{
 			Name:            "test-app",
+			Project:         "test-project",
 			DeploymentModel: realm.DeploymentModelLocal,
 			Location:        realm.LocationSydney,
-		}}
+		}}}
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
@@ -56,7 +57,7 @@ func TestAppInitHandler(t *testing.T) {
 		}}}, config)
 	})
 
-	t.Run("Should initialze a templated app when from type is specified to app", func(t *testing.T) {
+	t.Run("should initialze a templated app when from type is specified to app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
@@ -82,13 +83,16 @@ func TestAppInitHandler(t *testing.T) {
 		}
 
 		cmd := &CommandInit{
-			inputs:      initInputs{From: "test"},
+			inputs: initInputs{newAppInputs{
+				From:    "test",
+				Project: "test-project",
+			}},
 			realmClient: client,
 		}
 
 		assert.Nil(t, cmd.Handler(profile, nil))
 
-		t.Run("Should have the expected contents in the app config file", func(t *testing.T) {
+		t.Run("should have the expected contents in the app config file", func(t *testing.T) {
 			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
 			assert.Nil(t, readErr)
 
@@ -103,7 +107,7 @@ func TestAppInitHandler(t *testing.T) {
 		})
 
 		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("Should have the expected contents in the auth custom user data file", func(t *testing.T) {
+		// 		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
 		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
 		// 			assert.Nil(t, err)
 		// 			assert.Equal(t, `{
@@ -113,7 +117,7 @@ func TestAppInitHandler(t *testing.T) {
 		// 		})
 
 		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("Should have the expected contents in the auth providers file", func(t *testing.T) {
+		// 		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
 		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileProviders.String()))
 		// 			assert.Nil(t, err)
 		// 			assert.Equal(t, `{
@@ -127,7 +131,7 @@ func TestAppInitHandler(t *testing.T) {
 		// 		})
 
 		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("Should have the expected contents in the sync config file", func(t *testing.T) {
+		// 		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
 		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
 		// 			assert.Nil(t, err)
 		// 			assert.Equal(t, `{
@@ -144,7 +148,7 @@ func TestAppInitHandler(t *testing.T) {
 }
 
 func TestAppInitFeedback(t *testing.T) {
-	t.Run("Feedback should print a message that app initialization was successful", func(t *testing.T) {
+	t.Run("feedback should print a message that app initialization was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		cmd := &CommandInit{}
