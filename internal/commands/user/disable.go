@@ -47,16 +47,12 @@ func (cmd *CommandDisable) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	resolved, resolvedErr := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
-	if resolvedErr != nil {
-		return resolvedErr
+	users, userErr := cmd.inputs.resolveUsers(ui, cmd.realmClient, app)
+	if userErr != nil {
+		return userErr
 	}
 
-	selected, selectedErr := cmd.inputs.selectUsers(ui, resolved, "disable")
-	if selectedErr != nil {
-		return selectedErr
-	}
-	for _, user := range selected {
+	for _, user := range users {
 		err := cmd.realmClient.DisableUser(app.GroupID, app.ID, user.ID)
 		cmd.outputs = append(cmd.outputs, userOutput{user, err})
 	}
@@ -100,4 +96,13 @@ func userDisableRow(output userOutput, row map[string]interface{}) {
 	}
 	row[headerEnabled] = enabled
 	row[headerDetails] = details
+}
+
+func (i disableInputs) resolveUsers(ui terminal.UI, realmClient realm.Client, app realm.App) ([]realm.User, error) {
+	found, foundErr := i.findUsers(realmClient, app.GroupID, app.ID)
+	if foundErr != nil {
+		return nil, foundErr
+	}
+
+	return i.selectUsers(ui, found, "disable")
 }
