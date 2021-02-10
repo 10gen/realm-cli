@@ -26,7 +26,7 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *deleteInputs) resolveDelete(allSecrets []realm.Secret, ui terminal.UI) ([]realm.Secret, error) {
+func (i *deleteInputs) resolveSecrets(ui terminal.UI, allSecrets []realm.Secret) ([]realm.Secret, error) {
 	var toDelete []realm.Secret
 
 	if len(i.secrets) == 0 {
@@ -70,10 +70,10 @@ func (i *deleteInputs) resolveDelete(allSecrets []realm.Secret, ui terminal.UI) 
 		}
 
 		for i, arg := range i.secrets {
-			if _, ok := ids[arg]; ok {
-				toDelete[i] = ids[arg]
-			} else if _, ok := names[arg]; ok {
+			if _, ok := names[arg]; ok {
 				toDelete[i] = names[arg]
+			} else if _, ok := ids[arg]; ok {
+				toDelete[i] = ids[arg]
 			}
 		}
 

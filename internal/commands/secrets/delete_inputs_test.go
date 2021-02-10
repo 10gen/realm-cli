@@ -45,7 +45,7 @@ func TestResolveDeleteInputs(t *testing.T) {
 				secrets: tc.selectedSecrets,
 			}
 
-			secretsResult, err := inputs.resolveDelete(secrets, nil)
+			secretsResult, err := inputs.resolveSecrets( nil, secrets)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedOutput, secretsResult)
@@ -86,7 +86,7 @@ func TestResolveDeleteInputs(t *testing.T) {
 				console.ExpectEOF()
 			}()
 
-			secretsResult, err := inputs.resolveDelete(secrets, ui)
+			secretsResult, err := inputs.resolveSecrets(ui, secrets)
 
 			console.Tty().Close()
 			<-doneCh

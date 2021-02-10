@@ -41,7 +41,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return secretListErr
 	}
 
-	toDelete, resolveErr := cmd.inputs.resolveDelete(secretList, ui)
+	toDelete, resolveErr := cmd.inputs.resolveSecrets(ui, secretList)
 	if resolveErr != nil {
 		return resolveErr
 	}
@@ -68,7 +68,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return ui.Print(logs)
 }
 
-func secretDeleteHeader()[]string {
+func secretDeleteHeader() []string {
 	return []string{headerDeleted, headerDetails}
 }
 
