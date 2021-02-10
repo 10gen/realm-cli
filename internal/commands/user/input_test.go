@@ -162,7 +162,7 @@ func TestMultiUsersInputsFind(t *testing.T) {
 			},
 
 			{
-				description:   "should return empty Users slice with no found users or input users",
+				description:   "should return an empty users slice with no found users or input users",
 				expectedUsers: nil,
 			},
 		} {
@@ -211,7 +211,7 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 		},
 	}
 
-	t.Run("should prompt for users", func(t *testing.T) {
+	t.Run("when selecting users", func(t *testing.T) {
 		for _, tc := range []struct {
 			description   string
 			inputs        multiUserInputs
@@ -220,7 +220,7 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 			expectedUsers []realm.User
 		}{
 			{
-				description: "with no input set",
+				description: "should prompt with no input set",
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Which user(s) would you like to delete?")
 					c.Send("user-1")
@@ -231,7 +231,7 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 				expectedUsers: []realm.User{testUsers[0]},
 			},
 			{
-				description: "unless no users are found",
+				description: "should not prompt if no users are found",
 				procedure: func(c *expect.Console) {
 					console, _ := c.ExpectEOF()
 					assert.Equal(t, "", console)
@@ -239,7 +239,7 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 				expectedUsers: nil,
 			},
 			{
-				description: "unless users inputs are resolved",
+				description: "should not prompt if user inputs are provided",
 				procedure: func(c *expect.Console) {
 					console, _ := c.ExpectEOF()
 					assert.Equal(t, "", console)
