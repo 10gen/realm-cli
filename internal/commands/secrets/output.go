@@ -11,8 +11,6 @@ const (
 	headerDeleted = "Deleted"
 	headerDetails = "Details"
 
-	commandDelete = "DELETE"
-
 	secretDeleteMessage = "Deleted Secrets"
 )
 

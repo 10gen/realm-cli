@@ -10,26 +10,31 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandDelete for the secrets delete command
 type CommandDelete struct {
 	inputs      deleteInputs
 	realmClient realm.Client
 	outputs     secretOutputs
 }
 
+// Inputs function for the secrets delete command
 func (cmd *CommandDelete) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
+// Flags function for the secrets delete command
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsage)
 }
 
+// Setup function for the secrets delete command
 func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
 	cmd.realmClient = profile.RealmAuthClient()
 	return nil
 }
 
+// Handler function for the secrets delete command
 func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
 	if appErr != nil {
@@ -54,6 +59,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
+// Feedback function for the secrets delete command
 func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	if len(cmd.inputs.secrets) == 0 {
 		return ui.Print(terminal.NewTextLog("No secrets to delete"))
@@ -73,7 +79,7 @@ func secretDeleteHeader() []string {
 }
 
 func secretDeleteRow(output secretOutput, row map[string]interface{}) {
-	deleted := false
+	deleted := falseg
 	if output.err != nil {
 		row[headerDetails] = output.err.Error()
 	} else {
