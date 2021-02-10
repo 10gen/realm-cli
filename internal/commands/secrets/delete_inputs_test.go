@@ -45,7 +45,7 @@ func TestResolveDeleteInputs(t *testing.T) {
 				secrets: tc.selectedSecrets,
 			}
 
-			secretsResult, err := inputs.resolveSecrets( nil, secrets)
+			secretsResult, err := inputs.resolveSecrets(nil, secrets)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedOutput, secretsResult)

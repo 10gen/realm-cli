@@ -3,11 +3,12 @@ package secrets
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-	"strings"
-	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -262,11 +263,11 @@ func TestSecretFeedback(t *testing.T) {
 
 func TestSecretDeleteModifiers(t *testing.T) {
 	for _, tc := range []struct {
-		description string
-		outputInput secretOutput
-		rowInput map[string]interface{}
+		description    string
+		outputInput    secretOutput
+		rowInput       map[string]interface{}
 		expectedOutput map[string]interface{}
-	} {
+	}{
 		{
 			description: "should set the details to nothing and deleted to true if successful",
 			outputInput: secretOutput{
@@ -274,12 +275,12 @@ func TestSecretDeleteModifiers(t *testing.T) {
 				nil,
 			},
 			rowInput: map[string]interface{}{
-				headerID: "id1",
+				headerID:   "id1",
 				headerName: "name1",
 			},
 			expectedOutput: map[string]interface{}{
-				headerID: "id1",
-				headerName: "name1",
+				headerID:      "id1",
+				headerName:    "name1",
 				headerDeleted: true,
 			},
 		},
@@ -290,18 +291,18 @@ func TestSecretDeleteModifiers(t *testing.T) {
 				errors.New("new error"),
 			},
 			rowInput: map[string]interface{}{
-				headerID: "id1",
+				headerID:   "id1",
 				headerName: "name1",
 			},
 			expectedOutput: map[string]interface{}{
-				headerID: "id1",
-				headerName: "name1",
+				headerID:      "id1",
+				headerName:    "name1",
 				headerDetails: "new error",
 				headerDeleted: false,
 			},
 		},
 	} {
-		t.Run(tc.description, func(t *testing.T){
+		t.Run(tc.description, func(t *testing.T) {
 			secretDeleteRow(tc.outputInput, tc.rowInput)
 			assert.Equal(t, tc.rowInput, tc.expectedOutput)
 		})

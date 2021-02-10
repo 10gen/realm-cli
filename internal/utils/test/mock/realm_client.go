@@ -201,6 +201,7 @@ func (rc RealmClient) CreateSecret(groupID, appID, name, value string) (realm.Se
 	}
 	return rc.Client.CreateSecret(groupID, appID, name, value)
 }
+
 // DeleteSecret calls the mocked DeleteSecret implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation
 // NOTE: this may panic if the underlying realm.Client is left undefined

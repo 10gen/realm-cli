@@ -79,7 +79,7 @@ func secretDeleteHeader() []string {
 }
 
 func secretDeleteRow(output secretOutput, row map[string]interface{}) {
-	deleted := falseg
+	deleted := false
 	if output.err != nil {
 		row[headerDetails] = output.err.Error()
 	} else {
