@@ -36,15 +36,10 @@ type FileHeader struct {
 }
 
 func newArchiveReader(path string, file *os.File) (ArchiveReader, error) {
-	fileInfo, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-
 	ext := strings.ToLower(filepath.Ext(path))
 
 	if ext == extZip {
-		return newZipReader(file, fileInfo.Size())
+		return newZipReader(file)
 	}
 
 	if ext == extTar {
@@ -77,8 +72,13 @@ type zipReader struct {
 	currOpenFile io.ReadCloser
 }
 
-func newZipReader(r io.ReaderAt, size int64) (ArchiveReader, error) {
-	zr, err := zip.NewReader(r, size)
+func newZipReader(f *os.File) (ArchiveReader, error) {
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	zr, err := zip.NewReader(f, fi.Size())
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,11 @@
+{
+    "id": "6022d4a55c394c1a232a9355",
+    "name": "mongodb-atlas",
+    "type": "mongodb-atlas",
+    "config": {
+        "clusterName": "eggcorn",
+        "readPreference": "primary",
+        "wireProtocolEnabled": false
+    },
+    "version": 1
+}
