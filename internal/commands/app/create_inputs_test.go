@@ -67,8 +67,8 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Nil(t, inputs.Resolve(profile, nil))
 
 		assert.Equal(t, "test-app", inputs.Name)
-		assert.Equal(t, flagDeploymentModelDefault, inputs.DeploymentModel)
-		assert.Equal(t, flagLocationDefault, inputs.Location)
+		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
+		assert.Equal(t, realm.LocationOregon, inputs.Location)
 	})
 }
 
