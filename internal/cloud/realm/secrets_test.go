@@ -1,6 +1,7 @@
 package realm_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -58,7 +59,7 @@ func TestSecrets(t *testing.T) {
 			t.Run("and return an error if we can't find the secret", func(t *testing.T) {
 				err := client.DeleteSecret(groupID, testApp.ID, secret.ID)
 				assert.NotNil(t, err)
-				assert.Equal(t, err.Error(), "secret not found: 'should not exist'")
+				assert.Equal(t, err.Error(), fmt.Sprintf("secret not found: '%s'", secret.ID))
 			})
 		})
 	})
