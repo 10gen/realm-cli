@@ -69,14 +69,14 @@ func (c *client) CreateSecret(groupID, appID, name, value string) (Secret, error
 }
 
 func (c *client) DeleteSecret(groupID, appID, secretID string) error {
-	res, resErr := c.do(
+	res, err := c.do(
 		http.MethodDelete,
 		fmt.Sprintf(secretPathPattern, groupID, appID, secretID),
 		api.RequestOptions{},
 	)
 
-	if resErr != nil {
-		return resErr
+	if err != nil {
+		return err
 	}
 
 	if res.StatusCode != http.StatusNoContent {

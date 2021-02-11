@@ -158,7 +158,7 @@ Realm app will be exported as well.`,
 			},
 			cli.CommandDefinition{
 				Use:         "delete",
-				Display:     "secret delete",
+				Display:     "secrets delete",
 				Description: "Delete a secret from your Realm app",
 				Help:        "Removes one or many secrets from your Realm app depending on how many you specify.",
 				Command:     &secrets.CommandDelete{},

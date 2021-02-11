@@ -36,19 +36,19 @@ func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler function for the secrets delete command
 func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
 
-	secretList, secretListErr := cmd.realmClient.Secrets(app.GroupID, app.ID)
-	if secretListErr != nil {
-		return secretListErr
+	secretList, err := cmd.realmClient.Secrets(app.GroupID, app.ID)
+	if err != nil {
+		return err
 	}
 
-	toDelete, resolveErr := cmd.inputs.resolveSecrets(ui, secretList)
-	if resolveErr != nil {
-		return resolveErr
+	toDelete, err := cmd.inputs.resolveSecrets(ui, secretList)
+	if err != nil {
+		return err
 	}
 
 	for _, secret := range toDelete {
