@@ -15,26 +15,42 @@ func TestAppLoadFromDirectory(t *testing.T) {
 
 		u.So(t, app["name"], gc.ShouldEqual, "full-app")
 		u.So(t, app["secrets"], gc.ShouldNotBeEmpty)
-		u.So(t, app["values"], gc.ShouldHaveLength, 2)
-		for _, value := range app["values"].([]interface{}) {
-			u.So(t, value.(map[string]interface{}), gc.ShouldNotBeEmpty)
+
+		valuesList, ok := app["values"].([]interface{})
+		u.So(t, valuesList, gc.ShouldHaveLength, 2)
+		u.So(t, ok, gc.ShouldBeTrue)
+		for _, value := range valuesList {
+			valueMap, ok := value.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
+			u.So(t, valueMap, gc.ShouldNotBeEmpty)
 		}
 
-		u.So(t, app["auth_providers"], gc.ShouldHaveLength, 2)
-		for _, provider := range app["auth_providers"].([]interface{}) {
-			u.So(t, provider.(map[string]interface{}), gc.ShouldNotBeEmpty)
+		authProvidersList, ok := app["auth_providers"].([]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(t, authProvidersList, gc.ShouldHaveLength, 2)
+		for _, provider := range authProvidersList {
+			providerMap, ok := provider.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
+			u.So(t, providerMap, gc.ShouldNotBeEmpty)
 		}
 
-		u.So(t, app["functions"], gc.ShouldHaveLength, 2)
-		for _, fn := range app["functions"].([]interface{}) {
-			fnMap := fn.(map[string]interface{})
+		functionsList, ok := app["functions"].([]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(t, functionsList, gc.ShouldHaveLength, 2)
+		for _, fn := range functionsList {
+			fnMap, ok := fn.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
 			u.So(t, fnMap["config"], gc.ShouldNotBeEmpty)
 			u.So(t, fnMap["source"], gc.ShouldNotBeEmpty)
 		}
 
-		u.So(t, app["triggers"], gc.ShouldHaveLength, 2)
-		for _, trgger := range app["triggers"].([]interface{}) {
-			u.So(t, trgger.(map[string]interface{}), gc.ShouldNotBeEmpty)
+		triggersList, ok := app["triggers"].([]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(t, triggersList, gc.ShouldHaveLength, 2)
+		for _, triggr := range triggersList {
+			triggerMap, ok := triggr.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
+			u.So(t, triggerMap, gc.ShouldNotBeEmpty)
 		}
 
 		gqlServices, ok := app["graphql"].(map[string]interface{})
@@ -45,28 +61,35 @@ func TestAppLoadFromDirectory(t *testing.T) {
 
 		useNatPluralization, ok := c["use_natural_pluralization"]
 		u.So(t, ok, gc.ShouldBeTrue)
-		u.So(t, useNatPluralization, gc.ShouldEqual, true)
+		u.So(t, useNatPluralization, gc.ShouldBeTrue)
 
-		customResolvers, ok := gqlServices["custom_resolvers"].([]interface{})
+		customResolversList, ok := gqlServices["custom_resolvers"].([]interface{})
 		u.So(t, ok, gc.ShouldBeTrue)
-		u.So(t, customResolvers, gc.ShouldHaveLength, 1)
-
-		for _, customResolver := range customResolvers {
-			customResolverMap := customResolver.(map[string]interface{})
+		u.So(t, customResolversList, gc.ShouldHaveLength, 1)
+		for _, customResolver := range customResolversList {
+			customResolverMap, ok := customResolver.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
 			u.So(t, customResolverMap["field_name"], gc.ShouldNotBeEmpty)
 		}
 
-		u.So(t, app["services"], gc.ShouldHaveLength, 3)
-		for _, svc := range app["services"].([]interface{}) {
-			svcMap := svc.(map[string]interface{})
+		servicesList, ok := app["services"].([]interface{})
+		u.So(t, ok, gc.ShouldBeTrue)
+		u.So(t, servicesList, gc.ShouldHaveLength, 3)
+		for _, svc := range servicesList {
+			svcMap, ok := svc.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
+
 			u.So(t, svcMap["config"], gc.ShouldNotBeEmpty)
 			u.So(t, svcMap["rules"], gc.ShouldNotBeEmpty)
 			u.So(t, svcMap["incoming_webhooks"], gc.ShouldNotBeEmpty)
 		}
 
-		u.So(t, app["environments"], gc.ShouldHaveLength, 5)
-		for _, env := range app["environments"].(map[string]interface{}) {
-			envMap := env.(map[string]interface{})
+		envsMap, ok := app["environments"].(map[string]interface{})
+		u.So(t, envsMap, gc.ShouldHaveLength, 5)
+		u.So(t, ok, gc.ShouldBeTrue)
+		for _, env := range envsMap {
+			envMap, ok := env.(map[string]interface{})
+			u.So(t, ok, gc.ShouldBeTrue)
 			u.So(t, envMap["values"], gc.ShouldNotBeEmpty)
 
 			values, ok := envMap["values"].(map[string]interface{})

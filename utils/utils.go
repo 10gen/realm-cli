@@ -261,7 +261,7 @@ func unmarshalJSONFiles(path string, ignoreDirErr bool) ([]interface{}, error) {
 func unmarshalJSONFilesWithFilenames(path string) (map[string]interface{}, error) {
 	fileInfos, err := ioutil.ReadDir(path)
 	if err != nil {
-		return map[string]interface{}{}, err
+		return nil, err
 	}
 	files := make(map[string]interface{}, len(fileInfos))
 
@@ -273,7 +273,7 @@ func unmarshalJSONFilesWithFilenames(path string) (map[string]interface{}, error
 
 		var f interface{}
 		if err := readAndUnmarshalJSONInto(jsonFilePath, &f); err != nil {
-			return map[string]interface{}{}, err
+			return nil, err
 		}
 
 		files[fileInfo.Name()] = f
