@@ -40,7 +40,7 @@ func (cmd *CommandInit) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI) error {
-	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient, cmd.atlasClient)
+	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient)
 	if fromErr != nil {
 		return fromErr
 	}

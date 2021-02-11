@@ -2,7 +2,6 @@ package app
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 )
@@ -47,25 +46,15 @@ type newAppInputs struct {
 	Location        realm.Location
 }
 
-func (i *newAppInputs) resolveFrom(ui terminal.UI, rc realm.Client, ac atlas.Client) (from, error) {
+func (i *newAppInputs) resolveFrom(ui terminal.UI, rc realm.Client) (from, error) {
 	var f from
-
 	if i.From != "" {
-		if i.Project == "" {
-			groupID, groupErr := cli.ResolveGroupID(ui, ac)
-			if groupErr != nil {
-				return from{}, groupErr
-			}
-			i.Project = groupID
-		}
-
-		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{GroupID: i.Project, App: i.From})
+		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.From})
 		if err != nil {
 			return from{}, err
 		}
 		f.GroupID = app.GroupID
 		f.AppID = app.ID
 	}
-
 	return f, nil
 }

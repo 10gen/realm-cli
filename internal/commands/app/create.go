@@ -54,30 +54,32 @@ func (cmd *CommandCreate) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient, cmd.atlasClient)
-	if fromErr != nil {
-		return fromErr
+	from, err := cmd.inputs.resolveFrom(ui, cmd.realmClient)
+	if err != nil {
+		return err
 	}
 
-	var projectID string
+	var groupID = cmd.inputs.Project
 	if from.IsZero() {
-		var projectIDErr error
-		projectID, projectIDErr = cmd.inputs.resolveProject(ui, cmd.atlasClient)
-		if projectIDErr != nil {
-			return projectIDErr
+		if groupID == "" {
+			id, err := cli.ResolveGroupID(ui, cmd.atlasClient)
+			if err != nil {
+				return err
+			}
+			groupID = id
 		}
 	} else {
-		projectID = from.GroupID
+		groupID = from.GroupID
 	}
 
-	appName, appNameErr := cmd.inputs.resolveAppName(ui, cmd.realmClient, from)
-	if appNameErr != nil {
-		return appNameErr
+	err = cmd.inputs.resolveName(ui, cmd.realmClient, from)
+	if err != nil {
+		return err
 	}
 
-	dir, dirErr := cmd.inputs.resolveDirectory(profile.WorkingDirectory, appName)
-	if dirErr != nil {
-		return dirErr
+	dir, err := cmd.inputs.resolveDirectory(profile.WorkingDirectory)
+	if err != nil {
+		return err
 	}
 
 	// TODO(REALMC-8134): Implement dry-run for app create command
@@ -85,13 +87,13 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	if from.IsZero() {
 		localApp := local.NewApp(
 			dir,
-			appName,
+			cmd.inputs.Name,
 			cmd.inputs.Location,
 			cmd.inputs.DeploymentModel,
 		)
-		configErr := localApp.WriteConfig()
-		if configErr != nil {
-			return configErr
+		err := localApp.WriteConfig()
+		if err != nil {
+			return err
 		}
 	} else {
 		_, zipPkg, exportErr := cmd.realmClient.Export(
@@ -112,7 +114,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return loadedAppErr
 	}
 
-	newApp, newAppErr := cmd.realmClient.CreateApp(projectID, appName, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
+	newApp, newAppErr := cmd.realmClient.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
 	if newAppErr != nil {
 		return newAppErr
 	}
@@ -153,13 +155,13 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	// 	return writeErr
 	// }
 
-	importErr := cmd.realmClient.Import(
+	err = cmd.realmClient.Import(
 		newApp.GroupID,
 		newApp.ID,
 		loadedApp,
 	)
-	if importErr != nil {
-		return importErr
+	if err != nil {
+		return err
 	}
 
 	cmd.outputs = createOutputs{
@@ -175,7 +177,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 // Feedback is the command feedback
 func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	rows := make([]map[string]interface{}, 4)
+	rows := make([]map[string]interface{}, 0, 4)
 	rows = append(rows, map[string]interface{}{
 		"Info":    "Client App ID",
 		"Details": cmd.outputs.clientAppID,
@@ -192,8 +194,7 @@ func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
 		"Info":    "Check out your app",
 		"Details": cmd.outputs.followUpCmd,
 	})
-	log := terminal.NewTableLog("Successfully created app",
+	return ui.Print(terminal.NewTableLog("Successfully created app",
 		[]string{"Info", "Details"},
-		rows...)
-	return ui.Print(log)
+		rows...))
 }

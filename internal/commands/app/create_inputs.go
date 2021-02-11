@@ -6,7 +6,6 @@ import (
 	"path"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -57,50 +56,39 @@ func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveAppName(ui terminal.UI, client realm.Client, f from) (string, error) {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) error {
 	if i.Name == "" {
 		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: f.GroupID, App: f.AppID})
 		if err != nil {
-			return "", err
+			return err
 		}
-		return app.Name, nil
+		i.Name = app.Name
 	}
-	return i.Name, nil
+	return nil
 }
 
-func (i *createInputs) resolveProject(ui terminal.UI, client atlas.Client) (string, error) {
-	if i.Project == "" {
-		groupID, groupErr := cli.ResolveGroupID(ui, client)
-		if groupErr != nil {
-			return "", groupErr
-		}
-		i.Project = groupID
-	}
-	return i.Project, nil
-}
-
-func (i *createInputs) resolveDirectory(wd, appName string) (string, error) {
+func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	dir := i.Directory
 	if dir == "" {
-		dir = appName
+		dir = i.Name
 	}
 	fullPath := path.Join(wd, dir)
-	fi, statErr := os.Stat(fullPath)
-	if statErr != nil && !os.IsNotExist(statErr) {
-		return "", statErr
-	}
-	if fi != nil {
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			_, appOK, appErr := local.FindApp(fullPath)
-			if appErr != nil {
-				return "", appErr
-			}
-			if appOK {
-				return "", fmt.Errorf("A Realm app already exists at %s", fullPath)
-			}
+	fi, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
 			return fullPath, nil
 		}
+		return "", err
+	}
+	if !fi.Mode().IsDir() {
+		return fullPath, nil
+	}
+	_, appOK, appErr := local.FindApp(fullPath)
+	if appErr != nil {
+		return "", appErr
+	}
+	if appOK {
+		return "", fmt.Errorf("%s is inside or is a Realm app directory", dir)
 	}
 	return fullPath, nil
 }

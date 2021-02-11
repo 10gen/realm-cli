@@ -83,10 +83,7 @@ func TestAppInitHandler(t *testing.T) {
 		}
 
 		cmd := &CommandInit{
-			inputs: initInputs{newAppInputs{
-				From:    "test",
-				Project: "test-project",
-			}},
+			inputs:      initInputs{newAppInputs{From: "test"}},
 			realmClient: client,
 		}
 
