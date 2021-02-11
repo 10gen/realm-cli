@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -159,11 +160,32 @@ func TestAppCreateFeedback(t *testing.T) {
 	t.Run("feedback should print a message that app creation was successful", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
-		cmd := &CommandCreate{}
+		cmd := &CommandCreate{
+			outputs: createOutputs{
+				clientAppID: "test-client-id",
+				dir:         "/file/path/to/test-app",
+				uiURL:       "https://realm.mongodb.com/groups/123/apps/123/dashboard",
+				followUpCmd: "cd ./test-app && realm-cli app describe",
+			},
+		}
 
 		err := cmd.Feedback(nil, ui)
 		assert.Nil(t, err)
 
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully created app\n", out.String())
+		expectedContent := strings.Join(
+			[]string{
+				"01:23:45 UTC INFO  Successfully created app",
+				"  Info                Details                                                ",
+				"  ------------------  -------------------------------------------------------",
+				"  Client App ID       test-client-id                                         ",
+				"  Realm Directory     /file/path/to/test-app                                 ",
+				"  Realm UI            https://realm.mongodb.com/groups/123/apps/123/dashboard",
+				"  Check out your app  cd ./test-app && realm-cli app describe                ",
+				"",
+			},
+			"\n",
+		)
+
+		assert.Equal(t, expectedContent, out.String())
 	})
 }

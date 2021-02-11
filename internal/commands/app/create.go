@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -10,9 +12,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
+type createOutputs struct {
+	clientAppID string
+	dir         string
+	uiURL       string
+	followUpCmd string
+}
+
 // CommandCreate is the `app create` command
 type CommandCreate struct {
 	inputs      createInputs
+	outputs     createOutputs
 	atlasClient atlas.Client
 	realmClient realm.Client
 }
@@ -152,11 +162,38 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return importErr
 	}
 
+	cmd.outputs = createOutputs{
+		clientAppID: newApp.ClientAppID,
+		dir:         dir,
+		uiURL:       fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID),
+		followUpCmd: fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
+	}
+
 	return nil
 
 }
 
 // Feedback is the command feedback
 func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	return ui.Print(terminal.NewTextLog("Successfully created app"))
+	rows := make([]map[string]interface{}, 4)
+	rows = append(rows, map[string]interface{}{
+		"Info":    "Client App ID",
+		"Details": cmd.outputs.clientAppID,
+	})
+	rows = append(rows, map[string]interface{}{
+		"Info":    "Realm Directory",
+		"Details": cmd.outputs.dir,
+	})
+	rows = append(rows, map[string]interface{}{
+		"Info":    "Realm UI",
+		"Details": cmd.outputs.uiURL,
+	})
+	rows = append(rows, map[string]interface{}{
+		"Info":    "Check out your app",
+		"Details": cmd.outputs.followUpCmd,
+	})
+	log := terminal.NewTableLog("Successfully created app",
+		[]string{"Info", "Details"},
+		rows...)
+	return ui.Print(log)
 }
