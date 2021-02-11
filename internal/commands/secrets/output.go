@@ -10,8 +10,6 @@ const (
 	headerName    = "Name"
 	headerDeleted = "Deleted"
 	headerDetails = "Details"
-
-	secretDeleteMessage = "Deleted Secrets"
 )
 
 type secretOutputs []secretOutput

@@ -67,7 +67,7 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 
 	sort.SliceStable(cmd.outputs, secretOutputComparerBySuccess(cmd.outputs))
 	logs := terminal.NewTableLog(
-		secretDeleteMessage,
+		"Deleted Secrets",
 		secretHeaders(headerDeleted, headerDetails),
 		secretTableRows(cmd.outputs, secretDeleteRow)...,
 	)
