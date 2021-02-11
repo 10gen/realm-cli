@@ -220,7 +220,6 @@ func appDataV1(configVersion realm.AppConfigVersion, app realm.App) local.AppDat
 			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
 			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
 		},
 		AuthProviders: []map[string]interface{}{
@@ -273,7 +272,6 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
 			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
 		},
 		Auth: &local.AuthStructure{
