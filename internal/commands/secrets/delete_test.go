@@ -38,14 +38,9 @@ func TestSecretHandler(t *testing.T) {
 		expectedErr    error
 	}{
 		{
-			description: "should return successful outputs for proper secret inputs",
-			testInput:   []string{"secret_id_1"},
-			expectedOutput: []secretOutput{
-				{
-					secrets[1],
-					nil,
-				},
-			},
+			description:    "should return successful outputs for proper secret inputs",
+			testInput:      []string{"secret_id_1"},
+			expectedOutput: []secretOutput{{secrets[1], nil}},
 		},
 		{
 			description: "should still output the errors for deletes on individual secrets",
@@ -114,12 +109,6 @@ func TestSecretHandler(t *testing.T) {
 	}
 
 	t.Run("should return an error", func(t *testing.T) {
-		successfulAppFn := func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{app}, nil
-		}
-		successfulSecretsFn := func(groupID, appID string) ([]realm.Secret, error) {
-			return secrets, nil
-		}
 		for _, tc := range []struct {
 			description string
 			clientSetup func() realm.Client
@@ -129,7 +118,9 @@ func TestSecretHandler(t *testing.T) {
 				description: "if there is an issue with finding secrets",
 				clientSetup: func() realm.Client {
 					return mock.RealmClient{
-						FindAppsFn: successfulAppFn,
+						FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+							return []realm.App{app}, nil
+						},
 						SecretsFn: func(groupID, appID string) ([]realm.Secret, error) {
 							return nil, errors.New("Something happened with secrets")
 						},
@@ -144,7 +135,9 @@ func TestSecretHandler(t *testing.T) {
 						FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
 							return nil, errors.New("Something went wrong with the app")
 						},
-						SecretsFn: successfulSecretsFn,
+						SecretsFn: func(groupID, appID string) ([]realm.Secret, error) {
+							return secrets, nil
+						},
 					}
 				},
 				expectedErr: errors.New("Something went wrong with the app"),
@@ -152,11 +145,7 @@ func TestSecretHandler(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				realmClient := tc.clientSetup()
-
-				cmd := &CommandDelete{
-					realmClient: realmClient,
-				}
-
+				cmd := &CommandDelete{realmClient: realmClient}
 				err := cmd.Handler(nil, nil)
 				assert.Equal(t, tc.expectedErr, err)
 			})

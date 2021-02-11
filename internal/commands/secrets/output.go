@@ -21,7 +21,6 @@ type secretOutput struct {
 	err    error
 }
 
-type secretTableHeaderModifier func() []string
 type secretTableRowModifier func(secretOutput, map[string]interface{})
 
 func secretOutputComparerBySuccess(outputs secretOutputs) func(i, j int) bool {
@@ -30,8 +29,8 @@ func secretOutputComparerBySuccess(outputs secretOutputs) func(i, j int) bool {
 	}
 }
 
-func secretHeaders(modifier secretTableHeaderModifier) []string {
-	return append([]string{headerID, headerName}, modifier()...)
+func secretHeaders(additionalHeaders ...string) []string {
+	return append([]string{headerID, headerName}, additionalHeaders...)
 }
 
 func secretTableRows(outputs secretOutputs, modifier secretTableRowModifier) []map[string]interface{} {

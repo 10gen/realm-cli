@@ -26,42 +26,10 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
+// If there are inputs then use , then
 func (i *deleteInputs) resolveSecrets(ui terminal.UI, allSecrets []realm.Secret) ([]realm.Secret, error) {
-	var toDelete []realm.Secret
-
-	if len(i.secrets) == 0 {
-
-		selectableSecrets := map[string]realm.Secret{}
-		selectableSecretOptions := make([]string, len(allSecrets))
-		for i, secret := range allSecrets {
-			option := displaySecretOption(secret)
-			selectableSecretOptions[i] = option
-			selectableSecrets[option] = secret
-		}
-		var selectedSecrets []string
-		askErr := ui.AskOne(
-			&selectedSecrets,
-			&survey.MultiSelect{
-				Message: "Which secret(s) would you like to delete?",
-				Options: selectableSecretOptions,
-			},
-		)
-
-		if askErr != nil {
-			return nil, askErr
-		}
-
-		toDelete = make([]realm.Secret, len(selectedSecrets))
-
-		for i, secret := range selectedSecrets {
-			s := selectableSecrets[secret]
-			toDelete[i] = s
-		}
-
-	} else {
-
-		toDelete = make([]realm.Secret, len(i.secrets))
-
+	if len(i.secrets) > 0 {
+		resolvedSecrets := make([]realm.Secret, len(i.secrets))
 		ids := make(map[string]realm.Secret, len(allSecrets))
 		names := make(map[string]realm.Secret, len(allSecrets))
 		for _, secret := range allSecrets {
@@ -70,14 +38,37 @@ func (i *deleteInputs) resolveSecrets(ui terminal.UI, allSecrets []realm.Secret)
 		}
 
 		for i, arg := range i.secrets {
-			if _, ok := names[arg]; ok {
-				toDelete[i] = names[arg]
-			} else if _, ok := ids[arg]; ok {
-				toDelete[i] = ids[arg]
+			if secret, ok := names[arg]; ok {
+				resolvedSecrets[i] = secret
+			} else if secret, ok := ids[arg]; ok {
+				resolvedSecrets[i] = secret
 			}
 		}
-
+		return resolvedSecrets, nil
 	}
 
-	return toDelete, nil
+	selectableSecrets := map[string]realm.Secret{}
+	selectableSecretOptions := make([]string, len(allSecrets))
+	for i, secret := range allSecrets {
+		option := displaySecretOption(secret)
+		selectableSecretOptions[i] = option
+		selectableSecrets[option] = secret
+	}
+	var selectedSecrets []string
+	if err := ui.AskOne(
+		&selectedSecrets,
+		&survey.MultiSelect{
+			Message: "Which secret(s) would you like to delete?",
+			Options: selectableSecretOptions,
+		},
+	); err != nil {
+		return nil, err
+	}
+
+	resolvedSecrets := make([]realm.Secret, len(selectedSecrets))
+	for i, secret := range selectedSecrets {
+		s := selectableSecrets[secret]
+		resolvedSecrets[i] = s
+	}
+	return resolvedSecrets, nil
 }

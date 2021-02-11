@@ -40,7 +40,7 @@ func TestResolveDeleteInputs(t *testing.T) {
 			expectedOutput:  []realm.Secret{secrets[2], secrets[4], secrets[1]},
 		},
 	} {
-		t.Run("should return the realm.Secret values from deleteInputs: "+tc.description, func(t *testing.T) {
+		t.Run("should return the secrets when specified by "+tc.description, func(t *testing.T) {
 			inputs := deleteInputs{
 				secrets: tc.selectedSecrets,
 			}

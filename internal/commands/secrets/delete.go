@@ -68,14 +68,10 @@ func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	sort.SliceStable(cmd.outputs, secretOutputComparerBySuccess(cmd.outputs))
 	logs := terminal.NewTableLog(
 		secretDeleteMessage,
-		secretHeaders(secretDeleteHeader),
+		secretHeaders(headerDeleted, headerDetails),
 		secretTableRows(cmd.outputs, secretDeleteRow)...,
 	)
 	return ui.Print(logs)
-}
-
-func secretDeleteHeader() []string {
-	return []string{headerDeleted, headerDetails}
 }
 
 func secretDeleteRow(output secretOutput, row map[string]interface{}) {

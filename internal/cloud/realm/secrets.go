@@ -33,6 +33,8 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 		return nil, api.ErrUnexpectedStatusCode{"secrets", res.StatusCode}
 	}
 
+	defer res.Body.Close()
+
 	var secrets []Secret
 	if err := json.NewDecoder(res.Body).Decode(&secrets); err != nil {
 		return nil, err
@@ -78,7 +80,6 @@ func (c *client) DeleteSecret(groupID, appID, secretID string) error {
 	}
 
 	if res.StatusCode != http.StatusNoContent {
-		defer res.Body.Close()
 		return api.ErrUnexpectedStatusCode{"delete secret", res.StatusCode}
 	}
 
