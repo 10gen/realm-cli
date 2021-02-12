@@ -21,4 +21,5 @@ const (
 	flagUserDeleteUsage  = `set the user ids for which to delete from the app`
 	flagUserDisableUsage = `set the user ids for which to disable in the app`
 	flagUserEnableUsage  = `set the user ids for which to enable in the app`
+	flagUserRevokeUsage  = `set the user ids for which to revoke sessions from`
 )

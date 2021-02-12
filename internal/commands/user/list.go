@@ -22,17 +22,14 @@ type CommandList struct {
 
 type listInputs struct {
 	cli.ProjectInputs
-	UserState     realm.UserState
-	Pending       bool
-	ProviderTypes []string
-	Users         []string
+	multiUserInputs
 }
 
 // Flags is the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
-	fs.VarP(&cmd.inputs.UserState, flagState, flagStateShort, flagStateUsage)
+	fs.VarP(&cmd.inputs.State, flagState, flagStateShort, flagStateUsage)
 	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
 	fs.VarP(
 		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validAuthProviderTypes()),
@@ -56,23 +53,16 @@ func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
-	users, usersErr := cmd.realmClient.FindUsers(
-		app.GroupID,
-		app.ID,
-		realm.UserFilter{
-			State:     cmd.inputs.UserState,
-			Pending:   cmd.inputs.Pending,
-			Providers: realm.NewAuthProviderTypes(cmd.inputs.ProviderTypes...),
-			IDs:       cmd.inputs.Users,
-		},
-	)
-	if usersErr != nil {
-		return usersErr
+
+	users, err := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
+	if err != nil {
+		return err
 	}
+
 	cmd.outputs = make([]userOutput, 0, len(users))
 	for _, user := range users {
 		cmd.outputs = append(cmd.outputs, userOutput{user, nil})

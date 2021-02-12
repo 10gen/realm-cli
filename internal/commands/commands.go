@@ -125,6 +125,13 @@ Realm app will be exported as well.`,
 				Help:        "user list",
 				Command:     &user.CommandList{},
 			},
+			cli.CommandDefinition{
+				Use:         "revoke",
+				Display:     "user revoke",
+				Description: "Revoke an application user’s sessions on your Realm app",
+				Help:        "Logs a user out of your Realm app. A user who’s user session has been revoked can log in again if they provide valid credentials.",
+				Command:     &user.CommandRevoke{},
+			},
 		},
 	}
 

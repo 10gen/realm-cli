@@ -80,7 +80,9 @@ func TestUserDisableHandler(t *testing.T) {
 						Project: projectID,
 						App:     appID,
 					},
-					Users: []string{testUsers[0].ID},
+					multiUserInputs: multiUserInputs{
+						Users: []string{testUsers[0].ID},
+					},
 				},
 				realmClient: realmClient,
 			}

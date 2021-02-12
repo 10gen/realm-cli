@@ -49,8 +49,8 @@ func TestRealmImportExportRoundTrip(t *testing.T) {
 
 			groupID := u.CloudGroupID()
 
-			app, appErr := client.CreateApp(groupID, "importexport-test", realm.AppMeta{})
-			assert.Nil(t, appErr)
+			app, teardown := setupTestApp(t, client, groupID, "importexport-test")
+			defer teardown()
 
 			appData := tc.importData(app)
 
@@ -83,8 +83,8 @@ func TestRealmImport20210101(t *testing.T) {
 
 	groupID := u.CloudGroupID()
 
-	app, appErr := client.CreateApp(groupID, "import20210101", realm.AppMeta{})
-	assert.Nil(t, appErr)
+	app, teardown := setupTestApp(t, client, groupID, "import20210101")
+	defer teardown()
 
 	t.Run("Should import a service with a secret successfully", func(t *testing.T) {
 		assert.Nil(t, client.Import(groupID, app.ID, local.AppDataV2{local.AppStructureV2{
@@ -147,8 +147,8 @@ func TestRealmImportLegacy(t *testing.T) {
 
 	groupID := u.CloudGroupID()
 
-	app, appErr := client.CreateApp(groupID, "import20210101", realm.AppMeta{})
-	assert.Nil(t, appErr)
+	app, teardown := setupTestApp(t, client, groupID, "import20210101")
+	defer teardown()
 
 	for _, configVersion := range []realm.AppConfigVersion{realm.AppConfigVersion20180301, realm.AppConfigVersion20200603} {
 		t.Run(fmt.Sprintf("Should import a service with a secret successfully for config version %d", configVersion), func(t *testing.T) {
@@ -220,7 +220,6 @@ func appDataV1(configVersion realm.AppConfigVersion, app realm.App) local.AppDat
 			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
 			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
 		},
 		AuthProviders: []map[string]interface{}{
@@ -273,7 +272,6 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
 			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"staging.json":        map[string]interface{}{"values": map[string]interface{}{}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
 		},
 		Auth: &local.AuthStructure{
@@ -321,7 +319,12 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		Sync: &local.SyncStructure{
 			Config: map[string]interface{}{"development_mode_enabled": true},
 		},
-		// TODO(REALMC-7989): include functions, triggers, and graphql
+		GraphQL: &local.GraphQLStructure{
+			Config:          map[string]interface{}{"use_natural_pluralization": true},
+			CustomResolvers: []map[string]interface{}{},
+		},
+		Values: []map[string]interface{}{},
+		// TODO(REALMC-7989): include functions, triggers, and graphql custom resolvers
 		// in 20210101 round-trip test once its supported in export on the backend
 		// 		Functions: &local.FunctionsStructure{
 		// 			Config: map[string]interface{}{

@@ -20,7 +20,7 @@ type CommandEnable struct {
 
 type enableInputs struct {
 	cli.ProjectInputs
-	Users []string
+	multiUserInputs
 }
 
 // Flags is the command flags
@@ -42,14 +42,19 @@ func (cmd *CommandEnable) Setup(profile *cli.Profile, ui terminal.UI) error {
 
 // Handler is the command handler
 func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
 
-	users, usersErr := cmd.realmClient.FindUsers(app.GroupID, app.ID, realm.UserFilter{IDs: cmd.inputs.Users})
-	if usersErr != nil {
-		return usersErr
+	found, err := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
+	if err != nil {
+		return err
+	}
+
+	users, err := cmd.inputs.selectUsers(ui, found, "enable")
+	if err != nil {
+		return err
 	}
 
 	for _, user := range users {
