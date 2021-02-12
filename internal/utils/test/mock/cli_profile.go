@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"os"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/auth"
@@ -33,6 +34,20 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 	profile.WorkingDirectory = tmpDir
 
 	return profile, teardown
+}
+
+// NewProfileFromWD returns a new CLI profile with a random name
+// and the current working directory
+func NewProfileFromWD(t *testing.T) *cli.Profile {
+	t.Helper()
+
+	wd, err := os.Getwd()
+	assert.Nil(t, err)
+
+	profile := NewProfile(t)
+	profile.WorkingDirectory = wd
+
+	return profile
 }
 
 // NewProfileWithSession returns a new CLI profile with a session

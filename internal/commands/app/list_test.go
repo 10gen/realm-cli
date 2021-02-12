@@ -13,7 +13,7 @@ import (
 )
 
 func TestAppListSetup(t *testing.T) {
-	t.Run("Setup creates a realm client with a session", func(t *testing.T) {
+	t.Run("setup creates a realm client with a session", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 		profile.SetRealmBaseURL("http://localhost:8080")
 
@@ -54,20 +54,20 @@ func TestAppListHandler(t *testing.T) {
 		expectedAppFilter realm.AppFilter
 	}{
 		{
-			description: "With no project nor app flag set should return all apps",
+			description: "with no project nor app flag set should return all apps",
 		},
 		{
-			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
+			description:       "with no project flag set and an app flag set should return all apps that match the app flag",
 			inputs:            cli.ProjectInputs{App: "app1"},
 			expectedAppFilter: realm.AppFilter{App: "app1"},
 		},
 		{
-			description:       "With a project flag set and no app flag set should return all project apps",
+			description:       "with a project flag set and no app flag set should return all project apps",
 			inputs:            cli.ProjectInputs{Project: groupID1},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1},
 		},
 		{
-			description:       "With no project flag set and an app flag set should return all apps that match the app flag",
+			description:       "with no project flag set and an app flag set should return all apps that match the app flag",
 			inputs:            cli.ProjectInputs{Project: groupID1, App: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 		},
@@ -98,11 +98,11 @@ func TestAppListFeedback(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			description:    "Should print an empty state message when no apps were found",
+			description:    "should print an empty state message when no apps were found",
 			expectedOutput: "01:23:45 UTC INFO  No available apps to show\n",
 		},
 		{
-			description: "Should print a list of apps that were found",
+			description: "should print a list of apps that were found",
 			apps: []realm.App{
 				{
 					ID:          primitive.NewObjectID().Hex(),

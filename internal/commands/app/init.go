@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -12,6 +13,7 @@ import (
 // CommandInit is the `app init` command
 type CommandInit struct {
 	inputs      initInputs
+	atlasClient atlas.Client
 	realmClient realm.Client
 }
 
@@ -31,6 +33,7 @@ func (cmd *CommandInit) Inputs() cli.InputResolver {
 
 // Setup is the command setup
 func (cmd *CommandInit) Setup(profile *cli.Profile, ui terminal.UI) error {
+	cmd.atlasClient = profile.AtlasAuthClient()
 	cmd.realmClient = profile.RealmAuthClient()
 	return nil
 }

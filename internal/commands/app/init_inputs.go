@@ -9,44 +9,8 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-const (
-	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
-
-	flagFrom      = "from"
-	flagFromShort = "a"
-	flagFromUsage = "choose an application or template to initialize the Realm app with"
-
-	flagName      = "name"
-	flagNameShort = "n"
-	flagNameUsage = "set the name of the Realm app to be initialized"
-
-	flagDeploymentModel        = "deployment-model"
-	flagDeploymentModelShort   = "d"
-	flagDeploymentModelUsage   = `select the Realm app's deployment model, available options: ["global", "local"]`
-	flagDeploymentModelDefault = realm.DeploymentModelGlobal
-
-	flagLocation        = "location"
-	flagLocationShort   = "l"
-	flagLocationUsage   = `select the Realm app's location, available options: ["US-VA", "local"]`
-	flagLocationDefault = realm.LocationVirginia
-)
-
-type from struct {
-	GroupID string
-	AppID   string
-}
-
-func (f from) IsZero() bool {
-	return f.GroupID == "" && f.AppID == ""
-}
-
 type initInputs struct {
-	Project         string
-	From            string
-	Name            string
-	DeploymentModel realm.DeploymentModel
-	Location        realm.Location
+	newAppInputs
 }
 
 func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -73,19 +37,4 @@ func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	return nil
-}
-
-func (i *initInputs) resolveFrom(ui terminal.UI, client realm.Client) (from, error) {
-	var f from
-
-	if i.From != "" {
-		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
-		if err != nil {
-			return from{}, err
-		}
-		f.GroupID = app.GroupID
-		f.AppID = app.ID
-	}
-
-	return f, nil
 }
