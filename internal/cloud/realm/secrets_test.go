@@ -1,6 +1,7 @@
 package realm_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -24,9 +25,6 @@ func TestSecrets(t *testing.T) {
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 
-		secretName := "secretName"
-		secretValue := "secretValue"
-
 		testApp, teardown := setupTestApp(t, client, groupID, "secrets-test")
 		defer teardown()
 
@@ -35,15 +33,33 @@ func TestSecrets(t *testing.T) {
 			assert.Nil(t, secretsErr)
 			assert.Equal(t, 0, len(secrets))
 		})
-
+		var secret realm.Secret
 		t.Run("should create a secret", func(t *testing.T) {
-			secret, secretErr := client.CreateSecret(groupID, testApp.ID, secretName, secretValue)
+			secretName := "secretName"
+			secretValue := "secretValue"
+			var secretErr error
+			secret, secretErr = client.CreateSecret(groupID, testApp.ID, secretName, secretValue)
 			assert.Nil(t, secretErr)
 
 			t.Run("and list all app secrets", func(t *testing.T) {
 				secrets, err := client.Secrets(groupID, testApp.ID)
 				assert.Nil(t, err)
 				assert.Equal(t, []realm.Secret{secret}, secrets)
+			})
+		})
+
+		t.Run("should delete the app secret", func(t *testing.T) {
+			err := client.DeleteSecret(groupID, testApp.ID, secret.ID)
+			assert.Nil(t, err)
+			t.Run("and list no more app secrets", func(t *testing.T) {
+				secrets, err := client.Secrets(groupID, testApp.ID)
+				assert.Nil(t, err)
+				assert.Equal(t, []realm.Secret{}, secrets)
+			})
+			t.Run("and return an error if we can't find the secret", func(t *testing.T) {
+				err := client.DeleteSecret(groupID, testApp.ID, secret.ID)
+				assert.NotNil(t, err)
+				assert.Equal(t, err.Error(), fmt.Sprintf("secret not found: '%s'", secret.ID))
 			})
 		})
 	})

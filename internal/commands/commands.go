@@ -156,6 +156,13 @@ Realm app will be exported as well.`,
 				Help:        "Displays a list of data tables. Each data table displays the Name and ID of one (1) secret.",
 				Command:     &secrets.CommandList{},
 			},
+			cli.CommandDefinition{
+				Use:         "delete",
+				Display:     "secrets delete",
+				Description: "Delete a secret from your Realm app",
+				Help:        "Removes one or many secrets from your Realm app depending on how many you specify.",
+				Command:     &secrets.CommandDelete{},
+			},
 		},
 	}
 )

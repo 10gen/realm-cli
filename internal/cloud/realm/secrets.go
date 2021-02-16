@@ -10,6 +10,7 @@ import (
 
 const (
 	secretsPathPattern = appPathPattern + "/secrets"
+	secretPathPattern  = secretsPathPattern + "/%s"
 )
 
 // Secret is a secret stored in a Realm app
@@ -27,10 +28,13 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 	if resErr != nil {
 		return nil, resErr
 	}
+
 	if res.StatusCode != http.StatusOK {
 		return nil, api.ErrUnexpectedStatusCode{"secrets", res.StatusCode}
 	}
+
 	defer res.Body.Close()
+
 	var secrets []Secret
 	if err := json.NewDecoder(res.Body).Decode(&secrets); err != nil {
 		return nil, err
@@ -62,4 +66,22 @@ func (c *client) CreateSecret(groupID, appID, name, value string) (Secret, error
 		return Secret{}, err
 	}
 	return secret, nil
+}
+
+func (c *client) DeleteSecret(groupID, appID, secretID string) error {
+	res, err := c.do(
+		http.MethodDelete,
+		fmt.Sprintf(secretPathPattern, groupID, appID, secretID),
+		api.RequestOptions{},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return api.ErrUnexpectedStatusCode{"delete secret", res.StatusCode}
+	}
+
+	return nil
 }
