@@ -1,17 +1,13 @@
 package secrets
 
 import (
+	"errors"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
-)
-
-const (
-	flagSecret      = "secret"
-	flagSecretShort = "s"
-	flagSecretUsage = "set the list of secrets to delete by ID or Name"
 )
 
 type deleteInputs struct {
@@ -26,40 +22,44 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-// If there are inputs then use , then
-func (i *deleteInputs) resolveSecrets(ui terminal.UI, allSecrets []realm.Secret) ([]realm.Secret, error) {
+func (i *deleteInputs) resolveSecrets(ui terminal.UI, secrets []realm.Secret) ([]realm.Secret, error) {
 	if len(i.secrets) > 0 {
-		resolvedSecrets := make([]realm.Secret, len(i.secrets))
-		ids := make(map[string]realm.Secret, len(allSecrets))
-		names := make(map[string]realm.Secret, len(allSecrets))
-		for _, secret := range allSecrets {
+		ids := make(map[string]realm.Secret, len(secrets))
+		names := make(map[string]realm.Secret, len(secrets))
+		for _, secret := range secrets {
 			ids[secret.ID] = secret
 			names[secret.Name] = secret
 		}
 
-		for i, arg := range i.secrets {
-			if secret, ok := names[arg]; ok {
-				resolvedSecrets[i] = secret
-			} else if secret, ok := ids[arg]; ok {
-				resolvedSecrets[i] = secret
+		filtered := make([]realm.Secret, 0, len(i.secrets))
+		for _, identifier := range i.secrets {
+			if secret, ok := names[identifier]; ok {
+				filtered = append(filtered, secret)
+			} else if secret, ok := ids[identifier]; ok {
+				filtered = append(filtered, secret)
 			}
 		}
-		return resolvedSecrets, nil
+
+		if len(filtered) == 0 {
+			return nil, errors.New("unable to find any of the secrets")
+		}
+		return filtered, nil
 	}
 
 	selectableSecrets := map[string]realm.Secret{}
-	selectableSecretOptions := make([]string, len(allSecrets))
-	for i, secret := range allSecrets {
+	selectableOptions := make([]string, len(secrets))
+	for i, secret := range secrets {
 		option := displaySecretOption(secret)
-		selectableSecretOptions[i] = option
+		selectableOptions[i] = option
 		selectableSecrets[option] = secret
 	}
+
 	var selectedSecrets []string
 	if err := ui.AskOne(
 		&selectedSecrets,
 		&survey.MultiSelect{
 			Message: "Which secret(s) would you like to delete?",
-			Options: selectableSecretOptions,
+			Options: selectableOptions,
 		},
 	); err != nil {
 		return nil, err
@@ -67,8 +67,8 @@ func (i *deleteInputs) resolveSecrets(ui terminal.UI, allSecrets []realm.Secret)
 
 	resolvedSecrets := make([]realm.Secret, len(selectedSecrets))
 	for i, secret := range selectedSecrets {
-		s := selectableSecrets[secret]
-		resolvedSecrets[i] = s
+		resolvedSecrets[i] = selectableSecrets[secret]
 	}
+
 	return resolvedSecrets, nil
 }

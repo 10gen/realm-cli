@@ -42,7 +42,7 @@ func (c *client) Secrets(groupID, appID string) ([]Secret, error) {
 	return secrets, nil
 }
 
-type createSecretRequest struct {
+type secretsPayload struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
@@ -51,7 +51,7 @@ func (c *client) CreateSecret(groupID, appID, name, value string) (Secret, error
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(secretsPathPattern, groupID, appID),
-		createSecretRequest{name, value},
+		secretsPayload{name, value},
 		api.RequestOptions{},
 	)
 	if resErr != nil {
@@ -81,6 +81,25 @@ func (c *client) DeleteSecret(groupID, appID, secretID string) error {
 
 	if res.StatusCode != http.StatusNoContent {
 		return api.ErrUnexpectedStatusCode{"delete secret", res.StatusCode}
+	}
+
+	return nil
+}
+
+func (c *client) UpdateSecret(groupID, appID, secretID, name, value string) error {
+	res, err := c.doJSON(
+		http.MethodPut,
+		fmt.Sprintf(secretPathPattern, groupID, appID, secretID),
+		secretsPayload{name, value},
+		api.RequestOptions{},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return api.ErrUnexpectedStatusCode{"update secret", res.StatusCode}
 	}
 
 	return nil

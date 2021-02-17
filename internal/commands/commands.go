@@ -163,6 +163,13 @@ Realm app will be exported as well.`,
 				Help:        "Removes one or many secrets from your Realm app depending on how many you specify.",
 				Command:     &secrets.CommandDelete{},
 			},
+			cli.CommandDefinition{
+				Use:         "update",
+				Display:     "secrets update",
+				Description: "Update a secret in your Realm app",
+				Help:        "Updates one secret from your Realm app. Select the secret to update or provide a name or ID.",
+				Command:     &secrets.CommandUpdate{},
+			},
 		},
 	}
 )
