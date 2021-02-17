@@ -9,17 +9,17 @@ import (
 type Command struct{}
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
 	user := profile.User()
 	user.PrivateAPIKey = "" // ensures subsequent `login` commands prompt for password
 
 	profile.SetUser(user)
 	profile.ClearSession()
 
-	return profile.Save()
-}
+	if err := profile.Save(); err != nil {
+		return err
+	}
 
-// Feedback is the command feedback
-func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	return ui.Print(terminal.NewTextLog("Successfully logged out"))
+	ui.Print(terminal.NewTextLog("Successfully logged out"))
+	return nil
 }

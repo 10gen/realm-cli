@@ -10,7 +10,11 @@ TODO
 
 ## Linting
 
-TODO
+To lint the project, run:
+
+```cmd
+golangci-lint run
+```
 
 ## Testing
 

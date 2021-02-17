@@ -10,19 +10,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestSecretsCreateSetup(t *testing.T) {
-	t.Run("should construct a realm client with the configured base url", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		cmd := &CommandCreate{inputs: createInputs{}}
-		assert.Nil(t, cmd.realmClient)
-
-		assert.Nil(t, cmd.Setup(profile, nil))
-		assert.NotNil(t, cmd.realmClient)
-	})
-}
-
 func TestSecretsCreateHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
@@ -37,6 +24,8 @@ func TestSecretsCreateHandler(t *testing.T) {
 	}
 
 	t.Run("should create app secrets", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
 		realmClient := mock.RealmClient{}
 		var capturedFilter realm.AppFilter
 		var capturedGroupID, capturedAppID, capturedName, capturedValue string
@@ -53,20 +42,17 @@ func TestSecretsCreateHandler(t *testing.T) {
 			return realm.Secret{secretID, secretName}, nil
 		}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{
-				ProjectInputs: cli.ProjectInputs{
-					Project: projectID,
-					App:     appID,
-				},
-				Name:  secretName,
-				Value: secretValue,
+		cmd := &CommandCreate{createInputs{
+			ProjectInputs: cli.ProjectInputs{
+				Project: projectID,
+				App:     appID,
 			},
-			realmClient: realmClient,
-		}
+			Name:  secretName,
+			Value: secretValue,
+		}}
 
-		assert.Nil(t, cmd.Handler(nil, nil))
-		assert.Equal(t, realm.Secret{secretID, secretName}, cmd.secret)
+		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		assert.Equal(t, "01:23:45 UTC INFO  Successfully created secret, id: secretID\n", out.String())
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, realm.AppFilter{projectID, appID}, capturedFilter)
@@ -112,26 +98,11 @@ func TestSecretsCreateHandler(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				realmClient := tc.setupClient()
 
-				cmd := &CommandCreate{
-					realmClient: realmClient,
-				}
+				cmd := &CommandCreate{}
 
-				err := cmd.Handler(nil, nil)
+				err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 				assert.Equal(t, tc.expectedErr, err)
 			})
 		}
-	})
-}
-
-func TestSecretsCreateFeedback(t *testing.T) {
-	t.Run("should print a message that secret creation was successful", func(t *testing.T) {
-		out, ui := mock.NewUI()
-
-		cmd := &CommandCreate{secret: realm.Secret{ID: "testID"}}
-
-		err := cmd.Feedback(nil, ui)
-		assert.Nil(t, err)
-
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully created secret, id: testID\n", out.String())
 	})
 }

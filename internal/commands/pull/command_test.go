@@ -3,27 +3,17 @@ package pull
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
-
-func TestPullSetup(t *testing.T) {
-	profile := mock.NewProfile(t)
-	profile.SetRealmBaseURL("http://localhost:8080")
-
-	cmd := &Command{}
-	assert.Nil(t, cmd.realmClient)
-
-	assert.Nil(t, cmd.Setup(profile, nil))
-	assert.NotNil(t, cmd.realmClient)
-}
 
 func TestPullHandler(t *testing.T) {
 	t.Run("should return an error if the command fails to resolve from", func(t *testing.T) {
@@ -32,12 +22,9 @@ func TestPullHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{From: "somewhere"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{From: "somewhere"}}
 
-		err := cmd.Handler(nil, nil)
+		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 
@@ -50,12 +37,9 @@ func TestPullHandler(t *testing.T) {
 			return "", nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{From: "somewhere"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{From: "somewhere"}}
 
-		err := cmd.Handler(nil, nil)
+		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 
@@ -71,108 +55,44 @@ func TestPullHandler(t *testing.T) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
 
-		for _, tc := range []struct {
-			description string
-			dryRun      bool
-			test        func(t *testing.T, destination string)
-		}{
-			{
-				description: "should not write any contents to the destination in a dry run",
-				dryRun:      true,
-				test: func(t *testing.T, destination string) {
-					_, err := os.Stat(destination)
-					assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", err)
-				},
-			},
-			{
-				description: "should write the received zip package to the destination",
-				test: func(t *testing.T, destination string) {
-					_, err := os.Stat(destination)
-					assert.Nil(t, err)
-
-					testData, readErr := ioutil.ReadFile(filepath.Join(destination, "test.json"))
-					assert.Nil(t, readErr)
-					assert.Equal(t, `{"egg":"corn"}`, string(testData))
-				},
-			},
-		} {
-			t.Run(tc.description, func(t *testing.T) {
-				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
-				defer teardown()
-
-				cmd := &Command{
-					inputs:      inputs{DryRun: tc.dryRun},
-					realmClient: realmClient,
-				}
-
-				assert.Nil(t, cmd.Handler(profile, nil))
-				assert.Equal(t, filepath.Join(profile.WorkingDirectory, "app"), cmd.outputs.destination)
-			})
-		}
-
 		t.Run("should not write any contents to the destination in a dry run", func(t *testing.T) {
 			profile := mock.NewProfile(t)
 
-			cmd := &Command{
-				inputs:      inputs{DryRun: true},
-				realmClient: realmClient,
-			}
+			out, ui := mock.NewUI()
 
-			assert.Nil(t, cmd.Handler(profile, nil))
-			assert.Equal(t, filepath.Join(profile.WorkingDirectory, "app"), cmd.outputs.destination)
+			cmd := &Command{inputs{DryRun: true}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			destination := filepath.Join(profile.WorkingDirectory, "app")
+
+			assert.Equal(t, fmt.Sprintf(`01:23:45 UTC INFO  No changes were written to your file system
+01:23:45 UTC DEBUG Contents would have been written to: %s
+`, destination), out.String())
+
+			_, err := os.Stat(destination)
+			assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", err)
 		})
 
 		t.Run("should write the received zip package to the destination", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
-			cmd := &Command{
-				inputs:      inputs{DryRun: true},
-				realmClient: realmClient,
-			}
+			out, ui := mock.NewUI()
 
-			assert.Nil(t, cmd.Handler(profile, nil))
-			assert.Equal(t, filepath.Join(profile.WorkingDirectory, "app"), cmd.outputs.destination)
+			cmd := &Command{}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			destination := filepath.Join(profile.WorkingDirectory, "app")
+
+			assert.Equal(t, "01:23:45 UTC INFO  Successfully pulled down Realm app to your local filesystem\n", out.String())
+
+			_, err := os.Stat(destination)
+			assert.Nil(t, err)
+
+			testData, readErr := ioutil.ReadFile(filepath.Join(destination, "test.json"))
+			assert.Nil(t, readErr)
+			assert.Equal(t, "{\"egg\":\"corn\"}\n", string(testData))
 		})
-	})
-}
-
-func TestPullFeedback(t *testing.T) {
-	t.Run("feedback should print a message", func(t *testing.T) {
-		for _, tc := range []struct {
-			description      string
-			inputs           inputs
-			outputs          outputs
-			expectedContents string
-		}{
-			{
-				description:      "that changes were pulled down successfully",
-				expectedContents: "01:23:45 UTC INFO  Successfully pulled down Realm app to your local filesystem\n",
-			},
-			{
-				description: "with a new app created and but in a dry run that the user should remove the dry run flag",
-				inputs:      inputs{DryRun: true},
-				outputs:     outputs{destination: "/dev/tmp"},
-				expectedContents: strings.Join(
-					[]string{
-						"01:23:45 UTC INFO  No changes were written to your file system",
-						"01:23:45 UTC DEBUG Contents would have been written to: /dev/tmp\n",
-					},
-					"\n",
-				),
-			},
-		} {
-			t.Run(tc.description, func(t *testing.T) {
-				out, ui := mock.NewUI()
-
-				cmd := &Command{inputs: tc.inputs, outputs: tc.outputs}
-
-				err := cmd.Feedback(nil, ui)
-				assert.Nil(t, err)
-
-				assert.Equal(t, tc.expectedContents, out.String())
-			})
-		}
 	})
 }
 
@@ -191,12 +111,9 @@ func TestPullCommandDoExport(t *testing.T) {
 			return "", nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppVersion: realm.AppConfigVersion20210101},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppVersion: realm.AppConfigVersion20210101}}
 
-		_, _, err := cmd.doExport(nil, from{groupID, appID})
+		_, _, err := cmd.doExport(nil, realmClient, groupID, appID)
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("and should properly pass through the expected args")
@@ -236,12 +153,9 @@ func TestPullCommandDoExport(t *testing.T) {
 					return tc.zipName, &zip.Reader{}, nil
 				}
 
-				cmd := &Command{
-					inputs:      inputs{Target: tc.targetFlag},
-					realmClient: realmClient,
-				}
+				cmd := &Command{inputs{Target: tc.targetFlag}}
 
-				path, zipPkg, err := cmd.doExport(profile, from{})
+				path, zipPkg, err := cmd.doExport(profile, realmClient, "", "")
 				assert.Nil(t, err)
 				assert.NotNil(t, zipPkg)
 				assert.Equal(t, tc.expectedPath, path)

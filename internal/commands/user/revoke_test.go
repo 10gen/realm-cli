@@ -11,60 +11,115 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestUserRevokeSetup(t *testing.T) {
-	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-		profile.SetRealmBaseURL("http://localhost:8080")
-		cmd := &CommandRevoke{inputs: revokeInputs{}}
-
-		assert.Nil(t, cmd.realmClient)
-		assert.Nil(t, cmd.Setup(profile, nil))
-		assert.NotNil(t, cmd.realmClient)
-	})
-}
-
 func TestUserRevokeHandler(t *testing.T) {
 	projectID := "projectID"
 	appID := "appID"
-	testApp := realm.App{
+	app := realm.App{
 		ID:          appID,
 		GroupID:     projectID,
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
 	}
-	testUsers := []realm.User{
-		{
-			ID:         "user-1",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAnonymous}},
-			Disabled:   false,
-		},
-	}
+
+	t.Run("should display empty state message no users are found to delete", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{app}, nil
+		}
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return nil, nil
+		}
+		realmClient.DeleteUserFn = func(groupID, appID, userID string) error {
+			return nil
+		}
+
+		cmd := &CommandRevoke{revokeInputs{ProjectInputs: cli.ProjectInputs{
+			Project: projectID,
+			App:     appID,
+		}}}
+
+		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		assert.Equal(t, "01:23:45 UTC INFO  No users to revoke sessions for\n", out.String())
+	})
+
+	t.Run("should display users deleted by auth provider type", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{app}, nil
+		}
+		realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
+			return testUsers, nil
+		}
+		realmClient.RevokeUserSessionFn = func(groupID, appID, userID string) error {
+			return nil
+		}
+
+		cmd := &CommandRevoke{revokeInputs{
+			ProjectInputs: cli.ProjectInputs{
+				Project: projectID,
+				App:     appID,
+			},
+			multiUserInputs: multiUserInputs{
+				Users: []string{testUsers[0].ID},
+			},
+		}}
+
+		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  Provider type: User/Password",
+			"  Email            ID      Type  Session Revoked  Details",
+			"  ---------------  ------  ----  ---------------  -------",
+			"  user-2@test.com  user-2        true                    ",
+			"01:23:45 UTC INFO  Provider type: ApiKey",
+			"  Name    ID      Type  Session Revoked  Details",
+			"  ------  ------  ----  ---------------  -------",
+			"  name-3  user-3        true                    ",
+			"01:23:45 UTC INFO  Provider type: Anonymous",
+			"  ID      Type    Session Revoked  Details",
+			"  ------  ------  ---------------  -------",
+			"  user-1  type-1  true                    ",
+			"01:23:45 UTC INFO  Provider type: Custom JWT",
+			"  ID      Type  Session Revoked  Details",
+			"  ------  ----  ---------------  -------",
+			"  user-4        true                    ",
+			"",
+		}, "\n"), out.String())
+	})
 
 	for _, tc := range []struct {
-		description     string
-		userRevokeErr   error
-		expectedOutputs []userOutput
+		description    string
+		revokeErr      error
+		expectedOutput string
 	}{
 		{
 			description: "should revoke user sessions when a user id is provided",
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-				},
-			},
+			expectedOutput: strings.Join([]string{
+				"01:23:45 UTC INFO  Provider type: Anonymous",
+				"  ID      Type    Session Revoked  Details",
+				"  ------  ------  ---------------  -------",
+				"  user-1  type-1  true                    ",
+				"",
+			}, "\n"),
 		},
 		{
-			description:   "should save failed revoke errors",
-			userRevokeErr: errors.New("client error"),
-			expectedOutputs: []userOutput{
-				{
-					user: testUsers[0],
-					err:  errors.New("client error"),
-				},
-			},
+			description: "should save failed revoke errors",
+			revokeErr:   errors.New("client error"),
+			expectedOutput: strings.Join([]string{
+				"01:23:45 UTC INFO  Provider type: Anonymous",
+				"  ID      Type    Session Revoked  Details     ",
+				"  ------  ------  ---------------  ------------",
+				"  user-1  type-1  false            client error",
+				"",
+			}, "\n"),
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
+			out, ui := mock.NewUI()
+
 			var capturedAppFilter realm.AppFilter
 			var capturedFindProjectID, capturedFindAppID string
 			var capturedRevokeProjectID, capturedRevokeAppID string
@@ -72,42 +127,39 @@ func TestUserRevokeHandler(t *testing.T) {
 			realmClient := mock.RealmClient{}
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				capturedAppFilter = filter
-				return []realm.App{testApp}, nil
+				return []realm.App{app}, nil
 			}
 
 			realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 				capturedFindProjectID = groupID
 				capturedFindAppID = appID
-				return testUsers, nil
+				return testUsers[:1], nil
 			}
 
-			realmClient.RevokeUserSessionsFn = func(groupID, appID, userID string) error {
+			realmClient.RevokeUserSessionFn = func(groupID, appID, userID string) error {
 				capturedRevokeProjectID = groupID
 				capturedRevokeAppID = appID
-				return tc.userRevokeErr
+				return tc.revokeErr
 			}
 
-			cmd := &CommandRevoke{
-				inputs: revokeInputs{
-					ProjectInputs: cli.ProjectInputs{
-						Project: projectID,
-						App:     appID,
-					},
-					multiUserInputs: multiUserInputs{
-						Users: []string{testUsers[0].ID},
-					},
+			cmd := &CommandRevoke{revokeInputs{
+				ProjectInputs: cli.ProjectInputs{
+					Project: projectID,
+					App:     appID,
 				},
-				realmClient: realmClient,
-			}
+				multiUserInputs: multiUserInputs{
+					Users: []string{testUsers[0].ID},
+				},
+			}}
 
-			assert.Nil(t, cmd.Handler(nil, nil))
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, tc.expectedOutput, out.String())
+
 			assert.Equal(t, realm.AppFilter{App: appID, GroupID: projectID}, capturedAppFilter)
 			assert.Equal(t, projectID, capturedFindProjectID)
 			assert.Equal(t, appID, capturedFindAppID)
 			assert.Equal(t, projectID, capturedRevokeProjectID)
 			assert.Equal(t, appID, capturedRevokeAppID)
-			assert.Equal(t, cmd.outputs[0].err, tc.expectedOutputs[0].err)
-			assert.Equal(t, cmd.outputs[0].user, tc.expectedOutputs[0].user)
 		})
 	}
 
@@ -133,7 +185,7 @@ func TestUserRevokeHandler(t *testing.T) {
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-						return []realm.App{testApp}, nil
+						return []realm.App{app}, nil
 					}
 					realmClient.FindUsersFn = func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error) {
 						return nil, errors.New("something bad happened")
@@ -144,118 +196,13 @@ func TestUserRevokeHandler(t *testing.T) {
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
-				realmClient := tc.setupClient()
+				cmd := &CommandRevoke{}
 
-				cmd := &CommandRevoke{
-					realmClient: realmClient,
-				}
-
-				err := cmd.Handler(nil, nil)
+				err := cmd.Handler(nil, nil, cli.Clients{Realm: tc.setupClient()})
 				assert.Equal(t, tc.expectedErr, err)
 			})
 		}
 	})
-}
-
-func TestUserRevokeFeedback(t *testing.T) {
-	testUsers := []realm.User{
-		{
-			ID:         "user-1",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-			Type:       "type-1",
-			Data:       map[string]interface{}{"email": "user-1@test.com"},
-		},
-		{
-			ID:         "user-2",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-			Type:       "type-2",
-			Data:       map[string]interface{}{"email": "user-2@test.com"},
-		},
-		{
-			ID:         "user-3",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeUserPassword}},
-			Type:       "type-1",
-			Data:       map[string]interface{}{"email": "user-3@test.com"},
-		},
-		{
-			ID:         "user-4",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeAPIKey}},
-			Type:       "type-1",
-			Data:       map[string]interface{}{"name": "name-4"},
-		},
-		{
-			ID:         "user-5",
-			Identities: []realm.UserIdentity{{ProviderType: realm.AuthProviderTypeCustomToken}},
-			Type:       "type-3",
-		},
-	}
-	for _, tc := range []struct {
-		description    string
-		outputs        []userOutput
-		expectedOutput string
-	}{
-		{
-			description:    "should show no users to revoke",
-			expectedOutput: "01:23:45 UTC INFO  No users to revoke sessions for\n",
-		},
-		{
-			description: "should show 1 failed user",
-			outputs: []userOutput{
-				{user: testUsers[0], err: errors.New("client error")},
-			},
-			expectedOutput: strings.Join(
-				[]string{
-					"01:23:45 UTC INFO  Provider type: User/Password",
-					"  Email            ID      Type    Session Revoked  Details     ",
-					"  ---------------  ------  ------  ---------------  ------------",
-					"  user-1@test.com  user-1  type-1  false            client error",
-					"",
-				},
-				"\n",
-			),
-		},
-		{
-			description: "should show 2 failed users",
-			outputs: []userOutput{
-				{user: testUsers[0], err: nil},
-				{user: testUsers[1], err: errors.New("client error")},
-				{user: testUsers[2], err: nil},
-				{user: testUsers[3], err: errors.New("client error")},
-				{user: testUsers[4], err: nil},
-			},
-			expectedOutput: strings.Join(
-				[]string{
-					"01:23:45 UTC INFO  Provider type: User/Password",
-					"  Email            ID      Type    Session Revoked  Details     ",
-					"  ---------------  ------  ------  ---------------  ------------",
-					"  user-2@test.com  user-2  type-2  false            client error",
-					"  user-1@test.com  user-1  type-1  true                         ",
-					"  user-3@test.com  user-3  type-1  true                         ",
-					"01:23:45 UTC INFO  Provider type: ApiKey",
-					"  Name    ID      Type    Session Revoked  Details     ",
-					"  ------  ------  ------  ---------------  ------------",
-					"  name-4  user-4  type-1  false            client error",
-					"01:23:45 UTC INFO  Provider type: Custom JWT",
-					"  ID      Type    Session Revoked  Details",
-					"  ------  ------  ---------------  -------",
-					"  user-5  type-3  true                    ",
-					"",
-				},
-				"\n",
-			),
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			out, ui := mock.NewUI()
-
-			cmd := &CommandRevoke{
-				outputs: tc.outputs,
-			}
-
-			assert.Nil(t, cmd.Feedback(nil, ui))
-			assert.Equal(t, tc.expectedOutput, out.String())
-		})
-	}
 }
 
 func TestUserRevokeTableRow(t *testing.T) {

@@ -14,14 +14,7 @@ import (
 
 // CommandDelete is the `user delete` command
 type CommandDelete struct {
-	inputs      deleteInputs
-	outputs     userOutputs
-	realmClient realm.Client
-}
-
-type deleteInputs struct {
-	cli.ProjectInputs
-	multiUserInputs
+	inputs deleteInputs
 }
 
 // Flags is the command flags
@@ -43,20 +36,14 @@ func (cmd *CommandDelete) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}
 
-	found, err := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
+	found, err := cmd.inputs.findUsers(clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -66,33 +53,42 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
+	outputs := make(userOutputs, 0, len(users))
 	for _, user := range users {
-		err := cmd.realmClient.DeleteUser(app.GroupID, app.ID, user.ID)
-		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
+		err := clients.Realm.DeleteUser(app.GroupID, app.ID, user.ID)
+		outputs = append(outputs, userOutput{user, err})
 	}
+
+	if len(outputs) == 0 {
+		ui.Print(terminal.NewTextLog("No users to delete"))
+		return nil
+	}
+
+	outputsByProviderType := outputs.byProviderType()
+
+	logs := make([]terminal.Log, 0, len(outputsByProviderType))
+	for _, providerType := range realm.ValidAuthProviderTypes {
+		o := outputsByProviderType[providerType]
+		if len(o) == 0 {
+			continue
+		}
+
+		sort.SliceStable(o, getUserOutputComparerBySuccess(o))
+
+		logs = append(logs, terminal.NewTableLog(
+			fmt.Sprintf("Provider type: %s", providerType.Display()),
+			append(userTableHeaders(providerType), headerDeleted, headerDetails),
+			userTableRows(providerType, o, userDeleteRow)...,
+		))
+	}
+
+	ui.Print(logs...)
 	return nil
 }
 
-// Feedback is the command feedback
-func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.outputs) == 0 {
-		return ui.Print(terminal.NewTextLog("No users to delete"))
-	}
-	outputsByProviderType := cmd.outputs.mapByProviderType()
-	logs := make([]terminal.Log, 0, len(outputsByProviderType))
-	for _, apt := range realm.ValidAuthProviderTypes {
-		outputs := outputsByProviderType[apt]
-		if len(outputs) == 0 {
-			continue
-		}
-		sort.SliceStable(outputs, getUserOutputComparerBySuccess(outputs))
-		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", apt.Display()),
-			append(userTableHeaders(apt), headerDeleted, headerDetails),
-			userTableRows(apt, outputs, userDeleteRow)...,
-		))
-	}
-	return ui.Print(logs...)
+type deleteInputs struct {
+	cli.ProjectInputs
+	multiUserInputs
 }
 
 func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {

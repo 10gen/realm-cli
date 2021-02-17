@@ -10,7 +10,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestResolveSecret(t *testing.T) {
+func TestSecretInputResolve(t *testing.T) {
 	testLen := 7
 	secrets := make([]realm.Secret, testLen)
 

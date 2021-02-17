@@ -1,6 +1,7 @@
 package login
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,24 +16,8 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestLoginSetup(t *testing.T) {
-	t.Run("Should construct a Realm client with the configured base url", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		cmd := &Command{inputs: inputs{
-			PublicAPIKey:  "publicAPIKey",
-			PrivateAPIKey: "privateAPIKey",
-		}}
-
-		err := cmd.Setup(profile, nil)
-		assert.Nil(t, err)
-		assert.NotNil(t, cmd.realmClient)
-	})
-}
-
 func TestLoginHandler(t *testing.T) {
-	t.Run("With no existing credentials handler should save new credentials", func(t *testing.T) {
+	t.Run("with no existing credentials handler should save new credentials", func(t *testing.T) {
 		tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 		assert.Nil(t, tmpDirErr)
 		defer teardownTmpDir()
@@ -54,17 +39,14 @@ func TestLoginHandler(t *testing.T) {
 			}, nil
 		}
 
-		cmd := &Command{
-			realmClient: realmClient,
-			inputs: inputs{
-				PublicAPIKey:  "publicAPIKey",
-				PrivateAPIKey: "privateAPIKey",
-			},
-		}
+		cmd := &Command{inputs{
+			PublicAPIKey:  "publicAPIKey",
+			PrivateAPIKey: "privateAPIKey",
+		}}
 
 		_, ui := mock.NewUI()
 
-		assert.Nil(t, cmd.Handler(profile, ui))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 		expectedUser := auth.User{"publicAPIKey", "privateAPIKey"}
 		expectedSession := auth.Session{"accessToken", "refreshToken"}
@@ -75,7 +57,7 @@ func TestLoginHandler(t *testing.T) {
 		ensureProfileContents(t, profile, expectedUser, expectedSession)
 	})
 
-	t.Run("With existing credentials", func(t *testing.T) {
+	t.Run("with existing credentials", func(t *testing.T) {
 		setup := func(t *testing.T) (*cli.Profile, realm.Client, func()) {
 			tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 			assert.Nil(t, tmpDirErr)
@@ -102,21 +84,18 @@ func TestLoginHandler(t *testing.T) {
 			}
 		}
 
-		t.Run("That match the attempted login credentials handler should refresh the existing session", func(t *testing.T) {
+		t.Run("that match the attempted login credentials handler should refresh the existing session", func(t *testing.T) {
 			profile, realmClient, teardown := setup(t)
 			defer teardown()
 
-			cmd := &Command{
-				realmClient: realmClient,
-				inputs: inputs{
-					PublicAPIKey:  "existingUser",
-					PrivateAPIKey: "existing-password",
-				},
-			}
+			cmd := &Command{inputs{
+				PublicAPIKey:  "existingUser",
+				PrivateAPIKey: "existing-password",
+			}}
 
 			_, ui := mock.NewUI()
 
-			assert.Nil(t, cmd.Handler(profile, ui))
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 			expectedUser := auth.User{"existingUser", "existing-password"}
 			expectedSession := auth.Session{"newAccessToken", "newRefreshToken"}
@@ -127,7 +106,7 @@ func TestLoginHandler(t *testing.T) {
 			ensureProfileContents(t, profile, expectedUser, expectedSession)
 		})
 
-		t.Run("That do not match the attempted login credentials should prompt the user to continue", func(t *testing.T) {
+		t.Run("that do not match the attempted login credentials should prompt the user to continue", func(t *testing.T) {
 			for _, tc := range []struct {
 				description     string
 				confirmAnswer   string
@@ -152,7 +131,6 @@ func TestLoginHandler(t *testing.T) {
 					defer teardown()
 
 					cmd := &Command{
-						realmClient: realmClient,
 						inputs: inputs{
 							PublicAPIKey:  "newUser",
 							PrivateAPIKey: "new-password",
@@ -170,7 +148,7 @@ func TestLoginHandler(t *testing.T) {
 						console.ExpectEOF()
 					}()
 
-					err := cmd.Handler(profile, ui)
+					err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 					assert.Nil(t, err)
 
 					assert.Nil(t, console.Tty().Close())
@@ -186,12 +164,16 @@ func TestLoginHandler(t *testing.T) {
 }
 
 func TestLoginFeedback(t *testing.T) {
-	t.Run("Feedback should print a message that login was successful", func(t *testing.T) {
-		out, ui := mock.NewUI()
+	t.Run("should print a message that login was successful", func(t *testing.T) {
+		tc := setup(t)
+		defer tc.teardown()
+
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
 		cmd := &Command{}
 
-		err := cmd.Feedback(nil, ui)
+		err := cmd.Handler(tc.profile, ui, cli.Clients{Realm: tc.realmClient})
 		assert.Nil(t, err)
 
 		assert.Equal(t, "01:23:45 UTC INFO  Successfully logged in\n", out.String())
@@ -207,4 +189,40 @@ func ensureProfileContents(t *testing.T, profile *cli.Profile, user auth.User, s
   public_api_key: %s
   refresh_token: %s
 `, profile.Name, session.AccessToken, user.PrivateAPIKey, user.PublicAPIKey, session.RefreshToken)), "profile must contain the expected contents")
+}
+
+type testContext struct {
+	profile     *cli.Profile
+	realmClient realm.Client
+	teardown    func()
+}
+
+func setup(t *testing.T) testContext {
+	t.Helper()
+
+	tmpDir, teardownTmpDir, err := u.NewTempDir("home")
+	assert.Nil(t, err)
+
+	_, teardownHomeDir := u.SetupHomeDir(tmpDir)
+
+	profile := mock.NewProfile(t)
+
+	profile.SetUser(auth.User{"existingUser", "existing-password"})
+	profile.SetSession(auth.Session{"existingAccessToken", "existingRefreshToken"})
+	assert.Nil(t, profile.Save())
+
+	realmClient := mock.RealmClient{}
+	realmClient.AuthenticateFn = func(publicAPIKey, privateAPIKey string) (realm.Session, error) {
+		return realm.Session{
+			AccessToken:  "newAccessToken",
+			RefreshToken: "newRefreshToken",
+		}, nil
+	}
+
+	teardown := func() {
+		teardownHomeDir()
+		teardownTmpDir()
+	}
+
+	return testContext{profile, realmClient, teardown}
 }

@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
 func TestLogoutHandler(t *testing.T) {
-	t.Run("Handler should clear user and session and save the config", func(t *testing.T) {
+	t.Run("should clear user and session and save the config", func(t *testing.T) {
 		tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 		assert.Nil(t, tmpDirErr)
 		defer teardownTmpDir()
@@ -45,7 +46,7 @@ func TestLogoutHandler(t *testing.T) {
 
 		cmd := &Command{}
 
-		assert.Nil(t, cmd.Handler(profile, ui))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
 		assert.Equal(t, auth.User{PublicAPIKey: "username"}, profile.User())
 		assert.Equal(t, auth.Session{}, profile.Session())
@@ -62,13 +63,14 @@ func TestLogoutHandler(t *testing.T) {
 }
 
 func TestLogoutFeedback(t *testing.T) {
-	t.Run("Feedback should print a message that logout was successful", func(t *testing.T) {
+	t.Run("should print a message that logout was successful", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
 		out, ui := mock.NewUI()
 
 		cmd := &Command{}
 
-		err := cmd.Feedback(nil, ui)
-		assert.Nil(t, err)
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
 		assert.Equal(t, "01:23:45 UTC INFO  Successfully logged out\n", out.String())
 	})

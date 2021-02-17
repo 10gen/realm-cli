@@ -1,10 +1,10 @@
 package secrets
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -12,14 +12,7 @@ import (
 
 // CommandDelete for the secrets delete command
 type CommandDelete struct {
-	inputs      deleteInputs
-	realmClient realm.Client
-	outputs     secretOutputs
-}
-
-// Inputs function for the secrets delete command
-func (cmd *CommandDelete) Inputs() cli.InputResolver {
-	return &cmd.inputs
+	inputs deleteInputs
 }
 
 // Flags function for the secrets delete command
@@ -28,50 +21,49 @@ func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsageDelete)
 }
 
-// Setup function for the secrets delete command
-func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
+// Inputs function for the secrets delete command
+func (cmd *CommandDelete) Inputs() cli.InputResolver {
+	return &cmd.inputs
 }
 
 // Handler function for the secrets delete command
-func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}
 
-	secretList, err := cmd.realmClient.Secrets(app.GroupID, app.ID)
+	secrets, err := clients.Realm.Secrets(app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
 
-	toDelete, err := cmd.inputs.resolveSecrets(ui, secretList)
+	selected, err := cmd.inputs.resolveSecrets(ui, secrets)
 	if err != nil {
 		return err
 	}
 
-	for _, secret := range toDelete {
-		err := cmd.realmClient.DeleteSecret(app.GroupID, app.ID, secret.ID)
-		cmd.outputs = append(cmd.outputs, secretOutput{secret: secret, err: err})
+	if len(selected) == 0 {
+		ui.Print(terminal.NewTextLog("No secrets to delete"))
+		return nil
 	}
 
-	return nil
-}
-
-// Feedback function for the secrets delete command
-func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.inputs.secrets) == 0 {
-		return ui.Print(terminal.NewTextLog("No secrets to delete"))
+	outputs := make(secretOutputs, len(selected))
+	for i, secret := range selected {
+		err := clients.Realm.DeleteSecret(app.GroupID, app.ID, secret.ID)
+		outputs[i] = secretOutput{secret, err}
 	}
 
-	sort.SliceStable(cmd.outputs, secretOutputComparerBySuccess(cmd.outputs))
-	logs := terminal.NewTableLog(
-		"Deleted Secrets",
+	sort.SliceStable(outputs, func(i, j int) bool {
+		return outputs[i].err != nil && outputs[j].err == nil
+	})
+
+	ui.Print(terminal.NewTableLog(
+		fmt.Sprintf("Deleted %d secret(s)", len(outputs)),
 		secretHeaders(headerDeleted, headerDetails),
-		secretTableRows(cmd.outputs, secretDeleteRow)...,
-	)
-	return ui.Print(logs)
+		secretTableRows(outputs, secretDeleteRow)...,
+	))
+	return nil
 }
 
 func secretDeleteRow(output secretOutput, row map[string]interface{}) {

@@ -229,7 +229,7 @@ func TestMultiUsersInputsSelect(t *testing.T) {
 		<-doneCh              // wait for procedure to complete
 
 		assert.Nil(t, err)
-		assert.Equal(t, testUsers[0:1], users)
+		assert.Equal(t, testUsers[:1], users)
 	})
 
 	t.Run("should not prompt the user", func(t *testing.T) {

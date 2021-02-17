@@ -70,22 +70,16 @@ func TestSecretUpdateHandler(t *testing.T) {
 				return nil
 			}
 
-			cmd := &CommandUpdate{
-				inputs: updateInputs{
-					cli.ProjectInputs{
-						projectID,
-						appID,
-					},
-					tc.testSecret,
-					tc.testName,
-					tc.testValue,
-				},
-				realmClient: realmClient,
-			}
+			cmd := &CommandUpdate{updateInputs{
+				cli.ProjectInputs{projectID, appID},
+				tc.testSecret,
+				tc.testName,
+				tc.testValue,
+			}}
 
 			out, ui := mock.NewUI()
 
-			assert.Nil(t, cmd.Handler(nil, ui))
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, "01:23:45 UTC INFO  Successfully updated secret\n", out.String())
 		})
@@ -94,7 +88,7 @@ func TestSecretUpdateHandler(t *testing.T) {
 	t.Run("should return an error", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
-			testInput   updateInputs
+			inputs      updateInputs
 			clientSetup func() realm.Client
 			expectedErr error
 		}{
@@ -128,7 +122,7 @@ func TestSecretUpdateHandler(t *testing.T) {
 			},
 			{
 				description: "if there is an issue with finding the secret specified in the list of app secrets",
-				testInput:   updateInputs{secret: "illegal"},
+				inputs:      updateInputs{secret: "illegal"},
 				clientSetup: func() realm.Client {
 					return mock.RealmClient{
 						FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -143,7 +137,7 @@ func TestSecretUpdateHandler(t *testing.T) {
 			},
 			{
 				description: "if there is an issue with updating the secret",
-				testInput:   updateInputs{secret: secrets[0].Name},
+				inputs:      updateInputs{secret: secrets[0].Name},
 				clientSetup: func() realm.Client {
 					return mock.RealmClient{
 						FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -164,11 +158,8 @@ func TestSecretUpdateHandler(t *testing.T) {
 				_, ui := mock.NewUI()
 
 				realmClient := tc.clientSetup()
-				cmd := &CommandUpdate{
-					inputs:      tc.testInput,
-					realmClient: realmClient,
-				}
-				assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui))
+				cmd := &CommandUpdate{tc.inputs}
+				assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			})
 		}
 	})

@@ -60,17 +60,17 @@ type Client interface {
 
 // NewClient creates a new Realm client
 func NewClient(baseURL string) Client {
-	return &client{baseURL, noopSessionManager{}}
+	return &client{baseURL, noopAuth{}}
 }
 
 // NewAuthClient creates a new Realm client capable of managing the user's session
-func NewAuthClient(baseURL string, sessionManager auth.SessionManager) Client {
-	return &client{baseURL, sessionManager}
+func NewAuthClient(baseURL string, authService auth.Service) Client {
+	return &client{baseURL, authService}
 }
 
 type client struct {
-	baseURL        string
-	sessionManager auth.SessionManager
+	baseURL     string
+	authService auth.Service
 }
 
 func (c *client) doJSON(method, path string, payload interface{}, options api.RequestOptions) (*http.Response, error) {
@@ -98,10 +98,10 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 		req.Header.Set(api.HeaderContentType, options.ContentType)
 	}
 
-	if auth, err := c.getAuth(options); err != nil {
+	if token, err := c.getAuthToken(options); err != nil {
 		return nil, err
-	} else if auth != "" {
-		req.Header.Set(api.HeaderAuthorization, "Bearer "+auth)
+	} else if token != "" {
+		req.Header.Set(api.HeaderAuthorization, "Bearer "+token)
 	}
 
 	client := &http.Client{}
@@ -124,8 +124,8 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	}
 
 	if refreshErr := c.refreshAuth(); refreshErr != nil {
-		c.sessionManager.ClearSession()
-		if err := c.sessionManager.Save(); err != nil {
+		c.authService.ClearSession()
+		if err := c.authService.Save(); err != nil {
 			return nil, ErrInvalidSession{}
 		}
 		return nil, ErrInvalidSession{}
@@ -136,12 +136,18 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	return c.do(method, path, options)
 }
 
-type noopSessionManager struct{}
+type noopAuth struct{}
 
-func (sm noopSessionManager) ClearSession() {}
+func (sm noopAuth) ClearSession() {}
 
-func (sm noopSessionManager) Save() error { return nil }
+func (sm noopAuth) ClearUser() {}
 
-func (sm noopSessionManager) Session() auth.Session { return auth.Session{} }
+func (sm noopAuth) Save() error { return nil }
 
-func (sm noopSessionManager) SetSession(session auth.Session) {}
+func (sm noopAuth) Session() auth.Session { return auth.Session{} }
+
+func (sm noopAuth) SetSession(session auth.Session) {}
+
+func (sm noopAuth) User() auth.User { return auth.User{} }
+
+func (sm noopAuth) SetUser(user auth.User) {}

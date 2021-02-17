@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -17,17 +16,7 @@ import (
 
 // Command is the `push` command
 type Command struct {
-	inputs      inputs
-	outputs     outputs
-	atlasClient atlas.Client
-	realmClient realm.Client
-}
-
-type outputs struct {
-	appCreated   bool
-	diffRejected bool
-	draftKept    bool
-	noDiffs      bool
+	inputs inputs
 }
 
 // Flags is the command flags
@@ -47,52 +36,51 @@ func (cmd *Command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *Command) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.atlasClient = profile.AtlasAuthClient()
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := local.LoadApp(cmd.inputs.AppDirectory)
-	if appErr != nil {
-		return appErr
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := local.LoadApp(cmd.inputs.AppDirectory)
+	if err != nil {
+		return err
 	}
 
-	to, toErr := cmd.inputs.resolveTo(ui, cmd.realmClient)
-	if toErr != nil {
-		return toErr
+	to, err := cmd.inputs.resolveTo(ui, clients.Realm)
+	if err != nil {
+		return err
 	}
 
 	if to.GroupID == "" {
-		groupID, err := cli.ResolveGroupID(ui, cmd.atlasClient)
+		groupID, err := cli.ResolveGroupID(ui, clients.Atlas)
 		if err != nil {
 			return err
 		}
 		to.GroupID = groupID
 	}
 
+	var isNewApp bool
 	if to.AppID == "" {
 		if cmd.inputs.DryRun {
+			ui.Print(
+				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
+				terminal.NewSuggestedCommandsLog(cmd.commandString(true)),
+			)
 			return nil
 		}
 
-		app, err := cmd.createNewApp(ui, to.GroupID, app.AppData)
+		app, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.AppDirectory, to.GroupID, app.AppData)
 		if err != nil {
 			return err
 		}
-		if app.ID == "" {
+		if !proceed {
 			return nil
 		}
+
 		to.AppID = app.ID
-		cmd.outputs.appCreated = true
+		isNewApp = true
 	}
 
-	diffs, diffsErr := cmd.realmClient.Diff(to.GroupID, to.AppID, app)
-	if diffsErr != nil {
-		return diffsErr
+	diffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app)
+	if err != nil {
+		return err
 	}
 
 	if cmd.inputs.IncludeHosting {
@@ -105,48 +93,48 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if len(diffs) == 0 {
-		cmd.outputs.noDiffs = true
+		ui.Print(terminal.NewTextLog("Deployed app is identical to proposed version, nothing to do"))
 		return nil
 	}
 
-	if !ui.AutoConfirm() && !cmd.outputs.appCreated {
+	if !ui.AutoConfirm() && !isNewApp {
 		// when updating an existing app, if the user has not set the '-y' flag
 		// print the app diffs back to the user
-		if err := ui.Print(terminal.NewTextLog(
+		ui.Print(terminal.NewTextLog(
 			"The following reflects the proposed changes to your Realm app\n%s",
 			strings.Join(diffs, "\n"),
-		)); err != nil {
-			return err
-		}
+		))
 	}
 
 	if cmd.inputs.DryRun {
+		ui.Print(
+			terminal.NewTextLog("To push these changes, you must omit the 'dry-run' flag to proceed"),
+			terminal.NewSuggestedCommandsLog(cmd.commandString(true)),
+		)
 		return nil
 	}
 
-	proceed, confirmErr := ui.Confirm("Please confirm the changes shown above")
-	if confirmErr != nil {
-		return confirmErr
+	proceed, err := ui.Confirm("Please confirm the changes shown above")
+	if err != nil {
+		return err
 	}
 	if !proceed {
-		cmd.outputs.diffRejected = true
 		return nil
 	}
 
-	draft, draftProceed, draftErr := createNewDraft(ui, cmd.realmClient, to)
-	if draftErr != nil {
-		return draftErr
+	draft, proceed, err := createNewDraft(ui, clients.Realm, to)
+	if err != nil {
+		return err
 	}
-	if !draftProceed {
-		cmd.outputs.draftKept = true
+	if !proceed {
 		return nil
 	}
 
-	if err := cmd.realmClient.Import(to.GroupID, to.AppID, app); err != nil {
+	if err := clients.Realm.Import(to.GroupID, to.AppID, app); err != nil {
 		return err
 	}
 
-	if err := deployDraftAndWait(ui, cmd.realmClient, to, draft.ID); err != nil {
+	if err := deployDraftAndWait(ui, clients.Realm, to, draft.ID); err != nil {
 		return err
 	}
 
@@ -164,47 +152,24 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 		}
 		defer os.Remove(uploadPath) //nolint:errcheck
 
-		if err := cmd.realmClient.ImportDependencies(to.GroupID, to.AppID, uploadPath); err != nil {
+		if err := clients.Realm.ImportDependencies(to.GroupID, to.AppID, uploadPath); err != nil {
 			return err
 		}
 	}
 
+	ui.Print(terminal.NewTextLog("Successfully pushed app changes"))
 	return nil
-}
-
-// Feedback is the command feedback
-func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if cmd.outputs.noDiffs {
-		return ui.Print(terminal.NewTextLog("Deployed app is identical to proposed version, nothing to do"))
-	}
-	if cmd.outputs.diffRejected || cmd.outputs.draftKept {
-		return ui.Print(terminal.NewTextLog("No changes were pushed to your Realm application"))
-	}
-
-	if cmd.outputs.appCreated {
-		if cmd.inputs.DryRun {
-			return ui.Print(
-				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
-				terminal.NewSuggestedCommandsLog(cmd.commandString(true)),
-			)
-		}
-		return ui.Print(
-			terminal.NewTextLog("This is a new app. You must create a new app to proceed"),
-		)
-	}
-
-	return ui.Print(terminal.NewTextLog("Successfully pushed app changes"))
 }
 
 type namer interface{ Name() string }
 type locationer interface{ Location() realm.Location }
 type deploymentModeler interface{ DeploymentModel() realm.DeploymentModel }
 
-func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interface{}) (realm.App, error) {
+func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupID string, appData interface{}) (realm.App, bool, error) {
 	if proceed, err := ui.Confirm("Do you wish to create a new app?"); err != nil {
-		return realm.App{}, err
+		return realm.App{}, false, err
 	} else if !proceed {
-		return realm.App{}, nil
+		return realm.App{}, false, nil
 	}
 
 	var name, location, deploymentModel string
@@ -224,7 +189,7 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interfa
 
 	if name == "" || !ui.AutoConfirm() {
 		if err := ui.AskOne(&name, &survey.Input{Message: "App Name", Default: name}); err != nil {
-			return realm.App{}, err
+			return realm.App{}, false, err
 		}
 	}
 
@@ -237,7 +202,7 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interfa
 				Default: location,
 			},
 		); err != nil {
-			return realm.App{}, err
+			return realm.App{}, false, err
 		}
 	}
 
@@ -249,29 +214,23 @@ func (cmd *Command) createNewApp(ui terminal.UI, groupID string, appData interfa
 				Options: realm.DeploymentModelValues,
 				Default: deploymentModel,
 			}); err != nil {
-			return realm.App{}, err
+			return realm.App{}, false, err
 		}
 	}
 
-	app, appErr := cmd.realmClient.CreateApp(
+	app, err := realmClient.CreateApp(
 		groupID,
 		name,
 		realm.AppMeta{Location: realm.Location(location), DeploymentModel: realm.DeploymentModel(deploymentModel)},
 	)
-	if appErr != nil {
-		return realm.App{}, appErr
+	if err != nil {
+		return realm.App{}, false, err
 	}
 
-	if appErr != nil {
-		return realm.App{}, appErr
+	if err := local.AsApp(appDirectory, app).WriteConfig(); err != nil {
+		return realm.App{}, false, err
 	}
-	cmd.outputs.appCreated = true
-
-	if err := local.AsApp(cmd.inputs.AppDirectory, app).WriteConfig(); err != nil {
-		return realm.App{}, err
-	}
-
-	return app, nil
+	return app, true, nil
 }
 
 func createNewDraft(ui terminal.UI, realmClient realm.Client, to to) (realm.AppDraft, bool, error) {
@@ -335,30 +294,27 @@ func diffDraft(ui terminal.UI, realmClient realm.Client, to to, draftID string) 
 			logs = append(logs, terminal.NewListLog("With changes to your app schema...", diff.SchemaOptionsDiff.DiffList()...))
 		}
 	}
-	return ui.Print(logs...)
+	ui.Print(logs...)
+	return nil
 }
 
 func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, to to, draftID string) error {
-	deployment, deploymentErr := realmClient.DeployDraft(to.GroupID, to.AppID, draftID)
-	if deploymentErr != nil {
-		return deploymentErr
+	deployment, err := realmClient.DeployDraft(to.GroupID, to.AppID, draftID)
+	if err != nil {
+		return err
 	}
 
 	for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
 		// TODO(REALMC-7867): replace this Print statement with a spinner & status message (which goes away after the function completes)
-		if err := ui.Print(terminal.NewTextLog("Checking on the status of your deployment...")); err != nil {
-			return err
-		}
+		ui.Print(terminal.NewTextLog("Checking on the status of your deployment..."))
 		time.Sleep(time.Second)
 
-		deployment, deploymentErr = realmClient.Deployment(to.GroupID, to.AppID, deployment.ID)
-		if deploymentErr != nil {
+		deployment, err = realmClient.Deployment(to.GroupID, to.AppID, deployment.ID)
+		if err != nil {
 			if err := realmClient.DiscardDraft(to.GroupID, to.AppID, draftID); err != nil {
-				if e := ui.Print(terminal.NewWarningLog("We failed to discard the draft we created for your deployment")); e != nil {
-					return e
-				}
+				ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
 			}
-			return deploymentErr
+			return err
 		}
 	}
 	return nil

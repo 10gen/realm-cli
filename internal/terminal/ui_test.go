@@ -3,6 +3,8 @@ package terminal_test
 import (
 	"bytes"
 	"errors"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -31,10 +33,10 @@ func TestUIPrint(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				out, err := new(bytes.Buffer), new(bytes.Buffer)
-				ui := terminal.NewUI(terminal.UIConfig{}, nil, out, err)
+				ui := terminal.NewUI(terminal.UIConfig{}, nil, out, err, logger)
 
 				tc.log.Time = mock.StaticTime
-				assert.Nil(t, ui.Print(tc.log))
+				ui.Print(tc.log)
 
 				assert.Equal(t, tc.expectedOut, out.String())
 				assert.Equal(t, tc.expectedErr, err.String())
@@ -42,3 +44,7 @@ func TestUIPrint(t *testing.T) {
 		}
 	})
 }
+
+var (
+	logger = log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
+)

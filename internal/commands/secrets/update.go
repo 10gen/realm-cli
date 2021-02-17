@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -10,8 +9,7 @@ import (
 
 // CommandUpdate is the `secret update` command
 type CommandUpdate struct {
-	inputs      updateInputs
-	realmClient realm.Client
+	inputs updateInputs
 }
 
 // Inputs function for the secrets update command
@@ -27,20 +25,14 @@ func (cmd *CommandUpdate) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.value, flagValue, flagValueShort, "", flagValueUsageUpdate)
 }
 
-// Setup function for the secrets update command
-func (cmd *CommandUpdate) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler function for the secrets update command
-func (cmd *CommandUpdate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+func (cmd *CommandUpdate) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}
 
-	secrets, err := cmd.realmClient.Secrets(app.GroupID, app.ID)
+	secrets, err := clients.Realm.Secrets(app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +42,7 @@ func (cmd *CommandUpdate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if err := cmd.realmClient.UpdateSecret(
+	if err := clients.Realm.UpdateSecret(
 		app.GroupID,
 		app.ID,
 		secret.ID,
@@ -59,5 +51,7 @@ func (cmd *CommandUpdate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	); err != nil {
 		return err
 	}
-	return ui.Print(terminal.NewTextLog("Successfully updated secret"))
+
+	ui.Print(terminal.NewTextLog("Successfully updated secret"))
+	return nil
 }

@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -10,9 +9,7 @@ import (
 
 // CommandCreate is the `secrets create` command
 type CommandCreate struct {
-	inputs      createInputs
-	realmClient realm.Client
-	secret      realm.Secret
+	inputs createInputs
 }
 
 // Flags is the command flags
@@ -28,29 +25,18 @@ func (cmd *CommandCreate) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandCreate) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
 
-	secret, secretErr := cmd.realmClient.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
-	if secretErr != nil {
-		return secretErr
+	secret, err := clients.Realm.CreateSecret(app.GroupID, app.ID, cmd.inputs.Name, cmd.inputs.Value)
+	if err != nil {
+		return err
 	}
 
-	cmd.secret = secret
+	ui.Print(terminal.NewTextLog("Successfully created secret, id: %s", secret.ID))
 	return nil
-}
-
-// Feedback is the command feedback
-func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	return ui.Print(terminal.NewTextLog("Successfully created secret, id: %s", cmd.secret.ID))
 }

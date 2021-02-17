@@ -3,6 +3,7 @@ package terminal
 import (
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
@@ -14,11 +15,11 @@ type UI interface {
 	Ask(answer interface{}, questions ...*survey.Question) error
 	AskOne(answer interface{}, prompt survey.Prompt) error
 	Confirm(format string, args ...interface{}) (bool, error)
-	Print(logs ...Log) error
+	Print(logs ...Log)
 }
 
 // NewUI creates a new terminal UI
-func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
+func NewUI(config UIConfig, in io.Reader, out, err io.Writer, errLogger *log.Logger) UI {
 	noColor := config.DisableColors
 	if config.OutputFormat == OutputFormatJSON {
 		noColor = true
@@ -30,14 +31,16 @@ func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
 		fdReader{in},
 		fdWriter{out},
 		err,
+		errLogger,
 	}
 }
 
 type ui struct {
-	config UIConfig
-	in     fdReader
-	out    fdWriter
-	err    io.Writer
+	config    UIConfig
+	in        fdReader
+	out       fdWriter
+	err       io.Writer
+	errLogger *log.Logger
 }
 
 func (ui *ui) AutoConfirm() bool {
@@ -72,11 +75,12 @@ func (ui *ui) Confirm(format string, args ...interface{}) (bool, error) {
 	)
 }
 
-func (ui *ui) Print(logs ...Log) error {
+func (ui *ui) Print(logs ...Log) {
 	for _, log := range logs {
-		output, outputErr := log.Print(ui.config.OutputFormat)
-		if outputErr != nil {
-			return outputErr
+		output, err := log.Print(ui.config.OutputFormat)
+		if err != nil {
+			ui.Print(NewErrorLog(err))
+			return
 		}
 
 		var writer io.Writer
@@ -88,10 +92,9 @@ func (ui *ui) Print(logs ...Log) error {
 		}
 
 		if _, err := fmt.Fprintln(writer, output); err != nil {
-			return err
+			ui.errLogger.Fatal(output) // log the original failure
 		}
 	}
-	return nil
 }
 
 // UIConfig holds the global config for the CLI ui
