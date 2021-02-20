@@ -13,6 +13,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
+	"github.com/10gen/realm-cli/internal/utils/api"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -266,17 +267,265 @@ func TestPushHandler(t *testing.T) {
 		}
 
 		t.Run("should run import successfully", func(t *testing.T) {
+			runImport(t, realmClient, "testdata/project")
+		})
+
+		t.Run("but fails to upload a hosting asset", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
+			realmClient.HostingAssetUploadFn = func(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+				return errors.New("something bad happened")
+			}
+
+			t.Run("should not return an error when include hosting flag is omitted", func(t *testing.T) {
+				runImport(t, realmClient, "testdata/project")
+			})
+
+			t.Run("should return an error when adding a hosting asset", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+					return nil, nil
+				}
+
+				cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
+				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC WARN  failed to add /404.html: something bad happened
+01:23:45 UTC WARN  failed to add /index.html: something bad happened
+`, out.String())
+			})
+
+			t.Run("should return an error when modifying the body of a hosting asset", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+					return []realm.HostingAsset{
+						{HostingAssetData: realm.HostingAssetData{FilePath: "/index.html"}},
+						{HostingAssetData: realm.HostingAssetData{FilePath: "/404.html"}},
+					}, nil
+				}
+
+				cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
+				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC WARN  failed to update /404.html: something bad happened
+01:23:45 UTC WARN  failed to update /index.html: something bad happened
+`, out.String())
+			})
+		})
+
+		t.Run("but fails to remove a hosting asset", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
+			realmClient.HostingAssetUploadFn = func(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+				return nil
+			}
+
+			realmClient.HostingAssetRemoveFn = func(groupID, appID, path string) error {
+				return errors.New("something bad happened")
+			}
+
+			t.Run("should not return an error when include hosting flag is omitted", func(t *testing.T) {
+				runImport(t, realmClient, "testdata/hosting")
+			})
+
+			t.Run("should return an error when deleting a hosting asset", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+					return []realm.HostingAsset{
+						{HostingAssetData: realm.HostingAssetData{FilePath: "/deleteme.html"}},
+					}, nil
+				}
+
+				cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("1 error(s) occurred while importing hosting assets"), err)
+				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC WARN  failed to remove /deleteme.html: something bad happened
+`, out.String())
+			})
+		})
+
+		t.Run("but fails to update a hosting asset attribute", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
+			realmClient.HostingAssetAttributesUpdateFn = func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error {
+				return errors.New("something bad happened")
+			}
+
+			t.Run("should not return an error when include hosting flag is omitted", func(t *testing.T) {
+				runImport(t, realmClient, "testdata/hosting")
+			})
+
+			t.Run("should return an error when modifying the attribute of a hosting asset", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+					return []realm.HostingAsset{
+						{
+							HostingAssetData: realm.HostingAssetData{FilePath: "/index.html", FileHash: "daad4fb706d494feb9014e131f6520d4"},
+							Attrs:            realm.HostingAssetAttributes{{api.HeaderContentLanguage, "en-US"}},
+						},
+						{
+							HostingAssetData: realm.HostingAssetData{FilePath: "/404.html", FileHash: "7785338f982ac81219ef449f4943ec89"},
+							Attrs:            realm.HostingAssetAttributes{{api.HeaderContentLanguage, "en-US"}},
+						},
+					}, nil
+				}
+
+				cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
+				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC WARN  failed to update attributes for /404.html: something bad happened
+01:23:45 UTC WARN  failed to update attributes for /index.html: something bad happened
+`, out.String())
+			})
+		})
+
+		t.Run("and can import hosting files should run import successfully", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
+			var added, removed, updated []string
 
-			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			realmClient.HostingAssetUploadFn = func(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+				added = append(added, asset.FilePath)
+				return nil
+			}
+			realmClient.HostingAssetRemoveFn = func(groupID, appID, path string) error {
+				removed = append(removed, path)
+				return nil
+			}
+			realmClient.HostingAssetAttributesUpdateFn = func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error {
+				updated = append(updated, path)
+				return nil
+			}
+			realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+				return []realm.HostingAsset{
+					{HostingAssetData: realm.HostingAssetData{FilePath: "/deleteme.html"}},
+					{
+						HostingAssetData: realm.HostingAssetData{FilePath: "/404.html", FileHash: "7785338f982ac81219ef449f4943ec89"},
+						Attrs:            realm.HostingAssetAttributes{{api.HeaderContentLanguage, "en-US"}},
+					},
+				}, nil
+			}
+
+			cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true}}
+
+			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+			assert.Nil(t, err)
 			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
 01:23:45 UTC INFO  Creating draft
 01:23:45 UTC INFO  Pushing changes
 01:23:45 UTC INFO  Deploying draft
 01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Import hosting assets
+01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+`, out.String())
+
+			assert.Equal(t, []string{"/index.html"}, added)
+			assert.Equal(t, []string{"/deleteme.html"}, removed)
+			assert.Equal(t, []string{"/404.html"}, updated)
+		})
+
+		t.Run("and can import hosting files but fails to invalidate cdn cache should return an error", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+			realmClient.HostingAssetUploadFn = func(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+				return nil
+			}
+			realmClient.HostingAssetRemoveFn = func(groupID, appID, path string) error {
+				return nil
+			}
+			realmClient.HostingAssetAttributesUpdateFn = func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error {
+				return nil
+			}
+			realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+				return nil, nil
+			}
+			realmClient.HostingCacheInvalidateFn = func(groupID, appID, path string) error {
+				return errors.New("something bad happened")
+			}
+
+			cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true, ResetCDNCache: true}}
+
+			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+			assert.Equal(t, errors.New("something bad happened"), err)
+		})
+
+		t.Run("and can import hosting files and invalidate the cdn cache should import successfully", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "push-handler")
+			defer teardown()
+
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+			realmClient.HostingAssetUploadFn = func(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+				return nil
+			}
+			realmClient.HostingAssetRemoveFn = func(groupID, appID, path string) error {
+				return nil
+			}
+			realmClient.HostingAssetAttributesUpdateFn = func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error {
+				return nil
+			}
+			realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+				return nil, nil
+			}
+			realmClient.HostingCacheInvalidateFn = func(groupID, appID, path string) error {
+				return nil
+			}
+
+			cmd := &Command{inputs{AppDirectory: "testdata/hosting", To: "appID", IncludeHosting: true, ResetCDNCache: true}}
+
+			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+			assert.Nil(t, err)
+			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Import hosting assets
+01:23:45 UTC INFO  Reset CDN cache
 01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
@@ -301,6 +550,7 @@ func TestPushHandler(t *testing.T) {
 01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
 `, out.String())
 			})
+
 			t.Run("should return an error when include dependencies flag is set", func(t *testing.T) {
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
@@ -335,7 +585,7 @@ func TestPushHandler(t *testing.T) {
 		})
 	})
 
-	t.Run("should exit early in a dry run`", func(t *testing.T) {
+	t.Run("should exit early in a dry run", func(t *testing.T) {
 		for _, tc := range []struct {
 			description  string
 			groupID      string
@@ -1095,4 +1345,20 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			assert.Equal(t, "01:23:45 UTC INFO  Deployment complete\n", out.String())
 		})
 	})
+}
+
+func runImport(t *testing.T, realmClient realm.Client, appDirectory string) {
+	out := new(bytes.Buffer)
+	ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+	cmd := &Command{inputs{AppDirectory: appDirectory, To: "appID"}}
+
+	assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+	assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+`, out.String())
 }

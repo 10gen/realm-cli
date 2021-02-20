@@ -6,6 +6,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/utils/api"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
@@ -94,4 +95,64 @@ func TestAppDiffHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedDiffOutput, out.String())
 		})
 	}
+
+	t.Run("with include dependencies set should diff function dependencies", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return apps, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
+
+		cmd := &CommandDiff{diffInputs{IncludeDependencies: true}}
+		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+
+		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+diff1
+diff2
++ New function dependencies
+`, out.String())
+	})
+
+	t.Run("with include hosting set should diff hosting assets", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		out, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return apps, nil
+		}
+		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+			return []realm.HostingAsset{
+				{HostingAssetData: realm.HostingAssetData{FilePath: "/deleteme.html"}},
+				{
+					HostingAssetData: realm.HostingAssetData{FilePath: "/404.html", FileHash: "7785338f982ac81219ef449f4943ec89"},
+					Attrs:            realm.HostingAssetAttributes{{api.HeaderContentLanguage, "en-US"}},
+				},
+			}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
+
+		cmd := &CommandDiff{diffInputs{AppDirectory: "testdata/diff", IncludeHosting: true}}
+		assert.Equal(t, nil, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+
+		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+diff1
+diff2
+New hosting files
+	+ /index.html
+Removed hosting files
+	- /deleteme.html
+Modified hosting files
+	* /404.html
+`, out.String())
+	})
 }

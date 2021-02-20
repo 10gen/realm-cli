@@ -10,6 +10,7 @@ import (
 // RealmClient is a mocked Realm client
 type RealmClient struct {
 	realm.Client
+
 	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
 
@@ -44,6 +45,12 @@ type RealmClient struct {
 	EnableUserFn        func(groupID, appID, userID string) error
 	FindUsersFn         func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
 	RevokeUserSessionFn func(groupID, appID, userID string) error
+
+	HostingAssetsFn                func(groupID, appID string) ([]realm.HostingAsset, error)
+	HostingAssetUploadFn           func(groupID, appID, rootDir string, asset realm.HostingAsset) error
+	HostingAssetRemoveFn           func(groupID, appID, path string) error
+	HostingAssetAttributesUpdateFn func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error
+	HostingCacheInvalidateFn       func(groupID, appID, path string) error
 
 	StatusFn func() error
 }
@@ -316,6 +323,56 @@ func (rc RealmClient) ImportDependencies(groupID, appID, uploadPath string) erro
 		return rc.ImportDependenciesFn(groupID, appID, uploadPath)
 	}
 	return rc.Client.ImportDependencies(groupID, appID, uploadPath)
+}
+
+// HostingAssets calls the mocked HostingAssets implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) HostingAssets(groupID, appID string) ([]realm.HostingAsset, error) {
+	if rc.HostingAssetsFn != nil {
+		return rc.HostingAssetsFn(groupID, appID)
+	}
+	return rc.Client.HostingAssets(groupID, appID)
+}
+
+// HostingAssetUpload calls the mocked HostingAssetUpload implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) HostingAssetUpload(groupID, appID, rootDir string, asset realm.HostingAsset) error {
+	if rc.HostingAssetUploadFn != nil {
+		return rc.HostingAssetUploadFn(groupID, appID, rootDir, asset)
+	}
+	return rc.Client.HostingAssetUpload(groupID, appID, rootDir, asset)
+}
+
+// HostingAssetRemove calls the mocked HostingAssetRemove implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) HostingAssetRemove(groupID, appID, path string) error {
+	if rc.HostingAssetRemoveFn != nil {
+		return rc.HostingAssetRemoveFn(groupID, appID, path)
+	}
+	return rc.Client.HostingAssetRemove(groupID, appID, path)
+}
+
+// HostingAssetAttributesUpdate calls the mocked HostingAssetAttributesUpdate implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) HostingAssetAttributesUpdate(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error {
+	if rc.HostingAssetAttributesUpdateFn != nil {
+		return rc.HostingAssetAttributesUpdateFn(groupID, appID, path, attrs...)
+	}
+	return rc.Client.HostingAssetAttributesUpdate(groupID, appID, path, attrs...)
+}
+
+// HostingCacheInvalidate calls the mocked HostingCacheInvalidate implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) HostingCacheInvalidate(groupID, appID, path string) error {
+	if rc.HostingCacheInvalidateFn != nil {
+		return rc.HostingCacheInvalidateFn(groupID, appID, path)
+	}
+	return rc.Client.HostingCacheInvalidate(groupID, appID, path)
 }
 
 // Status calls the mocked Status implementation if provided,

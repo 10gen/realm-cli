@@ -69,14 +69,28 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 		return err
 	}
 
-	if cmd.inputs.IncludeHosting {
-		// TODO(REALMC-7177): diff hosting changes
-		diffs = append(diffs, "Diff hosting")
+	if cmd.inputs.IncludeDependencies {
+		// TODO(REALMC-8242): diff dependencies better
+		diffs = append(diffs, "+ New function dependencies")
 	}
 
-	if cmd.inputs.IncludeDependencies {
-		// TODO(REALMC-8242): diff dependencies changes
-		diffs = append(diffs, "Diff dependencies")
+	if cmd.inputs.IncludeHosting {
+		hosting, err := local.FindAppHosting(app.RootDir)
+		if err != nil {
+			return err
+		}
+
+		appAssets, err := clients.Realm.HostingAssets(appToDiff.GroupID, appToDiff.ID)
+		if err != nil {
+			return err
+		}
+
+		hostingDiffs, err := hosting.Diffs(profile.HostingAssetCachePath(), appToDiff.ID, appAssets)
+		if err != nil {
+			return err
+		}
+
+		diffs = append(diffs, hostingDiffs.Strings()...)
 	}
 
 	if len(diffs) == 0 {

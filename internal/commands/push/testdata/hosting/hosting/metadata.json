@@ -1,0 +1,10 @@
+[
+  {
+    "path": "/index.html",
+    "attrs": [{"name": "Content-Type", "value": "text/html"}]
+  },
+  {
+    "path": "/404.html",
+    "attrs": []
+  }
+]

@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -96,8 +98,9 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 			err := command.Command.Handler(factory.profile, factory.ui, Clients{
-				Realm: realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
-				Atlas: atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.User()),
+				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
+				Atlas:        atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.User()),
+				HostingAsset: local.NewHostingAssetClient(http.Get),
 			})
 			if err != nil {
 				factory.telemetryService.TrackEvent(

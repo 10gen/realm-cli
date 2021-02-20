@@ -3,8 +3,10 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/telemetry"
 
 	"github.com/spf13/afero"
@@ -30,6 +32,8 @@ const (
 
 	defaultAtlasBaseURL = "https://cloud.mongodb.com"
 	defaultRealmBaseURL = "https://realm.mongodb.com"
+
+	extJSON = ".json"
 )
 
 // Profile is the CLI profile
@@ -228,4 +232,9 @@ func (p Profile) AtlasBaseURL() string {
 // SetAtlasBaseURL sets the CLI profile Atlas base url
 func (p Profile) SetAtlasBaseURL(realmBaseURL string) {
 	p.SetString(keyAtlasBaseURL, realmBaseURL)
+}
+
+// HostingAssetCachePath returns the CLI profile's hosting asset cache file path
+func (p Profile) HostingAssetCachePath() string {
+	return filepath.Join(p.dir, local.NameAssetCache, p.Name+extJSON)
 }

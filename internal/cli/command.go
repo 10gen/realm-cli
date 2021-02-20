@@ -3,6 +3,7 @@ package cli
 import (
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -28,8 +29,9 @@ type Command interface {
 
 // Clients are the CLI clients
 type Clients struct {
-	Realm realm.Client
-	Atlas atlas.Client
+	Realm        realm.Client
+	Atlas        atlas.Client
+	HostingAsset local.HostingAssetClient
 }
 
 // CommandFlags provides access for commands to register local flags

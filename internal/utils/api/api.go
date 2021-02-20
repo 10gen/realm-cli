@@ -8,10 +8,14 @@ import (
 
 // set of supported api header keys
 const (
-	HeaderAccept             = "Accept"
-	HeaderContentDisposition = "Content-Disposition"
-	HeaderContentType        = "Content-Type"
-	HeaderAuthorization      = "Authorization"
+	HeaderAccept                  = "Accept"
+	HeaderCacheControl            = "Cache-Control"
+	HeaderContentDisposition      = "Content-Disposition"
+	HeaderContentEncoding         = "Content-Encoding"
+	HeaderContentLanguage         = "Content-Language"
+	HeaderContentType             = "Content-Type"
+	HeaderAuthorization           = "Authorization"
+	HeaderWebsiteRedirectLocation = "Website-Redirect-Location"
 )
 
 // set of supported api media types

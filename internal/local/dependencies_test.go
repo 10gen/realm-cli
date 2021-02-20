@@ -18,7 +18,7 @@ func TestDependenciesFind(t *testing.T) {
 
 	testRoot := filepath.Join(wd, "testdata/dependencies")
 
-	t.Run("should return an empty data when a project has no node_modules archive", func(t *testing.T) {
+	t.Run("should return an empty data when run outside a project directory", func(t *testing.T) {
 		deps, err := FindAppDependencies(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, Dependencies{}, deps)

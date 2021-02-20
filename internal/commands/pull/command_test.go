@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -120,7 +122,7 @@ func TestPullHandler(t *testing.T) {
 			return "", nil, errors.New("something bad happened")
 		}
 
-		t.Run("not attempt to export dependencies if the flag is not set", func(t *testing.T) {
+		t.Run("should not attempt to export dependencies if the flag is not set", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
@@ -135,7 +137,7 @@ func TestPullHandler(t *testing.T) {
 `, out.String())
 		})
 
-		t.Run("return the error when export dependencies fails", func(t *testing.T) {
+		t.Run("should return the error when exporting dependencies fails", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
@@ -183,6 +185,138 @@ func TestPullHandler(t *testing.T) {
 
 		_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
 		assert.Nil(t, pkgErr)
+	})
+
+	t.Run("with a realm client that fails to get hosting assets", func(t *testing.T) {
+		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
+		assert.Nil(t, zipErr)
+		defer zipPkg.Close()
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return nil, nil
+		}
+		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+			return nil, errors.New("something bad happened")
+		}
+
+		t.Run("should not attempt to export hosting assets if the flag is not set", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+
+			cmd := &Command{inputs{To: "app"}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+
+			assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
+01:23:45 UTC INFO  Successfully pulled app down: app
+`, out.String())
+		})
+
+		t.Run("should return the error when getting hosting assets fails", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			_, ui := mock.NewUI()
+
+			cmd := &Command{inputs{To: "app", IncludeHosting: true}}
+
+			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+			assert.Equal(t, errors.New("something bad happened"), err)
+		})
+	})
+
+	t.Run("with a realm client that successfully gets hosting assets should write the hosting files", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+		defer teardown()
+
+		filesDir := filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles)
+		assert.Nil(t, os.MkdirAll(filesDir, os.ModePerm))
+
+		t.Log("create an existing hosting asset to be left alone")
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "removed.html"),
+			[]byte("<html><body>i do not belong here</body></html>"),
+			0666,
+		))
+
+		t.Log("create an existing hosting asset to be modified")
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "modified.html"),
+			[]byte("<html><body>i should be something else</body></html>"),
+			0666,
+		))
+
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
+		assert.Nil(t, zipErr)
+		defer zipPkg.Close()
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return nil, nil
+		}
+		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
+			return []realm.HostingAsset{
+				{
+					HostingAssetData: realm.HostingAssetData{
+						FilePath: "/index.html",
+						FileHash: "9163ebc83aa75cae0a7e74b4e16af317",
+						FileSize: 51,
+					},
+					Attrs: nil,
+					URL:   "http://url.com/index.html",
+				},
+				{
+					HostingAssetData: realm.HostingAssetData{
+						FilePath: "/modified.html",
+						FileHash: "9163ebc83aa75cae0a7e74b4e16af317",
+						FileSize: 51,
+					},
+					Attrs: nil,
+					URL:   "http://url.com/modified.html",
+				},
+			}, nil
+		}
+
+		hostingAssetClient := local.NewHostingAssetClient(func(url string) (*http.Response, error) {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(strings.NewReader("<html><body>hello world!</body></html>")),
+			}, nil
+		})
+
+		cmd := &Command{inputs{To: "app", IncludeHosting: true}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, HostingAsset: hostingAssetClient}))
+		assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
+01:23:45 UTC DEBUG Fetched hosting assets
+01:23:45 UTC INFO  Successfully pulled app down: app
+`, out.String())
+
+		t.Log("should have added the new file")
+		newData, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "index.html"))
+		assert.Nil(t, err)
+		assert.Equal(t, "<html><body>hello world!</body></html>", string(newData))
+
+		t.Log("should have preserved the existing file not found on the app")
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "removed.html"))
+		assert.Nil(t, err)
+
+		t.Log("should have modified the existing file found on the app")
+		modifiedData, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "modified.html"))
+		assert.Nil(t, err)
+		assert.Equal(t, "<html><body>hello world!</body></html>", string(modifiedData))
 	})
 }
 

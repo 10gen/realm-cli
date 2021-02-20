@@ -28,17 +28,12 @@ func FindAppDependencies(path string) (Dependencies, error) {
 
 	rootDir := filepath.Join(app.RootDir, NameFunctions)
 
-	dir, dirErr := filepath.Abs(rootDir)
-	if dirErr != nil {
-		return Dependencies{}, dirErr
-	}
-
-	archives, archivesErr := filepath.Glob(filepath.Join(dir, "node_modules*"))
+	archives, archivesErr := filepath.Glob(filepath.Join(rootDir, "node_modules*"))
 	if archivesErr != nil {
 		return Dependencies{}, archivesErr
 	}
 	if len(archives) == 0 {
-		return Dependencies{}, fmt.Errorf("node_modules archive not found at '%s'", dir)
+		return Dependencies{}, fmt.Errorf("node_modules archive not found at '%s'", rootDir)
 	}
 
 	archivePath, archivePathErr := filepath.Abs(archives[0])
@@ -46,7 +41,7 @@ func FindAppDependencies(path string) (Dependencies, error) {
 		return Dependencies{}, archivePathErr
 	}
 
-	return Dependencies{RootDir: rootDir, ArchivePath: archivePath}, nil
+	return Dependencies{rootDir, archivePath}, nil
 }
 
 // PrepareUpload prepares a dependencies upload package by creating a .zip file

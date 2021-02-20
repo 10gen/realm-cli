@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
@@ -48,5 +49,10 @@ func TestProfile(t *testing.T) {
   a: ayyy
   b: be
 `), "config must contain the expected contents")
+	})
+
+	t.Run("Should provide a path the the hosting asset cache file", func(t *testing.T) {
+		cachePath := fmt.Sprintf("%s/%s/%s.json", profile.Dir(), local.NameAssetCache, profile.Name)
+		assert.Equal(t, cachePath, profile.HostingAssetCachePath())
 	})
 }

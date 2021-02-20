@@ -49,7 +49,10 @@ const (
 	NameCustomResolvers = "custom_resolvers"
 
 	// hosting
-	NameHosting = "hosting"
+	NameHosting    = "hosting"
+	NameFiles      = "files"
+	NameMetadata   = "metadata"
+	NameAssetCache = ".asset-cache"
 
 	// services
 	NameDataSources      = "data_sources"

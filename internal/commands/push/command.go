@@ -80,26 +80,46 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	ui.Print(terminal.NewTextLog("Determining changes"))
-	diffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app.AppData)
+	appDiffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app.AppData)
 	if err != nil {
 		return err
 	}
 
+	hosting, err := local.FindAppHosting(app.RootDir)
+	if err != nil {
+		return err
+	}
+
+	var hostingDiffs local.HostingDiffs
 	if cmd.inputs.IncludeHosting {
-		// TODO(REALMC-7177): diff hosting changes
-		diffs = append(diffs, "Import hosting")
+		appAssets, err := clients.Realm.HostingAssets(to.GroupID, to.AppID)
+		if err != nil {
+			return err
+		}
+
+		hostingDiffs, err = hosting.Diffs(profile.HostingAssetCachePath(), to.AppID, appAssets)
+		if err != nil {
+			return err
+		}
 	}
 
-	if cmd.inputs.IncludeDependencies {
-		diffs = append(diffs, "+ New function dependencies")
-	}
-
-	if len(diffs) == 0 {
+	if len(appDiffs) == 0 && !cmd.inputs.IncludeDependencies && hostingDiffs.Size() == 0 {
 		ui.Print(terminal.NewTextLog("Deployed app is identical to proposed version, nothing to do"))
 		return nil
 	}
 
 	if !ui.AutoConfirm() && !isNewApp {
+		diffs := make([]string, 0, len(appDiffs)+1+hostingDiffs.Cap())
+
+		diffs = append(diffs, appDiffs...)
+
+		if cmd.inputs.IncludeDependencies {
+			// TODO(REALMC-8242): diff dependencies better
+			diffs = append(diffs, "+ New function dependencies")
+		}
+
+		diffs = append(diffs, hostingDiffs.Strings()...)
+
 		// when updating an existing app, if the user has not set the '-y' flag
 		// print the app diffs back to the user
 		ui.Print(terminal.NewTextLog(
@@ -143,8 +163,6 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return err
 	}
 
-	// TODO(REALMC-7177): import hosting
-
 	if cmd.inputs.IncludeDependencies {
 		dependencies, err := local.FindAppDependencies(app.RootDir)
 		if err != nil {
@@ -177,6 +195,46 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 			return err
 		}
 		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
+	}
+
+	if cmd.inputs.IncludeHosting {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Importing hosting assets..."
+
+		importHosting := func() error {
+			s.Start()
+			defer s.Stop()
+
+			return hosting.UploadHostingAssets(
+				clients.Realm,
+				to.GroupID,
+				to.AppID,
+				hostingDiffs,
+				func(err error) { ui.Print(terminal.NewWarningLog(err.Error())) },
+			)
+		}
+
+		if err := importHosting(); err != nil {
+			return err
+		}
+		ui.Print(terminal.NewTextLog("Import hosting assets"))
+
+		if cmd.inputs.ResetCDNCache {
+			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+			s.Suffix = " Resetting CDN cache..."
+
+			invalidateCache := func() error {
+				s.Start()
+				defer s.Stop()
+
+				return clients.Realm.HostingCacheInvalidate(to.GroupID, to.AppID, "/*")
+			}
+
+			if err := invalidateCache(); err != nil {
+				return err
+			}
+			ui.Print(terminal.NewTextLog("Reset CDN cache"))
+		}
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", app.ID()))
