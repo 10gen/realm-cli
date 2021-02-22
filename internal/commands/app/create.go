@@ -1,7 +1,11 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -23,8 +27,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.Directory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
+	fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 }
@@ -101,46 +104,50 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// dsCluster, dsClusterErr := cmd.inputs.resolveDataSource(clients.Realm, cmd.inputs.Project, app.ID())
-	// if dsClusterErr != nil {
-	// 	return dsClusterErr
-	// }
-	// service := realm.ServiceDescData{
-	// 	Config: map[string]interface{}{
-	// 		"clusterName":         dsCluster,
-	// 		"readPreference":      "primary",
-	// 		"wireProtocolEnabled": false,
-	// 	},
-	// 	Name: appName + "_cluster",
-	// 	Type: "mongodb-atlas",
-	// }
-	// Potentially try to use Import to create app Service
-	// _, dsErr := clients.Realm.CreateAppService(cmd.inputs.Project, app.ID(), service) // for output possibly
-	// if dsErr != nil {
-	// 	return dsErr
-	// }
-	// Won't need if import works
-	// zipPkgName, zipPkg, exportErr := clients.Realm.Export(
-	// 	cmd.inputs.Project,
-	// 	app.ID(),
-	// 	realm.ExportRequest{ConfigVersion: realm.DefaultAppConfigVersion},
-	// )
-	// if exportErr != nil {
-	// 	return exportErr
-	// }
-	// if idx := strings.LastIndex(zipPkgName, "_"); idx != -1 {
-	// 	zipPkgName = zipPkgName[:idx]
-	// }
-	// zipPkgPath := filepath.Join(dir, zipPkgName) // Is this the correct path
-	// if writeErr := local.WriteZip(zipPkgPath, zipPkg); writeErr != nil {
-	// 	return writeErr
-	// }
+	if cmd.inputs.DataSource != "" {
+		dsCluster, err := cmd.inputs.resolveDataSource(clients.Realm, cmd.inputs.Project, newApp.ID)
+		if err != nil {
+			return err
+		}
+		serviceName := newApp.Name + "_cluster"
+		serviceConfig := map[string]interface{}{
+			"name": serviceName,
+			"type": "mongodb-atlas",
+			"config": map[string]interface{}{
+				"clusterName":         dsCluster,
+				"readPreference":      "primary",
+				"wireProtocolEnabled": false,
+			},
+		}
+		var dsPath string
+		switch loadedApp.ConfigVersion() {
+		case realm.AppConfigVersion20210101:
+			dsPath = fmt.Sprintf("data_sources/%s/config.json", serviceName)
+		case
+			realm.AppConfigVersion20200603,
+			realm.AppConfigVersion20180301:
+			dsPath = fmt.Sprintf("services/%s/config.json", serviceName)
+		default:
+			return errors.New("unsupported config version")
+		}
+		data, err := json.MarshalIndent(serviceConfig, local.ExportedJSONPrefix, local.ExportedJSONIndent)
+		if err != nil {
+			return err
+		}
+		err = local.WriteFile(filepath.Join(dir, dsPath), 0666, bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+		err = loadedApp.Load()
+		if err != nil {
+			return err
+		}
+	}
 
 	if err := clients.Realm.Import(
 		newApp.GroupID,
 		newApp.ID,
-		loadedApp,
+		loadedApp.AppData,
 	); err != nil {
 		return err
 	}

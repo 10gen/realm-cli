@@ -18,10 +18,9 @@ var (
 	flagDirectoryShort = "c"
 	flagDirectoryUsage = "the directory to create your new Realm app, defaults to Realm app name"
 
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// flagDataSource      = "data-source"
-	// flagDataSourceShort = "s"
-	// flagDataSourceUsage = "atlas cluster to back your Realm app, defaults to first available"
+	flagDataSource      = "data-source"
+	flagDataSourceShort = "s"
+	flagDataSourceUsage = "atlas cluster to back your Realm app, defaults to first available"
 
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// flagDryRun      = "dry-run"
@@ -31,9 +30,8 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	Directory string
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// DataSource string
+	Directory  string
+	DataSource string
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// DryRun bool
 }
@@ -93,24 +91,23 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	return fullPath, nil
 }
 
-// TODO(REALMC-8135): Implement data-source flag for app create command
-// func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (string, error) {
-// 	clusters, err := client.ListClusters(groupID, appID)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	var dsCluster string
-// 	for _, cluster := range clusters {
-// 		if (i.DataSource == "" && cluster.State == "IDLE") || i.DataSource == cluster.Name {
-// 			dsCluster = cluster.Name
-// 			break
-// 		}
-// 	}
-// 	if dsCluster == "" {
-// 		if i.DataSource != "" {
-// 			return "", fmt.Errorf("Unable to find the %s cluster", i.DataSource)
-// 		}
-// 		return "", fmt.Errorf("Unable to find any available cluster for Group ID %s", groupID)
-// 	}
-// 	return dsCluster, nil
-// }
+func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (string, error) {
+	clusters, err := client.ListClusters(groupID, appID)
+	if err != nil {
+		return "", err
+	}
+	var dsCluster string
+	for _, cluster := range clusters {
+		if (i.DataSource == "" && cluster.State == "IDLE") || i.DataSource == cluster.Name {
+			dsCluster = cluster.Name
+			break
+		}
+	}
+	if dsCluster == "" {
+		if i.DataSource != "" {
+			return "", fmt.Errorf("unable to find the %s cluster", i.DataSource)
+		}
+		return "", fmt.Errorf("unable to find any available cluster for Project %s", groupID)
+	}
+	return dsCluster, nil
+}

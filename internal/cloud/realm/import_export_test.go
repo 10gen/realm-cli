@@ -140,6 +140,62 @@ func TestRealmImport20210101(t *testing.T) {
 	})
 }
 
+func TestRealmImport20210101DataSource(t *testing.T) {
+	u.SkipUnlessRealmServerRunning(t)
+
+	client := newAuthClient(t)
+
+	t.Run("should import a datasource successfully", func(t *testing.T) {
+		apps, err := client.FindApps(realm.AppFilter{GroupID: "6019879205fdf21159843b06", App: "Application-0"})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(apps))
+		app := apps[0]
+
+		assert.Nil(t, client.Import(app.GroupID, app.ID, local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.AppConfigVersion20210101,
+			ID:              app.ClientAppID,
+			Name:            app.Name,
+			Location:        app.Location,
+			DeploymentModel: app.DeploymentModel,
+			DataSources: []local.DataSourceStructure{
+				{
+					map[string]interface{}{
+						"name": app.Name + "_cluster",
+						"type": "mongodb-atlas",
+						"config": map[string]interface{}{
+							"clusterName":         "Cluster0",
+							"readPreference":      "primary",
+							"wireProtocolEnabled": false,
+						},
+					},
+				},
+			},
+		}}))
+	})
+}
+
+func TestRealmExportDataSource(t *testing.T) {
+	u.SkipUnlessRealmServerRunning(t)
+
+	client := newAuthClient(t)
+
+	t.Run("should export a datasource successfully", func(t *testing.T) {
+		apps, err := client.FindApps(realm.AppFilter{GroupID: "6019879205fdf21159843b06", App: "Application-0"})
+		assert.Nil(t, err)
+		assert.Equal(t, 1, len(apps))
+		app := apps[0]
+
+		_, zipPkg, exportErr := client.Export(
+			app.GroupID,
+			app.ID,
+			realm.ExportRequest{ConfigVersion: realm.AppConfigVersion20210101},
+		)
+		assert.Nil(t, exportErr)
+
+		assert.Nil(t, local.WriteZip("/Users/ntfrank/Projects/realm-cli/Application-0", zipPkg))
+	})
+}
+
 func TestRealmImportLegacy(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 

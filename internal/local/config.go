@@ -56,13 +56,13 @@ func NewAppRealmConfigJSON(name string, meta realm.AppMeta) AppRealmConfigJSON {
 
 // set of write options
 const (
-	exportedJSONPrefix = ""
-	exportedJSONIndent = "    "
+	ExportedJSONPrefix = ""
+	ExportedJSONIndent = "    "
 )
 
 // WriteConfig writes the app config file to disk
 func (a App) WriteConfig() error {
-	data, err := json.MarshalIndent(a.AppData, exportedJSONPrefix, exportedJSONIndent)
+	data, err := json.MarshalIndent(a.AppData, ExportedJSONPrefix, ExportedJSONIndent)
 	if err != nil {
 		return err
 	}

@@ -109,7 +109,7 @@ func (c *client) FindApps(filter AppFilter) ([]App, error) {
 
 	var filtered = make([]App, 0, len(apps))
 	for _, app := range apps {
-		if strings.HasPrefix(app.ClientAppID, filter.App) {
+		if strings.HasPrefix(app.ClientAppID, strings.ToLower(filter.App)) {
 			filtered = append(filtered, app)
 		}
 	}

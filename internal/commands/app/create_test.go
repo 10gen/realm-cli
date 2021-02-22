@@ -14,7 +14,6 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-
 	"github.com/Netflix/go-expect"
 )
 
@@ -228,6 +227,57 @@ func TestAppCreateHandler(t *testing.T) {
 		}}}, localApp.AppData)
 	})
 
+	t.Run("should create minimal project with data source when data source is set", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		var createdApp realm.App
+		client := mock.RealmClient{}
+		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			createdApp = realm.App{
+				GroupID: groupID,
+				Name:    name,
+				AppMeta: meta,
+			}
+			return createdApp, nil
+		}
+		client.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
+			return []realm.PartialAtlasCluster{{Name: "test-cluster", State: "IDLE"}}, nil
+		}
+		var importAppData interface{}
+		client.ImportFn = func(groupID, appID string, appData interface{}) error {
+			importAppData = appData
+			return nil
+		}
+
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "test-project",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				},
+				DataSource: "test-cluster"},
+			realmClient: client,
+		}
+
+		assert.Nil(t, cmd.Handler(profile, nil))
+
+		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		assert.Nil(t, err)
+
+		assert.Equal(t, importAppData, localApp.AppData)
+		assert.Equal(t, realm.App{
+			GroupID: "test-project",
+			Name:    "test-app",
+			AppMeta: realm.AppMeta{
+				Location:        realm.LocationVirginia,
+				DeploymentModel: realm.DeploymentModelGlobal,
+			},
+		}, createdApp)
+	})
+
 	t.Run("should error when resolving groupID when project is not set", func(t *testing.T) {
 		profile := mock.NewProfileFromWD(t)
 
@@ -263,34 +313,36 @@ func TestAppCreateHandler(t *testing.T) {
 	})
 }
 
-// Add test cases to handler
-// func TestAppNewAppInputsResolveProject(t *testing.T) {
-// 	testApp := realm.App{
-// 		ID:          primitive.NewObjectID().Hex(),
-// 		GroupID:     primitive.NewObjectID().Hex(),
-// 		ClientAppID: "test-app-abcde",
-// 		Name:        "test-app",
-// 	}
+// func TestAppCreateFeedback(t *testing.T) {
+// 	t.Run("feedback should print a message that app creation was successful", func(t *testing.T) {
+// 		out, ui := mock.NewUI()
 
-// 	for _, tc := range []struct {
-// 		description     string
-// 		inputs          newAppInputs
-// 		expectedProject string
-// 		expectedErr     error
-// 	}{
-// 	} {
-// 		t.Run(tc.description, func(t *testing.T) {
-// 			ac := mock.AtlasClient{}
-// 			ac.GroupsFn = func() ([]atlas.Group, error) {
-// 				return []atlas.Group{{ID: testApp.GroupID}}, tc.expectedErr
-// 			}
+// 		cmd := &CommandCreate{
+// 			outputs: createOutputs{
+// 				clientAppID: "test-client-id",
+// 				dir:         "/file/path/to/test-app",
+// 				uiURL:       "https://realm.mongodb.com/groups/123/apps/123/dashboard",
+// 				followUpCmd: "cd ./test-app && realm-cli app describe",
+// 			},
+// 		}
 
-// 			groupID, err := tc.inputs.resolveProject(nil, ac)
+// 		err := cmd.Feedback(nil, ui)
+// 		assert.Nil(t, err)
 
-// 			assert.Equal(t, tc.expectedErr, err)
-// 			assert.Equal(t, tc.expectedProject, groupID)
-// 		})
-// 	}
+// 		expectedContent := strings.Join(
+// 			[]string{
+// 				"01:23:45 UTC INFO  Successfully created app",
+// 				"  Info                Details                                                ",
+// 				"  ------------------  -------------------------------------------------------",
+// 				"  Client App ID       test-client-id                                         ",
+// 				"  Realm Directory     /file/path/to/test-app                                 ",
+// 				"  Realm UI            https://realm.mongodb.com/groups/123/apps/123/dashboard",
+// 				"  Check out your app  cd ./test-app && realm-cli app describe                ",
+// 				"",
+// 			},
+// 			"\n",
+// 		)
 
-//
+// 		assert.Equal(t, expectedContent, out.String())
+// 	})
 // }
