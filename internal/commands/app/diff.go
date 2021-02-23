@@ -10,11 +10,27 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	flagIncludeDependencies      = "include-dependencies"
+	flagIncludeDependenciesShort = "d"
+	flagIncludeDependenciesUsage = "include to diff Realm app dependencies changes as well"
+	flagIncludeHosting           = "include-hosting"
+	flagIncludeHostingShort      = "s"
+	flagIncludeHostingUsage      = "include to diff Realm app hosting changes as well"
+)
+
 type diffInputs struct {
 	AppDirectory        string
 	IncludeDependencies bool
 	IncludeHosting      bool
 	cli.ProjectInputs
+}
+
+func (i *diffInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if i.AppDirectory == "" {
+		i.AppDirectory = profile.WorkingDirectory
+	}
+	return nil
 }
 
 // CommandDiff is the `app diff` command
@@ -60,11 +76,12 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 
 	if cmd.inputs.IncludeHosting {
 		// TODO(REALMC-7177): diff hosting changes
-		diffs = append(diffs, "Import hosting")
+		diffs = append(diffs, "Diff hosting")
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		diffs = append(diffs, "Import dependencies")
+		// TODO(REALMC-8242): diff hosting changes
+		diffs = append(diffs, "Diff dependencies")
 	}
 
 	if len(diffs) == 0 {
