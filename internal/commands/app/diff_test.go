@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -29,10 +30,10 @@ func TestAppDiffHandler(t *testing.T) {
 		expectedDiff       []string
 		expectedDiffOutput string
 		expectedErr        error
+		appError           bool
 	}{
 		{
 			description:        "with no project nor app flag set should diff based on input",
-			expectedAppFilter:  realm.AppFilter{},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
@@ -47,7 +48,6 @@ func TestAppDiffHandler(t *testing.T) {
 			description:        "with no diffs between local and remote app",
 			inputs:             diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
-			expectedDiff:       nil,
 			expectedDiffOutput: "01:23:45 UTC INFO  Deployed app is identical to proposed version\n",
 		},
 		{
@@ -63,6 +63,13 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 		},
+		{
+			description:       "error on finding apps",
+			inputs:            diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
+			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
+			expectedErr:       errors.New("something went wrong"),
+			appError:          true,
+		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
@@ -72,6 +79,9 @@ func TestAppDiffHandler(t *testing.T) {
 			var appFilter realm.AppFilter
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				appFilter = filter
+				if tc.appError {
+					return nil, tc.expectedErr
+				}
 				return apps, nil
 			}
 			realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {

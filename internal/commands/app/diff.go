@@ -52,11 +52,6 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandDiff) Setup(profile *cli.Profile, ui terminal.UI) error {
-	return nil
-}
-
 // Handler is the command handler
 func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := local.LoadApp(cmd.inputs.AppDirectory)
@@ -80,7 +75,7 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		// TODO(REALMC-8242): diff hosting changes
+		// TODO(REALMC-8242): diff dependencies changes
 		diffs = append(diffs, "Diff dependencies")
 	}
 
@@ -95,10 +90,5 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 		strings.Join(diffs, "\n"),
 	))
 
-	return nil
-}
-
-// Feedback is the command feedback
-func (cmd *CommandDiff) Feedback(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
