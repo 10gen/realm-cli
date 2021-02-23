@@ -17,6 +17,7 @@ type RealmClient struct {
 	ImportFn func(groupID, appID string, appData interface{}) error
 
 	CreateAppFn func(groupID, name string, meta realm.AppMeta) (realm.App, error)
+	DeleteAppFn func(groupID, appID string) error
 	FindAppsFn  func(filter realm.AppFilter) ([]realm.App, error)
 
 	CreateDraftFn  func(groupID, appID string) (realm.AppDraft, error)
@@ -101,6 +102,16 @@ func (rc RealmClient) CreateApp(groupID, name string, meta realm.AppMeta) (realm
 		return rc.CreateAppFn(groupID, name, meta)
 	}
 	return rc.Client.CreateApp(groupID, name, meta)
+}
+
+// DeleteApp calls the mocked DeleteApp implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DeleteApp(groupID, appID string) error {
+	if rc.DeleteAppFn != nil {
+		return rc.DeleteAppFn(groupID, appID)
+	}
+	return rc.Client.DeleteApp(groupID, appID)
 }
 
 // FindApps calls the mocked FindApps implementation if provided,
