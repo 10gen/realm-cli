@@ -4,12 +4,14 @@ import (
 	"strings"
 )
 
-// SessionManager is an auth session manager
-type SessionManager interface {
+// Service is an auth service
+type Service interface {
 	ClearSession()
 	Save() error
 	Session() Session
 	SetSession(session Session)
+	User() User
+	SetUser(user User)
 }
 
 // Session is the CLI profile session

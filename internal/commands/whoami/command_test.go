@@ -9,17 +9,8 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestWhoamiHandler(t *testing.T) {
-	t.Run("Handler should run as a noop", func(t *testing.T) {
-		cmd := &Command{}
-
-		err := cmd.Handler(nil, nil)
-		assert.Nil(t, err)
-	})
-}
-
 func TestWhoamiFeedback(t *testing.T) {
-	t.Run("Feedback should print the auth details", func(t *testing.T) {
+	t.Run("should print the auth details", func(t *testing.T) {
 		for _, tc := range []struct {
 			description string
 			setup       func(t *testing.T, profile *cli.Profile)
@@ -61,7 +52,7 @@ func TestWhoamiFeedback(t *testing.T) {
 				out, ui := mock.NewUI()
 
 				cmd := &Command{}
-				err := cmd.Feedback(profile, ui)
+				err := cmd.Handler(profile, ui, cli.Clients{})
 				assert.Nil(t, err)
 
 				tc.test(t, out.String())

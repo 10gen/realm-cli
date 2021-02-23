@@ -19,7 +19,7 @@ const (
 
 type userOutputs []userOutput
 
-func (outputs userOutputs) mapByProviderType() map[realm.AuthProviderType]userOutputs {
+func (outputs userOutputs) byProviderType() map[realm.AuthProviderType]userOutputs {
 	var outputsM = map[realm.AuthProviderType]userOutputs{}
 	for _, output := range outputs {
 		for _, identity := range output.user.Identities {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -44,11 +45,11 @@ type ui struct {
 	terminal.UI
 }
 
-func (ui ui) Print(logs ...terminal.Log) error {
+func (ui ui) Print(logs ...terminal.Log) {
 	for i := range logs {
 		logs[i].Time = StaticTime
 	}
-	return ui.UI.Print(logs...)
+	ui.UI.Print(logs...)
 }
 
 // NewUI returns a new *bytes.Buffer and a mock terminal UI that writes to the buffer
@@ -64,6 +65,7 @@ func NewUIWithOptions(options UIOptions, writer io.Writer) terminal.UI {
 		nil,
 		writer,
 		writer,
+		errLogger(writer),
 	)}
 }
 
@@ -88,6 +90,7 @@ func NewConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expect.Con
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
+		errLogger(console.Tty()),
 	)}
 
 	return console, ui, nil
@@ -114,6 +117,7 @@ func NewVT10XConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expec
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
+		errLogger(console.Tty()),
 	)}
 
 	return console, state, ui, nil
@@ -126,4 +130,8 @@ func FileWriter(t *testing.T) (*os.File, error) {
 	filename := strings.ReplaceAll(fmt.Sprintf("%s.log", t.Name()), "/", "_")
 
 	return os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+}
+
+func errLogger(w io.Writer) *log.Logger {
+	return log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -12,14 +11,7 @@ import (
 
 // CommandCreate is the `user create` command
 type CommandCreate struct {
-	inputs      createInputs
-	outputs     outputs
-	realmClient realm.Client
-}
-
-type outputs struct {
-	apiKey realm.APIKey
-	user   realm.User
+	inputs createInputs
 }
 
 // Flags is the command flags
@@ -37,62 +29,47 @@ func (cmd *CommandCreate) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandCreate) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	if err != nil {
+		return err
 	}
 
 	switch cmd.inputs.UserType {
 	case userTypeAPIKey:
-		apiKey, err := cmd.realmClient.CreateAPIKey(app.GroupID, app.ID, cmd.inputs.APIKeyName)
+		apiKey, err := clients.Realm.CreateAPIKey(app.GroupID, app.ID, cmd.inputs.APIKeyName)
 		if err != nil {
 			return fmt.Errorf("failed to create api key: %s", err)
 		}
-		cmd.outputs.apiKey = apiKey
-	case userTypeEmailPassword:
-		user, err := cmd.realmClient.CreateUser(app.GroupID, app.ID, cmd.inputs.Email, cmd.inputs.Password)
-		if err != nil {
-			return fmt.Errorf("failed to create user: %s", err)
-		}
-		cmd.outputs.user = user
-	}
 
-	return nil
-}
-
-// Feedback is the command feedback
-func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	switch cmd.inputs.UserType {
-	case userTypeAPIKey:
-		return ui.Print(terminal.NewTableLog(
+		ui.Print(terminal.NewTableLog(
 			"Successfully created api key",
 			[]string{headerID, headerEnabled, headerName, headerAPIKey},
 			map[string]interface{}{
-				headerID:      cmd.outputs.apiKey.ID,
-				headerEnabled: !cmd.outputs.apiKey.Disabled,
-				headerName:    cmd.outputs.apiKey.Name,
-				headerAPIKey:  cmd.outputs.apiKey.Key,
+				headerID:      apiKey.ID,
+				headerEnabled: !apiKey.Disabled,
+				headerName:    apiKey.Name,
+				headerAPIKey:  apiKey.Key,
 			},
 		))
 	case userTypeEmailPassword:
-		return ui.Print(terminal.NewTableLog(
+		user, err := clients.Realm.CreateUser(app.GroupID, app.ID, cmd.inputs.Email, cmd.inputs.Password)
+		if err != nil {
+			return fmt.Errorf("failed to create user: %s", err)
+		}
+
+		ui.Print(terminal.NewTableLog(
 			"Successfully created user",
 			[]string{headerID, headerEnabled, headerEmail, headerType},
 			map[string]interface{}{
-				headerID:      cmd.outputs.user.ID,
-				headerEnabled: !cmd.outputs.user.Disabled,
-				headerEmail:   cmd.outputs.user.Data["email"],
-				headerType:    cmd.outputs.user.Type,
+				headerID:      user.ID,
+				headerEnabled: !user.Disabled,
+				headerEmail:   user.Data["email"],
+				headerType:    user.Type,
 			},
 		))
 	}
+
 	return nil
 }

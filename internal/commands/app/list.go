@@ -12,9 +12,7 @@ import (
 
 // CommandList is the `app list` command
 type CommandList struct {
-	apps        []realm.App
-	inputs      cli.ProjectInputs
-	realmClient realm.Client
+	inputs cli.ProjectInputs
 }
 
 // Flags is the command flags
@@ -22,31 +20,22 @@ func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 }
 
-// Setup is the command setup
-func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
-	apps, appsErr := cmd.realmClient.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
-	if appsErr != nil {
-		return appsErr
+func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	apps, err := clients.Realm.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
+	if err != nil {
+		return err
 	}
 
-	cmd.apps = apps
+	if len(apps) == 0 {
+		ui.Print(terminal.NewTextLog("No available apps to show"))
+		return nil
+	}
+
+	rows := make([]interface{}, 0, len(apps))
+	for _, app := range apps {
+		rows = append(rows, app.Option())
+	}
+	ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d apps", len(rows)), rows...))
 	return nil
-}
-
-// Feedback is the command feedback
-func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.apps) == 0 {
-		return ui.Print(terminal.NewTextLog("No available apps to show"))
-	}
-	apps := make([]interface{}, 0, len(cmd.apps))
-	for _, app := range cmd.apps {
-		apps = append(apps, app.Option())
-	}
-	return ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d apps", len(apps)), apps...))
 }

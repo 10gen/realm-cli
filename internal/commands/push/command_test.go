@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -20,20 +21,6 @@ import (
 	"github.com/Netflix/go-expect"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-func TestPushSetup(t *testing.T) {
-	profile := mock.NewProfile(t)
-	profile.SetAtlasBaseURL("http://localhost:8000")
-	profile.SetRealmBaseURL("http://localhost:8080")
-
-	cmd := &Command{}
-	assert.Nil(t, cmd.atlasClient)
-	assert.Nil(t, cmd.realmClient)
-
-	assert.Nil(t, cmd.Setup(profile, nil))
-	assert.NotNil(t, cmd.atlasClient)
-	assert.NotNil(t, cmd.realmClient)
-}
 
 func TestPushHandler(t *testing.T) {
 	wd, wdErr := os.Getwd()
@@ -54,7 +41,7 @@ func TestPushHandler(t *testing.T) {
 		}}},
 	}
 
-	t.Run("Should return an error if the command fails to resolve to", func(t *testing.T) {
+	t.Run("should return an error if the command fails to resolve to", func(t *testing.T) {
 		var realmClient mock.RealmClient
 
 		var capturedFilter realm.AppFilter
@@ -63,19 +50,16 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", Project: "groupID", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", Project: "groupID", To: "appID"}}
 
-		err := cmd.Handler(nil, nil)
+		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, realm.AppFilter{"groupID", "appID"}, capturedFilter)
 	})
 
-	t.Run("Should return an error if the command fails to resolve group id", func(t *testing.T) {
+	t.Run("should return an error if the command fails to resolve group id", func(t *testing.T) {
 		var atlasClient mock.AtlasClient
 		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
 			return nil, errors.New("something bad happened")
@@ -86,17 +70,16 @@ func TestPushHandler(t *testing.T) {
 			return nil, nil
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project"},
-			atlasClient: atlasClient,
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project"}}
 
-		err := cmd.Handler(nil, nil)
+		err := cmd.Handler(nil, nil, cli.Clients{
+			Realm: realmClient,
+			Atlas: atlasClient,
+		})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 
-	t.Run("Should return an error if the command fails to create a new app", func(t *testing.T) {
+	t.Run("should return an error if the command fails to create a new app", func(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
@@ -116,21 +99,18 @@ func TestPushHandler(t *testing.T) {
 			return realm.App{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "eggcorn", capturedName)
 		assert.Equal(t, realm.AppMeta{realm.LocationVirginia, realm.DeploymentModelGlobal}, capturedMeta)
 	})
 
-	t.Run("Should return an error if the command fails to get the initial diff", func(t *testing.T) {
+	t.Run("should return an error if the command fails to get the initial diff", func(t *testing.T) {
 		_, ui := mock.NewUI()
 
 		var realmClient mock.RealmClient
@@ -144,19 +124,16 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, testApp, capturedAppData)
 	})
 
-	t.Run("Should return an error if the command fails to create a new draft", func(t *testing.T) {
+	t.Run("should return an error if the command fails to create a new draft", func(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
@@ -178,20 +155,17 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDraft{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
 	})
 
-	t.Run("Should return an error if the command fails to import", func(t *testing.T) {
+	t.Run("should return an error if the command fails to import", func(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
@@ -218,21 +192,18 @@ func TestPushHandler(t *testing.T) {
 			return errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
 		assert.Equal(t, testApp, capturedAppData)
 	})
 
-	t.Run("Should return an error if the command fails to deploy the draft", func(t *testing.T) {
+	t.Run("should return an error if the command fails to deploy the draft", func(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
@@ -261,32 +232,29 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDeployment{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
 		assert.Equal(t, "draftID", capturedDraftID)
 	})
 
-	t.Run("Should exit early", func(t *testing.T) {
+	t.Run("should exit early in a dry run`", func(t *testing.T) {
 		for _, tc := range []struct {
 			description  string
 			groupID      string
 			groupsCalled bool
 		}{
 			{
-				description:  "And should fetch group id if to is not resolved",
+				description:  "and should fetch group id if to is not resolved",
 				groupsCalled: true,
 			},
 			{
-				description: "And should not fetch group id if to is resolved",
+				description: "and should not fetch group id if to is resolved",
 				groupID:     "groupID",
 			},
 		} {
@@ -303,20 +271,25 @@ func TestPushHandler(t *testing.T) {
 					return []realm.App{{GroupID: tc.groupID}}, nil
 				}
 
-				cmd := &Command{
-					inputs:      inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"},
-					atlasClient: atlasClient,
-					realmClient: realmClient,
-				}
+				cmd := &Command{inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"}}
 
-				assert.Nil(t, cmd.Handler(nil, nil))
-				assert.False(t, cmd.outputs.appCreated, "should not have created app")
+				out, ui := mock.NewUI()
+
+				err := cmd.Handler(nil, ui, cli.Clients{
+					Realm: realmClient,
+					Atlas: atlasClient,
+				})
+				assert.Nil(t, err)
+
 				assert.Equal(t, tc.groupsCalled, calledGroups)
+				assert.Equal(t, `01:23:45 UTC INFO  This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
+01:23:45 UTC DEBUG Try running instead: realm-cli push
+`, out.String())
 			})
 		}
 	})
 
-	t.Run("With a user rejecting the option to create a new app", func(t *testing.T) {
+	t.Run("with a user rejecting the option to create a new app", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{GroupID: "groupID"}}, nil
@@ -335,22 +308,18 @@ func TestPushHandler(t *testing.T) {
 			console.ExpectEOF()
 		}()
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
 		assert.Nil(t, err)
-		assert.False(t, cmd.outputs.appCreated, "should not have created app")
 	})
 
-	t.Run("With no diffs generated from the app", func(t *testing.T) {
-		_, ui := mock.NewUI()
+	t.Run("with no diffs generated from the app", func(t *testing.T) {
+		out, ui := mock.NewUI()
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -360,16 +329,15 @@ func TestPushHandler(t *testing.T) {
 			return []string{}, nil
 		}
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"}}
 
-		assert.Nil(t, cmd.Handler(nil, ui))
-		assert.True(t, cmd.outputs.noDiffs, "diff should not exist")
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Nil(t, err)
+		assert.Equal(t, `01:23:45 UTC INFO  Deployed app is identical to proposed version, nothing to do
+`, out.String())
 	})
 
-	t.Run("With diffs generated from the app but is a dry run", func(t *testing.T) {
+	t.Run("with diffs generated from the app but is a dry run", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
@@ -380,22 +348,20 @@ func TestPushHandler(t *testing.T) {
 
 		out, ui := mock.NewUI()
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", DryRun: true, To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		assert.Nil(t, err)
-		assert.False(t, cmd.outputs.noDiffs, "diff should exist")
 		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
 diff1
 diff2
+01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
+01:23:45 UTC DEBUG Try running instead: realm-cli push
 `, out.String())
 	})
 
-	t.Run("With diffs generated from the app but the user rejects them", func(t *testing.T) {
+	t.Run("with diffs generated from the app but the user rejects them", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
@@ -417,77 +383,14 @@ diff2
 			console.ExpectEOF()
 		}()
 
-		cmd := &Command{
-			inputs:      inputs{AppDirectory: "testdata/project", To: "appID"},
-			realmClient: realmClient,
-		}
+		cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
 
-		err := cmd.Handler(nil, ui)
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
 		assert.Nil(t, err)
-		assert.True(t, cmd.outputs.diffRejected, "diff should be rejected")
-	})
-}
-
-func TestPushFeedback(t *testing.T) {
-	t.Run("Feedback should print a message", func(t *testing.T) {
-		for _, tc := range []struct {
-			description      string
-			inputs           inputs
-			outputs          outputs
-			expectedContents string
-		}{
-			{
-				description:      "That changes were pushed successfully",
-				expectedContents: "01:23:45 UTC INFO  Successfully pushed app changes\n",
-			},
-			{
-				description:      "That there is nothing to do when the diffs between app and draft do not exist",
-				outputs:          outputs{noDiffs: true},
-				expectedContents: "01:23:45 UTC INFO  Deployed app is identical to proposed version, nothing to do\n",
-			},
-			{
-				description:      "That no changes were pushed when the user rejects the diff",
-				outputs:          outputs{diffRejected: true},
-				expectedContents: "01:23:45 UTC INFO  No changes were pushed to your Realm application\n",
-			},
-			{
-				description:      "That no changes were pushed when the user chooses to keep its existing draft",
-				outputs:          outputs{diffRejected: true},
-				expectedContents: "01:23:45 UTC INFO  No changes were pushed to your Realm application\n",
-			},
-			{
-				description: "With a new app created and but in a dry run that the user should remove the dry run flag",
-				inputs:      inputs{DryRun: true},
-				outputs:     outputs{appCreated: true},
-				expectedContents: strings.Join(
-					[]string{
-						"01:23:45 UTC INFO  This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed",
-						"01:23:45 UTC DEBUG Try running instead: realm-cli push\n",
-					},
-					"\n",
-				),
-			},
-			{
-				description:      "With a new app created and but in a dry run that the user should remove the dry run flag",
-				outputs:          outputs{appCreated: true},
-				expectedContents: "01:23:45 UTC INFO  This is a new app. You must create a new app to proceed\n",
-			},
-		} {
-			t.Run(tc.description, func(t *testing.T) {
-				out, ui := mock.NewUI()
-
-				cmd := &Command{inputs: tc.inputs, outputs: tc.outputs}
-
-				err := cmd.Feedback(nil, ui)
-				assert.Nil(t, err)
-
-				assert.Equal(t, tc.expectedContents, out.String())
-			})
-		}
 	})
 }
 
@@ -501,7 +404,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 		DeploymentModel: realm.DeploymentModel("deployment_model"),
 	}}}
 
-	t.Run("With a client that successfully creates apps", func(t *testing.T) {
+	t.Run("with a client that successfully creates apps", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{
@@ -512,16 +415,17 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 			}, nil
 		}
 
-		t.Run("And a ui that is not set to auto confirm", func(t *testing.T) {
+		t.Run("and a ui that is not set to auto confirm", func(t *testing.T) {
 			for _, tc := range []struct {
-				description string
-				autoConfirm bool
-				procedure   func(c *expect.Console)
-				expectedApp realm.App
-				test        func(t *testing.T, configPath string)
+				description     string
+				autoConfirm     bool
+				procedure       func(c *expect.Console)
+				expectedApp     realm.App
+				expectedProceed bool
+				test            func(t *testing.T, configPath string)
 			}{
 				{
-					description: "Should return empty data if user does not wish to continue",
+					description: "should return empty data if user does not wish to continue",
 					procedure: func(c *expect.Console) {
 						c.ExpectString("Do you wish to create a new app?")
 						c.SendLine("")
@@ -533,7 +437,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					},
 				},
 				{
-					description: "Should prompt for all missing app info if user does want to continue",
+					description: "should prompt for all missing app info if user does want to continue",
 					procedure: func(c *expect.Console) {
 						c.ExpectString("Do you wish to create a new app?")
 						c.SendLine("y")
@@ -570,9 +474,10 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 							DeploymentModel: realm.DeploymentModelLocal,
 						},
 					},
+					expectedProceed: true,
 				},
 				{
-					description: "Should still prompt for name with all missing data but auto confirm set to true",
+					description: "should still prompt for name with all missing data but auto confirm set to true",
 					autoConfirm: true,
 					procedure: func(c *expect.Console) {
 						c.ExpectString("App Name")
@@ -585,6 +490,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						GroupID: groupID,
 						Name:    "testApp",
 					},
+					expectedProceed: true,
 					test: func(t *testing.T, configPath string) {
 						configData, readErr := ioutil.ReadFile(configPath)
 						assert.Nil(t, readErr)
@@ -611,17 +517,13 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						tc.procedure(console)
 					}()
 
-					cmd := &Command{
-						inputs:      inputs{AppDirectory: tmpDir},
-						realmClient: realmClient,
-					}
-
-					app, err := cmd.createNewApp(ui, groupID, map[string]interface{}{})
+					app, proceed, err := createNewApp(ui, realmClient, tmpDir, groupID, map[string]interface{}{})
 
 					console.Tty().Close() // flush the writers
 					<-doneCh              // wait for procedure to complete
 
 					assert.Nil(t, err)
+					assert.Equal(t, tc.expectedProceed, proceed)
 					assert.Equal(t, tc.expectedApp, app)
 
 					tc.test(t, filepath.Join(tmpDir, local.FileRealmConfig.String()))
@@ -629,7 +531,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 			}
 		})
 
-		t.Run("And a static ui that is set to auto confirm", func(t *testing.T) {
+		t.Run("and a static ui that is set to auto confirm", func(t *testing.T) {
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
@@ -639,11 +541,11 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 				expectedAppMeta realm.AppMeta
 			}{
 				{
-					description: "Should use the package name when present and zero values for app meta",
+					description: "should use the package name when present and zero values for app meta",
 					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
 				},
 				{
-					description:     "Should use the package name location and deployment model when present",
+					description:     "should use the package name location and deployment model when present",
 					appData:         fullPkg,
 					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model")},
 				},
@@ -660,31 +562,27 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						AppMeta: tc.expectedAppMeta,
 					}
 
-					cmd := &Command{
-						inputs:      inputs{AppDirectory: tmpDir},
-						realmClient: realmClient,
-					}
-
-					app, err := cmd.createNewApp(ui, "groupID", tc.appData)
+					app, proceed, err := createNewApp(ui, realmClient, tmpDir, "groupID", tc.appData)
 					assert.Nil(t, err)
+					assert.True(t, proceed, "should proceed")
 					assert.Equal(t, expectedApp, app)
 				})
 			}
 		})
 
-		t.Run("And an interactive ui that is set to auto confirm", func(t *testing.T) {
+		t.Run("and an interactive ui that is set to auto confirm", func(t *testing.T) {
 			for _, tc := range []struct {
 				description     string
 				appData         interface{}
 				expectedAppMeta realm.AppMeta
 			}{
 				{
-					description:     "Should prompt for name if not present in the package",
+					description:     "should prompt for name if not present in the package",
 					appData:         local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), DeploymentModel: realm.DeploymentModel("deployment_model")}}},
 					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model")},
 				},
 				{
-					description: "Should not prompt for location and deployment model even if not present in the package",
+					description: "should not prompt for location and deployment model even if not present in the package",
 					appData:     map[string]interface{}{},
 				},
 			} {
@@ -707,12 +605,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						console.ExpectEOF()
 					}()
 
-					cmd := &Command{
-						inputs:      inputs{AppDirectory: tmpDir},
-						realmClient: realmClient,
-					}
-
-					app, err := cmd.createNewApp(ui, groupID, tc.appData)
+					app, proceed, err := createNewApp(ui, realmClient, tmpDir, groupID, tc.appData)
 					assert.Nil(t, err)
 
 					console.Tty().Close() // flush the writers
@@ -725,13 +618,14 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						AppMeta: tc.expectedAppMeta,
 					}
 
+					assert.True(t, proceed, "should proceed")
 					assert.Equal(t, expectedApp, app)
 				})
 			}
 		})
 	})
 
-	t.Run("With a client that fails to create apps it should return that error", func(t *testing.T) {
+	t.Run("with a client that fails to create apps it should return that error", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{}, errors.New("something bad happened")
@@ -740,15 +634,13 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-		cmd := &Command{realmClient: realmClient}
-
-		_, err := cmd.createNewApp(ui, "groupID", fullPkg)
+		_, _, err := createNewApp(ui, realmClient, "", "groupID", fullPkg)
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }
 
 func TestPushCommandCreateNewDraft(t *testing.T) {
-	t.Run("Should create and return the draft when initially successful", func(t *testing.T) {
+	t.Run("should create and return the draft when initially successful", func(t *testing.T) {
 		groupID, appID := "groupID", "appID"
 		testDraft := realm.AppDraft{ID: "id"}
 
@@ -766,12 +658,12 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 		assert.Equal(t, testDraft, draft)
 		assert.True(t, proceed, "expected draft to be created successfully")
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, groupID, capturedGroupID)
 		assert.Equal(t, appID, capturedAppID)
 	})
 
-	t.Run("Should return the error if client fails to create the draft for reasons other than it already exists", func(t *testing.T) {
+	t.Run("should return the error if client fails to create the draft for reasons other than it already exists", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
 			return realm.AppDraft{}, errors.New("something bad happened while creating a draft")
@@ -781,7 +673,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 		assert.Equal(t, errors.New("something bad happened while creating a draft"), err)
 	})
 
-	t.Run("With a client that fails to create a draft because it already exists", func(t *testing.T) {
+	t.Run("with a client that fails to create a draft because it already exists", func(t *testing.T) {
 		errDraftAlreadyExists := realm.ServerError{Code: realm.ErrCodeDraftAlreadyExists, Message: "a draft already exists"}
 
 		realmClient := mock.RealmClient{}
@@ -789,7 +681,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 			return realm.AppDraft{}, errDraftAlreadyExists
 		}
 
-		t.Run("And fails to retrieve the existing draft should return the error", func(t *testing.T) {
+		t.Run("and fails to retrieve the existing draft should return the error", func(t *testing.T) {
 			realmClient.DraftFn = func(groupID, appID string) (realm.AppDraft, error) {
 				return realm.AppDraft{}, errors.New("something bad happened while getting a draft")
 			}
@@ -798,7 +690,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 			assert.Equal(t, errors.New("something bad happened while getting a draft"), err)
 		})
 
-		t.Run("And successfully retrieves and diffs the existing draft", func(t *testing.T) {
+		t.Run("and successfully retrieves and diffs the existing draft", func(t *testing.T) {
 			draftID := "draftID"
 
 			realmClient.DraftFn = func(groupID, appID string) (realm.AppDraft, error) {
@@ -809,11 +701,11 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 				return realm.AppDraftDiff{}, nil
 			}
 
-			t.Run("With a ui set to auto-confirm", func(t *testing.T) {
+			t.Run("with a ui set to auto-confirm", func(t *testing.T) {
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				t.Run("And a client that fails to discard the draft should return the error", func(t *testing.T) {
+				t.Run("and a client that fails to discard the draft should return the error", func(t *testing.T) {
 					var capturedDraftID string
 					realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
 						capturedDraftID = draftID
@@ -823,11 +715,11 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 					_, _, err := createNewDraft(ui, realmClient, to{})
 					assert.Equal(t, errors.New("something bad happened while discarding the draft"), err)
 
-					t.Log("And should properly pass through the expected inputs")
+					t.Log("and should properly pass through the expected inputs")
 					assert.Equal(t, draftID, capturedDraftID)
 				})
 
-				t.Run("And a client that successfully discards the existing draft", func(t *testing.T) {
+				t.Run("and a client that successfully discards the existing draft", func(t *testing.T) {
 					realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
 						return nil
 					}
@@ -841,7 +733,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 						assert.Equal(t, errDraftAlreadyExists, err)
 					})
 
-					t.Run("And successfully creates a new draft should be successful", func(t *testing.T) {
+					t.Run("and successfully creates a new draft should be successful", func(t *testing.T) {
 						testDraft := realm.AppDraft{ID: "id"}
 
 						realmClient := mock.RealmClient{}
@@ -858,8 +750,8 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 				})
 			})
 
-			t.Run("Should prompt the user to accept the diffed changes", func(t *testing.T) {
-				t.Run("And mark the draft as kept in command outputs if the user selects no", func(t *testing.T) {
+			t.Run("should prompt the user to accept the diffed changes", func(t *testing.T) {
+				t.Run("and mark the draft as kept in command outputs if the user selects no", func(t *testing.T) {
 					_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 					assert.Nil(t, consoleErr)
 					defer console.Close()
@@ -883,7 +775,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 					assert.False(t, proceed, "expected draft to be rejected")
 				})
 
-				t.Run("And return a newly created draft if the user selects yes", func(t *testing.T) {
+				t.Run("and return a newly created draft if the user selects yes", func(t *testing.T) {
 					testDraft := realm.AppDraft{ID: "id"}
 
 					realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
@@ -922,7 +814,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 }
 
 func TestPushCommandDiffDraft(t *testing.T) {
-	t.Run("With a client that fails to diff the draft should return the error", func(t *testing.T) {
+	t.Run("with a client that fails to diff the draft should return the error", func(t *testing.T) {
 		groupID, appID, draftID := "groupID", "appID", "draftID"
 
 		var realmClient mock.RealmClient
@@ -938,24 +830,24 @@ func TestPushCommandDiffDraft(t *testing.T) {
 		err := diffDraft(nil, realmClient, to{groupID, appID}, draftID)
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, groupID, capturedGroupID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, draftID, capturedDraftID)
 	})
 
-	t.Run("Should print the expected contents", func(t *testing.T) {
+	t.Run("should print the expected contents", func(t *testing.T) {
 		for _, tc := range []struct {
 			description      string
 			actualDiff       realm.AppDraftDiff
 			expectedContents string
 		}{
 			{
-				description:      "With a client that returns an empty diff",
+				description:      "with a client that returns an empty diff",
 				expectedContents: "01:23:45 UTC INFO  An empty draft already exists for your app\n",
 			},
 			{
-				description: "With a client that returns a minimal diff",
+				description: "with a client that returns a minimal diff",
 				actualDiff:  realm.AppDraftDiff{Diffs: []string{"diff1", "diff2", "diff3"}},
 				expectedContents: strings.Join(
 					[]string{
@@ -968,7 +860,7 @@ func TestPushCommandDiffDraft(t *testing.T) {
 				),
 			},
 			{
-				description: "With a client that returns a full diff",
+				description: "with a client that returns a full diff",
 				actualDiff: realm.AppDraftDiff{
 					Diffs: []string{"diff1", "diff2", "diff3"},
 					HostingFilesDiff: realm.HostingFilesDiff{
@@ -1030,7 +922,7 @@ func TestPushCommandDiffDraft(t *testing.T) {
 
 func TestPushCommandDeployDraftAndWait(t *testing.T) {
 	groupID, appID, draftID := "groupID", "appID", "draftID"
-	t.Run("Should return an error with a client that fails to deploy the draft", func(t *testing.T) {
+	t.Run("should return an error with a client that fails to deploy the draft", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 
 		var capturedGroupID, capturedAppID, capturedDraftID string
@@ -1044,13 +936,13 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 		err := deployDraftAndWait(nil, realmClient, to{groupID, appID}, draftID)
 		assert.Equal(t, errors.New("something bad happened"), err)
 
-		t.Log("And should properly pass through the expected inputs")
+		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, groupID, capturedGroupID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, draftID, capturedDraftID)
 	})
 
-	t.Run("With a client that successfully deploys a draft", func(t *testing.T) {
+	t.Run("with a client that successfully deploys a draft", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
 			return realm.AppDeployment{ID: "id", Status: realm.DeploymentStatusCreated}, nil
@@ -1071,12 +963,12 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 					expectedContents: "01:23:45 UTC INFO  Checking on the status of your deployment...\n",
 				},
 				{
-					description:     "And fails to discard the draft should return the deployment error and print a warning message",
+					description:     "and fails to discard the draft should return the deployment error and print a warning message",
 					discardDraftErr: errors.New("failed to discard draft"),
 					expectedContents: strings.Join(
 						[]string{
 							"01:23:45 UTC INFO  Checking on the status of your deployment...",
-							"01:23:45 UTC WARN  We failed to discard the draft we created for your deployment\n",
+							"01:23:45 UTC WARN  Failed to discard the draft created for your deployment\n",
 						},
 						"\n",
 					),
@@ -1096,7 +988,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			}
 		})
 
-		t.Run("And successfully retrieves the deployment should eventually succeed", func(t *testing.T) {
+		t.Run("and successfully retrieves the deployment should eventually succeed", func(t *testing.T) {
 			var polls int
 
 			realmClient.DeploymentFn = func(groupID, appID, deploymentID string) (realm.AppDeployment, error) {

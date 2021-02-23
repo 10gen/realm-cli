@@ -9,22 +9,20 @@ import (
 type Command struct{}
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	return nil // commands without handlers show help text and usage when ran
-}
-
-// Feedback is the command feedback
-func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
 	user := profile.User()
 	session := profile.Session()
 
 	if user.PrivateAPIKey == "" {
-		return ui.Print(terminal.NewTextLog("No user is currently logged in"))
+		ui.Print(terminal.NewTextLog("No user is currently logged in"))
+		return nil
 	}
 
 	if session.AccessToken == "" {
-		return ui.Print(terminal.NewTextLog("The user, %s, is not currently logged in", user.PublicAPIKey))
+		ui.Print(terminal.NewTextLog("The user, %s, is not currently logged in", user.PublicAPIKey))
+		return nil
 	}
 
-	return ui.Print(terminal.NewTextLog("Currently logged in user: %s (%s)", user.PublicAPIKey, user.RedactedPrivateAPIKey()))
+	ui.Print(terminal.NewTextLog("Currently logged in user: %s (%s)", user.PublicAPIKey, user.RedactedPrivateAPIKey()))
+	return nil
 }

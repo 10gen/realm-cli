@@ -32,13 +32,13 @@ type RealmClient struct {
 	DeleteSecretFn func(groupID, appID, secretID string) error
 	UpdateSecretFn func(groupID, appID, secretID, name, value string) error
 
-	CreateAPIKeyFn       func(groupID, appID, apiKeyName string) (realm.APIKey, error)
-	CreateUserFn         func(groupID, appID, email, password string) (realm.User, error)
-	DeleteUserFn         func(groupID, appID, userID string) error
-	DisableUserFn        func(groupID, appID, userID string) error
-	EnableUserFn         func(groupID, appID, userID string) error
-	FindUsersFn          func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
-	RevokeUserSessionsFn func(groupID, appID, userID string) error
+	CreateAPIKeyFn      func(groupID, appID, apiKeyName string) (realm.APIKey, error)
+	CreateUserFn        func(groupID, appID, email, password string) (realm.User, error)
+	DeleteUserFn        func(groupID, appID, userID string) error
+	DisableUserFn       func(groupID, appID, userID string) error
+	EnableUserFn        func(groupID, appID, userID string) error
+	FindUsersFn         func(groupID, appID string, filter realm.UserFilter) ([]realm.User, error)
+	RevokeUserSessionFn func(groupID, appID, userID string) error
 
 	StatusFn func() error
 }
@@ -277,8 +277,8 @@ func (rc RealmClient) FindUsers(groupID, appID string, filter realm.UserFilter) 
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
 func (rc RealmClient) RevokeUserSessions(groupID, appID, userID string) error {
-	if rc.RevokeUserSessionsFn != nil {
-		return rc.RevokeUserSessionsFn(groupID, appID, userID)
+	if rc.RevokeUserSessionFn != nil {
+		return rc.RevokeUserSessionFn(groupID, appID, userID)
 	}
 	return rc.Client.RevokeUserSessions(groupID, appID, userID)
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -12,19 +11,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type createOutputs struct {
-	clientAppID string
-	dir         string
-	uiURL       string
-	followUpCmd string
-}
-
 // CommandCreate is the `app create` command
 type CommandCreate struct {
-	inputs      createInputs
-	outputs     createOutputs
-	atlasClient atlas.Client
-	realmClient realm.Client
+	inputs createInputs
 }
 
 // Flags is the command flags
@@ -45,16 +34,9 @@ func (cmd *CommandCreate) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandCreate) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.atlasClient = profile.AtlasAuthClient()
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
-	from, err := cmd.inputs.resolveFrom(ui, cmd.realmClient)
+func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	from, err := cmd.inputs.resolveFrom(ui, clients.Realm)
 	if err != nil {
 		return err
 	}
@@ -62,7 +44,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	var groupID = cmd.inputs.Project
 	if from.IsZero() {
 		if groupID == "" {
-			id, err := cli.ResolveGroupID(ui, cmd.atlasClient)
+			id, err := cli.ResolveGroupID(ui, clients.Atlas)
 			if err != nil {
 				return err
 			}
@@ -72,7 +54,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 		groupID = from.GroupID
 	}
 
-	err = cmd.inputs.resolveName(ui, cmd.realmClient, from)
+	err = cmd.inputs.resolveName(ui, clients.Realm, from)
 	if err != nil {
 		return err
 	}
@@ -96,31 +78,31 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 			return err
 		}
 	} else {
-		_, zipPkg, exportErr := cmd.realmClient.Export(
+		_, zipPkg, err := clients.Realm.Export(
 			from.GroupID,
 			from.AppID,
 			realm.ExportRequest{},
 		)
-		if exportErr != nil {
-			return exportErr
+		if err != nil {
+			return err
 		}
-		if writeErr := local.WriteZip(dir, zipPkg); writeErr != nil {
-			return writeErr
+		if err := local.WriteZip(dir, zipPkg); err != nil {
+			return err
 		}
 	}
 
-	loadedApp, loadedAppErr := local.LoadApp(dir)
-	if loadedAppErr != nil {
-		return loadedAppErr
+	loadedApp, err := local.LoadApp(dir)
+	if err != nil {
+		return err
 	}
 
-	newApp, newAppErr := cmd.realmClient.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
-	if newAppErr != nil {
-		return newAppErr
+	newApp, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
+	if err != nil {
+		return err
 	}
 
 	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// dsCluster, dsClusterErr := cmd.inputs.resolveDataSource(cmd.realmClient, cmd.inputs.Project, app.ID())
+	// dsCluster, dsClusterErr := cmd.inputs.resolveDataSource(clients.Realm, cmd.inputs.Project, app.ID())
 	// if dsClusterErr != nil {
 	// 	return dsClusterErr
 	// }
@@ -134,12 +116,12 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	// 	Type: "mongodb-atlas",
 	// }
 	// Potentially try to use Import to create app Service
-	// _, dsErr := cmd.realmClient.CreateAppService(cmd.inputs.Project, app.ID(), service) // for output possibly
+	// _, dsErr := clients.Realm.CreateAppService(cmd.inputs.Project, app.ID(), service) // for output possibly
 	// if dsErr != nil {
 	// 	return dsErr
 	// }
 	// Won't need if import works
-	// zipPkgName, zipPkg, exportErr := cmd.realmClient.Export(
+	// zipPkgName, zipPkg, exportErr := clients.Realm.Export(
 	// 	cmd.inputs.Project,
 	// 	app.ID(),
 	// 	realm.ExportRequest{ConfigVersion: realm.DefaultAppConfigVersion},
@@ -155,46 +137,34 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI) error {
 	// 	return writeErr
 	// }
 
-	err = cmd.realmClient.Import(
+	if err := clients.Realm.Import(
 		newApp.GroupID,
 		newApp.ID,
 		loadedApp,
-	)
-	if err != nil {
+	); err != nil {
 		return err
 	}
 
-	cmd.outputs = createOutputs{
-		clientAppID: newApp.ClientAppID,
-		dir:         dir,
-		uiURL:       fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID),
-		followUpCmd: fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
+	headers := []string{"Info", "Details"}
+	rows := []map[string]interface{}{
+		{
+			"Info":    "Client App ID",
+			"Details": newApp.ClientAppID,
+		},
+		{
+			"Info":    "Realm Directory",
+			"Details": dir,
+		},
+		{
+			"Info":    "Realm UI",
+			"Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID),
+		},
+		{
+			"Info":    "Check out your app",
+			"Details": fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
+		},
 	}
 
+	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
 	return nil
-
-}
-
-// Feedback is the command feedback
-func (cmd *CommandCreate) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	rows := make([]map[string]interface{}, 0, 4)
-	rows = append(rows, map[string]interface{}{
-		"Info":    "Client App ID",
-		"Details": cmd.outputs.clientAppID,
-	})
-	rows = append(rows, map[string]interface{}{
-		"Info":    "Realm Directory",
-		"Details": cmd.outputs.dir,
-	})
-	rows = append(rows, map[string]interface{}{
-		"Info":    "Realm UI",
-		"Details": cmd.outputs.uiURL,
-	})
-	rows = append(rows, map[string]interface{}{
-		"Info":    "Check out your app",
-		"Details": cmd.outputs.followUpCmd,
-	})
-	return ui.Print(terminal.NewTableLog("Successfully created app",
-		[]string{"Info", "Details"},
-		rows...))
 }

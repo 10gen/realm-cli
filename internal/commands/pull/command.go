@@ -15,13 +15,7 @@ import (
 
 // Command is the `pull` command
 type Command struct {
-	inputs      inputs
-	outputs     outputs
-	realmClient realm.Client
-}
-
-type outputs struct {
-	destination string
+	inputs inputs
 }
 
 // Flags is the command flags
@@ -40,26 +34,23 @@ func (cmd *Command) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *Command) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
-	from, fromErr := cmd.inputs.resolveFrom(ui, cmd.realmClient)
-	if fromErr != nil {
-		return fromErr
+func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	from, err := cmd.inputs.resolveFrom(ui, clients.Realm)
+	if err != nil {
+		return err
 	}
 
-	path, zipPkg, exportErr := cmd.doExport(profile, from)
-	if exportErr != nil {
-		return exportErr
+	path, zipPkg, err := cmd.doExport(profile, clients.Realm, from.GroupID, from.AppID)
+	if err != nil {
+		return err
 	}
-	cmd.outputs.destination = path
 
 	if cmd.inputs.DryRun {
+		ui.Print(
+			terminal.NewTextLog("No changes were written to your file system"),
+			terminal.NewDebugLog("Contents would have been written to: %s", path),
+		)
 		return nil
 	}
 
@@ -68,9 +59,9 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		archiveName, archivePkg, archiveErr := cmd.realmClient.ExportDependencies(from.GroupID, from.AppID)
-		if archiveErr != nil {
-			return archiveErr
+		archiveName, archivePkg, err := clients.Realm.ExportDependencies(from.GroupID, from.AppID)
+		if err != nil {
+			return err
 		}
 
 		archivePath := filepath.Join(path, local.NameFunctions, archiveName)
@@ -81,24 +72,14 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI) error {
 
 	// TODO(REALMC-7177): include hosting
 
+	ui.Print(terminal.NewTextLog("Successfully pulled down Realm app to your local filesystem"))
 	return nil
 }
 
-// Feedback is the command feedback
-func (cmd *Command) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if cmd.inputs.DryRun {
-		return ui.Print(
-			terminal.NewTextLog("No changes were written to your file system"),
-			terminal.NewDebugLog("Contents would have been written to: %s", cmd.outputs.destination),
-		)
-	}
-	return ui.Print(terminal.NewTextLog("Successfully pulled down Realm app to your local filesystem"))
-}
-
-func (cmd *Command) doExport(profile *cli.Profile, f from) (string, *zip.Reader, error) {
-	name, zipPkg, exportErr := cmd.realmClient.Export(
-		f.GroupID,
-		f.AppID,
+func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, groupID, appID string) (string, *zip.Reader, error) {
+	name, zipPkg, exportErr := realmClient.Export(
+		groupID,
+		appID,
 		realm.ExportRequest{ConfigVersion: cmd.inputs.AppVersion},
 	)
 	if exportErr != nil {

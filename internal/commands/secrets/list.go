@@ -12,9 +12,7 @@ import (
 
 // CommandList is the `secrets list` command
 type CommandList struct {
-	inputs      listInputs
-	realmClient realm.Client
-	secrets     []realm.Secret
+	inputs listInputs
 }
 
 type listInputs struct {
@@ -31,40 +29,29 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandList) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, appErr := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, appErr := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
 	}
 
-	secrets, secretsErr := cmd.realmClient.Secrets(app.GroupID, app.ID)
+	secrets, secretsErr := clients.Realm.Secrets(app.GroupID, app.ID)
 	if secretsErr != nil {
 		return secretsErr
 	}
-	cmd.secrets = secrets
-	return nil
-}
 
-// Feedback is the command feedback
-func (cmd *CommandList) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.secrets) == 0 {
-		return ui.Print(terminal.NewTextLog("No available secrets to show"))
+	if len(secrets) == 0 {
+		ui.Print(terminal.NewTextLog("No available secrets to show"))
+		return nil
 	}
 
-	var logs []terminal.Log
-	logs = append(logs, terminal.NewTableLog(
-		fmt.Sprintf("Found %d secrets", len(cmd.secrets)),
+	ui.Print(terminal.NewTableLog(
+		fmt.Sprintf("Found %d secrets", len(secrets)),
 		listSecretsTableHeaders,
-		listSecretTableRows(cmd.secrets)...,
+		listSecretTableRows(secrets)...,
 	))
-	return ui.Print(logs...)
+	return nil
 }
 
 var (

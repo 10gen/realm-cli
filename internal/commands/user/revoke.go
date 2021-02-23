@@ -14,21 +14,7 @@ import (
 
 // CommandRevoke is the `user revoke` command
 type CommandRevoke struct {
-	inputs      revokeInputs
-	outputs     userOutputs
-	realmClient realm.Client
-}
-
-type revokeInputs struct {
-	cli.ProjectInputs
-	multiUserInputs
-}
-
-func (i *revokeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
-		return err
-	}
-	return nil
+	inputs revokeInputs
 }
 
 // Flags is the command flags
@@ -50,20 +36,14 @@ func (cmd *CommandRevoke) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
-// Setup is the command setup
-func (cmd *CommandRevoke) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
-}
-
 // Handler is the command handler
-func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
-	app, err := cli.ResolveApp(ui, cmd.realmClient, cmd.inputs.Filter())
+func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}
 
-	found, err := cmd.inputs.findUsers(cmd.realmClient, app.GroupID, app.ID)
+	found, err := cmd.inputs.findUsers(clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -73,33 +53,49 @@ func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI) error {
 		return err
 	}
 
+	outputs := make(userOutputs, 0, len(users))
 	for _, user := range users {
-		err := cmd.realmClient.RevokeUserSessions(app.GroupID, app.ID, user.ID)
-		cmd.outputs = append(cmd.outputs, userOutput{user: user, err: err})
+		err := clients.Realm.RevokeUserSessions(app.GroupID, app.ID, user.ID)
+		outputs = append(outputs, userOutput{user, err})
 	}
+
+	if len(outputs) == 0 {
+		ui.Print(terminal.NewTextLog("No users to revoke sessions for"))
+		return nil
+	}
+
+	outputsByProviderType := outputs.byProviderType()
+
+	logs := make([]terminal.Log, 0, len(outputsByProviderType))
+	for _, providerType := range realm.ValidAuthProviderTypes {
+		o := outputsByProviderType[providerType]
+		if len(o) == 0 {
+			continue
+		}
+
+		sort.SliceStable(o, getUserOutputComparerBySuccess(o))
+
+		logs = append(logs, terminal.NewTableLog(
+			fmt.Sprintf("Provider type: %s", providerType.Display()),
+			append(userTableHeaders(providerType), headerRevoked, headerDetails),
+			userTableRows(providerType, o, userRevokeRow)...,
+		))
+	}
+
+	ui.Print(logs...)
 	return nil
 }
 
-// Feedback is the command feedback
-func (cmd *CommandRevoke) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.outputs) == 0 {
-		return ui.Print(terminal.NewTextLog("No users to revoke sessions for"))
+type revokeInputs struct {
+	cli.ProjectInputs
+	multiUserInputs
+}
+
+func (i *revokeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
+		return err
 	}
-	outputsByProviderType := cmd.outputs.mapByProviderType()
-	logs := make([]terminal.Log, 0, len(outputsByProviderType))
-	for _, apt := range realm.ValidAuthProviderTypes {
-		outputs := outputsByProviderType[apt]
-		if len(outputs) == 0 {
-			continue
-		}
-		sort.SliceStable(outputs, getUserOutputComparerBySuccess(outputs))
-		logs = append(logs, terminal.NewTableLog(
-			fmt.Sprintf("Provider type: %s", apt.Display()),
-			append(userTableHeaders(apt), headerRevoked, headerDetails),
-			userTableRows(apt, outputs, userRevokeRow)...,
-		))
-	}
-	return ui.Print(logs...)
+	return nil
 }
 
 func userRevokeRow(output userOutput, row map[string]interface{}) {

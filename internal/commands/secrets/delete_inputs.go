@@ -22,53 +22,58 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *deleteInputs) resolveSecrets(ui terminal.UI, secrets []realm.Secret) ([]realm.Secret, error) {
+// If there are inputs then use , then
+func (i *deleteInputs) resolveSecrets(ui terminal.UI, appSecrets []realm.Secret) ([]realm.Secret, error) {
+	if len(appSecrets) == 0 {
+		return nil, nil
+	}
+
 	if len(i.secrets) > 0 {
-		ids := make(map[string]realm.Secret, len(secrets))
-		names := make(map[string]realm.Secret, len(secrets))
-		for _, secret := range secrets {
-			ids[secret.ID] = secret
-			names[secret.Name] = secret
+		secretsByID := make(map[string]realm.Secret, len(appSecrets))
+		secretsByName := make(map[string]realm.Secret, len(appSecrets))
+		for _, secret := range appSecrets {
+			secretsByID[secret.ID] = secret
+			secretsByName[secret.Name] = secret
 		}
 
-		filtered := make([]realm.Secret, 0, len(i.secrets))
+		secrets := make([]realm.Secret, 0, len(i.secrets))
 		for _, identifier := range i.secrets {
-			if secret, ok := names[identifier]; ok {
-				filtered = append(filtered, secret)
-			} else if secret, ok := ids[identifier]; ok {
-				filtered = append(filtered, secret)
+			if secret, ok := secretsByName[identifier]; ok {
+				secrets = append(secrets, secret)
+			} else if secret, ok := secretsByID[identifier]; ok {
+				secrets = append(secrets, secret)
 			}
 		}
 
-		if len(filtered) == 0 {
-			return nil, errors.New("unable to find any of the secrets")
+		if len(secrets) == 0 {
+			return nil, errors.New("unable to find secrets")
 		}
-		return filtered, nil
+		return secrets, nil
 	}
 
-	selectableSecrets := map[string]realm.Secret{}
-	selectableOptions := make([]string, len(secrets))
-	for i, secret := range secrets {
+	options := make([]string, 0, len(appSecrets))
+	secretsByOption := map[string]realm.Secret{}
+	for _, secret := range appSecrets {
 		option := displaySecretOption(secret)
-		selectableOptions[i] = option
-		selectableSecrets[option] = secret
+
+		options = append(options, option)
+		secretsByOption[option] = secret
 	}
 
-	var selectedSecrets []string
+	var selections []string
 	if err := ui.AskOne(
-		&selectedSecrets,
+		&selections,
 		&survey.MultiSelect{
 			Message: "Which secret(s) would you like to delete?",
-			Options: selectableOptions,
+			Options: options,
 		},
 	); err != nil {
 		return nil, err
 	}
 
-	resolvedSecrets := make([]realm.Secret, len(selectedSecrets))
-	for i, secret := range selectedSecrets {
-		resolvedSecrets[i] = selectableSecrets[secret]
+	secrets := make([]realm.Secret, 0, len(selections))
+	for _, selection := range selections {
+		secrets = append(secrets, secretsByOption[selection])
 	}
-
-	return resolvedSecrets, nil
+	return secrets, nil
 }

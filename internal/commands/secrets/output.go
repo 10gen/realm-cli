@@ -21,12 +21,6 @@ type secretOutput struct {
 
 type secretTableRowModifier func(secretOutput, map[string]interface{})
 
-func secretOutputComparerBySuccess(outputs secretOutputs) func(i, j int) bool {
-	return func(i, j int) bool {
-		return outputs[i].err != nil && outputs[j].err == nil
-	}
-}
-
 func secretHeaders(additionalHeaders ...string) []string {
 	return append([]string{headerID, headerName}, additionalHeaders...)
 }

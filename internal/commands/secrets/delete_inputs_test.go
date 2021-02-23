@@ -9,7 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestResolveDeleteInputs(t *testing.T) {
+func TestSecretsDeleteInputsResolve(t *testing.T) {
 	testLen := 7
 	secrets := make([]realm.Secret, testLen)
 	for i := 0; i < testLen; i++ {

@@ -73,8 +73,8 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 	return profile, nil
 }
 
-func (c *client) getAuth(options api.RequestOptions) (string, error) {
-	session := c.sessionManager.Session()
+func (c *client) getAuthToken(options api.RequestOptions) (string, error) {
+	session := c.authService.Session()
 
 	if !options.NoAuth {
 		if session.AccessToken == "" {
@@ -112,11 +112,11 @@ func (c *client) refreshAuth() error {
 		return err
 	}
 
-	session := c.sessionManager.Session()
+	session := c.authService.Session()
 	session.AccessToken = s.AccessToken
-	c.sessionManager.SetSession(session)
+	c.authService.SetSession(session)
 
-	return c.sessionManager.Save()
+	return c.authService.Save()
 }
 
 // AllGroupIDs returns all group ids associated with the user's profile

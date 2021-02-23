@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -59,7 +61,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 	}
 
 	if command.Command != nil {
-		if command, ok := command.Command.(CommandFlagger); ok {
+		if command, ok := command.Command.(CommandFlags); ok {
 			command.Flags(cmd.Flags())
 		}
 
@@ -70,10 +72,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.SetErr(factory.errWriter)
 
 			if err := factory.profile.resolveFlags(); err != nil {
-				printErr := factory.ui.Print(terminal.NewErrorLog(err))
-				if printErr != nil {
-					factory.errLogger.Fatal(err) // log the original failure
-				}
+				factory.ui.Print(terminal.NewErrorLog(err))
 				os.Exit(1)
 			}
 
@@ -84,28 +83,22 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			)
 		}
 
-		cmd.PreRunE = func(c *cobra.Command, a []string) error {
-			if command, ok := command.Command.(CommandInputs); ok {
-				err := command.Inputs().Resolve(factory.profile, factory.ui)
-				if err != nil {
-					return fmt.Errorf("%s failed to resolve inputs: %w", display, err)
-				}
-			}
-
-			if command, ok := command.Command.(CommandPreparer); ok {
-				err := command.Setup(factory.profile, factory.ui)
-				if err != nil {
+		if command, ok := command.Command.(CommandInputs); ok {
+			cmd.PreRunE = func(c *cobra.Command, a []string) error {
+				if err := command.Inputs().Resolve(factory.profile, factory.ui); err != nil {
 					return fmt.Errorf("%s setup failed: %w", display, err)
 				}
+				return nil
 			}
-
-			return nil
 		}
 
 		cmd.RunE = func(c *cobra.Command, a []string) error {
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
-			err := command.Command.Handler(factory.profile, factory.ui)
+			err := command.Command.Handler(factory.profile, factory.ui, Clients{
+				Realm: realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
+				Atlas: atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.User()),
+			})
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
@@ -116,16 +109,6 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
 			return nil
-		}
-
-		if command, ok := command.Command.(CommandResponder); ok {
-			cmd.PostRunE = func(c *cobra.Command, a []string) error {
-				err := command.Feedback(factory.profile, factory.ui)
-				if err != nil {
-					return fmt.Errorf("%s completed, but displaying results failed: %w", display, errDisableUsage{err})
-				}
-				return nil
-			}
 		}
 	}
 
@@ -149,7 +132,6 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 		}
 
 		logs := []terminal.Log{terminal.NewErrorLog(err)}
-
 		if e, ok := err.(CommandSuggester); ok {
 			logs = append(logs, terminal.NewSuggestedCommandsLog(e.SuggestedCommands()))
 		}
@@ -157,10 +139,7 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 			logs = append(logs, terminal.NewSuggestedCommandsLog(e.ReferenceLinks()))
 		}
 
-		if printErr := factory.ui.Print(logs...); printErr != nil {
-			factory.errLogger.Fatal(err) // log the original failure
-		}
-
+		factory.ui.Print(logs...)
 		os.Exit(1)
 	}
 }
@@ -213,7 +192,7 @@ func (factory *CommandFactory) ensureUI() {
 	}
 
 	if factory.ui == nil {
-		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter)
+		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter, factory.errLogger)
 	}
 }
 

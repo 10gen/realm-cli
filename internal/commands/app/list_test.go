@@ -12,37 +12,24 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestAppListSetup(t *testing.T) {
-	t.Run("setup creates a realm client with a session", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		cmd := &CommandList{}
-		assert.Nil(t, cmd.realmClient)
-
-		assert.Nil(t, cmd.Setup(profile, nil))
-		assert.NotNil(t, cmd.realmClient)
-	})
-}
-
 func TestAppListHandler(t *testing.T) {
 	groupID1, groupID2 := primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()
 	app1 := realm.App{
-		ID:          primitive.NewObjectID().Hex(),
+		ID:          "app1",
 		GroupID:     groupID1,
 		ClientAppID: "app1-abcde",
 		Name:        "app1",
 	}
 	app2 := realm.App{
-		ID:          primitive.NewObjectID().Hex(),
+		ID:          "app2",
 		GroupID:     groupID1,
-		ClientAppID: "app2-fghij",
+		ClientAppID: "app2-abcde",
 		Name:        "app2",
 	}
 	app3 := realm.App{
-		ID:          primitive.NewObjectID().Hex(),
+		ID:          "app3",
 		GroupID:     groupID2,
-		ClientAppID: "app1-abcde",
+		ClientAppID: "app1-fghij",
 		Name:        "app1",
 	}
 
@@ -73,6 +60,8 @@ func TestAppListHandler(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
+			out, ui := mock.NewUI()
+
 			realmClient := mock.RealmClient{}
 
 			var appFilter realm.AppFilter
@@ -81,63 +70,15 @@ func TestAppListHandler(t *testing.T) {
 				return apps, nil
 			}
 
-			cmd := &CommandList{inputs: tc.inputs, realmClient: realmClient}
-			assert.Nil(t, cmd.Handler(nil, nil))
+			cmd := &CommandList{tc.inputs}
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
-			assert.Equal(t, apps, cmd.apps)
-		})
-	}
-}
-
-func TestAppListFeedback(t *testing.T) {
-	groupID1, groupID2 := primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex()
-	for _, tc := range []struct {
-		description    string
-		apps           []realm.App
-		expectedOutput string
-	}{
-		{
-			description:    "should print an empty state message when no apps were found",
-			expectedOutput: "01:23:45 UTC INFO  No available apps to show\n",
-		},
-		{
-			description: "should print a list of apps that were found",
-			apps: []realm.App{
-				{
-					ID:          primitive.NewObjectID().Hex(),
-					GroupID:     groupID1,
-					ClientAppID: "app1-abcde",
-					Name:        "app1",
-				},
-				{
-					ID:          primitive.NewObjectID().Hex(),
-					GroupID:     groupID1,
-					ClientAppID: "app2-fghij",
-					Name:        "app2",
-				},
-				{
-					ID:          primitive.NewObjectID().Hex(),
-					GroupID:     groupID2,
-					ClientAppID: "app1-abcde",
-					Name:        "app1",
-				},
-			},
-			expectedOutput: fmt.Sprintf(`01:23:45 UTC INFO  Found 3 apps
+			assert.Equal(t, fmt.Sprintf(`01:23:45 UTC INFO  Found 3 apps
   app1-abcde (%s)
-  app2-fghij (%s)
-  app1-abcde (%s)
-`, groupID1, groupID1, groupID2),
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			out, ui := mock.NewUI()
-
-			cmd := &CommandList{apps: tc.apps}
-
-			assert.Nil(t, cmd.Feedback(nil, ui))
-
-			assert.Equal(t, tc.expectedOutput, out.String())
+  app2-abcde (%s)
+  app1-fghij (%s)
+`, groupID1, groupID1, groupID2), out.String())
 		})
 	}
 }

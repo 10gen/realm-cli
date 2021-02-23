@@ -3,10 +3,12 @@ package app
 import (
 	"archive/zip"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -14,76 +16,65 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
 	"github.com/Netflix/go-expect"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
-
-func TestAppCreateSetup(t *testing.T) {
-	t.Run("should construct a realm and atlas client with configured base urls", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-		profile.SetRealmBaseURL("http://localhost:8080")
-		profile.SetAtlasBaseURL("http://localhost:8888")
-
-		cmd := &CommandCreate{inputs: createInputs{newAppInputs: newAppInputs{
-			Name: "test-app",
-		}}}
-		assert.Nil(t, cmd.realmClient)
-		assert.Nil(t, cmd.atlasClient)
-		assert.Nil(t, cmd.Setup(profile, nil))
-		assert.NotNil(t, cmd.realmClient)
-		assert.NotNil(t, cmd.atlasClient)
-	})
-}
 
 func TestAppCreateHandler(t *testing.T) {
 	t.Run("should create minimal project when no from type is specified", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
-		var createdApp realm.App
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
 		client := mock.RealmClient{}
 		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			createdApp = realm.App{
-				GroupID: groupID,
-				Name:    name,
-				AppMeta: meta,
-			}
-			return createdApp, nil
+			return realm.App{
+				GroupID:     groupID,
+				ID:          "456",
+				ClientAppID: name + "-abcde",
+				Name:        name,
+				AppMeta:     meta,
+			}, nil
 		}
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{newAppInputs: newAppInputs{
-				Name:            "test-app",
-				Project:         "test-project",
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}},
-			realmClient: client,
-		}
-
-		assert.Nil(t, cmd.Handler(profile, nil))
-
-		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
-		assert.Nil(t, err)
-
-		expectedAppData := local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
 			Name:            "test-app",
+			Project:         "123",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
 		}}}
 
-		assert.Equal(t, &expectedAppData, localApp.AppData)
-		assert.Equal(t, realm.App{
-			GroupID: "test-project",
-			Name:    "test-app",
-			AppMeta: realm.AppMeta{
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			},
-		}, createdApp)
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+
+		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		assert.Nil(t, err)
+
+		// FIXME: lets figure out to display a more deterministic output (filepaths can vary wildly in length here)
+		dirLength := len(localApp.RootDir)
+		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+		fmtStrLast := fmt.Sprintf("%%-%ds", dirLength+20)
+
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  Successfully created app",
+			fmt.Sprintf("  Info                "+fmtStr, "Details"),
+			"  ------------------  " + strings.Repeat("-", dirLength),
+			fmt.Sprintf("  Client App ID       "+fmtStr, "test-app-abcde"),
+			"  Realm Directory     " + localApp.RootDir,
+			fmt.Sprintf("  Realm UI            "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
+			fmt.Sprintf("  "+fmtStrLast, "Check out your app  cd ./test-app && realm-cli app describe"),
+			"",
+		}, "\n"), out.String())
+
+		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.DefaultAppConfigVersion,
+			Name:            "test-app",
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}, localApp.AppData)
 	})
 
 	t.Run("when from and project is not set should create minimal project and prompt for project", func(t *testing.T) {
@@ -125,18 +116,14 @@ func TestAppCreateHandler(t *testing.T) {
 			procedure(console)
 		}()
 
-		cmd := &CommandCreate{
-			inputs: createInputs{newAppInputs: newAppInputs{
-				Name:            "test-app",
-				Project:         "test-project",
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}},
-			realmClient: rc,
-			atlasClient: ac,
-		}
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			Name:            "test-app",
+			Project:         "test-project",
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}
 
-		assert.Nil(t, cmd.Handler(profile, ui))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
@@ -166,9 +153,13 @@ func TestAppCreateHandler(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
 		testApp := realm.App{
-			ID:          primitive.NewObjectID().Hex(),
-			GroupID:     primitive.NewObjectID().Hex(),
+			ID:          "789",
+			GroupID:     "123",
 			ClientAppID: "from-app-abcde",
 			Name:        "from-app",
 		}
@@ -176,7 +167,6 @@ func TestAppCreateHandler(t *testing.T) {
 		zipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
 
-		var createdApp realm.App
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{testApp}, nil
@@ -185,52 +175,57 @@ func TestAppCreateHandler(t *testing.T) {
 			return "", &zipPkg.Reader, err
 		}
 		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			createdApp = realm.App{
-				GroupID: groupID,
-				Name:    name,
-				AppMeta: meta,
-			}
-			return createdApp, nil
+			return realm.App{
+				GroupID:     groupID,
+				ID:          "456",
+				ClientAppID: name + "-abcde",
+				Name:        name,
+				AppMeta:     meta,
+			}, nil
 		}
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{newAppInputs: newAppInputs{
-				From:            testApp.Name,
-				Project:         testApp.GroupID,
-				Location:        realm.LocationIreland,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}},
-			realmClient: client,
-		}
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			From:            testApp.Name,
+			Project:         testApp.GroupID,
+			Location:        realm.LocationIreland,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}
 
-		assert.Nil(t, cmd.Handler(profile, nil))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
 		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.From))
 		assert.Nil(t, err)
 
-		actualAppData := localApp.AppData.(*local.AppRealmConfigJSON)
+		// FIXME: lets figure out to display a more deterministic output (filepaths can vary wildly in length here)
+		dirLength := len(localApp.RootDir)
+		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+		fmtStrLast := fmt.Sprintf("%%-%ds", dirLength+20)
 
-		expectedAppData := local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  Successfully created app",
+			fmt.Sprintf("  Info                "+fmtStr, "Details"),
+			"  ------------------  " + strings.Repeat("-", dirLength),
+			fmt.Sprintf("  Client App ID       "+fmtStr, "from-app-abcde"),
+			"  Realm Directory     " + localApp.RootDir,
+			fmt.Sprintf("  Realm UI            "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
+			fmt.Sprintf("  "+fmtStrLast, "Check out your app  cd ./from-app && realm-cli app describe"),
+			"",
+		}, "\n"), out.String())
+
+		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			Name:            testApp.Name,
 			Location:        realm.LocationIreland,
 			DeploymentModel: realm.DeploymentModelGlobal,
-			Auth:            actualAppData.Auth,
-			Sync:            actualAppData.Sync,
-		}}}
-
-		assert.Equal(t, &expectedAppData, actualAppData)
-		assert.Equal(t, realm.App{
-			GroupID: testApp.GroupID,
-			Name:    testApp.Name,
-			AppMeta: realm.AppMeta{
-				Location:        realm.LocationIreland,
-				DeploymentModel: realm.DeploymentModelGlobal,
+			Auth: &local.AuthStructure{
+				CustomUserData: map[string]interface{}{"enabled": false},
+				Providers:      map[string]interface{}{},
 			},
-		}, createdApp)
+			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+		}}}, localApp.AppData)
 	})
 
 	t.Run("should error when resolving groupID when project is not set", func(t *testing.T) {
@@ -241,16 +236,13 @@ func TestAppCreateHandler(t *testing.T) {
 			return nil, errors.New("atlas client error")
 		}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{newAppInputs: newAppInputs{
-				Name:            "test-app",
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}},
-			atlasClient: client,
-		}
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			Name:            "test-app",
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}
 
-		assert.Equal(t, errors.New("atlas client error"), cmd.Handler(profile, nil))
+		assert.Equal(t, errors.New("atlas client error"), cmd.Handler(profile, nil, cli.Clients{Atlas: client}))
 	})
 
 	t.Run("should error when resolving app when from is set", func(t *testing.T) {
@@ -261,16 +253,13 @@ func TestAppCreateHandler(t *testing.T) {
 			return nil, errors.New("realm client error")
 		}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{newAppInputs: newAppInputs{
-				From:            "test-app",
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}},
-			realmClient: client,
-		}
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			From:            "test-app",
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}
 
-		assert.Equal(t, errors.New("realm client error"), cmd.Handler(profile, nil))
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(profile, nil, cli.Clients{Realm: client}))
 	})
 }
 
@@ -305,37 +294,3 @@ func TestAppCreateHandler(t *testing.T) {
 
 //
 // }
-
-func TestAppCreateFeedback(t *testing.T) {
-	t.Run("feedback should print a message that app creation was successful", func(t *testing.T) {
-		out, ui := mock.NewUI()
-
-		cmd := &CommandCreate{
-			outputs: createOutputs{
-				clientAppID: "test-client-id",
-				dir:         "/file/path/to/test-app",
-				uiURL:       "https://realm.mongodb.com/groups/123/apps/123/dashboard",
-				followUpCmd: "cd ./test-app && realm-cli app describe",
-			},
-		}
-
-		err := cmd.Feedback(nil, ui)
-		assert.Nil(t, err)
-
-		expectedContent := strings.Join(
-			[]string{
-				"01:23:45 UTC INFO  Successfully created app",
-				"  Info                Details                                                ",
-				"  ------------------  -------------------------------------------------------",
-				"  Client App ID       test-client-id                                         ",
-				"  Realm Directory     /file/path/to/test-app                                 ",
-				"  Realm UI            https://realm.mongodb.com/groups/123/apps/123/dashboard",
-				"  Check out your app  cd ./test-app && realm-cli app describe                ",
-				"",
-			},
-			"\n",
-		)
-
-		assert.Equal(t, expectedContent, out.String())
-	})
-}
