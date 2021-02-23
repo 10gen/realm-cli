@@ -78,11 +78,17 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				os.Exit(1)
 			}
 
-			factory.telemetryService = telemetry.NewService(
+			telemetryService, err := telemetry.NewService(
 				factory.profile.telemetryMode,
 				factory.profile.User().PublicAPIKey,
+				factory.profile.telemetryWriteKey,
+				factory.errLogger,
 				display,
 			)
+			if err != nil {
+				factory.ui.Print(terminal.NewErrorLog(err))
+			}
+			factory.telemetryService = telemetryService
 		}
 
 		if command, ok := command.Command.(CommandInputs); ok {
@@ -154,7 +160,7 @@ func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
 	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
 	fs.VarP(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
-
+	fs.StringVarP(&factory.profile.telemetryWriteKey, telemetry.FlagWriteKey, telemetry.FlagWriteKeyShort, "", telemetry.FlagWriteKeyUsage)
 	// cli ui
 	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
 	fs.BoolVar(&factory.uiConfig.DisableColors, terminal.FlagDisableColors, false, terminal.FlagDisableColorsUsage)

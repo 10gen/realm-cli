@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/afero"
 	"github.com/spf13/viper"
+
 )
 
 const (
@@ -38,10 +39,12 @@ const (
 
 // Profile is the CLI profile
 type Profile struct {
-	Name          string
-	atlasBaseURL  string
-	realmBaseURL  string
-	telemetryMode telemetry.Mode
+	Name         string
+	atlasBaseURL string
+	realmBaseURL string
+
+	telemetryMode     telemetry.Mode
+	telemetryWriteKey string
 
 	dir string
 	fs  afero.Fs
@@ -137,6 +140,15 @@ func (p *Profile) resolveFlags() error {
 	}
 	p.SetString(keyTelemetryMode, string(p.telemetryMode))
 
+	if p.telemetryWriteKey == "" {
+		telemetryWriteKey := p.GetString(keyTelemetryWriteKey)
+		if telemetryWriteKey == "" && (p.telemetryMode == telemetry.ModeOn || p.telemetryMode == telemetry.ModeEmpty) {
+			return fmt.Errorf("if %s is %s or %s, %s cannot be empty", keyTelemetryMode, telemetry.ModeOn, telemetry.ModeEmpty, keyTelemetryWriteKey)
+		}
+		p.telemetryWriteKey = telemetryWriteKey
+	}
+	p.SetString(keyTelemetryWriteKey, p.telemetryWriteKey)
+
 	if p.realmBaseURL == "" {
 		realmBaseURL := p.GetString(keyRealmBaseURL)
 		if realmBaseURL == "" {
@@ -175,9 +187,10 @@ const (
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
 
-	keyRealmBaseURL  = "realm_base_url"
-	keyAtlasBaseURL  = "atlas_base_url"
-	keyTelemetryMode = "telemetry_mode"
+	keyRealmBaseURL      = "realm_base_url"
+	keyAtlasBaseURL      = "atlas_base_url"
+	keyTelemetryMode     = "telemetry_mode"
+	keyTelemetryWriteKey = "telemetry_write_key"
 )
 
 // User gets the CLI profile user
