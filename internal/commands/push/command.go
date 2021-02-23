@@ -89,6 +89,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
+		// TODO(REALMC-8242): diff dependencies changes
 		diffs = append(diffs, "Import dependencies")
 	}
 
