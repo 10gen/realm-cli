@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/AlecAivazis/survey/v2 v2.2.2
 	github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8
+	github.com/briandowns/spinner v1.12.0
 	github.com/edaniels/digest v0.0.0-20170923160545-b81e9c4ee11c
 	github.com/edaniels/golinters v0.0.3
 	github.com/fatih/color v1.10.0

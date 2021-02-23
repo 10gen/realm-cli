@@ -2,6 +2,7 @@ package mock
 
 import (
 	"archive/zip"
+	"io"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -17,6 +18,9 @@ type RealmClient struct {
 	DiffFn   func(groupID, appID string, appData interface{}) ([]string, error)
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
 	ImportFn func(groupID, appID string, appData interface{}) error
+
+	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
+	ImportDependenciesFn func(groupID, appID, uploadPath string) error
 
 	CreateAppFn func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	FindAppsFn  func(filter realm.AppFilter) ([]realm.App, error)
@@ -293,6 +297,26 @@ func (rc RealmClient) RevokeUserSessions(groupID, appID, userID string) error {
 		return rc.RevokeUserSessionFn(groupID, appID, userID)
 	}
 	return rc.Client.RevokeUserSessions(groupID, appID, userID)
+}
+
+// ExportDependencies calls the mocked ExportDependencies implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+	if rc.ExportDependenciesFn != nil {
+		return rc.ExportDependenciesFn(groupID, appID)
+	}
+	return rc.Client.ExportDependencies(groupID, appID)
+}
+
+// ImportDependencies calls the mocked ImportDependencies implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) ImportDependencies(groupID, appID, uploadPath string) error {
+	if rc.ImportDependenciesFn != nil {
+		return rc.ImportDependenciesFn(groupID, appID, uploadPath)
+	}
+	return rc.Client.ImportDependencies(groupID, appID, uploadPath)
 }
 
 // Status calls the mocked Status implementation if provided,

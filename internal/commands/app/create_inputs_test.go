@@ -132,7 +132,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 
 func TestAppCreateInputsResolveDirectory(t *testing.T) {
 	t.Run("should return path of wd with app name appended", func(t *testing.T) {
-		profile := mock.NewProfileFromWD(t)
+		profile := mock.NewProfileFromWd(t)
 
 		appName := "test-app"
 		inputs := createInputs{newAppInputs: newAppInputs{Name: appName}}
@@ -144,7 +144,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 	})
 
 	t.Run("should return path of wd with directory appended when directory is set", func(t *testing.T) {
-		profile := mock.NewProfileFromWD(t)
+		profile := mock.NewProfileFromWd(t)
 
 		specifiedDir := "test-dir"
 		inputs := createInputs{Directory: specifiedDir}

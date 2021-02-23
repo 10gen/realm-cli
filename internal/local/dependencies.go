@@ -53,34 +53,39 @@ func FindAppDependencies(path string) (Dependencies, error) {
 // containing the specified archive's transpiled file contents in a tempmorary directory
 // and returns that file path
 func (d Dependencies) PrepareUpload() (string, error) {
-	file, fileErr := os.Open(d.ArchivePath)
-	if fileErr != nil {
-		return "", fileErr
+	file, err := os.Open(d.ArchivePath)
+	if err != nil {
+		return "", err
 	}
 	defer file.Close()
 
-	archive, archiveErr := newArchiveReader(d.ArchivePath, file)
-	if archiveErr != nil {
-		return "", archiveErr
+	archive, err := newArchiveReader(d.ArchivePath, file)
+	if err != nil {
+		return "", err
 	}
 
-	transpiler, transpilerErr := newDefaultTranspiler()
-	if transpilerErr != nil {
-		return "", transpilerErr
+	transpiler, err := newDefaultTranspiler()
+	if err != nil {
+		return "", err
 	}
 
-	out, outErr := os.Create(filepath.Join(os.TempDir(), "node_modules.zip"))
-	if outErr != nil {
-		return "", outErr
+	dir, err := ioutil.TempDir("", "") // uses os.TempDir and guarantees existence and proper permissions
+	if err != nil {
+		return "", err
+	}
+
+	out, err := os.Create(filepath.Join(dir, "node_modules.zip"))
+	if err != nil {
+		return "", err
 	}
 	defer out.Close()
 
 	w := zip.NewWriter(out)
 
 	writeFile := func(path string, data []byte) error {
-		file, fileErr := w.Create(path)
-		if fileErr != nil {
-			return fileErr
+		file, err := w.Create(path)
+		if err != nil {
+			return err
 		}
 		if _, err := file.Write(data); err != nil {
 			return err
@@ -102,14 +107,14 @@ func (d Dependencies) PrepareUpload() (string, error) {
 			continue
 		}
 
-		path, pathErr := filepath.Rel(d.RootDir, h.Path)
-		if pathErr != nil {
+		path, err := filepath.Rel(d.RootDir, h.Path)
+		if err != nil {
 			path = h.Path // h.Path _is_ the relative path already
 		}
 
-		data, dataErr := ioutil.ReadAll(archive)
-		if dataErr != nil {
-			return "", dataErr
+		data, err := ioutil.ReadAll(archive)
+		if err != nil {
+			return "", err
 		}
 
 		// separate out javascript and non-javascript
@@ -127,9 +132,9 @@ func (d Dependencies) PrepareUpload() (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	transpiledSources, transpilerErr := transpiler.Transpile(ctx, jsSources...)
-	if transpilerErr != nil {
-		return "", transpilerErr
+	transpiledSources, err := transpiler.Transpile(ctx, jsSources...)
+	if err != nil {
+		return "", err
 	}
 
 	for i, transpiledSource := range transpiledSources {

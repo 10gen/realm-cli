@@ -11,6 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
 )
 
@@ -78,6 +79,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		isNewApp = true
 	}
 
+	ui.Print(terminal.NewTextLog("Determining changes"))
 	diffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app.AppData)
 	if err != nil {
 		return err
@@ -89,8 +91,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		// TODO(REALMC-8242): diff dependencies changes
-		diffs = append(diffs, "Import dependencies")
+		diffs = append(diffs, "+ New function dependencies")
 	}
 
 	if len(diffs) == 0 {
@@ -123,6 +124,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return nil
 	}
 
+	ui.Print(terminal.NewTextLog("Creating draft"))
 	draft, proceed, err := createNewDraft(ui, clients.Realm, to)
 	if err != nil {
 		return err
@@ -131,10 +133,12 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return nil
 	}
 
+	ui.Print(terminal.NewTextLog("Pushing changes"))
 	if err := clients.Realm.Import(to.GroupID, to.AppID, app.AppData); err != nil {
 		return err
 	}
 
+	ui.Print(terminal.NewTextLog("Deploying draft"))
 	if err := deployDraftAndWait(ui, clients.Realm, to, draft.ID); err != nil {
 		return err
 	}
@@ -142,23 +146,40 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	// TODO(REALMC-7177): import hosting
 
 	if cmd.inputs.IncludeDependencies {
-		dependencies, dependenciesErr := local.FindAppDependencies(app.RootDir)
-		if dependenciesErr != nil {
-			return dependenciesErr
+		dependencies, err := local.FindAppDependencies(app.RootDir)
+		if err != nil {
+			return err
 		}
 
-		uploadPath, uploadErr := dependencies.PrepareUpload()
-		if uploadErr != nil {
-			return uploadErr
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Transpiling dependency sources..."
+
+		prepareUpload := func() (string, error) {
+			s.Start()
+			defer s.Stop()
+
+			path, err := dependencies.PrepareUpload()
+			if err != nil {
+				return "", err
+			}
+
+			ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
+			return path, nil
+		}
+
+		uploadPath, err := prepareUpload()
+		if err != nil {
+			return err
 		}
 		defer os.Remove(uploadPath) //nolint:errcheck
 
 		if err := clients.Realm.ImportDependencies(to.GroupID, to.AppID, uploadPath); err != nil {
 			return err
 		}
+		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully pushed app changes"))
+	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", app.ID()))
 	return nil
 }
 
@@ -305,19 +326,33 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, to to, draftID
 		return err
 	}
 
-	for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
-		// TODO(REALMC-7867): replace this Print statement with a spinner & status message (which goes away after the function completes)
-		ui.Print(terminal.NewTextLog("Checking on the status of your deployment..."))
-		time.Sleep(time.Second)
+	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+	s.Suffix = " Deploying app changes..."
 
-		deployment, err = realmClient.Deployment(to.GroupID, to.AppID, deployment.ID)
-		if err != nil {
-			if err := realmClient.DiscardDraft(to.GroupID, to.AppID, draftID); err != nil {
-				ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
+	waitForDeployment := func() error {
+		s.Start()
+		defer s.Stop()
+
+		for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
+			time.Sleep(time.Second)
+
+			deployment, err = realmClient.Deployment(to.GroupID, to.AppID, deployment.ID)
+			if err != nil {
+				if e := realmClient.DiscardDraft(to.GroupID, to.AppID, draftID); e != nil {
+					ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
+				}
+				return err
 			}
-			return err
 		}
+
+		return nil
 	}
+
+	if err := waitForDeployment(); err != nil {
+		return err
+	}
+
+	ui.Print(terminal.NewTextLog("Deployment complete"))
 	return nil
 }
 

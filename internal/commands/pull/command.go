@@ -2,14 +2,17 @@ package pull
 
 import (
 	"archive/zip"
+	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
 )
 
@@ -20,7 +23,7 @@ type Command struct {
 
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.inputs.Target, flagTarget, flagTargetShort, "", flagTargetUsage)
+	fs.StringVarP(&cmd.inputs.To, flagTo, flagToShort, "", flagToUsage)
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.From, flagFrom, flagFromShort, "", flagFromUsage)
 	fs.Var(&cmd.inputs.AppVersion, flagAppVersion, flagAppVersionUsage)
@@ -41,38 +44,65 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return err
 	}
 
-	path, zipPkg, err := cmd.doExport(profile, clients.Realm, from.GroupID, from.AppID)
+	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, from.GroupID, from.AppID)
 	if err != nil {
 		return err
+	}
+
+	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
+	if err != nil {
+		return err
+	}
+
+	proceed, err := checkAppDestination(ui, pathTarget)
+	if err != nil {
+		return err
+	} else if !proceed {
+		return nil
 	}
 
 	if cmd.inputs.DryRun {
 		ui.Print(
 			terminal.NewTextLog("No changes were written to your file system"),
-			terminal.NewDebugLog("Contents would have been written to: %s", path),
+			terminal.NewDebugLog("Contents would have been written to: %s", pathRelative),
 		)
 		return nil
 	}
 
-	if err := local.WriteZip(path, zipPkg); err != nil {
+	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
 		return err
 	}
+	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
 	if cmd.inputs.IncludeDependencies {
-		archiveName, archivePkg, err := clients.Realm.ExportDependencies(from.GroupID, from.AppID)
-		if err != nil {
-			return err
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Fetching dependencies archive..."
+
+		exportDependencies := func() error {
+			s.Start()
+			defer s.Stop()
+
+			archiveName, archivePkg, err := clients.Realm.ExportDependencies(from.GroupID, from.AppID)
+			if err != nil {
+				return err
+			}
+
+			return local.WriteFile(
+				filepath.Join(pathTarget, local.NameFunctions, archiveName),
+				0755,
+				archivePkg,
+			)
 		}
 
-		archivePath := filepath.Join(path, local.NameFunctions, archiveName)
-		if err := local.WriteFile(archivePath, 0755, archivePkg); err != nil {
+		if err := exportDependencies(); err != nil {
 			return err
 		}
+		ui.Print(terminal.NewTextLog("Fetched dependencies archive"))
 	}
 
 	// TODO(REALMC-7177): include hosting
 
-	ui.Print(terminal.NewTextLog("Successfully pulled down Realm app to your local filesystem"))
+	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
 	return nil
 }
 
@@ -86,13 +116,35 @@ func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, gro
 		return "", nil, exportErr
 	}
 
-	path := cmd.inputs.Target
-	if path == "" {
+	to := cmd.inputs.To
+	if to == "" {
 		if idx := strings.LastIndex(name, "_"); idx != -1 {
 			name = name[:idx]
 		}
-		path = filepath.Join(profile.WorkingDirectory, name)
+		to = name
 	}
 
-	return path, zipPkg, nil
+	target := filepath.Join(profile.WorkingDirectory, to)
+
+	return target, zipPkg, nil
+}
+
+func checkAppDestination(ui terminal.UI, path string) (bool, error) {
+	if ui.AutoConfirm() {
+		return true, nil
+	}
+
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	if !fileInfo.IsDir() {
+		return true, nil
+	}
+
+	return ui.Confirm("Directory '%s' already exists, do you still wish to proceed?", path)
 }

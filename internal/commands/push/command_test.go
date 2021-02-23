@@ -16,8 +16,8 @@ import (
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-	"github.com/AlecAivazis/survey/v2/terminal"
 
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/Netflix/go-expect"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -243,6 +243,98 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, "draftID", capturedDraftID)
 	})
 
+	t.Run("with a realm client that successfully imports and deploys drafts", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1"}, nil
+		}
+		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
+			return realm.AppDraft{ID: "draftID"}, nil
+		}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+
+		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
+			return realm.AppDeployment{Status: realm.DeploymentStatusSuccessful}, nil
+		}
+
+		t.Run("should run import successfully", func(t *testing.T) {
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+			cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
+
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+`, out.String())
+		})
+
+		t.Run("but fails to import dependencies", func(t *testing.T) {
+			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
+				return errors.New("something bad happened")
+			}
+
+			t.Run("should not return an error when include dependencies flag is omitted", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID"}}
+
+				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+`, out.String())
+			})
+			t.Run("should return an error when include dependencies flag is set", func(t *testing.T) {
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID", IncludeDependencies: true}}
+
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened"), err)
+			})
+		})
+
+		t.Run("and can import dependencies should run import successfully", func(t *testing.T) {
+			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
+				return nil
+			}
+
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+			cmd := &Command{inputs{AppDirectory: "testdata/project", To: "appID", IncludeDependencies: true}}
+
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Creating draft
+01:23:45 UTC INFO  Pushing changes
+01:23:45 UTC INFO  Deploying draft
+01:23:45 UTC INFO  Deployment complete
+01:23:45 UTC INFO  Transpiled dependency sources
+01:23:45 UTC INFO  Uploaded dependencies archive
+01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+`, out.String())
+		})
+	})
+
 	t.Run("should exit early in a dry run`", func(t *testing.T) {
 		for _, tc := range []struct {
 			description  string
@@ -333,7 +425,8 @@ func TestPushHandler(t *testing.T) {
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
-		assert.Equal(t, `01:23:45 UTC INFO  Deployed app is identical to proposed version, nothing to do
+		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Deployed app is identical to proposed version, nothing to do
 `, out.String())
 	})
 
@@ -353,7 +446,8 @@ func TestPushHandler(t *testing.T) {
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		assert.Nil(t, err)
-		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
 diff1
 diff2
 01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
@@ -724,7 +818,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 						return nil
 					}
 
-					t.Run("But still fails to create a new draft should return the error", func(t *testing.T) {
+					t.Run("but still fails to create a new draft should return the error", func(t *testing.T) {
 						realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
 							return realm.AppDraft{}, errDraftAlreadyExists
 						}
@@ -948,7 +1042,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			return realm.AppDeployment{ID: "id", Status: realm.DeploymentStatusCreated}, nil
 		}
 
-		t.Run("But fails to get the deployment", func(t *testing.T) {
+		t.Run("but fails to get the deployment", func(t *testing.T) {
 			realmClient.DeploymentFn = func(groupID, appID, deploymentID string) (realm.AppDeployment, error) {
 				return realm.AppDeployment{}, errors.New("something bad happened")
 			}
@@ -959,19 +1053,12 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 				expectedContents string
 			}{
 				{
-					description:      "Yet can successfully discard the draft should return the error",
-					expectedContents: "01:23:45 UTC INFO  Checking on the status of your deployment...\n",
+					description: "yet can successfully discard the draft should return the error",
 				},
 				{
-					description:     "and fails to discard the draft should return the deployment error and print a warning message",
-					discardDraftErr: errors.New("failed to discard draft"),
-					expectedContents: strings.Join(
-						[]string{
-							"01:23:45 UTC INFO  Checking on the status of your deployment...",
-							"01:23:45 UTC WARN  Failed to discard the draft created for your deployment\n",
-						},
-						"\n",
-					),
+					description:      "and fails to discard the draft should return the deployment error and print a warning message",
+					discardDraftErr:  errors.New("failed to discard draft"),
+					expectedContents: "01:23:45 UTC WARN  Failed to discard the draft created for your deployment\n",
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -1005,7 +1092,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			err := deployDraftAndWait(ui, realmClient, to{groupID, appID}, draftID)
 			assert.Nil(t, err)
 
-			assert.Equal(t, strings.Repeat("01:23:45 UTC INFO  Checking on the status of your deployment...\n", polls), out.String())
+			assert.Equal(t, "01:23:45 UTC INFO  Deployment complete\n", out.String())
 		})
 	})
 }

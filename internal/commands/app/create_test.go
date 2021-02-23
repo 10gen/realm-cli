@@ -304,7 +304,7 @@ func TestAppCreateHandler(t *testing.T) {
 	})
 
 	t.Run("should error when resolving groupID when project is not set", func(t *testing.T) {
-		profile := mock.NewProfileFromWD(t)
+		profile := mock.NewProfileFromWd(t)
 
 		client := mock.AtlasClient{}
 		client.GroupsFn = func() ([]atlas.Group, error) {
@@ -321,7 +321,7 @@ func TestAppCreateHandler(t *testing.T) {
 	})
 
 	t.Run("should error when resolving app when from is set", func(t *testing.T) {
-		profile := mock.NewProfileFromWD(t)
+		profile := mock.NewProfileFromWd(t)
 
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {

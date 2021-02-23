@@ -130,12 +130,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		}
 	}
 
-	err = clients.Realm.Import(
-		newApp.GroupID,
-		newApp.ID,
-		loadedApp.AppData,
-	)
-	if err != nil {
+	if err := clients.Realm.Import(newApp.GroupID, newApp.ID, loadedApp.AppData); err != nil {
 		return err
 	}
 
