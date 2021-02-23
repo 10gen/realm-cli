@@ -86,9 +86,11 @@ Realm app will be exported as well.`,
 				Use:         "diff",
 				Aliases:     []string{},
 				Display:     "app diff",
-				Description: "Show changes between a remote Realm application and the local directory associated with the current user",
-				Help:        "diff help", // TODO(REALMC-7429): add help text description
-				Command:     &app.CommandDiff{},
+				Description: "Show differences between your Realm app and your local directory",
+				Help: `Displays file-by-file differences between the latest version of your Realm app and your local directory. 
+If you have more than one Realm app, you will be prompted to select a Realm app that you would like to 
+display from a list of all Realm apps associated with your user profile.`,
+				Command: &app.CommandDiff{},
 			},
 		},
 	}

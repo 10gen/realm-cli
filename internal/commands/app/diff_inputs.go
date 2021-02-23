@@ -15,5 +15,8 @@ const (
 )
 
 func (i *diffInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	if i.AppDirectory == "" {
+		i.AppDirectory = profile.WorkingDirectory
+	}
 	return nil
 }
