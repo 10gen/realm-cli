@@ -105,7 +105,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	if cmd.inputs.DataSource != "" {
-		dsCluster, err := cmd.inputs.resolveDataSource(clients.Realm, cmd.inputs.Project, newApp.ID)
+		dsCluster, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
 		if err != nil {
 			return err
 		}
@@ -170,6 +170,10 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 			"Info":    "Check out your app",
 			"Details": fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
 		},
+	}
+
+	if cmd.inputs.DataSource != "" {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": cmd.inputs.DataSource})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))

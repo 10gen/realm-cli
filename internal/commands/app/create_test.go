@@ -14,6 +14,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"github.com/Netflix/go-expect"
 )
 
@@ -250,6 +251,8 @@ func TestAppCreateHandler(t *testing.T) {
 			return nil
 		}
 
+		_, ui := mock.NewUI()
+
 		cmd := &CommandCreate{
 			inputs: createInputs{
 				newAppInputs: newAppInputs{
@@ -259,10 +262,9 @@ func TestAppCreateHandler(t *testing.T) {
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
 				DataSource: "test-cluster"},
-			realmClient: client,
 		}
 
-		assert.Nil(t, cmd.Handler(profile, nil))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
 		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)

@@ -28,8 +28,9 @@ func TestRealmCommands(t *testing.T) {
 			app, err := client.CreateApp(groupID, "commands-test", realm.AppMeta{})
 			assert.Nil(t, err)
 
-			_, err = client.ListClusters(groupID, app.ID)
+			clusters, err := client.ListClusters(groupID, app.ID)
 			assert.Nil(t, err)
+			assert.Equal(t, u.AtlasClusters(), len(clusters))
 		})
 	})
 }
