@@ -25,7 +25,7 @@ func (cmd *CommandDelete) Inputs() cli.InputResolver {
 // Flags function for the secrets delete command
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
-	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsage)
+	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsageDelete)
 }
 
 // Setup function for the secrets delete command

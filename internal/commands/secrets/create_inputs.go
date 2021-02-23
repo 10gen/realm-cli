@@ -8,14 +8,6 @@ import (
 )
 
 const (
-	flagName      = "name"
-	flagNameShort = "n"
-	flagNameUsage = `the name of the secret to add to your Realm App`
-
-	flagValue      = "value"
-	flagValueShort = "v"
-	flagValueUsage = `the value of the secret to add to your Realm App`
-
 	createInputFieldSecretName  = "name"
 	createInputFieldSecretValue = "value"
 )
