@@ -66,7 +66,7 @@ Realm app will be exported as well.`,
 		Description: "Manage the apps associated with the current user",
 		Help:        "app help", // TODO(REALMC-7429): add help text description
 		SubCommands: []cli.CommandDefinition{
-			cli.CommandDefinition{
+			{
 				Use:         "init",
 				Aliases:     []string{"initialize"},
 				Display:     "app init",
@@ -74,13 +74,21 @@ Realm app will be exported as well.`,
 				Help:        "",
 				Command:     &app.CommandInit{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "app list",
 				Description: "List the MongoDB Realm applications associated with the current user",
 				Help:        "list help", // TODO(REALMC-7429): add help text description
 				Command:     &app.CommandList{},
+			},
+			{
+				Use:         "diff",
+				Aliases:     []string{},
+				Display:     "app diff",
+				Description: "Show changes between a remote Realm application and the local directory associated with the current user",
+				Help:        "diff help", // TODO(REALMC-7429): add help text description
+				Command:     &app.CommandDiff{},
 			},
 		},
 	}
@@ -91,41 +99,41 @@ Realm app will be exported as well.`,
 		Description: "Manage the users of your MongoDB Realm application",
 		Help:        "user",
 		SubCommands: []cli.CommandDefinition{
-			cli.CommandDefinition{
+			{
 				Use:         "create",
 				Display:     "user create",
 				Description: "Create a user for a Realm application",
 				Help:        "user create",
 				Command:     &user.CommandCreate{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "delete",
 				Display:     "user delete",
 				Description: "Delete an application user from your Realm app",
 				Help:        "Removes a specific user from your Realm app.",
 				Command:     &user.CommandDelete{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "disable",
 				Display:     "user disable",
 				Description: "Disable an application user of your Realm app",
 				Help:        "Deactivates a user on your Realm app. A user that has been disabled will not be allowed to log in, even if they provide valid credentials.",
 				Command:     &user.CommandDisable{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "enable",
 				Display:     "user enable",
 				Description: "Enable an application user of your Realm app",
 				Help:        "Activates a user on your Realm app. A user that has been disabled will not be allowed to log in, even if they provide valid credentials.",
 				Command:     &user.CommandEnable{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "list",
 				Description: "List the users of your Realm application",
 				Help:        "user list",
 				Command:     &user.CommandList{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "revoke",
 				Display:     "user revoke",
 				Description: "Revoke an application user’s sessions on your Realm app",
@@ -141,14 +149,14 @@ Realm app will be exported as well.`,
 		Description: "Manage the secrets of your MongoDB Realm app",
 		Help:        "secrets",
 		SubCommands: []cli.CommandDefinition{
-			cli.CommandDefinition{
+			{
 				Use:         "create",
 				Display:     "secrets create",
 				Description: "Create a secret for your Realm app",
 				Help:        "Adds a new secret to your Realm app. You will be prompted to name your Secret, and define the value of your Secret.",
 				Command:     &secrets.CommandCreate{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "secrets list",
@@ -156,7 +164,7 @@ Realm app will be exported as well.`,
 				Help:        "Displays a list of data tables. Each data table displays the Name and ID of one (1) secret.",
 				Command:     &secrets.CommandList{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "delete",
 				Display:     "secrets delete",
 				Description: "Delete a secret from your Realm app",
