@@ -66,11 +66,10 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) 
 }
 
 func (i *createInputs) resolveDirectory(wd string) (string, error) {
-	dir := i.Directory
-	if dir == "" {
-		dir = i.Name
+	if i.Directory == "" {
+		i.Directory = i.Name
 	}
-	fullPath := path.Join(wd, dir)
+	fullPath := path.Join(wd, i.Directory)
 	fi, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -86,7 +85,7 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 		return "", appErr
 	}
 	if appOK {
-		return "", fmt.Errorf("%s is inside or is a Realm app directory", dir)
+		return "", fmt.Errorf("%s is inside or is a Realm app directory", fullPath)
 	}
 	return fullPath, nil
 }

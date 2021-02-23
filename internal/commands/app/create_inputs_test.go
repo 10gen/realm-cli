@@ -193,6 +193,6 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
-		assert.Equal(t, fmt.Errorf("%s is inside or is a Realm app directory", specifiedDir), err)
+		assert.Equal(t, fmt.Errorf("%s is inside or is a Realm app directory", fullDir), err)
 	})
 }

@@ -104,6 +104,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
+	rowCount := 3
 	if cmd.inputs.DataSource != "" {
 		dsCluster, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
 		if err != nil {
@@ -142,6 +143,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if err != nil {
 			return err
 		}
+		rowCount++
 	}
 
 	if err := clients.Realm.Import(
@@ -153,29 +155,15 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	headers := []string{"Info", "Details"}
-	rows := []map[string]interface{}{
-		{
-			"Info":    "Client App ID",
-			"Details": newApp.ClientAppID,
-		},
-		{
-			"Info":    "Realm Directory",
-			"Details": dir,
-		},
-		{
-			"Info":    "Realm UI",
-			"Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID),
-		},
-		{
-			"Info":    "Check out your app",
-			"Details": fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
-		},
-	}
-
+	rows := make([]map[string]interface{}, 0, rowCount)
+	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": newApp.ClientAppID})
+	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
+	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID)})
 	if cmd.inputs.DataSource != "" {
 		rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": cmd.inputs.DataSource})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
+	ui.Print(terminal.NewDebugLog("Check out your app: cd ./%s && realm-cli app describe", cmd.inputs.Directory))
 	return nil
 }
