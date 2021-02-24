@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -104,58 +103,47 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	rowCount := 3
 	if cmd.inputs.DataSource != "" {
-		dsCluster, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
+		dataSource, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
 		if err != nil {
 			return err
 		}
-		serviceName := newApp.Name + "_cluster"
-		serviceConfig := map[string]interface{}{
-			"name": serviceName,
-			"type": "mongodb-atlas",
-			"config": map[string]interface{}{
-				"clusterName":         dsCluster,
-				"readPreference":      "primary",
-				"wireProtocolEnabled": false,
-			},
-		}
-		var dsPath string
+		dataSourceName := fmt.Sprintf("%v", dataSource["name"])
+		var path string
 		switch loadedApp.ConfigVersion() {
 		case realm.AppConfigVersion20210101:
-			dsPath = fmt.Sprintf("data_sources/%s/config.json", serviceName)
+			path = filepath.Join(local.NameDataSources, dataSourceName, local.FileConfig.String())
 		case
 			realm.AppConfigVersion20200603,
 			realm.AppConfigVersion20180301:
-			dsPath = fmt.Sprintf("services/%s/config.json", serviceName)
+			path = filepath.Join(local.NameServices, dataSourceName, local.FileConfig.String())
 		default:
 			return errors.New("unsupported config version")
 		}
-		data, err := json.MarshalIndent(serviceConfig, local.ExportedJSONPrefix, local.ExportedJSONIndent)
+		data, err := local.MarshalJSON(dataSource)
 		if err != nil {
 			return err
 		}
-		err = local.WriteFile(filepath.Join(dir, dsPath), 0666, bytes.NewReader(data))
+		err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
 		if err != nil {
 			return err
 		}
-		err = loadedApp.Load()
-		if err != nil {
+		if err = loadedApp.Load(); err != nil {
 			return err
 		}
-		rowCount++
 	}
 
-	if err := clients.Realm.Import(
+	err = clients.Realm.Import(
 		newApp.GroupID,
 		newApp.ID,
 		loadedApp.AppData,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
 
 	headers := []string{"Info", "Details"}
-	rows := make([]map[string]interface{}, 0, rowCount)
+	rows := make([]map[string]interface{}, 0, 4)
 	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": newApp.ClientAppID})
 	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
 	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID)})
@@ -164,6 +152,6 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
-	ui.Print(terminal.NewDebugLog("Check out your app: cd ./%s && realm-cli app describe", cmd.inputs.Directory))
+	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && realm-cli app describe", cmd.inputs.Directory)))
 	return nil
 }

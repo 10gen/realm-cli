@@ -71,7 +71,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("Message should display single item lists the same line as the message with consolidated set to true", func(*testing.T) {
-		testList := newList(linkMessage, []interface{}{"https://mongodb.com"}, true)
+		testList := newList(LinkMessage, []interface{}{"https://mongodb.com"}, true)
 
 		message, err := testList.Message()
 		assert.Nil(t, err)
@@ -79,7 +79,7 @@ func TestList(t *testing.T) {
 	})
 
 	t.Run("Message should display single item lists the same line as the message with consolidated set to false", func(*testing.T) {
-		testList := newList(linkMessage, []interface{}{"https://mongodb.com"}, false)
+		testList := newList(LinkMessage, []interface{}{"https://mongodb.com"}, false)
 
 		message, err := testList.Message()
 		assert.Nil(t, err)

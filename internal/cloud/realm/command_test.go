@@ -25,12 +25,12 @@ func TestRealmCommands(t *testing.T) {
 		groupID := u.CloudGroupID()
 
 		t.Run("should list clusters", func(t *testing.T) {
-			app, err := client.CreateApp(groupID, "commands-test", realm.AppMeta{})
-			assert.Nil(t, err)
+			testApp, teardown := setupTestApp(t, client, groupID, "commands-test")
+			defer teardown()
 
-			clusters, err := client.ListClusters(groupID, app.ID)
+			clusters, err := client.ListClusters(groupID, testApp.ID)
 			assert.Nil(t, err)
-			assert.Equal(t, u.AtlasClusters(), len(clusters))
+			assert.Equal(t, u.CloudAtlasClusterCount(), len(clusters))
 		})
 	})
 }

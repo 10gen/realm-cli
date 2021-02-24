@@ -74,7 +74,7 @@ Realm app will be exported as well.`,
 				Help:        "",
 				Command:     &app.CommandInit{},
 			},
-			cli.CommandDefinition{
+			{
 				Use:         "create",
 				Display:     "app create",
 				Description: "Create a remote Realm app from your current working directory",
@@ -82,8 +82,8 @@ Realm app will be exported as well.`,
 a new disk. This command will create a new directory for your project. 
 To initialize a Realm app in your current working directory, use ‘app init’.
 
-You can specify a ‘From’ input to create a Realm app from either a template, 
-an existing app, or an existing project. If you do not specify a From input, 
+You can specify a '--from' input to create a Realm app from 
+an existing app. If you do not specify a '--from' input, 
 the CLI will create a non-personalized Realm app.`,
 				Command: &app.CommandCreate{},
 			},

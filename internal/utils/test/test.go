@@ -19,11 +19,11 @@ func MustSkipf(t *testing.T, format string, args ...interface{}) {
 }
 
 const (
-	defaultGroupID        = "5fd45718cface356de9d104d"
-	defaultGroupName      = "Project 0"
-	defaultAtlasServerURL = "https://cloud-dev.mongodb.com"
-	defaultRealmServerURL = "http://localhost:8080"
-	defaultClusterCount   = 3
+	defaultGroupID           = "5fd45718cface356de9d104d"
+	defaultGroupName         = "Project 0"
+	defaultAtlasServerURL    = "https://cloud-dev.mongodb.com"
+	defaultRealmServerURL    = "http://localhost:8080"
+	defaultAtlasClusterCount = 3
 )
 
 var realmServerRunning = false
@@ -69,16 +69,16 @@ func CloudAdminAPIKey() string {
 	return os.Getenv("BAAS_MONGODB_CLOUD_ADMIN_API_KEY")
 }
 
-// AtlasClusters returns the count of clusters to use for testing
-func AtlasClusters() int {
-	if count := os.Getenv("BAAS_MONGODB_CLOUD_CLUSTERS"); count != "" {
+// CloudAtlasClusterCount returns the count of clusters to use for testing
+func CloudAtlasClusterCount() int {
+	if count := os.Getenv("BAAS_MONGODB_CLOUD_ATLAS_CLUSTER_COUNT"); count != "" {
 		c, err := strconv.Atoi(count)
 		if err != nil {
-			panic("BAAS_MONGODB_CLOUD_CLUSTERS must be set with an interger")
+			panic("BAAS_MONGODB_CLOUD_ATLAS_CLUSTER_COUNT must be set with an integer")
 		}
 		return c
 	}
-	return defaultClusterCount
+	return defaultAtlasClusterCount
 }
 
 // AtlasServerURL returns the Atlas server url to use for testing

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -20,7 +21,7 @@ var (
 
 	flagDataSource      = "data-source"
 	flagDataSourceShort = "s"
-	flagDataSourceUsage = "atlas cluster to back your Realm app, defaults to first available"
+	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
 
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// flagDryRun      = "dry-run"
@@ -80,33 +81,39 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	_, appOK, appErr := local.FindApp(fullPath)
-	if appErr != nil {
-		return "", appErr
+	_, appOK, err := local.FindApp(fullPath)
+	if err != nil {
+		return "", err
 	}
 	if appOK {
-		return "", fmt.Errorf("%s is inside or is a Realm app directory", fullPath)
+		return "", errProjectExists{details: fmt.Sprintf("%s is inside or is a Realm app directory", fullPath)}
 	}
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (string, error) {
+func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (map[string]interface{}, error) {
 	clusters, err := client.ListClusters(groupID, appID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var dsCluster string
+	var clusterName string
 	for _, cluster := range clusters {
-		if (i.DataSource == "" && cluster.State == "IDLE") || i.DataSource == cluster.Name {
-			dsCluster = cluster.Name
+		if i.DataSource == cluster.Name {
+			clusterName = cluster.Name
 			break
 		}
 	}
-	if dsCluster == "" {
-		if i.DataSource != "" {
-			return "", fmt.Errorf("unable to find the %s cluster", i.DataSource)
-		}
-		return "", fmt.Errorf("unable to find any available cluster for Project %s", groupID)
+	if clusterName == "" {
+		return nil, errors.New("failed to find Atlas cluster")
 	}
-	return dsCluster, nil
+	dataSource := map[string]interface{}{
+		"name": i.Name + "_cluster",
+		"type": "mongodb-atlas",
+		"config": map[string]interface{}{
+			"clusterName":         clusterName,
+			"readPreference":      "primary",
+			"wireProtocolEnabled": false,
+		},
+	}
+	return dataSource, nil
 }

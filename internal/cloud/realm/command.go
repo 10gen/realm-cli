@@ -25,19 +25,18 @@ type PartialAtlasCluster struct {
 }
 
 func (c *client) ListClusters(groupID, appID string) ([]PartialAtlasCluster, error) {
-	res, resErr := c.doJSON(
+	res, resErr := c.do(
 		http.MethodPost,
 		fmt.Sprintf(runCommandPattern, groupID, appID, listAtlasClusterCommand),
-		nil,
 		api.RequestOptions{},
 	)
 	if resErr != nil {
 		return nil, resErr
 	}
-	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, parseResponseError(res)
 	}
+	defer res.Body.Close()
 
 	var clusters []PartialAtlasCluster
 	if err := json.NewDecoder(res.Body).Decode(&clusters); err != nil {
