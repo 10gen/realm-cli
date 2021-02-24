@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -26,8 +27,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 }
 
 // Inputs is the command inputs
@@ -65,7 +65,35 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	// TODO(REALMC-8134): Implement dry-run for app create command
+	if cmd.inputs.DryRun {
+		if cmd.inputs.DataSource != "" {
+			clusters, err := clients.Atlas.ClustersByGroupID(groupID)
+			if err != nil {
+				return err
+			}
+			var clusterName string
+			for _, cluster := range clusters {
+				if cmd.inputs.DataSource == cluster.Name {
+					clusterName = cluster.Name
+					break
+				}
+			}
+			if clusterName == "" {
+				return errors.New("failed to find Atlas cluster")
+			}
+		}
+
+		headers := []string{"Info", "Details"}
+		rows := make([]map[string]interface{}, 0, 4)
+		rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": "N/A"})
+		rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
+		rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": "N/A"})
+		if cmd.inputs.DataSource != "" {
+			rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": cmd.inputs.DataSource})
+		}
+		ui.Print(terminal.NewTableLog("Successful dry run of app create", headers, rows...))
+		return nil
+	}
 
 	if from.IsZero() {
 		localApp := local.NewApp(

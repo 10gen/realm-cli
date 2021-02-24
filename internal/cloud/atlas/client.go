@@ -22,6 +22,9 @@ const (
 // Client is a MongoDB Cloud Atlas client
 type Client interface {
 	Groups() ([]Group, error)
+
+	ClustersByGroupID(groupID string) ([]Cluster, error)
+
 	Status() error
 }
 

@@ -22,18 +22,16 @@ var (
 	flagDataSourceShort = "s"
 	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
 
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// flagDryRun      = "dry-run"
-	// flagDryRunShort = "x"
-	// flagDryRunUsage = "include to run without writing any changes to the file system or import/export the new Realm app"
+	flagDryRun      = "dry-run"
+	flagDryRunShort = "x"
+	flagDryRunUsage = "include to run without writing any changes to the file system or import/export the new Realm app"
 )
 
 type createInputs struct {
 	newAppInputs
 	Directory  string
 	DataSource string
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// DryRun bool
+	DryRun     bool
 }
 
 type dataSource struct {

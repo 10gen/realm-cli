@@ -303,6 +303,89 @@ func TestAppCreateHandler(t *testing.T) {
 		}, "\n"), out.String())
 	})
 
+	t.Run("should create a minimal project dry run", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
+		client := mock.AtlasClient{}
+
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				},
+				DryRun: true,
+			},
+		}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
+
+		// TODO(REALMC-8262): Investigate file path display options
+		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
+		dirLength := len(expectedDir)
+		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  Successful dry run of app create",
+			fmt.Sprintf("  Info             "+fmtStr, "Details"),
+			"  ---------------  " + strings.Repeat("-", dirLength),
+			fmt.Sprintf("  Client App ID    "+fmtStr, "N/A"),
+			"  Realm Directory  " + expectedDir,
+			fmt.Sprintf("  Realm UI         "+fmtStr, "N/A"),
+			"",
+		}, "\n"), out.String())
+	})
+
+	t.Run("should create a minimal project dry run with data source set", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
+		client := mock.AtlasClient{}
+		client.ClustersByGroupIDFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{{Name: "test-cluster"}}, nil
+		}
+
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				},
+				DataSource: "test-cluster",
+				DryRun:     true,
+			},
+		}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
+
+		// TODO(REALMC-8262): Investigate file path display options
+		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
+		dirLength := len(expectedDir)
+		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  Successful dry run of app create",
+			fmt.Sprintf("  Info             "+fmtStr, "Details"),
+			"  ---------------  " + strings.Repeat("-", dirLength),
+			fmt.Sprintf("  Client App ID    "+fmtStr, "N/A"),
+			"  Realm Directory  " + expectedDir,
+			fmt.Sprintf("  Realm UI         "+fmtStr, "N/A"),
+			fmt.Sprintf("  Data Source      "+fmtStr, "test-cluster"),
+			"",
+		}, "\n"), out.String())
+	})
+
 	t.Run("should error when resolving groupID when project is not set", func(t *testing.T) {
 		profile := mock.NewProfileFromWD(t)
 
