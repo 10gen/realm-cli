@@ -56,6 +56,12 @@ func TestResolveApps(t *testing.T) {
 				inputs:      deleteInputs{Apps: []string{"app1"}},
 				expectedErr: cli.ErrAppNotFound{},
 			},
+			{
+				description: "should error if input apps are not found",
+				inputs:      deleteInputs{Apps: []string{"nonexistent"}},
+				apps:        testApps,
+				expectedErr: errors.New("Failed to find the following apps: [nonexistent]"),
+			},
 
 			{
 				description: "should return an empty apps slice with no found apps or input apps without prompting",

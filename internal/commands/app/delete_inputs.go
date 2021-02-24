@@ -34,20 +34,20 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 		return apps, nil
 	}
 
-	foundApps := map[string]bool{}
+	foundAppNames := map[string]bool{}
 	for _, app := range apps {
-		foundApps[app.Name] = true
+		foundAppNames[app.Name] = true
 	}
 
-	errors := make([]string, 0)
+	inputAppsNotFound := make([]string, 0)
 	for _, inputApp := range inputs.Apps {
-		if !foundApps[inputApp] {
-			errors = append(errors, inputApp)
+		if !foundAppNames[inputApp] {
+			inputAppsNotFound = append(inputAppsNotFound, inputApp)
 		}
 	}
 
-	if len(errors) > 0 {
-		return nil, fmt.Errorf("Failed to find the following apps: %v", errors)
+	if len(inputAppsNotFound) > 0 {
+		return nil, fmt.Errorf("Failed to find the following apps: %v", inputAppsNotFound)
 	}
 
 	if len(inputs.Apps) > 0 {
