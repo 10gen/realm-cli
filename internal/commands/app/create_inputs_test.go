@@ -192,7 +192,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
-		assert.Equal(t, errProjectExists{path: fullDir}, err)
+		assert.Equal(t, errProjectExists{fullDir}, err)
 	})
 }
 
@@ -208,18 +208,18 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 
 		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataSource: "test-cluster"}
 
-		dataSource, err := inputs.resolveDataSource(rc, "123", "456")
+		ds, err := inputs.resolveDataSource(rc, "123", "456")
 		assert.Nil(t, err)
 
-		assert.Equal(t, map[string]interface{}{
-			"name": "test-app_cluster",
-			"type": "mongodb-atlas",
-			"config": map[string]interface{}{
-				"clusterName":         "test-cluster",
-				"readPreference":      "primary",
-				"wireProtocolEnabled": false,
+		assert.Equal(t, dataSource{
+			Name: "test-app_cluster",
+			Type: "mongodb-atlas",
+			Config: dataSourceConfig{
+				ClusterName:         "test-cluster",
+				ReadPreference:      "primary",
+				WireProtocolEnabled: false,
 			},
-		}, dataSource)
+		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
 		assert.Equal(t, "456", expectedAppID)
 	})

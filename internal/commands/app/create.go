@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -108,21 +107,20 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if err != nil {
 			return err
 		}
-		var path string
+		var dataSourceDir string
 		switch loadedApp.ConfigVersion() {
-		case realm.AppConfigVersion20210101:
-			path = filepath.Join(local.NameDataSources, dataSource.Name, local.FileConfig.String())
 		case
 			realm.AppConfigVersion20200603,
 			realm.AppConfigVersion20180301:
-			path = filepath.Join(local.NameServices, dataSource.Name, local.FileConfig.String())
+			dataSourceDir = local.NameServices
 		default:
-			return errors.New("unsupported config version")
+			dataSourceDir = local.NameDataSources
 		}
 		data, err := local.MarshalJSON(dataSource)
 		if err != nil {
 			return err
 		}
+		path := filepath.Join(dataSourceDir, dataSource.Name, local.FileConfig.String())
 		err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
 		if err != nil {
 			return err

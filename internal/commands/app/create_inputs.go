@@ -97,7 +97,7 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 		return "", err
 	}
 	if appOK {
-		return "", errProjectExists{path: fullPath}
+		return "", errProjectExists{fullPath}
 	}
 	return fullPath, nil
 }
