@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/auth"
@@ -18,10 +19,11 @@ func MustSkipf(t *testing.T, format string, args ...interface{}) {
 }
 
 const (
-	defaultGroupID        = "5fd45718cface356de9d104d"
-	defaultGroupName      = "Project 0"
-	defaultAtlasServerURL = "https://cloud-dev.mongodb.com"
-	defaultRealmServerURL = "http://localhost:8080"
+	defaultGroupID           = "5fd45718cface356de9d104d"
+	defaultGroupName         = "Project 0"
+	defaultAtlasServerURL    = "https://cloud-dev.mongodb.com"
+	defaultRealmServerURL    = "http://localhost:8080"
+	defaultAtlasClusterCount = 3
 )
 
 var realmServerRunning = false
@@ -65,6 +67,18 @@ func CloudAdminUsername() string {
 // CloudAdminAPIKey returns the Cloud admin api key
 func CloudAdminAPIKey() string {
 	return os.Getenv("BAAS_MONGODB_CLOUD_ADMIN_API_KEY")
+}
+
+// CloudAtlasClusterCount returns the count of clusters to use for testing
+func CloudAtlasClusterCount() int {
+	if count := os.Getenv("BAAS_MONGODB_CLOUD_ATLAS_CLUSTER_COUNT"); count != "" {
+		c, err := strconv.Atoi(count)
+		if err != nil {
+			panic("BAAS_MONGODB_CLOUD_ATLAS_CLUSTER_COUNT must be set with an integer")
+		}
+		return c
+	}
+	return defaultAtlasClusterCount
 }
 
 // AtlasServerURL returns the Atlas server url to use for testing

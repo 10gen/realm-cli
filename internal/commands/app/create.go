@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
+	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -23,8 +25,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.Directory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
+	fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 }
@@ -101,70 +102,53 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// dsCluster, dsClusterErr := cmd.inputs.resolveDataSource(clients.Realm, cmd.inputs.Project, app.ID())
-	// if dsClusterErr != nil {
-	// 	return dsClusterErr
-	// }
-	// service := realm.ServiceDescData{
-	// 	Config: map[string]interface{}{
-	// 		"clusterName":         dsCluster,
-	// 		"readPreference":      "primary",
-	// 		"wireProtocolEnabled": false,
-	// 	},
-	// 	Name: appName + "_cluster",
-	// 	Type: "mongodb-atlas",
-	// }
-	// Potentially try to use Import to create app Service
-	// _, dsErr := clients.Realm.CreateAppService(cmd.inputs.Project, app.ID(), service) // for output possibly
-	// if dsErr != nil {
-	// 	return dsErr
-	// }
-	// Won't need if import works
-	// zipPkgName, zipPkg, exportErr := clients.Realm.Export(
-	// 	cmd.inputs.Project,
-	// 	app.ID(),
-	// 	realm.ExportRequest{ConfigVersion: realm.DefaultAppConfigVersion},
-	// )
-	// if exportErr != nil {
-	// 	return exportErr
-	// }
-	// if idx := strings.LastIndex(zipPkgName, "_"); idx != -1 {
-	// 	zipPkgName = zipPkgName[:idx]
-	// }
-	// zipPkgPath := filepath.Join(dir, zipPkgName) // Is this the correct path
-	// if writeErr := local.WriteZip(zipPkgPath, zipPkg); writeErr != nil {
-	// 	return writeErr
-	// }
+	if cmd.inputs.DataSource != "" {
+		dataSource, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
+		if err != nil {
+			return err
+		}
+		var dataSourceDir string
+		switch loadedApp.ConfigVersion() {
+		case
+			realm.AppConfigVersion20200603,
+			realm.AppConfigVersion20180301:
+			dataSourceDir = local.NameServices
+		default:
+			dataSourceDir = local.NameDataSources
+		}
+		data, err := local.MarshalJSON(dataSource)
+		if err != nil {
+			return err
+		}
+		path := filepath.Join(dataSourceDir, dataSource.Name, local.FileConfig.String())
+		err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+		if err = loadedApp.Load(); err != nil {
+			return err
+		}
+	}
 
-	if err := clients.Realm.Import(
+	err = clients.Realm.Import(
 		newApp.GroupID,
 		newApp.ID,
-		loadedApp,
-	); err != nil {
+		loadedApp.AppData,
+	)
+	if err != nil {
 		return err
 	}
 
 	headers := []string{"Info", "Details"}
-	rows := []map[string]interface{}{
-		{
-			"Info":    "Client App ID",
-			"Details": newApp.ClientAppID,
-		},
-		{
-			"Info":    "Realm Directory",
-			"Details": dir,
-		},
-		{
-			"Info":    "Realm UI",
-			"Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID),
-		},
-		{
-			"Info":    "Check out your app",
-			"Details": fmt.Sprintf("cd ./%s && realm-cli app describe", newApp.Name),
-		},
+	rows := make([]map[string]interface{}, 0, 4)
+	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": newApp.ClientAppID})
+	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
+	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID)})
+	if cmd.inputs.DataSource != "" {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": cmd.inputs.DataSource})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
+	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && realm-cli app describe", cmd.inputs.Directory)))
 	return nil
 }

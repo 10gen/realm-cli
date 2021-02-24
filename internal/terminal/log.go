@@ -82,19 +82,15 @@ func NewWarningLog(format string, args ...interface{}) Log {
 	return newLog(LogLevelWarn, newTextMessage(format, args...))
 }
 
-// NewSuggestedCommandsLog creates a log with a follow up message about suggested commands for the error
-func NewSuggestedCommandsLog(commands ...interface{}) Log {
-	return newLog(LogLevelDebug, newList(commandMessage, commands, true))
+// NewFollowupLog creates a new log with a consolidated list of followup items
+func NewFollowupLog(message string, items ...interface{}) Log {
+	return newLog(LogLevelDebug, newList(message, items, true))
 }
 
-// NewReferenceLinksLog creates a log with a follow up message about reference links for the error
-func NewReferenceLinksLog(links ...interface{}) Log {
-	return newLog(LogLevelDebug, newList(linkMessage, links, true))
-}
-
+// set of common log messages
 const (
-	linkMessage    string = "For more information"
-	commandMessage string = "Try running instead"
+	MsgReferenceLinks    string = "For more information"
+	MsgSuggestedCommands string = "Try running instead"
 )
 
 func newLog(level LogLevel, data LogData) Log {

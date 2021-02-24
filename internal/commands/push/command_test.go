@@ -130,7 +130,7 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("and should properly pass through the expected inputs")
-		assert.Equal(t, testApp, capturedAppData)
+		assert.Equal(t, testApp.AppData, capturedAppData)
 	})
 
 	t.Run("should return an error if the command fails to create a new draft", func(t *testing.T) {
@@ -200,7 +200,7 @@ func TestPushHandler(t *testing.T) {
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
-		assert.Equal(t, testApp, capturedAppData)
+		assert.Equal(t, testApp.AppData, capturedAppData)
 	})
 
 	t.Run("should return an error if the command fails to deploy the draft", func(t *testing.T) {

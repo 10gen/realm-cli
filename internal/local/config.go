@@ -60,9 +60,18 @@ const (
 	exportedJSONIndent = "    "
 )
 
+// MarshalJSON returns the json representation of the passed in interface
+func MarshalJSON(o interface{}) ([]byte, error) {
+	data, err := json.MarshalIndent(o, exportedJSONPrefix, exportedJSONIndent)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
 // WriteConfig writes the app config file to disk
 func (a App) WriteConfig() error {
-	data, err := json.MarshalIndent(a.AppData, exportedJSONPrefix, exportedJSONIndent)
+	data, err := MarshalJSON(a.AppData)
 	if err != nil {
 		return err
 	}

@@ -62,9 +62,6 @@ func AsApp(rootDir string, app realm.App) App {
 	}
 }
 
-// Data returns the local app's data
-func (a App) Data() AppData { return a.AppData }
-
 // Load will load the entire local app's data
 func (a *App) Load() error {
 	if a.AppData == nil {

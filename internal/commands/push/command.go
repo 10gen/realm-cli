@@ -61,7 +61,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		if cmd.inputs.DryRun {
 			ui.Print(
 				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
-				terminal.NewSuggestedCommandsLog(cmd.commandString(true)),
+				terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
 			)
 			return nil
 		}
@@ -78,7 +78,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		isNewApp = true
 	}
 
-	diffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app)
+	diffs, err := clients.Realm.Diff(to.GroupID, to.AppID, app.AppData)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	if cmd.inputs.DryRun {
 		ui.Print(
 			terminal.NewTextLog("To push these changes, you must omit the 'dry-run' flag to proceed"),
-			terminal.NewSuggestedCommandsLog(cmd.commandString(true)),
+			terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
 		)
 		return nil
 	}
@@ -131,7 +131,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return nil
 	}
 
-	if err := clients.Realm.Import(to.GroupID, to.AppID, app); err != nil {
+	if err := clients.Realm.Import(to.GroupID, to.AppID, app.AppData); err != nil {
 		return err
 	}
 

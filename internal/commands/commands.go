@@ -75,6 +75,19 @@ Realm app will be exported as well.`,
 				Command:     &app.CommandInit{},
 			},
 			{
+				Use:         "create",
+				Display:     "app create",
+				Description: "Create a remote Realm app from your current working directory",
+				Help: `Creates a new Realm app in the cloud, and saves your configuration files on 
+a new disk. This command will create a new directory for your project. 
+To initialize a Realm app in your current working directory, use ‘app init’.
+
+You can specify a '--from' input to create a Realm app from 
+an existing app. If you do not specify a '--from' input, 
+the CLI will create a non-personalized Realm app.`,
+				Command: &app.CommandCreate{},
+			},
+			cli.CommandDefinition{
 				Use:         "list",
 				Aliases:     []string{"ls"},
 				Display:     "app list",

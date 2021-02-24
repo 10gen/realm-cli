@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"errors"
 	"os"
 	"path"
 
@@ -18,10 +18,9 @@ var (
 	flagDirectoryShort = "c"
 	flagDirectoryUsage = "the directory to create your new Realm app, defaults to Realm app name"
 
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// flagDataSource      = "data-source"
-	// flagDataSourceShort = "s"
-	// flagDataSourceUsage = "atlas cluster to back your Realm app, defaults to first available"
+	flagDataSource      = "data-source"
+	flagDataSourceShort = "s"
+	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
 
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// flagDryRun      = "dry-run"
@@ -31,11 +30,22 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	Directory string
-	// TODO(REALMC-8135): Implement data-source flag for app create command
-	// DataSource string
+	Directory  string
+	DataSource string
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// DryRun bool
+}
+
+type dataSource struct {
+	Name   string           `json:"name"`
+	Type   string           `json:"type"`
+	Config dataSourceConfig `json:"config"`
+}
+
+type dataSourceConfig struct {
+	ClusterName         string `json:"clusterName"`
+	ReadPreference      string `json:"readPreference"`
+	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -68,11 +78,10 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) 
 }
 
 func (i *createInputs) resolveDirectory(wd string) (string, error) {
-	dir := i.Directory
-	if dir == "" {
-		dir = i.Name
+	if i.Directory == "" {
+		i.Directory = i.Name
 	}
-	fullPath := path.Join(wd, dir)
+	fullPath := path.Join(wd, i.Directory)
 	fi, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -83,34 +92,39 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	_, appOK, appErr := local.FindApp(fullPath)
-	if appErr != nil {
-		return "", appErr
+	_, appOK, err := local.FindApp(fullPath)
+	if err != nil {
+		return "", err
 	}
 	if appOK {
-		return "", fmt.Errorf("%s is inside or is a Realm app directory", dir)
+		return "", errProjectExists{fullPath}
 	}
 	return fullPath, nil
 }
 
-// TODO(REALMC-8135): Implement data-source flag for app create command
-// func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (string, error) {
-// 	clusters, err := client.ListClusters(groupID, appID)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	var dsCluster string
-// 	for _, cluster := range clusters {
-// 		if (i.DataSource == "" && cluster.State == "IDLE") || i.DataSource == cluster.Name {
-// 			dsCluster = cluster.Name
-// 			break
-// 		}
-// 	}
-// 	if dsCluster == "" {
-// 		if i.DataSource != "" {
-// 			return "", fmt.Errorf("Unable to find the %s cluster", i.DataSource)
-// 		}
-// 		return "", fmt.Errorf("Unable to find any available cluster for Group ID %s", groupID)
-// 	}
-// 	return dsCluster, nil
-// }
+func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (dataSource, error) {
+	clusters, err := client.ListClusters(groupID, appID)
+	if err != nil {
+		return dataSource{}, err
+	}
+	var clusterName string
+	for _, cluster := range clusters {
+		if i.DataSource == cluster.Name {
+			clusterName = cluster.Name
+			break
+		}
+	}
+	if clusterName == "" {
+		return dataSource{}, errors.New("failed to find Atlas cluster")
+	}
+	dataSource := dataSource{
+		Name: i.Name + "_cluster",
+		Type: "mongodb-atlas",
+		Config: dataSourceConfig{
+			ClusterName:         clusterName,
+			ReadPreference:      "primary",
+			WireProtocolEnabled: false,
+		},
+	}
+	return dataSource, nil
+}
