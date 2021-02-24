@@ -67,6 +67,12 @@ func TestResolveApps(t *testing.T) {
 				description: "should return an empty apps slice with no found apps or input apps without prompting",
 			},
 			{
+				description:  "should return found apps slice without prompting if inputs provided",
+				inputs:       deleteInputs{Apps: []string{"app2", "app3"}},
+				apps:         testApps,
+				expectedApps: []realm.App{app2, app3},
+			},
+			{
 				description:  "should prompt user to select apps if no input provided",
 				apps:         testApps,
 				expectedApps: []realm.App{app2},
