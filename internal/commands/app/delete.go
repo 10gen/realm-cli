@@ -1,8 +1,9 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -10,49 +11,46 @@ import (
 
 // CommandDelete is the `app delete` command
 type CommandDelete struct {
-	inputs      cli.ProjectInputs
-	realmClient realm.Client
-	outputs     []appOutput
+	inputs deleteInputs
 }
 
 // Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
-}
-
-// Setup is the command setup
-func (cmd *CommandDelete) Setup(profile *cli.Profile, ui terminal.UI) error {
-	cmd.realmClient = profile.RealmAuthClient()
-	return nil
+	fs.StringSliceVarP(&cmd.inputs.Apps, flagApps, "", []string{}, flagAppsUsage)
+	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 }
 
 // Handler is the command handler
-func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI) error {
-	apps, appErr := cli.ResolveApps(ui, cmd.realmClient, cmd.inputs.Filter())
-	if appErr != nil {
-		return appErr
+func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	apps, err := cmd.inputs.resolveApps(ui, clients.Realm)
+	if err != nil {
+		return err
 	}
 
+	outputs := make([]appOutput, 0, len(apps))
+	deletedCount := 0
 	for _, app := range apps {
-		err := cmd.realmClient.DeleteApp(app.GroupID, app.ID)
-		cmd.outputs = append(cmd.outputs, appOutput{app: app, err: err})
+		err := clients.Realm.DeleteApp(app.GroupID, app.ID)
+		if err == nil {
+			deletedCount++
+		}
+		outputs = append(outputs, appOutput{app, err})
 	}
-	return nil
-}
 
-// Feedback is the command feedback
-func (cmd *CommandDelete) Feedback(profile *cli.Profile, ui terminal.UI) error {
-	if len(cmd.outputs) == 0 {
-		return ui.Print(terminal.NewTextLog("No apps to delete"))
+	if len(outputs) == 0 {
+		ui.Print(terminal.NewTextLog("No apps to delete"))
+		return nil
 	}
 
 	var logs []terminal.Log
 	logs = append(logs, terminal.NewTableLog(
-		"Deleted app(s)",
+		fmt.Sprintf("Successfully deleted %d/%d app(s)", deletedCount, len(apps)),
 		appDeleteTableHeaders,
-		appDeleteRows(cmd.outputs)...,
+		appDeleteRows(outputs)...,
 	))
-	return ui.Print(logs...)
+
+	ui.Print(logs...)
+	return nil
 }
 
 var (

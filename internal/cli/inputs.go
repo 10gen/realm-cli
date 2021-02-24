@@ -116,41 +116,6 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 	return appsByOption[selection], nil
 }
 
-// ResolveApps will use the provided Realm client to resolve multiple apps specified by the filter
-func ResolveApps(ui terminal.UI, client realm.Client, filter realm.AppFilter) ([]realm.App, error) {
-	apps, err := client.FindApps(filter)
-	if err != nil {
-		return nil, err
-	}
-
-	switch len(apps) {
-	case 0:
-		return nil, ErrAppNotFound{filter.App}
-	case 1:
-		return apps, nil
-	}
-
-	appsByOption := make(map[string]realm.App, len(apps))
-	appOptions := make([]string, len(apps))
-	for i, app := range apps {
-		appsByOption[app.Option()] = app
-		appOptions[i] = app.Option()
-	}
-
-	var selectedApps []string
-	if err := ui.AskOne(&selectedApps, &survey.MultiSelect{
-		Message: "Select App(s)",
-		Options: appOptions,
-	}); err != nil {
-		return nil, fmt.Errorf("failed to select app(s): %s", err)
-	}
-	selected := make([]realm.App, len(selectedApps))
-	for idx, app := range selectedApps {
-		selected[idx] = appsByOption[app]
-	}
-	return selected, nil
-}
-
 // ResolveGroupID will use the provided MongoDB Cloud Atlas client to resolve the user's group id
 func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
 	groups, groupsErr := client.Groups()
