@@ -50,8 +50,8 @@ var (
 	// HostingCacheFileName is the file that stores the cached hosting asset data
 	HostingCacheFileName = ".asset-cache.json"
 
-	errAppNotFound               = errors.New("could not find realm app")
-	errEnvironmentFolderNotFound = errors.New("environment folder not found")
+	errAppNotFound             = errors.New("could not find realm app")
+	errEnvironmentsDirNotFound = errors.New("environments directory not found")
 )
 
 const maxDirectoryContainSearchDepth = 8
@@ -228,7 +228,7 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 
 	// ignore error for environments because existing apps will not have it
 	environments, err := unmarshalJSONFilesWithFilenames(filepath.Join(path, environmentsName))
-	if err != nil && err != errEnvironmentFolderNotFound {
+	if err != nil && err != errEnvironmentsDirNotFound {
 		return app, err
 	}
 	app[environmentsName] = environments
@@ -263,7 +263,7 @@ func unmarshalJSONFiles(path string, ignoreDirErr bool) ([]interface{}, error) {
 func unmarshalJSONFilesWithFilenames(path string) (map[string]interface{}, error) {
 	fileInfos, err := ioutil.ReadDir(path)
 	if err != nil {
-		return nil, errEnvironmentFolderNotFound
+		return nil, errEnvironmentsDirNotFound
 	}
 	files := make(map[string]interface{}, len(fileInfos))
 
