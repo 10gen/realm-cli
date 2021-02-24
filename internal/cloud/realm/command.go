@@ -34,7 +34,7 @@ func (c *client) ListClusters(groupID, appID string) ([]PartialAtlasCluster, err
 		return nil, resErr
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, parseResponseError(res)
+		return nil, api.ErrUnexpectedStatusCode{"list clusters", res.StatusCode}
 	}
 	defer res.Body.Close()
 
