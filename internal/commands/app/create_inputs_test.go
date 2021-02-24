@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 	"testing"
@@ -193,12 +192,12 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
-		assert.Equal(t, errProjectExists{details: fmt.Sprintf("%s is inside or is a Realm app directory", fullDir)}, err)
+		assert.Equal(t, errProjectExists{path: fullDir}, err)
 	})
 }
 
 func TestAppCreateInputsResolveDataSource(t *testing.T) {
-	t.Run("should return data source config of an provided cluster", func(t *testing.T) {
+	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
 		var expectedGroupID, expectedAppID string
 		rc := mock.RealmClient{}
 		rc.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {

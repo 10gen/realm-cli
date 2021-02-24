@@ -1,14 +1,15 @@
 package app
 
 type errProjectExists struct {
-	details string
+	path string
 }
 
 func (err errProjectExists) Error() string {
-	if err.details != "" {
-		return err.details
+	var suffix string
+	if err.path != "" {
+		suffix = " at " + err.path
 	}
-	return "a project already exists"
+	return "a project already exists" + suffix
 }
 
 func (err errProjectExists) DisableUsage() struct{} { return struct{}{} }

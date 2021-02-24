@@ -2,7 +2,6 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path"
 
@@ -35,6 +34,18 @@ type createInputs struct {
 	DataSource string
 	// TODO(REALMC-8134): Implement dry-run for app create command
 	// DryRun bool
+}
+
+type dataSource struct {
+	Name   string           `json:"name"`
+	Type   string           `json:"type"`
+	Config dataSourceConfig `json:"config"`
+}
+
+type dataSourceConfig struct {
+	ClusterName         string `json:"clusterName"`
+	ReadPreference      string `json:"readPreference"`
+	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -86,15 +97,15 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 		return "", err
 	}
 	if appOK {
-		return "", errProjectExists{details: fmt.Sprintf("%s is inside or is a Realm app directory", fullPath)}
+		return "", errProjectExists{path: fullPath}
 	}
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (map[string]interface{}, error) {
+func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (dataSource, error) {
 	clusters, err := client.ListClusters(groupID, appID)
 	if err != nil {
-		return nil, err
+		return dataSource{}, err
 	}
 	var clusterName string
 	for _, cluster := range clusters {
@@ -104,15 +115,15 @@ func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID str
 		}
 	}
 	if clusterName == "" {
-		return nil, errors.New("failed to find Atlas cluster")
+		return dataSource{}, errors.New("failed to find Atlas cluster")
 	}
-	dataSource := map[string]interface{}{
-		"name": i.Name + "_cluster",
-		"type": "mongodb-atlas",
-		"config": map[string]interface{}{
-			"clusterName":         clusterName,
-			"readPreference":      "primary",
-			"wireProtocolEnabled": false,
+	dataSource := dataSource{
+		Name: i.Name + "_cluster",
+		Type: "mongodb-atlas",
+		Config: dataSourceConfig{
+			ClusterName:         clusterName,
+			ReadPreference:      "primary",
+			WireProtocolEnabled: false,
 		},
 	}
 	return dataSource, nil

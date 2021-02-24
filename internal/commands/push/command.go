@@ -61,7 +61,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		if cmd.inputs.DryRun {
 			ui.Print(
 				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
-				terminal.NewFollowupLog(terminal.CommandMessage, cmd.commandString(true)),
+				terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
 			)
 			return nil
 		}
@@ -110,7 +110,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	if cmd.inputs.DryRun {
 		ui.Print(
 			terminal.NewTextLog("To push these changes, you must omit the 'dry-run' flag to proceed"),
-			terminal.NewFollowupLog(terminal.CommandMessage, cmd.commandString(true)),
+			terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
 		)
 		return nil
 	}

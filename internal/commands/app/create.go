@@ -108,15 +108,14 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if err != nil {
 			return err
 		}
-		dataSourceName := fmt.Sprintf("%v", dataSource["name"])
 		var path string
 		switch loadedApp.ConfigVersion() {
 		case realm.AppConfigVersion20210101:
-			path = filepath.Join(local.NameDataSources, dataSourceName, local.FileConfig.String())
+			path = filepath.Join(local.NameDataSources, dataSource.Name, local.FileConfig.String())
 		case
 			realm.AppConfigVersion20200603,
 			realm.AppConfigVersion20180301:
-			path = filepath.Join(local.NameServices, dataSourceName, local.FileConfig.String())
+			path = filepath.Join(local.NameServices, dataSource.Name, local.FileConfig.String())
 		default:
 			return errors.New("unsupported config version")
 		}
