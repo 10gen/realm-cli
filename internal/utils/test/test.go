@@ -49,7 +49,7 @@ func CloudGroupName() string {
 	return defaultGroupName
 }
 
-// Username returns the Cloud username to use for testing
+// CloudUsername returns the Cloud username to use for testing
 func CloudUsername() string {
 	return os.Getenv("BAAS_MONGODB_CLOUD_USERNAME")
 }
