@@ -227,16 +227,14 @@ func UnmarshalFromDir(path string) (map[string]interface{}, error) {
 
 	environmentsPath := filepath.Join(path, environmentsName)
 	_, err = os.Stat(environmentsPath)
-	if err != nil {
+	if err == nil {
 		// ignore environments folder if it's missing
-		return app, nil
+		environments, err := unmarshalJSONFilesWithFilenames(environmentsPath)
+		if err != nil {
+			return app, err
+		}
+		app[environmentsName] = environments
 	}
-
-	environments, err := unmarshalJSONFilesWithFilenames(environmentsPath)
-	if err != nil {
-		return app, err
-	}
-	app[environmentsName] = environments
 
 	return app, nil
 }
