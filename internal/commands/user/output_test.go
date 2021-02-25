@@ -7,7 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestUserTableHeaders(t *testing.T) {
+func TestTableHeaders(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
 		authProviderType realm.AuthProviderType
@@ -25,12 +25,12 @@ func TestUserTableHeaders(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			assert.Equal(t, tc.expectedHeaders, userTableHeaders(tc.authProviderType))
+			assert.Equal(t, tc.expectedHeaders, tableHeaders(tc.authProviderType))
 		})
 	}
 }
 
-func TestUserTableRow(t *testing.T) {
+func TestTableRow(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
 		authProviderType realm.AuthProviderType
@@ -68,7 +68,7 @@ func TestUserTableRow(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			output := userOutput{user: tc.user}
-			row := userTableRow(tc.authProviderType, output, func(uo userOutput, m map[string]interface{}) {})
+			row := tableRow(tc.authProviderType, output, func(uo userOutput, m map[string]interface{}) {})
 			assert.Equal(t, tc.expectedRow, row)
 		})
 	}

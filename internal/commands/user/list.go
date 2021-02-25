@@ -78,8 +78,8 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			append(userTableHeaders(providerType), headerEnabled, headerLastAuthenticationDate),
-			userTableRows(providerType, o, userListRow)...,
+			append(tableHeaders(providerType), headerEnabled, headerLastAuthenticationDate),
+			tableRows(providerType, o, tableRowList)...,
 		))
 	}
 
@@ -97,7 +97,7 @@ func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory)
 }
 
-func userListRow(output userOutput, row map[string]interface{}) {
+func tableRowList(output userOutput, row map[string]interface{}) {
 	timeString := "n/a"
 	if output.user.LastAuthenticationDate != 0 {
 		timeString = time.Unix(output.user.LastAuthenticationDate, 0).UTC().String()

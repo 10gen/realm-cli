@@ -68,8 +68,8 @@ func (cmd *CommandDisable) Handler(profile *cli.Profile, ui terminal.UI, clients
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			append(userTableHeaders(providerType), headerEnabled, headerDetails),
-			userTableRows(providerType, o, userDisableRow)...,
+			append(tableHeaders(providerType), headerEnabled, headerDetails),
+			tableRows(providerType, o, tableRowDisable)...,
 		))
 	}
 	ui.Print(logs...)
@@ -85,7 +85,7 @@ func (i *disableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory)
 }
 
-func userDisableRow(output userOutput, row map[string]interface{}) {
+func tableRowDisable(output userOutput, row map[string]interface{}) {
 	var enabled bool
 	var details string
 	if output.err != nil && !output.user.Disabled {

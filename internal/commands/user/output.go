@@ -40,9 +40,9 @@ func getUserOutputComparerBySuccess(outputs userOutputs) func(i, j int) bool {
 	}
 }
 
-type userTableRowModifier func(userOutput, map[string]interface{})
+type tableRowModifier func(userOutput, map[string]interface{})
 
-func userTableHeaders(authProviderType realm.AuthProviderType) []string {
+func tableHeaders(authProviderType realm.AuthProviderType) []string {
 	var headers []string
 
 	switch authProviderType {
@@ -55,15 +55,15 @@ func userTableHeaders(authProviderType realm.AuthProviderType) []string {
 	return append(headers, headerID, headerType)
 }
 
-func userTableRows(authProviderType realm.AuthProviderType, outputs userOutputs, tableRowModifier userTableRowModifier) []map[string]interface{} {
+func tableRows(authProviderType realm.AuthProviderType, outputs userOutputs, tableRowModifier tableRowModifier) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
-		rows = append(rows, userTableRow(authProviderType, output, tableRowModifier))
+		rows = append(rows, tableRow(authProviderType, output, tableRowModifier))
 	}
 	return rows
 }
 
-func userTableRow(authProviderType realm.AuthProviderType, output userOutput, tableRowModifier userTableRowModifier) map[string]interface{} {
+func tableRow(authProviderType realm.AuthProviderType, output userOutput, tableRowModifier tableRowModifier) map[string]interface{} {
 	row := map[string]interface{}{
 		headerID:   output.user.ID,
 		headerType: output.user.Type,

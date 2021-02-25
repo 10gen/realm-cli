@@ -229,7 +229,7 @@ func TestUserDeleteHandler(t *testing.T) {
 	})
 }
 
-func TestUserDeleteRow(t *testing.T) {
+func TestTableRowDelete(t *testing.T) {
 	for _, tc := range []struct {
 		description      string
 		authProviderType realm.AuthProviderType
@@ -258,7 +258,7 @@ func TestUserDeleteRow(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			row := map[string]interface{}{}
 			output := userOutput{realm.User{}, tc.err}
-			userDeleteRow(output, row)
+			tableRowDelete(output, row)
 
 			assert.Equal(t, tc.expectedRow, row)
 		})
