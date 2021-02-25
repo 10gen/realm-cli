@@ -113,23 +113,12 @@ func TestResolveApps(t *testing.T) {
 				return testApps, nil
 			}
 
-			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-			assert.Nil(t, consoleErr)
-			defer console.Close()
+			out, ui := mock.NewUI()
 
-			doneCh := make(chan (struct{}))
-			go func() {
-				defer close(doneCh)
-				console.ExpectString("unable to delete certain apps because they were not found: nonexistent")
-				console.ExpectEOF()
-			}()
 			inputs := deleteInputs{Apps: []string{"nonexistent", "app1"}}
 			apps, err := inputs.resolveApps(ui, realmClient)
 			assert.Nil(t, err)
-
-			console.Tty().Close() // flush the writers
-			<-doneCh              // wait for procedure to complete
-
+			assert.Equal(t, "01:23:45 UTC WARN  unable to delete certain apps because they were not found: nonexistent\n", out.String())
 			assert.Equal(t, []realm.App{app1}, apps)
 		})
 	})
