@@ -16,7 +16,7 @@ type Cluster struct {
 }
 
 const (
-	clustersByGroupIDPattern = groupPath + "/clusters"
+	clustersByGroupIDPattern = "/api/atlas/v1.0/groups/%s/clusters"
 )
 
 func (c *client) ClustersByGroupID(groupID string) ([]Cluster, error) {
@@ -33,9 +33,12 @@ func (c *client) ClustersByGroupID(groupID string) ([]Cluster, error) {
 	}
 	defer res.Body.Close()
 
-	var clusters []Cluster
+	var clusters struct {
+		Results []Cluster `json:"results"`
+	}
 	if err := json.NewDecoder(res.Body).Decode(&clusters); err != nil {
 		return nil, err
 	}
-	return clusters, nil
+
+	return clusters.Results, nil
 }
