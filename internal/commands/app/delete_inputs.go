@@ -56,10 +56,7 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 				strings.Join(missingApps, ", "),
 			))
 		}
-
-		if len(inputs.Apps) > 0 {
-			return appsFiltered, nil
-		}
+		return appsFiltered, nil
 	}
 
 	appsByOption := make(map[string]realm.App, len(apps))
