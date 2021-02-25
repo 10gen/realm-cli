@@ -9,7 +9,7 @@ import (
 
 const (
 	groupsPath = publicAPI + "/groups"
-	groupPath  = groupsPath + "%s"
+	groupPath  = groupsPath + "/%s"
 )
 
 // Group is an Atlas group
