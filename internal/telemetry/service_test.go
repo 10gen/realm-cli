@@ -9,8 +9,7 @@ import (
 
 func TestNewService(t *testing.T) {
 	t.Run("Should create the expected Service", func(t *testing.T) {
-		service, err := NewService(ModeOn, "userID", "writeKey", nil, "command")
-		assert.Nil(t, err)
+		service := NewService(ModeOn, "userID", "writeKey", nil, "command")
 		assert.Equal(t, "command", service.command)
 		assert.True(t, service.executionID != "", "service execution id must not be blank")
 		assert.Equal(t, "userID", service.userID)

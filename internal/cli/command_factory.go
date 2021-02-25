@@ -78,16 +78,14 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				os.Exit(1)
 			}
 
-			telemetryService, err := telemetry.NewService(
+			telemetryService := telemetry.NewService(
 				factory.profile.telemetryMode,
 				factory.profile.User().PublicAPIKey,
 				factory.profile.telemetryWriteKey,
 				factory.errLogger,
 				display,
 			)
-			if err != nil {
-				factory.ui.Print(terminal.NewErrorLog(err))
-			}
+
 			factory.telemetryService = telemetryService
 		}
 

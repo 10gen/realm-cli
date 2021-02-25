@@ -16,30 +16,23 @@ type Service struct {
 }
 
 // NewService creates a new telemetry service
-func NewService(mode Mode, userID string, writeKey string, logger *log.Logger, command string) (*Service, error) {
+func NewService(mode Mode, userID string, writeKey string, logger *log.Logger, command string) *Service {
 	service := Service{
 		userID:      userID,
 		command:     command,
 		executionID: primitive.NewObjectID().Hex(),
 	}
 
-	var tracker Tracker
-	var err error
 	switch mode {
-
 	case ModeOff:
-		tracker = &noopTracker{}
+		service.tracker = &noopTracker{}
 	case ModeEmpty, ModeOn:
-		tracker, err = newSegmentTracker(writeKey, logger)
-		if err != nil {
-			tracker = &noopTracker{}
-		}
+		service.tracker = newSegmentTracker(writeKey, logger)
 	case ModeStdout:
-		tracker = &stdoutTracker{}
+		service.tracker = &stdoutTracker{}
 	}
-	service.tracker = tracker
 
-	return &service, err
+	return &service
 }
 
 // TrackEvent tracks events

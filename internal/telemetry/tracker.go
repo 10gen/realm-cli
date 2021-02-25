@@ -34,15 +34,11 @@ type segmentTracker struct{
 	logger *log.Logger
 }
 
-func newSegmentTracker(writeKey string, logger *log.Logger) (*segmentTracker, error){
-	client, err := analytics.NewWithConfig(writeKey, analytics.Config{Endpoint: analytics.DefaultEndpoint})
-	if err != nil {
-		return nil, err
-	}
-	return &segmentTracker{client, logger}, err
+func newSegmentTracker(writeKey string, logger *log.Logger) *segmentTracker {
+	client := analytics.New(writeKey)
+	return &segmentTracker{client, logger}
 }
 
-// TODO(REALMC-7243): use Segment sdk to send events through client
 func (tracker *segmentTracker) Track(event event) {
 	if err := tracker.client.Enqueue(analytics.Track{
 		MessageId:  primitive.NewObjectID().Hex(),
@@ -51,7 +47,6 @@ func (tracker *segmentTracker) Track(event event) {
 		UserId:     event.userID,
 		Properties: event.createPropertyMap(),
 	}); err != nil {
-		// TODO: REALMC-8240 Is Fatalf appropriate for this?
-		tracker.logger.Fatalf("failed to send Segment event %q: %s", event.eventType, err)
+		tracker.logger.Printf("failed to send Segment event %q: %s", event.eventType, err)
 	}
 }
