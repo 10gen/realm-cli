@@ -64,7 +64,7 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 		return err
 	}
 
-	diffs, err := clients.Realm.Diff(appToDiff.GroupID, appToDiff.ID, app)
+	diffs, err := clients.Realm.Diff(appToDiff.GroupID, appToDiff.ID, app.AppData)
 	if err != nil {
 		return err
 	}

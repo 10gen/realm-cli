@@ -36,9 +36,9 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 	return profile, teardown
 }
 
-// NewProfileFromWD returns a new CLI profile with a random name
+// NewProfileFromWd returns a new CLI profile with a random name
 // and the current working directory
-func NewProfileFromWD(t *testing.T) *cli.Profile {
+func NewProfileFromWd(t *testing.T) *cli.Profile {
 	t.Helper()
 
 	wd, err := os.Getwd()

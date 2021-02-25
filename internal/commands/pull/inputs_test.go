@@ -15,12 +15,12 @@ import (
 )
 
 func TestPullInputsResolve(t *testing.T) {
-	t.Run("should return an error if run from outside a project directory and no app-dir is set", func(t *testing.T) {
+	t.Run("should not return an error if run from outside a project directory with no to flag is set", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "pull_input_test")
 		defer teardown()
 
 		var i inputs
-		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
+		assert.Nil(t, i.Resolve(profile, nil))
 	})
 
 	t.Run("when run inside a project directory", func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestPullInputsResolve(t *testing.T) {
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
+			filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()),
 			[]byte(`{"config_version":20210101,"app_id":"eggcorn-abcde","name":"eggcorn"}`),
 			0666,
 		))
@@ -37,7 +37,7 @@ func TestPullInputsResolve(t *testing.T) {
 			var i inputs
 			assert.Nil(t, i.Resolve(profile, nil))
 
-			assert.Equal(t, profile.WorkingDirectory, i.Target)
+			assert.Equal(t, profile.WorkingDirectory, i.To)
 			assert.Equal(t, "eggcorn-abcde", i.From)
 			assert.Equal(t, realm.AppConfigVersion20210101, i.AppVersion)
 		})
@@ -48,7 +48,7 @@ func TestPullInputsResolve(t *testing.T) {
 		})
 	})
 
-	t.Run("resolving the target flag should work", func(t *testing.T) {
+	t.Run("resolving the to flag should work", func(t *testing.T) {
 		homeDir, teardown := u.SetupHomeDir("")
 		defer teardown()
 
@@ -58,12 +58,12 @@ func TestPullInputsResolve(t *testing.T) {
 			expectedTarget string
 		}{
 			{
-				description:    "should expand the target flag to include the user home directory",
+				description:    "should expand the to flag to include the user home directory",
 				targetFlag:     "~/my/project/root",
 				expectedTarget: filepath.Join(homeDir, "my/project/root"),
 			},
 			{
-				description:    "should resolve the target flag to account for relative paths",
+				description:    "should resolve the to flag to account for relative paths",
 				targetFlag:     "../../cmd",
 				expectedTarget: filepath.Join(homeDir, "../../cmd"),
 			},
@@ -71,10 +71,10 @@ func TestPullInputsResolve(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				profile := mock.NewProfile(t)
 
-				i := inputs{Target: tc.targetFlag}
+				i := inputs{To: tc.targetFlag}
 				assert.Nil(t, i.Resolve(profile, nil))
 
-				assert.Equal(t, tc.expectedTarget, i.Target)
+				assert.Equal(t, tc.expectedTarget, i.To)
 			})
 		}
 	})

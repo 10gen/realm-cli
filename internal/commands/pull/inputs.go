@@ -22,9 +22,9 @@ const (
 	flagAppVersion      = "app-version"
 	flagAppVersionUsage = "specify the app config version to pull changes down as"
 
-	flagTarget      = "target"
-	flagTargetShort = "t"
-	flagTargetUsage = "provide the path to export a Realm app to"
+	flagTo      = "to"
+	flagToShort = "t"
+	flagToUsage = "provide the path to export a Realm app to"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
@@ -46,7 +46,7 @@ var (
 type inputs struct {
 	Project             string
 	From                string
-	Target              string
+	To                  string
 	AppVersion          realm.AppConfigVersion
 	IncludeDependencies bool
 	IncludeHosting      bool
@@ -54,7 +54,7 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	wd := i.Target
+	wd := i.To
 	if wd == "" {
 		wd = profile.WorkingDirectory
 	}
@@ -64,20 +64,17 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	var target string
-	if i.Target == "" {
-		if app.RootDir == "" {
-			return errProjectNotFound{}
-		}
-		target = app.RootDir
+	var to string
+	if i.To == "" {
+		to = app.RootDir
 	} else {
-		t, err := homedir.Expand(i.Target)
+		t, err := homedir.Expand(i.To)
 		if err != nil {
 			return err
 		}
-		target = t
+		to = t
 	}
-	i.Target = target
+	i.To = to
 
 	if app.RootDir != "" {
 		if i.AppVersion == realm.AppConfigVersionZero {
@@ -90,6 +87,7 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 			i.From = app.Option()
 		}
 	}
+
 	return nil
 }
 
