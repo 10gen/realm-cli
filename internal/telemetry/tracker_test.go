@@ -1,12 +1,13 @@
 package telemetry
 
 import (
-	"github.com/10gen/realm-cli/internal/utils/test/assert"
-	"gopkg.in/segmentio/analytics-go.v3"
 	"io/ioutil"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/10gen/realm-cli/internal/utils/test/assert"
+	"gopkg.in/segmentio/analytics-go.v3"
 )
 
 type testClient struct {

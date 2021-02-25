@@ -38,7 +38,7 @@ const (
 	EventDataKeyErr EventDataKey = "err"
 )
 
-func (e *event) createPropertyMap() map[string]interface{}{
+func (e *event) createPropertyMap() map[string]interface{} {
 	properties := make(map[string]interface{}, len(e.data))
 	for _, datum := range e.data {
 		properties[string(datum.Key)] = datum.Value

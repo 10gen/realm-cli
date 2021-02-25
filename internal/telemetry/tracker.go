@@ -2,10 +2,11 @@ package telemetry
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"gopkg.in/segmentio/analytics-go.v3"
 	"log"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"gopkg.in/segmentio/analytics-go.v3"
 )
 
 // Tracker is a telemetry event tracker
@@ -29,7 +30,7 @@ func (tracker *stdoutTracker) Track(event event) {
 	)
 }
 
-type segmentTracker struct{
+type segmentTracker struct {
 	client analytics.Client
 	logger *log.Logger
 }
