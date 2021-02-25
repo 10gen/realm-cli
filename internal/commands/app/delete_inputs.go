@@ -26,12 +26,11 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 		return nil, err
 	}
 
-	if len(inputs.Apps) > 0 && len(apps) == 0 {
-		return nil, cli.ErrAppNotFound{}
-	}
-
 	if len(apps) == 0 {
-		return apps, nil
+		if len(inputs.Apps) == 0 {
+			return nil, nil
+		}
+		return nil, cli.ErrAppNotFound{}
 	}
 
 	if len(inputs.Apps) > 0 {
@@ -58,7 +57,7 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 			))
 		}
 
-		if len(appsFiltered) > 0 {
+		if len(inputs.Apps) > 0 {
 			return appsFiltered, nil
 		}
 	}

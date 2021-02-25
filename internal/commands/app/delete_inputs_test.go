@@ -107,7 +107,7 @@ func TestResolveApps(t *testing.T) {
 			assert.Equal(t, []realm.App{app2}, apps)
 		})
 
-		t.Run("should print a warning if input apps are not found", func(t *testing.T) {
+		t.Run("should print a warning if any input apps are not found", func(t *testing.T) {
 			realmClient := mock.RealmClient{}
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return testApps, nil
@@ -120,6 +120,21 @@ func TestResolveApps(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, "01:23:45 UTC WARN  unable to delete certain apps because they were not found: nonexistent\n", out.String())
 			assert.Equal(t, []realm.App{app1}, apps)
+		})
+
+		t.Run("should print a warning if no input apps found", func(t *testing.T) {
+			realmClient := mock.RealmClient{}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return testApps, nil
+			}
+
+			out, ui := mock.NewUI()
+
+			inputs := deleteInputs{Apps: []string{"nonexistent", "missing"}}
+			apps, err := inputs.resolveApps(ui, realmClient)
+			assert.Nil(t, err)
+			assert.Equal(t, "01:23:45 UTC WARN  unable to delete certain apps because they were not found: nonexistent, missing\n", out.String())
+			assert.Equal(t, []realm.App{}, apps)
 		})
 	})
 

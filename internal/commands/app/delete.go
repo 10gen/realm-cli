@@ -27,6 +27,11 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
+	if len(apps) == 0 {
+		ui.Print(terminal.NewTextLog("No apps to delete"))
+		return nil
+	}
+
 	outputs := make([]appOutput, 0, len(apps))
 	deletedCount := 0
 	for _, app := range apps {
@@ -35,11 +40,6 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 			deletedCount++
 		}
 		outputs = append(outputs, appOutput{app, err})
-	}
-
-	if len(outputs) == 0 {
-		ui.Print(terminal.NewTextLog("No apps to delete"))
-		return nil
 	}
 
 	ui.Print(terminal.NewTableLog(
