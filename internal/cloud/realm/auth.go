@@ -2,7 +2,6 @@ package realm
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
@@ -26,7 +25,6 @@ type authenticateRequest struct {
 }
 
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
-	fmt.Sprintf("hi %d", 5)
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		authenticatePath,
