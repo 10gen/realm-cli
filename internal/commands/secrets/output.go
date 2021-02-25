@@ -21,7 +21,7 @@ type secretOutput struct {
 
 type tableRowModifier func(secretOutput, map[string]interface{})
 
-func headers(additionalHeaders ...string) []string {
+func tableHeaders(additionalHeaders ...string) []string {
 	return append([]string{headerID, headerName}, additionalHeaders...)
 }
 

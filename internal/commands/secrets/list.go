@@ -48,15 +48,11 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Found %d secrets", len(secrets)),
-		tableHeadersList,
+		tableHeaders(),
 		tableRowsList(secrets)...,
 	))
 	return nil
 }
-
-var (
-	tableHeadersList = []string{headerID, headerName}
-)
 
 func tableRowsList(secrets []realm.Secret) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(secrets))

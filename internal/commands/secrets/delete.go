@@ -60,7 +60,7 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Deleted %d secret(s)", len(outputs)),
-		headers(headerDeleted, headerDetails),
+		tableHeaders(headerDeleted, headerDetails),
 		tableRows(outputs, tableRowDelete)...,
 	))
 	return nil

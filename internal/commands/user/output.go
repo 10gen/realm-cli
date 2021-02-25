@@ -43,16 +43,16 @@ func getUserOutputComparerBySuccess(outputs userOutputs) func(i, j int) bool {
 type tableRowModifier func(userOutput, map[string]interface{})
 
 func tableHeaders(authProviderType realm.AuthProviderType) []string {
-	var headers []string
+	var tableHeaders []string
 
 	switch authProviderType {
 	case realm.AuthProviderTypeAPIKey:
-		headers = append(headers, headerName)
+		tableHeaders = append(tableHeaders, headerName)
 	case realm.AuthProviderTypeUserPassword:
-		headers = append(headers, headerEmail)
+		tableHeaders = append(tableHeaders, headerEmail)
 	}
 
-	return append(headers, headerID, headerType)
+	return append(tableHeaders, headerID, headerType)
 }
 
 func tableRows(authProviderType realm.AuthProviderType, outputs userOutputs, tableRowModifier tableRowModifier) []map[string]interface{} {
