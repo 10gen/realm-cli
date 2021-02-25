@@ -2,6 +2,7 @@ package realm
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
@@ -25,6 +26,7 @@ type authenticateRequest struct {
 }
 
 func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
+	fmt.Sprintf("hi %d", 5)
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		authenticatePath,
@@ -76,18 +78,18 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 func (c *client) getAuthToken(options api.RequestOptions) (string, error) {
 	session := c.authService.Session()
 
-	if !options.NoAuth {
-		if session.AccessToken == "" {
-			return "", ErrInvalidSession{}
-		}
-		return session.AccessToken, nil
-	}
-
 	if options.RefreshAuth {
 		if session.RefreshToken == "" {
 			return "", ErrInvalidSession{}
 		}
 		return session.RefreshToken, nil
+	}
+
+	if !options.NoAuth {
+		if session.AccessToken == "" {
+			return "", ErrInvalidSession{}
+		}
+		return session.AccessToken, nil
 	}
 
 	return "", nil
