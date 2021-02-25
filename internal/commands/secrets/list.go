@@ -48,17 +48,17 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Found %d secrets", len(secrets)),
-		listSecretsTableHeaders,
-		listSecretTableRows(secrets)...,
+		tableHeadersList,
+		tableRowsList(secrets)...,
 	))
 	return nil
 }
 
 var (
-	listSecretsTableHeaders = []string{headerID, headerName}
+	tableHeadersList = []string{headerID, headerName}
 )
 
-func listSecretTableRows(secrets []realm.Secret) []map[string]interface{} {
+func tableRowsList(secrets []realm.Secret) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(secrets))
 	for _, secret := range secrets {
 		rows = append(rows, map[string]interface{}{

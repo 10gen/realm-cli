@@ -60,13 +60,13 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Deleted %d secret(s)", len(outputs)),
-		secretHeaders(headerDeleted, headerDetails),
-		secretTableRows(outputs, secretDeleteRow)...,
+		headers(headerDeleted, headerDetails),
+		tableRows(outputs, tableRowDelete)...,
 	))
 	return nil
 }
 
-func secretDeleteRow(output secretOutput, row map[string]interface{}) {
+func tableRowDelete(output secretOutput, row map[string]interface{}) {
 	deleted := false
 	if output.err != nil {
 		row[headerDetails] = output.err.Error()

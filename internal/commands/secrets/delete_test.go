@@ -218,7 +218,7 @@ func TestSecretsDeleteModifiers(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			secretDeleteRow(tc.outputInput, tc.rowInput)
+			tableRowDelete(tc.outputInput, tc.rowInput)
 			assert.Equal(t, tc.rowInput, tc.expectedOutput)
 		})
 	}
