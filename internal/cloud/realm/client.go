@@ -24,8 +24,6 @@ type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
-	ListClusters(groupID, appID string) ([]PartialAtlasCluster, error)
-
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
 	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData interface{}) error

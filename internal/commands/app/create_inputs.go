@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -100,8 +101,8 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (dataSource, error) {
-	clusters, err := client.ListClusters(groupID, appID)
+func (i *createInputs) resolveDataSource(client atlas.Client, groupID string) (dataSource, error) {
+	clusters, err := client.Clusters(groupID)
 	if err != nil {
 		return dataSource{}, err
 	}
@@ -116,7 +117,7 @@ func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID str
 		return dataSource{}, errors.New("failed to find Atlas cluster")
 	}
 	dataSource := dataSource{
-		Name: i.Name + "_cluster",
+		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
 		Config: dataSourceConfig{
 			ClusterName:         clusterName,

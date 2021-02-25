@@ -238,8 +238,8 @@ func TestAppCreateHandler(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		var createdApp realm.App
-		client := mock.RealmClient{}
-		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+		rc := mock.RealmClient{}
+		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			createdApp = realm.App{
 				GroupID:     groupID,
 				ID:          "456",
@@ -249,13 +249,16 @@ func TestAppCreateHandler(t *testing.T) {
 			}
 			return createdApp, nil
 		}
-		client.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
-			return []realm.PartialAtlasCluster{{Name: "test-cluster", State: "IDLE"}}, nil
-		}
+
 		var importAppData interface{}
-		client.ImportFn = func(groupID, appID string, appData interface{}) error {
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			importAppData = appData
 			return nil
+		}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{{Name: "test-cluster"}}, nil
 		}
 
 		cmd := &CommandCreate{
@@ -269,7 +272,7 @@ func TestAppCreateHandler(t *testing.T) {
 				DataSource: "test-cluster"},
 		}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{rc, ac}))
 
 		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
@@ -297,7 +300,7 @@ func TestAppCreateHandler(t *testing.T) {
 			fmt.Sprintf("  Client App ID    "+fmtStr, "test-app-abcde"),
 			"  Realm Directory  " + localApp.RootDir,
 			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			fmt.Sprintf("  Data Source      "+fmtStr, "test-cluster"),
+			fmt.Sprintf("  Data Source      "+fmtStr, "mongodb-atlas"),
 			"01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
@@ -326,18 +329,52 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
 
-		// TODO(REALMC-8262): Investigate file path display options
 		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-		dirLength := len(expectedDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successful dry run of app create",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "N/A"),
-			"  Realm Directory  " + expectedDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "N/A"),
+			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
+			"",
+		}, "\n"), out.String())
+	})
+
+	t.Run("should create a dry run for the specified from app", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
+		testApp := realm.App{
+			ID:          "789",
+			GroupID:     "123",
+			ClientAppID: "from-app-abcde",
+			Name:        "from-app",
+		}
+
+		client := mock.RealmClient{}
+		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{testApp}, nil
+		}
+
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+					From:            "from-app",
+				},
+				DryRun: true,
+			},
+		}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+
+		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
+		assert.Equal(t, strings.Join([]string{
+			"01:23:45 UTC INFO  A Realm app based on the Realm app from-app would be created at " + expectedDir,
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
 			"",
 		}, "\n"), out.String())
 	})
@@ -350,7 +387,7 @@ func TestAppCreateHandler(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		client := mock.AtlasClient{}
-		client.ClustersByGroupIDFn = func(groupID string) ([]atlas.Cluster, error) {
+		client.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
 			return []atlas.Cluster{{Name: "test-cluster"}}, nil
 		}
 
@@ -369,19 +406,11 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
 
-		// TODO(REALMC-8262): Investigate file path display options
 		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-		dirLength := len(expectedDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successful dry run of app create",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "N/A"),
-			"  Realm Directory  " + expectedDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "N/A"),
-			fmt.Sprintf("  Data Source      "+fmtStr, "test-cluster"),
+			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
+			"01:23:45 UTC INFO  The cluster test-cluster would be linked as data source mongodb-atlas",
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
 			"",
 		}, "\n"), out.String())
 	})

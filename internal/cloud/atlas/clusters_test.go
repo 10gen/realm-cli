@@ -9,7 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestClustersByGroupID(t *testing.T) {
+func TestClusters(t *testing.T) {
 	u.SkipUnlessAtlasServerRunning(t)
 
 	for _, tc := range []struct {
@@ -29,7 +29,7 @@ func TestClustersByGroupID(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := tc.client.ClustersByGroupID(u.CloudGroupID())
+			_, err := tc.client.Clusters(u.CloudGroupID())
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
@@ -37,7 +37,7 @@ func TestClustersByGroupID(t *testing.T) {
 	t.Run("With an authenticated client should return the list of atlas clusters", func(t *testing.T) {
 		client := newAuthClient(t)
 
-		clusters, err := client.ClustersByGroupID(u.CloudGroupID())
+		clusters, err := client.Clusters(u.CloudGroupID())
 		assert.Nil(t, err)
 		assert.Equal(t, u.CloudAtlasClusterCount(), len(clusters))
 	})

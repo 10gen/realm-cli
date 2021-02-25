@@ -6,6 +6,7 @@ import (
 	"path"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -198,21 +199,20 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 func TestAppCreateInputsResolveDataSource(t *testing.T) {
 	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
-		var expectedGroupID, expectedAppID string
-		rc := mock.RealmClient{}
-		rc.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
 			expectedGroupID = groupID
-			expectedAppID = appID
-			return []realm.PartialAtlasCluster{{ID: "789", Name: "test-cluster"}}, nil
+			return []atlas.Cluster{{ID: "789", Name: "test-cluster"}}, nil
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataSource: "test-cluster"}
 
-		ds, err := inputs.resolveDataSource(rc, "123", "456")
+		ds, err := inputs.resolveDataSource(ac, "123")
 		assert.Nil(t, err)
 
 		assert.Equal(t, dataSource{
-			Name: "test-app_cluster",
+			Name: "mongodb-atlas",
 			Type: "mongodb-atlas",
 			Config: dataSourceConfig{
 				ClusterName:         "test-cluster",
@@ -221,40 +221,35 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			},
 		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
-		assert.Equal(t, "456", expectedAppID)
 	})
 
 	t.Run("should not be able to find specified cluster", func(t *testing.T) {
-		var expectedGroupID, expectedAppID string
-		rc := mock.RealmClient{}
-		rc.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
 			expectedGroupID = groupID
-			expectedAppID = appID
 			return nil, nil
 		}
 
 		inputs := createInputs{DataSource: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(rc, "123", "456")
+		_, err := inputs.resolveDataSource(ac, "123")
 		assert.Equal(t, errors.New("failed to find Atlas cluster"), err)
 		assert.Equal(t, "123", expectedGroupID)
-		assert.Equal(t, "456", expectedAppID)
 	})
 
 	t.Run("should error from client", func(t *testing.T) {
-		var expectedGroupID, expectedAppID string
-		rc := mock.RealmClient{}
-		rc.ListClustersFn = func(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
 			expectedGroupID = groupID
-			expectedAppID = appID
 			return nil, errors.New("client error")
 		}
 
 		inputs := createInputs{DataSource: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(rc, "123", "456")
+		_, err := inputs.resolveDataSource(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
-		assert.Equal(t, "456", expectedAppID)
 	})
 }

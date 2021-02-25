@@ -15,27 +15,29 @@ type Cluster struct {
 	State string `json:"stateName"`
 }
 
+type clustersResponse struct {
+	Results []Cluster `json:"results"`
+}
+
 const (
-	clustersByGroupIDPattern = "/api/atlas/v1.0/groups/%s/clusters"
+	clustersPattern = atlasAPI + "/groups/%s/clusters"
 )
 
-func (c *client) ClustersByGroupID(groupID string) ([]Cluster, error) {
+func (c *client) Clusters(groupID string) ([]Cluster, error) {
 	res, err := c.do(
 		http.MethodGet,
-		fmt.Sprintf(clustersByGroupIDPattern, groupID),
+		fmt.Sprintf(clustersPattern, groupID),
 		api.RequestOptions{},
 	)
 	if err != nil {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"get group clusters", res.StatusCode}
+		return nil, api.ErrUnexpectedStatusCode{"get clusters", res.StatusCode}
 	}
 	defer res.Body.Close()
 
-	var clusters struct {
-		Results []Cluster `json:"results"`
-	}
+	var clusters clustersResponse
 	if err := json.NewDecoder(res.Body).Decode(&clusters); err != nil {
 		return nil, err
 	}

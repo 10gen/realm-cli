@@ -14,6 +14,7 @@ import (
 
 const (
 	publicAPI = "/api/public/v1.0"
+	atlasAPI  = "/api/atlas/v1.0"
 
 	userAgentHeader = "User-Agent"
 	cliHeaderValue  = "MongoDB-BaaS-CLI"
@@ -23,7 +24,7 @@ const (
 type Client interface {
 	Groups() ([]Group, error)
 
-	ClustersByGroupID(groupID string) ([]Cluster, error)
+	Clusters(groupID string) ([]Cluster, error)
 
 	Status() error
 }
