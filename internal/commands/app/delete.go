@@ -42,22 +42,20 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return nil
 	}
 
-	var logs []terminal.Log
-	logs = append(logs, terminal.NewTableLog(
+	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Successfully deleted %d/%d app(s)", deletedCount, len(apps)),
-		appDeleteTableHeaders,
-		appDeleteRows(outputs)...,
+		tableHeadersDelete,
+		tableRowsDelete(outputs)...,
 	))
 
-	ui.Print(logs...)
 	return nil
 }
 
 var (
-	appDeleteTableHeaders = []string{headerID, headerName, headerDeleted, headerDetails}
+	tableHeadersDelete = []string{headerID, headerName, headerDeleted, headerDetails}
 )
 
-func appDeleteRows(ouputs []appOutput) []map[string]interface{} {
+func tableRowsDelete(ouputs []appOutput) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(ouputs))
 	for _, output := range ouputs {
 		var deleted bool

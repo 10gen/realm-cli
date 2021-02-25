@@ -57,25 +57,13 @@ func TestResolveApps(t *testing.T) {
 				expectedErr: cli.ErrAppNotFound{},
 			},
 			{
-				description: "should error if input apps are not found",
-				inputs:      deleteInputs{Apps: []string{"nonexistent"}},
-				apps:        testApps,
-				expectedErr: errors.New("Failed to find the following apps: [nonexistent]"),
-			},
-
-			{
-				description: "should return an empty apps slice with no found apps or input apps without prompting",
+				description: "should return no apps with no found apps nor input apps without prompting",
 			},
 			{
-				description:  "should return found apps slice without prompting if inputs provided",
+				description:  "should return found apps without prompting based on inputs provided",
 				inputs:       deleteInputs{Apps: []string{"app2", "app3"}},
 				apps:         testApps,
 				expectedApps: []realm.App{app2, app3},
-			},
-			{
-				description:  "should prompt user to select apps if no input provided",
-				apps:         testApps,
-				expectedApps: []realm.App{app2},
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -84,29 +72,66 @@ func TestResolveApps(t *testing.T) {
 					return tc.apps, nil
 				}
 
-				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-				assert.Nil(t, consoleErr)
-				defer console.Close()
-
-				doneCh := make(chan (struct{}))
-				go func() {
-					defer close(doneCh)
-
-					console.ExpectString("Select App(s)")
-					console.Send("app2")
-					console.SendLine(" ")
-					console.ExpectEOF()
-				}()
-
-				apps, err := tc.inputs.resolveApps(ui, realmClient)
+				apps, err := tc.inputs.resolveApps(nil, realmClient)
 				assert.Equal(t, tc.expectedErr, err)
-
-				console.Tty().Close() // flush the writers
-				<-doneCh              // wait for procedure to complete
-
 				assert.Equal(t, tc.expectedApps, apps)
 			})
 		}
+
+		t.Run("should prompt user to select apps if no input provided", func(t *testing.T) {
+			realmClient := mock.RealmClient{}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return testApps, nil
+			}
+
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+
+				console.ExpectString("Select App(s)")
+				console.Send("app2")
+				console.SendLine(" ")
+				console.ExpectEOF()
+			}()
+			inputs := deleteInputs{}
+			apps, err := inputs.resolveApps(ui, realmClient)
+			assert.Nil(t, err)
+
+			console.Tty().Close() // flush the writers
+			<-doneCh              // wait for procedure to complete
+
+			assert.Equal(t, []realm.App{app2}, apps)
+		})
+
+		t.Run("should print a warning if input apps are not found", func(t *testing.T) {
+			realmClient := mock.RealmClient{}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return testApps, nil
+			}
+
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+				console.ExpectString("unable to delete certain apps because they were not found: nonexistent")
+				console.ExpectEOF()
+			}()
+			inputs := deleteInputs{Apps: []string{"nonexistent", "app1"}}
+			apps, err := inputs.resolveApps(ui, realmClient)
+			assert.Nil(t, err)
+
+			console.Tty().Close() // flush the writers
+			<-doneCh              // wait for procedure to complete
+
+			assert.Equal(t, []realm.App{app1}, apps)
+		})
 	})
 
 }

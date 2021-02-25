@@ -15,12 +15,27 @@ import (
 
 func TestAppDeleteHandler(t *testing.T) {
 	groupID1 := primitive.NewObjectID().Hex()
-	appID := "60344735b37e3733de2adf40"
+	groupID2 := primitive.NewObjectID().Hex()
+	appID1 := "60344735b37e3733de2adf40"
+	appID2 := "60344735b37e3733de2adf41"
+	appID3 := "60344735b37e3733de2adf42"
 	app1 := realm.App{
-		ID:          appID,
+		ID:          appID1,
 		GroupID:     groupID1,
 		ClientAppID: "app1-abcde",
 		Name:        "app1",
+	}
+	app2 := realm.App{
+		ID:          appID2,
+		GroupID:     groupID2,
+		ClientAppID: "app2-defgh",
+		Name:        "app2",
+	}
+	app3 := realm.App{
+		ID:          appID3,
+		GroupID:     groupID1,
+		ClientAppID: "app2-hijkl",
+		Name:        "app2",
 	}
 
 	for _, tc := range []struct {
@@ -33,14 +48,13 @@ func TestAppDeleteHandler(t *testing.T) {
 	}{
 		{
 			description:    "should delete no apps if none are found",
-			inputs:         deleteInputs{},
 			expectedOutput: "01:23:45 UTC INFO  No apps to delete\n",
 		},
 		{
 			description:  "with no project flag set and an apps flag set should delete all apps that match the apps flag",
 			inputs:       deleteInputs{Apps: []string{"app1"}},
-			apps:         []realm.App{app1},
-			expectedApps: []string{appID},
+			apps:         []realm.App{app1, app2, app3},
+			expectedApps: []string{appID1},
 			expectedOutput: strings.Join(
 				[]string{
 					"01:23:45 UTC INFO  Successfully deleted 1/1 app(s)",
@@ -54,15 +68,16 @@ func TestAppDeleteHandler(t *testing.T) {
 		},
 		{
 			description:  "with a project flag set and an apps flag set should delete all apps that match the apps flag",
-			inputs:       deleteInputs{Apps: []string{"app1"}, Project: groupID1},
-			apps:         []realm.App{app1},
-			expectedApps: []string{appID},
+			inputs:       deleteInputs{Apps: []string{"app1", "app2"}, Project: groupID1},
+			apps:         []realm.App{app1, app2, app3},
+			expectedApps: []string{appID1, appID3},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Successfully deleted 1/1 app(s)",
+					"01:23:45 UTC INFO  Successfully deleted 2/2 app(s)",
 					"  ID                        Name  Deleted  Details",
 					"  ------------------------  ----  -------  -------",
 					"  60344735b37e3733de2adf40  app1  true            ",
+					"  60344735b37e3733de2adf42  app2  true            ",
 					"",
 				},
 				"\n",

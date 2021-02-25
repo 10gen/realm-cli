@@ -1,7 +1,7 @@
 package app
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -34,27 +34,33 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 		return apps, nil
 	}
 
-	foundAppNames := map[string]realm.App{}
-	for _, app := range apps {
-		foundAppNames[app.Name] = app
-	}
-
-	inputAppsNotFound := make([]string, 0)
-	filteredApps := make([]realm.App, 0)
-	for _, inputApp := range inputs.Apps {
-		if (foundAppNames[inputApp] == realm.App{}) {
-			inputAppsNotFound = append(inputAppsNotFound, inputApp)
-			continue
+	if len(inputs.Apps) > 0 {
+		appsByName := map[string]realm.App{}
+		for _, app := range apps {
+			appsByName[app.Name] = app
 		}
-		filteredApps = append(filteredApps, foundAppNames[inputApp])
-	}
 
-	if len(inputAppsNotFound) > 0 {
-		return nil, fmt.Errorf("Failed to find the following apps: %v", inputAppsNotFound)
-	}
+		missingApps := make([]string, 0)
+		appsFiltered := make([]realm.App, 0, len(inputs.Apps))
+		for _, inputApp := range inputs.Apps {
+			app, ok := appsByName[inputApp]
+			if !ok {
+				missingApps = append(missingApps, inputApp)
+				continue
+			}
+			appsFiltered = append(appsFiltered, app)
+		}
 
-	if len(filteredApps) > 0 {
-		return filteredApps, nil
+		if len(missingApps) > 0 {
+			ui.Print(terminal.NewWarningLog(
+				"unable to delete certain apps because they were not found: %s",
+				strings.Join(missingApps, ", "),
+			))
+		}
+
+		if len(appsFiltered) > 0 {
+			return appsFiltered, nil
+		}
 	}
 
 	appsByOption := make(map[string]realm.App, len(apps))
@@ -64,16 +70,16 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 		appOptions[i] = app.Option()
 	}
 
-	var selectedApps []string
-	if err := ui.AskOne(&selectedApps, &survey.MultiSelect{
+	var selected []string
+	if err := ui.AskOne(&selected, &survey.MultiSelect{
 		Message: "Select App(s)",
 		Options: appOptions,
 	}); err != nil {
-		return nil, fmt.Errorf("failed to select app(s): %s", err)
+		return nil, err
 	}
-	selected := make([]realm.App, len(selectedApps))
-	for idx, app := range selectedApps {
-		selected[idx] = appsByOption[app]
+	selectedApps := make([]realm.App, len(selected))
+	for idx, app := range selected {
+		selectedApps[idx] = appsByOption[app]
 	}
-	return selected, nil
+	return selectedApps, nil
 }
