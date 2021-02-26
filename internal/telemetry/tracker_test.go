@@ -24,10 +24,11 @@ func (client *testClient) Close() error {
 }
 
 const (
-	testId = "id123"
-	testUserId = "user123"
-	testExecutionId = "execution123"
+	testID          = "id123"
+	testUserID      = "user123"
+	testExecutionID = "execution123"
 )
+
 var testTime = time.Date(2021, 1, 2, 3, 4, 5, 6, time.UTC)
 
 func TestNoopTracker(t *testing.T) {
@@ -60,10 +61,10 @@ func TestSegmentTracker(t *testing.T) {
 		assert.Equal(t, 1, len(testClientResults.calls))
 
 		expectedTrack := analytics.Track{
-			MessageId: testId,
-			UserId: testUserId,
+			MessageId: testID,
+			UserId:    testUserID,
 			Timestamp: testTime,
-			Event: string(EventTypeCommandError),
+			Event:     string(EventTypeCommandError),
 			Properties: map[string]interface{}{
 				string(EventDataKeyErr): "Something",
 			},
@@ -91,11 +92,11 @@ func testTrackStdoutOutput(t *testing.T, tracker Tracker, event event, expected 
 
 func createEvent(eventType EventType, data []EventData, command string) event {
 	return event{
-		id:          testId,
+		id:          testID,
 		eventType:   eventType,
-		userID:      testUserId,
+		userID:      testUserID,
 		time:        testTime,
-		executionID: testExecutionId,
+		executionID: testExecutionID,
 		command:     command,
 		data:        data,
 	}
