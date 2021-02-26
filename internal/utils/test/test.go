@@ -103,6 +103,11 @@ func RealmServerURL() string {
 	return defaultRealmServerURL
 }
 
+// ExpiredAccessToken returns an expired access token to use for testing
+func ExpiredAccessToken() string {
+	return os.Getenv("BAAS_MONGODB_EXPIRED_ACCESS_TOKEN")
+}
+
 // SkipUnlessAtlasServerRunning skips tests if there is no Atlas server running
 // at the configured testing url (see: AtlasServerURL())
 var SkipUnlessAtlasServerRunning = func() func(t *testing.T) {
@@ -144,5 +149,16 @@ var SkipUnlessRealmServerRunning = func() func(t *testing.T) {
 			return
 		}
 		realmServerRunning = true
+	}
+}()
+
+// SkipUnlessExpiredAccessTokenPresent skips tests if there is no expired access token
+// set as an environment URL
+var SkipUnlessExpiredAccessTokenPresent = func() func(t *testing.T) {
+	return func(t *testing.T) {
+		if ExpiredAccessToken() == "" {
+			MustSkipf(t, "expired access token detected in environment")
+		}
+		return
 	}
 }()

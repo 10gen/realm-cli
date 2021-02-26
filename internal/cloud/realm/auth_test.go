@@ -78,8 +78,8 @@ func TestRealmAuthRefresh(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		// invalidate the session's tokens
-		session.AccessToken = ""
 		session.RefreshToken = session.AccessToken
+		session.AccessToken = ""
 
 		profile := mock.NewProfileWithSession(t, session)
 
@@ -87,7 +87,37 @@ func TestRealmAuthRefresh(t *testing.T) {
 		_, err = client.AuthProfile()
 		assert.Equal(t, realm.ErrInvalidSession{}, err)
 	})
-	// TODO: REALMC-7719 add test for expired credentials and test for ensuring profile cleared on invalid session
+
+	t.Run("with an expired access token", func(t *testing.T) {
+		u.SkipUnlessExpiredAccessTokenPresent(t)
+		t.Run("should use the refresh token to generate a new access token", func(t *testing.T) {
+			client := realm.NewClient(u.RealmServerURL())
+			u.SkipUnlessRealmServerRunning(t)
+			session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+			assert.Equal(t, nil, err)
+
+			session.AccessToken = u.ExpiredAccessToken() // Set the access token to an expired token
+			profile := mock.NewProfileWithSession(t, session)
+
+			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
+			_, err = client.AuthProfile()
+			assert.Nil(t, err)
+		})
+		t.Run("should error if both the access and refresh tokens are expired", func(t *testing.T) {
+			client := realm.NewClient(u.RealmServerURL())
+			u.SkipUnlessRealmServerRunning(t)
+			session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+			assert.Equal(t, nil, err)
+
+			session.AccessToken = u.ExpiredAccessToken()  // Set the access token to an expired token
+			session.RefreshToken = u.ExpiredAccessToken() // Set the refresh token to an random expired token
+			profile := mock.NewProfileWithSession(t, session)
+
+			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
+			_, err = client.AuthProfile()
+			assert.Equal(t, realm.ErrInvalidSession{}, err)
+		})
+	})
 }
 
 func newAuthClient(t *testing.T) realm.Client {
