@@ -272,7 +272,7 @@ func TestAppCreateHandler(t *testing.T) {
 				DataSource: "test-cluster"},
 		}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{rc, ac}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
 		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
@@ -313,8 +313,6 @@ func TestAppCreateHandler(t *testing.T) {
 
 		out, ui := mock.NewUI()
 
-		client := mock.AtlasClient{}
-
 		cmd := &CommandCreate{
 			inputs: createInputs{
 				newAppInputs: newAppInputs{
@@ -327,7 +325,7 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 		}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
 		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
 		assert.Equal(t, strings.Join([]string{
@@ -447,5 +445,42 @@ func TestAppCreateHandler(t *testing.T) {
 		}}}
 
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(profile, nil, cli.Clients{Realm: client}))
+	})
+}
+
+func TestAppCreateCommandString(t *testing.T) {
+	t.Run("should create a minimal command", func(t *testing.T) {
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				},
+			},
+		}
+		assert.Equal(t, cli.Name+" app create --project 123 --name test-app", cmd.commandString(false))
+	})
+
+	t.Run("should create a command with all inputs", func(t *testing.T) {
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					From:            "from-app",
+					Location:        realm.LocationIreland,
+					DeploymentModel: realm.DeploymentModelLocal,
+				},
+				Directory:  "realm-app",
+				DataSource: "Cluster0",
+				DryRun:     true,
+			},
+		}
+		assert.Equal(t,
+			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --deployment-model LOCAL --location IE --data-source Cluster0 --dry-run",
+			cmd.commandString(false),
+		)
 	})
 }
