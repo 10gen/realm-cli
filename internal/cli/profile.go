@@ -38,10 +38,9 @@ const (
 
 // Profile is the CLI profile
 type Profile struct {
-	Name         string
-	atlasBaseURL string
-	realmBaseURL string
-
+	Name          string
+	atlasBaseURL  string
+	realmBaseURL  string
 	telemetryMode telemetry.Mode
 
 	dir string

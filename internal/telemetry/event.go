@@ -37,11 +37,3 @@ type EventDataKey string
 const (
 	EventDataKeyErr EventDataKey = "err"
 )
-
-func eventDataProperties(data []EventData) map[string]interface{} {
-	properties := make(map[string]interface{}, len(data))
-	for _, datum := range data {
-		properties[string(datum.Key)] = datum.Value
-	}
-	return properties
-}

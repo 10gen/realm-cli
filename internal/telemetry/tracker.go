@@ -5,12 +5,11 @@ import (
 	"log"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
 var (
-	segmentWriteKey = ""
+	segmentWriteKey = "" // value will be injected at build-time
 )
 
 // Tracker is a telemetry event tracker
@@ -41,7 +40,7 @@ type segmentTracker struct {
 
 func newSegmentTracker(logger *log.Logger) Tracker {
 	if len(segmentWriteKey) == 0 {
-		log.Print("unable to make a Segment tracker with an empty write key; replacing with a noop")
+		log.Print("unable to connect to Segment due to missing key, CLI telemetry will be disabled")
 		return &noopTracker{}
 	}
 	client := analytics.New(segmentWriteKey)
@@ -49,12 +48,16 @@ func newSegmentTracker(logger *log.Logger) Tracker {
 }
 
 func (tracker *segmentTracker) Track(event event) {
+	properties := make(map[string]interface{}, len(event.data))
+	for _, datum := range event.data {
+		properties[string(datum.Key)] = datum.Value
+	}
 	if err := tracker.client.Enqueue(analytics.Track{
-		MessageId:  primitive.NewObjectID().Hex(),
-		Timestamp:  time.Now(),
+		MessageId:  event.id,
+		Timestamp:  event.time,
 		Event:      string(event.eventType),
 		UserId:     event.userID,
-		Properties: eventDataProperties(event.data),
+		Properties: properties,
 	}); err != nil {
 		tracker.logger.Printf("failed to send Segment event %q: %s", event.eventType, err)
 	}
