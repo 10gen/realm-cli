@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -22,12 +23,12 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
+	fs.StringVarP(&cmd.inputs.From, flagFrom, flagFromShort, "", flagFromUsage)
 	fs.StringVarP(&cmd.inputs.Directory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.StringVarP(&cmd.inputs.DataSource, flagDataSource, flagDataSourceShort, "", flagDataSourceUsage)
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 }
 
 // Inputs is the command inputs
@@ -65,7 +66,28 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	// TODO(REALMC-8134): Implement dry-run for app create command
+	var ds dataSource
+	if cmd.inputs.DataSource != "" {
+		ds, err = cmd.inputs.resolveDataSource(clients.Atlas, groupID)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cmd.inputs.DryRun {
+		logs := make([]terminal.Log, 0, 3)
+		if from.IsZero() {
+			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
+		} else {
+			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app %s would be created at %s", cmd.inputs.From, dir))
+		}
+		if ds.Name != "" {
+			logs = append(logs, terminal.NewTextLog("The cluster %s would be linked as data source %s", cmd.inputs.DataSource, ds.Name))
+		}
+		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.commandString(true)))
+		ui.Print(logs...)
+		return nil
+	}
 
 	if from.IsZero() {
 		localApp := local.NewApp(
@@ -103,10 +125,6 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	if cmd.inputs.DataSource != "" {
-		dataSource, err := cmd.inputs.resolveDataSource(clients.Realm, groupID, newApp.ID)
-		if err != nil {
-			return err
-		}
 		var dataSourceDir string
 		switch loadedApp.ConfigVersion() {
 		case
@@ -116,11 +134,11 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		default:
 			dataSourceDir = local.NameDataSources
 		}
-		data, err := local.MarshalJSON(dataSource)
+		data, err := local.MarshalJSON(ds)
 		if err != nil {
 			return err
 		}
-		path := filepath.Join(dataSourceDir, dataSource.Name, local.FileConfig.String())
+		path := filepath.Join(dataSourceDir, ds.Name, local.FileConfig.String())
 		err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
 		if err != nil {
 			return err
@@ -140,10 +158,49 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
 	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID)})
 	if cmd.inputs.DataSource != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": cmd.inputs.DataSource})
+		rows = append(rows, map[string]interface{}{"Info": "Data Source", "Details": ds.Name})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
-	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && realm-cli app describe", cmd.inputs.Directory)))
+	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.Directory, cli.Name)))
 	return nil
+}
+
+func (cmd *CommandCreate) commandString(omitDryRun bool) string {
+	sb := strings.Builder{}
+	sb.WriteString(cli.Name)
+	sb.WriteString(" app create")
+	if cmd.inputs.Project != "" {
+		sb.WriteString(" --project ")
+		sb.WriteString(cmd.inputs.Project)
+	}
+	if cmd.inputs.Name != "" {
+		sb.WriteString(" --name ")
+		sb.WriteString(cmd.inputs.Name)
+	}
+	if cmd.inputs.From != "" {
+		sb.WriteString(" --from ")
+		sb.WriteString(cmd.inputs.From)
+	}
+	if cmd.inputs.Directory != "" {
+		sb.WriteString(" --app-dir ")
+		sb.WriteString(cmd.inputs.Directory)
+	}
+	if cmd.inputs.DeploymentModel != flagDeploymentModelDefault {
+		sb.WriteString(" --deployment-model ")
+		sb.WriteString(cmd.inputs.DeploymentModel.String())
+	}
+	if cmd.inputs.Location != flagLocationDefault {
+		sb.WriteString(" --location ")
+		sb.WriteString(cmd.inputs.Location.String())
+	}
+	if cmd.inputs.DataSource != "" {
+		sb.WriteString(" --data-source ")
+		sb.WriteString(cmd.inputs.DataSource)
+	}
+	if cmd.inputs.DryRun && !omitDryRun {
+		sb.WriteString(" --dry-run")
+	}
+
+	return sb.String()
 }

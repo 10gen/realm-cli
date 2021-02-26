@@ -14,6 +14,7 @@ import (
 
 const (
 	publicAPI = "/api/public/v1.0"
+	atlasAPI  = "/api/atlas/v1.0"
 
 	userAgentHeader = "User-Agent"
 	cliHeaderValue  = "MongoDB-BaaS-CLI"
@@ -22,6 +23,9 @@ const (
 // Client is a MongoDB Cloud Atlas client
 type Client interface {
 	Groups() ([]Group, error)
+
+	Clusters(groupID string) ([]Cluster, error)
+
 	Status() error
 }
 

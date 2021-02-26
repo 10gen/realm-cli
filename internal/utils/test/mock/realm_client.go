@@ -13,8 +13,6 @@ type RealmClient struct {
 	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
 
-	ListClustersFn func(groupID, appID string) ([]realm.PartialAtlasCluster, error)
-
 	DiffFn   func(groupID, appID string, appData interface{}) ([]string, error)
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
 	ImportFn func(groupID, appID string, appData interface{}) error
@@ -67,16 +65,6 @@ func (rc RealmClient) AuthProfile() (realm.AuthProfile, error) {
 		return rc.AuthProfileFn()
 	}
 	return rc.Client.AuthProfile()
-}
-
-// ListClusters calls the mocked ListClusters implementation if provided,
-// otherwise the call falls back to the underlying realm.Client implementation.
-// NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) ListClusters(groupID, appID string) ([]realm.PartialAtlasCluster, error) {
-	if rc.ListClustersFn != nil {
-		return rc.ListClustersFn(groupID, appID)
-	}
-	return rc.Client.ListClusters(groupID, appID)
 }
 
 // Export calls the mocked Export implementation if provided,

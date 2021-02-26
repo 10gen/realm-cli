@@ -10,17 +10,13 @@ import (
 	"honnef.co/go/tools/version"
 )
 
-const (
-	cliName = "realm-cli"
-)
-
 // Run runs the CLI
 func Run() {
 	cmd := &cobra.Command{
 		Version:       version.Version,
-		Use:           cliName,
+		Use:           cli.Name,
 		Short:         "CLI tool to manage your MongoDB Realm application",
-		Long:          fmt.Sprintf("Use %s command help for information on a specific command", cliName),
+		Long:          fmt.Sprintf("Use %s command help for information on a specific command", cli.Name),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}

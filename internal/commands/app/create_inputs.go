@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -22,18 +23,16 @@ var (
 	flagDataSourceShort = "s"
 	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
 
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// flagDryRun      = "dry-run"
-	// flagDryRunShort = "x"
-	// flagDryRunUsage = "include to run without writing any changes to the file system or import/export the new Realm app"
+	flagDryRun      = "dry-run"
+	flagDryRunShort = "x"
+	flagDryRunUsage = "include to run without writing any changes to the file system or import/export the new Realm app"
 )
 
 type createInputs struct {
 	newAppInputs
 	Directory  string
 	DataSource string
-	// TODO(REALMC-8134): Implement dry-run for app create command
-	// DryRun bool
+	DryRun     bool
 }
 
 type dataSource struct {
@@ -102,8 +101,8 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID string) (dataSource, error) {
-	clusters, err := client.ListClusters(groupID, appID)
+func (i *createInputs) resolveDataSource(client atlas.Client, groupID string) (dataSource, error) {
+	clusters, err := client.Clusters(groupID)
 	if err != nil {
 		return dataSource{}, err
 	}
@@ -118,7 +117,7 @@ func (i *createInputs) resolveDataSource(client realm.Client, groupID, appID str
 		return dataSource{}, errors.New("failed to find Atlas cluster")
 	}
 	dataSource := dataSource{
-		Name: i.Name + "_cluster",
+		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
 		Config: dataSourceConfig{
 			ClusterName:         clusterName,
