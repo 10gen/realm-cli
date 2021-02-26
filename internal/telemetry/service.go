@@ -7,6 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+var (
+	segmentWriteKey = ""
+)
+
 // Service tracks telemetry events
 type Service struct {
 	userID      string
@@ -16,7 +20,7 @@ type Service struct {
 }
 
 // NewService creates a new telemetry service
-func NewService(mode Mode, userID string, writeKey string, logger *log.Logger, command string) *Service {
+func NewService(mode Mode, userID string, logger *log.Logger, command string) *Service {
 	service := Service{
 		userID:      userID,
 		command:     command,
@@ -27,7 +31,7 @@ func NewService(mode Mode, userID string, writeKey string, logger *log.Logger, c
 	case ModeOff:
 		service.tracker = &noopTracker{}
 	case ModeEmpty, ModeOn:
-		service.tracker = newSegmentTracker(writeKey, logger)
+		service.tracker = newSegmentTracker(segmentWriteKey, logger)
 	case ModeStdout:
 		service.tracker = &stdoutTracker{}
 	}

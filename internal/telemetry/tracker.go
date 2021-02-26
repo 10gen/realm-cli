@@ -35,7 +35,11 @@ type segmentTracker struct {
 	logger *log.Logger
 }
 
-func newSegmentTracker(writeKey string, logger *log.Logger) *segmentTracker {
+func newSegmentTracker(writeKey string, logger *log.Logger) Tracker {
+	if len(writeKey) == 0 {
+		log.Print("unable to make a Segment tracker with an empty write key; replacing with a noop")
+		return &noopTracker{}
+	}
 	client := analytics.New(writeKey)
 	return &segmentTracker{client, logger}
 }

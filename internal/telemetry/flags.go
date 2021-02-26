@@ -12,10 +12,6 @@ const (
 	FlagMode      = "telemetry"
 	FlagModeShort = "m"
 	FlagModeUsage = `enable or disable telemetry (this setting is remembered), available options: ["off", "on"]`
-
-	FlagWriteKey      = "write_key"
-	FlagWriteKeyShort = "w"
-	FlagWriteKeyUsage = "write key to write the telemetry"
 )
 
 // Mode is the Telemetry Mode
