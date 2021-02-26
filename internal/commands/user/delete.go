@@ -77,8 +77,8 @@ func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients 
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			append(userTableHeaders(providerType), headerDeleted, headerDetails),
-			userTableRows(providerType, o, userDeleteRow)...,
+			append(tableHeaders(providerType), headerDeleted, headerDetails),
+			tableRows(providerType, o, tableRowDelete)...,
 		))
 	}
 
@@ -98,7 +98,7 @@ func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func userDeleteRow(output userOutput, row map[string]interface{}) {
+func tableRowDelete(output userOutput, row map[string]interface{}) {
 	var deleted bool
 	var details string
 	if output.err != nil {

@@ -207,7 +207,7 @@ func TestUserDisableHandler(t *testing.T) {
 	})
 }
 
-func TestUserDisableRow(t *testing.T) {
+func TestTableRowDisable(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 		err         error
@@ -232,7 +232,7 @@ func TestUserDisableRow(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			row := map[string]interface{}{}
 			output := userOutput{realm.User{}, tc.err}
-			userDisableRow(output, row)
+			tableRowDisable(output, row)
 
 			assert.Equal(t, tc.expectedRow, row)
 		})

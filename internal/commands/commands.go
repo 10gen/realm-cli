@@ -105,6 +105,14 @@ If you have more than one Realm app, you will be prompted to select a Realm app 
 display from a list of all Realm apps associated with your user profile.`,
 				Command: &app.CommandDiff{},
 			},
+			{
+				Use:         "delete",
+				Display:     "app delete",
+				Description: "Delete a Realm app",
+				Help: `If you have more than one Realm app, you will be prompted to select one or multiple app(s) that you would like to delete 
+from a list of all your Realm apps. The list includes Realm apps from all projects associated with your user profile.`,
+				Command: &app.CommandDelete{},
+			},
 		},
 	}
 

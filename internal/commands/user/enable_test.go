@@ -238,7 +238,7 @@ func TestUserEnableRow(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			row := map[string]interface{}{}
 			output := userOutput{realm.User{Disabled: true}, tc.err}
-			userEnableRow(output, row)
+			tableRowEnable(output, row)
 
 			assert.Equal(t, tc.expectedRow, row)
 		})

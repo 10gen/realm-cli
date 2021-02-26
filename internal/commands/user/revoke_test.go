@@ -205,7 +205,7 @@ func TestUserRevokeHandler(t *testing.T) {
 	})
 }
 
-func TestUserRevokeTableRow(t *testing.T) {
+func TestTableRowRevoke(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 		err         error
@@ -214,23 +214,23 @@ func TestUserRevokeTableRow(t *testing.T) {
 		{
 			description: "should show successful revoke user row",
 			expectedRow: map[string]interface{}{
-				"Enabled": false,
-				"Details": "",
+				"Session Revoked": true,
+				"Details":         "",
 			},
 		},
 		{
 			description: "should show failed revoke user row",
 			err:         errors.New("client error"),
 			expectedRow: map[string]interface{}{
-				"Enabled": true,
-				"Details": "client error",
+				"Session Revoked": false,
+				"Details":         "client error",
 			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			row := map[string]interface{}{}
 			output := userOutput{realm.User{}, tc.err}
-			userDisableRow(output, row)
+			tableRowRevoke(output, row)
 
 			assert.Equal(t, tc.expectedRow, row)
 		})

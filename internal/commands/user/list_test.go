@@ -169,7 +169,7 @@ func TestUserListHandler(t *testing.T) {
 	})
 }
 
-func TestUserListRow(t *testing.T) {
+func TestTableRowList(t *testing.T) {
 	t.Run("should show successful list user row", func(t *testing.T) {
 		output := userOutput{
 			user: realm.User{
@@ -181,7 +181,7 @@ func TestUserListRow(t *testing.T) {
 			"Last Authenticated": "2005-03-18 01:58:31 +0000 UTC",
 		}
 		row := map[string]interface{}{}
-		userListRow(output, row)
+		tableRowList(output, row)
 
 		assert.Equal(t, expectedRow, row)
 	})

@@ -77,8 +77,8 @@ func (cmd *CommandRevoke) Handler(profile *cli.Profile, ui terminal.UI, clients 
 
 		logs = append(logs, terminal.NewTableLog(
 			fmt.Sprintf("Provider type: %s", providerType.Display()),
-			append(userTableHeaders(providerType), headerRevoked, headerDetails),
-			userTableRows(providerType, o, userRevokeRow)...,
+			append(tableHeaders(providerType), headerRevoked, headerDetails),
+			tableRows(providerType, o, tableRowRevoke)...,
 		))
 	}
 
@@ -98,7 +98,7 @@ func (i *revokeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func userRevokeRow(output userOutput, row map[string]interface{}) {
+func tableRowRevoke(output userOutput, row map[string]interface{}) {
 	var revoked bool
 	var details string
 	if output.err != nil {
