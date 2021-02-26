@@ -18,12 +18,12 @@ func TestClusters(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			description: "Without an auth client",
+			description: "without an auth client",
 			client:      atlas.NewClient(u.AtlasServerURL()),
 			expectedErr: atlas.ErrMissingAuth,
 		},
 		{
-			description: "With a client with bad credentials",
+			description: "with a client with bad credentials",
 			client:      atlas.NewAuthClient(u.AtlasServerURL(), auth.User{"username", "password"}),
 			expectedErr: atlas.ErrUnauthorized{"You are not authorized for this resource."},
 		},
@@ -34,7 +34,7 @@ func TestClusters(t *testing.T) {
 		})
 	}
 
-	t.Run("With an authenticated client should return the list of atlas clusters", func(t *testing.T) {
+	t.Run("with an authenticated client should return the list of atlas clusters", func(t *testing.T) {
 		client := newAuthClient(t)
 
 		clusters, err := client.Clusters(u.CloudGroupID())

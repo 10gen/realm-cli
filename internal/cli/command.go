@@ -8,6 +8,9 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// Name is the command for calling the CLI
+var Name = "realm-cli"
+
 // Command is an executable CLI command
 // This interface maps 1:1 to Cobra's Command.RunE phase
 //
