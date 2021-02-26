@@ -9,6 +9,10 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
+var (
+	segmentWriteKey = ""
+)
+
 // Tracker is a telemetry event tracker
 type Tracker interface {
 	Track(event event)
@@ -35,12 +39,12 @@ type segmentTracker struct {
 	logger *log.Logger
 }
 
-func newSegmentTracker(writeKey string, logger *log.Logger) Tracker {
-	if len(writeKey) == 0 {
+func newSegmentTracker(logger *log.Logger) Tracker {
+	if len(segmentWriteKey) == 0 {
 		log.Print("unable to make a Segment tracker with an empty write key; replacing with a noop")
 		return &noopTracker{}
 	}
-	client := analytics.New(writeKey)
+	client := analytics.New(segmentWriteKey)
 	return &segmentTracker{client, logger}
 }
 
@@ -50,7 +54,7 @@ func (tracker *segmentTracker) Track(event event) {
 		Timestamp:  time.Now(),
 		Event:      string(event.eventType),
 		UserId:     event.userID,
-		Properties: event.createPropertyMap(),
+		Properties: eventDataProperties(event.data),
 	}); err != nil {
 		tracker.logger.Printf("failed to send Segment event %q: %s", event.eventType, err)
 	}

@@ -42,7 +42,7 @@ type Profile struct {
 	atlasBaseURL string
 	realmBaseURL string
 
-	telemetryMode     telemetry.Mode
+	telemetryMode telemetry.Mode
 
 	dir string
 	fs  afero.Fs
@@ -176,9 +176,9 @@ const (
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
 
-	keyRealmBaseURL      = "realm_base_url"
-	keyAtlasBaseURL      = "atlas_base_url"
-	keyTelemetryMode     = "telemetry_mode"
+	keyRealmBaseURL  = "realm_base_url"
+	keyAtlasBaseURL  = "atlas_base_url"
+	keyTelemetryMode = "telemetry_mode"
 )
 
 // User gets the CLI profile user
