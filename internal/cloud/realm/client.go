@@ -55,6 +55,12 @@ type Client interface {
 	FindUsers(groupID, appID string, filter UserFilter) ([]User, error)
 	RevokeUserSessions(groupID, appID, userID string) error
 
+	HostingAssets(groupID, appID string) ([]HostingAsset, error)
+	HostingAssetUpload(groupID, appID, rootDir string, asset HostingAsset) error
+	HostingAssetRemove(groupID, appID, path string) error
+	HostingAssetAttributesUpdate(groupID, appID, path string, attrs ...HostingAssetAttribute) error
+	HostingCacheInvalidate(groupID, appID, path string) error
+
 	Status() error
 }
 

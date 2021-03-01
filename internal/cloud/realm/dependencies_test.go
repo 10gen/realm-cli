@@ -20,8 +20,8 @@ func TestRealmDependencies(t *testing.T) {
 
 	groupID := u.CloudGroupID()
 
-	app, appErr := client.CreateApp(groupID, "importexport-test", realm.AppMeta{})
-	assert.Nil(t, appErr)
+	app, teardown := setupTestApp(t, client, groupID, "importexport-test")
+	defer teardown()
 
 	t.Run("should successfully import a zip node_modules archive", func(t *testing.T) {
 		wd, err := os.Getwd()

@@ -100,7 +100,27 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		ui.Print(terminal.NewTextLog("Fetched dependencies archive"))
 	}
 
-	// TODO(REALMC-7177): include hosting
+	if cmd.inputs.IncludeHosting {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Fetching hosting assets..."
+
+		exportHostingAssets := func() error {
+			s.Start()
+			defer s.Stop()
+
+			appAssets, err := clients.Realm.HostingAssets(from.GroupID, from.AppID)
+			if err != nil {
+				return err
+			}
+
+			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, from.GroupID, from.AppID, appAssets)
+		}
+
+		if err := exportHostingAssets(); err != nil {
+			return err
+		}
+		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
+	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
 	return nil
