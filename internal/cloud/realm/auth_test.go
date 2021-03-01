@@ -100,6 +100,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
+			// set the access token value to an expired token
 			profile.SetSession(auth.Session{u.ExpiredAccessToken(), session.RefreshToken})
 
 			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
@@ -115,6 +116,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
+			// set the access and refresh token values to expired tokens
 			profile.SetSession(auth.Session{u.ExpiredAccessToken(), u.ExpiredAccessToken()})
 
 			client := realm.NewAuthClient(profile.RealmBaseURL(), profile)
