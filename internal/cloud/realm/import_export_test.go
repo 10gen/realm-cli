@@ -216,11 +216,11 @@ func appDataV1(configVersion realm.AppConfigVersion, app realm.App) local.AppDat
 		Sync:                 map[string]interface{}{"development_mode_enabled": false},
 		CustomUserDataConfig: map[string]interface{}{"enabled": false},
 		Environments: map[string]map[string]interface{}{
-			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{}},
-			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
-			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
-			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
+			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{"a": "0"}},
+			"development.json":    map[string]interface{}{"values": map[string]interface{}{"a": "1"}},
+			"testing.json":        map[string]interface{}{"values": map[string]interface{}{"a": "2"}},
+			"qa.json":             map[string]interface{}{"values": map[string]interface{}{"a": "3"}},
+			"production.json":     map[string]interface{}{"values": map[string]interface{}{"a": "4"}},
 		},
 		AuthProviders: []map[string]interface{}{
 			{"name": realm.AuthProviderTypeAnonymous.String(), "type": realm.AuthProviderTypeAnonymous.String(), "disabled": false},
@@ -268,11 +268,11 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		DeploymentModel:       app.DeploymentModel,
 		AllowedRequestOrigins: []string{"http://localhost:8080"},
 		Environments: map[string]map[string]interface{}{
-			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{}},
-			"development.json":    map[string]interface{}{"values": map[string]interface{}{}},
-			"testing.json":        map[string]interface{}{"values": map[string]interface{}{}},
-			"qa.json":             map[string]interface{}{"values": map[string]interface{}{}},
-			"production.json":     map[string]interface{}{"values": map[string]interface{}{}},
+			"no-environment.json": map[string]interface{}{"values": map[string]interface{}{"a": "0"}},
+			"development.json":    map[string]interface{}{"values": map[string]interface{}{"a": "1"}},
+			"testing.json":        map[string]interface{}{"values": map[string]interface{}{"a": "2"}},
+			"qa.json":             map[string]interface{}{"values": map[string]interface{}{"a": "3"}},
+			"production.json":     map[string]interface{}{"values": map[string]interface{}{"a": "4"}},
 		},
 		Auth: &local.AuthStructure{
 			CustomUserData: map[string]interface{}{"enabled": true, "mongo_service_name": "mdb", "database_name": "db", "collection_name": "coll", "user_id_field": "uid"},
@@ -319,46 +319,56 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		Sync: &local.SyncStructure{
 			Config: map[string]interface{}{"development_mode_enabled": true},
 		},
+		Functions: &local.FunctionsStructure{
+			Configs: []map[string]interface{}{
+				{"name": "test", "private": true},
+			},
+			Sources: map[string]string{
+				"test.js": `exports = function(){
+		  console.log('got heem!');
+		};`,
+			},
+		},
+		Triggers: []map[string]interface{}{
+			{
+				"name": "onInsert",
+				"type": "DATABASE",
+				"config": map[string]interface{}{
+					"service_name":    "mdb",
+					"database":        "db",
+					"collection":      "coll",
+					"operation_types": []interface{}{"INSERT"},
+					"unordered":       false,
+					"full_document":   false,
+					"match":           map[string]interface{}{},
+					"project":         map[string]interface{}{},
+				},
+				"function_name": "test",
+				"disabled":      false,
+			},
+			{
+				"name":          "yell",
+				"type":          "SCHEDULED",
+				"config":        map[string]interface{}{"schedule": "0 0 * * 1"},
+				"function_name": "test",
+				"disabled":      false,
+			},
+		},
 		GraphQL: &local.GraphQLStructure{
-			Config:          map[string]interface{}{"use_natural_pluralization": true},
-			CustomResolvers: []map[string]interface{}{},
+			Config: map[string]interface{}{"use_natural_pluralization": true},
+			CustomResolvers: []map[string]interface{}{
+				{
+					"function_name":       "test",
+					"on_type":             "Query",
+					"field_name":          "result",
+					"input_type_format":   "scalar",
+					"input_type":          "number",
+					"payload_type_format": "scalar",
+					"payload_type":        "number",
+				},
+			},
 		},
 		Values: []map[string]interface{}{},
-		// TODO(REALMC-7989): include functions, triggers, and graphql custom resolvers
-		// in 20210101 round-trip test once its supported in export on the backend
-		// 		Functions: &local.FunctionsStructure{
-		// 			Config: map[string]interface{}{
-		// 				"test.js": map[string]interface{}{"private": true},
-		// 			},
-		// 			SrcMap: map[string]string{
-		// 				"test.js": `exports = function(){
-		//   console.log('got heem!');
-		// };`,
-		// 			},
-		// 		},
-		// Triggers: []map[string]interface{}{
-		// 	{
-		// 		"name":          "yell",
-		// 		"type":          "SCHEDULED",
-		// 		"config":        map[string]interface{}{"schedule": "0 0 * * 1"},
-		// 		"function_name": "test",
-		// 		"disabled":      false,
-		// 	},
-		// },
-		// GraphQL: &local.GraphQLStructure{
-		// 	Config: map[string]interface{}{"use_natural_pluralization": true},
-		//  CustomResolvers: []map[string]interface{}{
-		// 	{
-		// 		"function_name":       "test",
-		// 		"on_type":             "Query",
-		// 		"field_name":          "result",
-		// 		"input_type_format":   "scalar",
-		// 		"input_type":          "number",
-		// 		"payload_type_format": "scalar",
-		// 		"payload_type":        "number",
-		// 	},
-		// },
-		// },
 	}}
 }
 

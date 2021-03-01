@@ -98,19 +98,18 @@ type File struct {
 
 func (f File) String() string { return f.Name + f.Ext }
 
-// TODO(REALMC-7989): recursively walk the functions directory and collect all .js files
-// func walk(rootDir string, fn func(file os.FileInfo, path string) error) error {
-// 	dw := directoryWalker{path: rootDir}
-// 	if err := dw.walk(func(f os.FileInfo, p string) error {
-// 		if f.IsDir() {
-// 			return walk(p, fn)
-// 		}
-// 		return fn(f, p)
-// 	}); err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func walk(rootDir string, fn func(file os.FileInfo, path string) error) error {
+	dw := directoryWalker{path: rootDir}
+	if err := dw.walk(func(f os.FileInfo, p string) error {
+		if f.IsDir() {
+			return walk(p, fn)
+		}
+		return fn(f, p)
+	}); err != nil {
+		return err
+	}
+	return nil
+}
 
 type directoryWalker struct {
 	path            string
