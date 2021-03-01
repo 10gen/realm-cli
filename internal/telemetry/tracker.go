@@ -49,6 +49,8 @@ func newSegmentTracker(logger *log.Logger) Tracker {
 
 func (tracker *segmentTracker) Track(event event) {
 	properties := make(map[string]interface{}, len(event.data)+2)
+	properties[string(eventDataKeyCmd)] = event.command
+	properties[string(eventDataKeyExecutionID)] = event.executionID
 	for _, datum := range event.data {
 		properties[string(datum.Key)] = datum.Value
 	}

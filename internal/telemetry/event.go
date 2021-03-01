@@ -35,5 +35,8 @@ type EventDataKey string
 
 // set of event data keys
 const (
+	eventDataKeyCmd         EventDataKey = "cmd"
+	eventDataKeyExecutionID EventDataKey = "eid"
+
 	EventDataKeyErr EventDataKey = "err"
 )
