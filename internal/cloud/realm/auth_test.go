@@ -3,6 +3,7 @@ package realm_test
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -97,7 +98,11 @@ func TestRealmAuthRefresh(t *testing.T) {
 			assert.Equal(t, nil, err)
 
 			session.AccessToken = u.ExpiredAccessToken() // Set the access token to an expired token
-			profile := mock.NewProfileWithSession(t, session)
+
+			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
+			defer teardown()
+			profile.SetRealmBaseURL(u.RealmServerURL())
+			profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
 
 			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err = client.AuthProfile()
@@ -111,11 +116,19 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 			session.AccessToken = u.ExpiredAccessToken()  // Set the access token to an expired token
 			session.RefreshToken = u.ExpiredAccessToken() // Set the refresh token to an random expired token
-			profile := mock.NewProfileWithSession(t, session)
+
+			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
+			defer teardown()
+			profile.SetRealmBaseURL(u.RealmServerURL())
+			profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
 
 			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err = client.AuthProfile()
 			assert.Equal(t, realm.ErrInvalidSession{}, err)
+
+			t.Log("and clear the session tokens")
+			assert.Equalf(t, "", profile.Session().AccessToken, "access token was not cleared")
+			assert.Equalf(t, "", profile.Session().RefreshToken, "refresh token was not cleared")
 		})
 	})
 }

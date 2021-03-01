@@ -33,7 +33,13 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 	profile := NewProfile(t)
 	profile.WorkingDirectory = tmpDir
 
-	return profile, teardown
+	_, resetHomeDir := u.SetupHomeDir(tmpDir)
+
+	return profile,
+		func() {
+			teardown()
+			resetHomeDir()
+		}
 }
 
 // NewProfileFromWd returns a new CLI profile with a random name
