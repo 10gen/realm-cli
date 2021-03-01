@@ -37,8 +37,8 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 
 	return profile,
 		func() {
-			teardown()
 			resetHomeDir()
+			teardown()
 		}
 }
 

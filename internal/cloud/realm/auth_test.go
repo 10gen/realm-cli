@@ -91,39 +91,34 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 	t.Run("with an expired access token", func(t *testing.T) {
 		u.SkipUnlessExpiredAccessTokenPresent(t)
+
 		t.Run("should use the refresh token to generate a new access token", func(t *testing.T) {
 			client := realm.NewClient(u.RealmServerURL())
-			u.SkipUnlessRealmServerRunning(t)
 			session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
-			assert.Equal(t, nil, err)
-
-			session.AccessToken = u.ExpiredAccessToken() // Set the access token to an expired token
+			assert.Nil(t, err)
 
 			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
-			profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
+			profile.SetSession(auth.Session{u.ExpiredAccessToken(), session.RefreshToken})
 
 			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err = client.AuthProfile()
 			assert.Nil(t, err)
+
+			t.Log("and update the access token")
+			assert.NotEqual(t, u.ExpiredAccessToken(), profile.Session().AccessToken, "access token was not updated")
+			assert.Equalf(t, session.RefreshToken, profile.Session().RefreshToken, "refresh token was incorrectly updated")
 		})
+
 		t.Run("should error if both the access and refresh tokens are expired", func(t *testing.T) {
-			client := realm.NewClient(u.RealmServerURL())
-			u.SkipUnlessRealmServerRunning(t)
-			session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
-			assert.Equal(t, nil, err)
-
-			session.AccessToken = u.ExpiredAccessToken()  // Set the access token to an expired token
-			session.RefreshToken = u.ExpiredAccessToken() // Set the refresh token to an random expired token
-
 			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
-			profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
+			profile.SetSession(auth.Session{u.ExpiredAccessToken(), u.ExpiredAccessToken()})
 
-			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
-			_, err = client.AuthProfile()
+			client := realm.NewAuthClient(profile.RealmBaseURL(), profile)
+			_, err := client.AuthProfile()
 			assert.Equal(t, realm.ErrInvalidSession{}, err)
 
 			t.Log("and clear the session tokens")

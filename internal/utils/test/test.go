@@ -29,6 +29,7 @@ const (
 var realmServerRunning = false
 var realmServerNotRunning = false
 var skipUnlessRealmServerCalled = false
+var skipUnlessExpiredAccessTokenCalled = false
 var atlasServerRunning = false
 var atlasServerNotRunning = false
 var skipUnlessAtlasServerCalled = false
@@ -105,6 +106,9 @@ func RealmServerURL() string {
 
 // ExpiredAccessToken returns an expired access token to use for testing
 func ExpiredAccessToken() string {
+	if !skipUnlessExpiredAccessTokenCalled {
+		panic("testutils.SkipUnlessExpiredAccessTokenPresent(t) must be called before testutils.ExpiredAccessToken()")
+	}
 	return os.Getenv("BAAS_MONGODB_EXPIRED_ACCESS_TOKEN")
 }
 
@@ -156,6 +160,7 @@ var SkipUnlessRealmServerRunning = func() func(t *testing.T) {
 // set as an environment URL
 var SkipUnlessExpiredAccessTokenPresent = func() func(t *testing.T) {
 	return func(t *testing.T) {
+		skipUnlessExpiredAccessTokenCalled = true
 		if ExpiredAccessToken() == "" {
 			MustSkipf(t, "expired access token detected in environment")
 		}
