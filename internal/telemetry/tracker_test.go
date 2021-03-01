@@ -57,9 +57,8 @@ func TestSegmentTracker(t *testing.T) {
 		tracker := segmentTracker{}
 		tracker.client = client
 		tracker.Track(createEvent(EventTypeCommandError, []EventData{{Key: EventDataKeyErr, Value: "Something"}}, "someCommand"))
-		testClientResults := tracker.client.(*testClient)
-		assert.Equal(t, 1, len(testClientResults.calls))
 
+		testClientResults := tracker.client.(*testClient)
 		expectedTrack := analytics.Track{
 			MessageId: testID,
 			UserId:    testUserID,
@@ -69,24 +68,28 @@ func TestSegmentTracker(t *testing.T) {
 				string(EventDataKeyErr): "Something",
 			},
 		}
+
 		actualTrack := testClientResults.calls[0].(analytics.Track)
 		assert.NotNil(t, actualTrack)
-		assert.Equal(t, 1, len(actualTrack.Properties))
-		assert.Equal(t, expectedTrack, actualTrack)
+		assert.Equal(t, []interface{}{expectedTrack}, testClientResults.calls)
 	})
 }
 
 func testTrackStdoutOutput(t *testing.T, tracker Tracker, event event, expected string) {
+	t.Helper()
+
 	stdout := os.Stdout
 	defer func() { os.Stdout = stdout }()
-	r, w, _ := os.Pipe()
+	r, w, err := os.Pipe()
+	assert.Nil(t, err)
 	os.Stdout = w
 
 	tracker.Track(event)
 
-	w.Close()
-	out, _ := ioutil.ReadAll(r)
-	os.Stdout = stdout
+	assert.Nil(t, w.Close())
+
+	out, err := ioutil.ReadAll(r)
+	assert.Nil(t, err)
 	assert.Equal(t, expected, string(out))
 }
 
