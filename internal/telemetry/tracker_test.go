@@ -66,6 +66,8 @@ func TestSegmentTracker(t *testing.T) {
 			Event:     string(EventTypeCommandError),
 			Properties: map[string]interface{}{
 				string(EventDataKeyErr): "Something",
+				string(eventDataKeyCmd): "someCommand",
+				string(eventDataKeyExecutionID): testExecutionID,
 			},
 		}
 
