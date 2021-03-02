@@ -21,7 +21,7 @@ This project follows [Semantic Versioning 2.0](https://semver.org/)
 4. *After* a successful build, run
 
   ```bash
-  ./contrib/release.sh 1.x.x
+  ./contrib/release.js 1.x.x
   ```
 
   and follow the prompts. This will update local files and commit the changes for the release.
