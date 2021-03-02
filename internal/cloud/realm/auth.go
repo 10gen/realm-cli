@@ -76,18 +76,18 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 func (c *client) getAuthToken(options api.RequestOptions) (string, error) {
 	session := c.authService.Session()
 
-	if !options.NoAuth {
-		if session.AccessToken == "" {
-			return "", ErrInvalidSession{}
-		}
-		return session.AccessToken, nil
-	}
-
 	if options.RefreshAuth {
 		if session.RefreshToken == "" {
 			return "", ErrInvalidSession{}
 		}
 		return session.RefreshToken, nil
+	}
+
+	if !options.NoAuth {
+		if session.AccessToken == "" {
+			return "", ErrInvalidSession{}
+		}
+		return session.AccessToken, nil
 	}
 
 	return "", nil

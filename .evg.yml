@@ -212,6 +212,7 @@ tasks:
             export BAAS_MONGODB_CLOUD_ADMIN_USERNAME="${baas_mongodb_cloud_admin_username}"
             export BAAS_MONGODB_CLOUD_ADMIN_API_KEY="${baas_mongodb_cloud_admin_api_key}"
             export BAAS_MONGODB_CLOUD_API_BASE_URL="${atlas_server_url}"
+            export BAAS_MONGODB_EXPIRED_ACCESS_TOKEN="${baas_mongodb_expired_access_token}"
             export BAAS_SERVER_BASE_URL="${realm_server_url}"
             cd $ROOT_DIR/realm-cli
             go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/realm-cli/internal/cloud/...) -timeout 25m > $ROOT_DIR/realm-cli.suite
