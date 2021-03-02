@@ -107,9 +107,11 @@ func TestRealmAuthRefresh(t *testing.T) {
 			_, err = client.AuthProfile()
 			assert.Nil(t, err)
 
+			updatedSession := profile.Session()
+
 			t.Log("and update the access token")
-			assert.NotEqual(t, u.ExpiredAccessToken(), profile.Session().AccessToken, "access token was not updated")
-			assert.Equalf(t, session.RefreshToken, profile.Session().RefreshToken, "refresh token was incorrectly updated")
+			assert.NotEqual(t, u.ExpiredAccessToken(), updatedSession.AccessToken, "access token was not updated")
+			assert.Equalf(t, session.RefreshToken, updatedSession.RefreshToken, "refresh token was incorrectly updated")
 		})
 
 		t.Run("should error if both the access and refresh tokens are expired", func(t *testing.T) {
@@ -123,9 +125,11 @@ func TestRealmAuthRefresh(t *testing.T) {
 			_, err := client.AuthProfile()
 			assert.Equal(t, realm.ErrInvalidSession{}, err)
 
+			session := profile.Session()
+
 			t.Log("and clear the session tokens")
-			assert.Equalf(t, "", profile.Session().AccessToken, "access token was not cleared")
-			assert.Equalf(t, "", profile.Session().RefreshToken, "refresh token was not cleared")
+			assert.Equalf(t, "", session.AccessToken, "access token was not cleared")
+			assert.Equalf(t, "", session.RefreshToken, "refresh token was not cleared")
 		})
 	})
 }
