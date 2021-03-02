@@ -32,13 +32,6 @@ func (c *client) DataLakes(groupID string) ([]DataLake, error) {
 	}
 	defer res.Body.Close()
 
-	// bodyBytes, err := ioutil.ReadAll(res.Body)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// bodyString := string(bodyBytes)
-	// fmt.Sprint(bodyString)
-
 	var dataLakes []DataLake
 	if err := json.NewDecoder(res.Body).Decode(&dataLakes); err != nil {
 		return nil, err
