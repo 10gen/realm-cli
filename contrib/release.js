@@ -67,7 +67,7 @@ async function run() {
           version: currentData.version,
           info: currentData.info,
         },
-        ...(currentData.pastReleases || []),
+        ...(currentData.past_releases || []),
       ],
     },
     null,
