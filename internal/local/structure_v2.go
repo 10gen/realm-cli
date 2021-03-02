@@ -1,6 +1,7 @@
 package local
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -45,8 +46,8 @@ type DataSourceStructure struct {
 
 // FunctionsStructure represents the v2 Realm app functions structure
 type FunctionsStructure struct {
-	Config map[string]interface{} `json:"config,omitempty"`
-	SrcMap map[string]string      `json:"src_map,omitempty"`
+	Configs []map[string]interface{} `json:"config,omitempty"`
+	Sources map[string]string        `json:"sources,omitempty"`
 }
 
 // HTTPEndpointStructure represents the v2 Realm app http endpoint structure
@@ -191,8 +192,43 @@ func parseAuth(rootDir string) (*AuthStructure, error) {
 }
 
 func parseFunctionsV2(rootDir string) (*FunctionsStructure, error) {
-	// TODO(REALMC-7989): actually unmarshal the functions directory exported by 20210101
-	return nil, nil
+	dir := filepath.Join(rootDir, NameFunctions)
+
+	if _, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	configs, err := parseJSONArray(filepath.Join(dir, FileConfig.String()))
+	if err != nil {
+		return nil, err
+	}
+
+	sources := map[string]string{}
+	if err := walk(dir, func(file os.FileInfo, path string) error {
+		if filepath.Ext(path) != extJS {
+			return nil // looking for javascript files
+		}
+
+		pathRelative, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		sources[pathRelative] = string(data)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &FunctionsStructure{configs, sources}, nil
 }
 
 func parseDataSources(rootDir string) ([]DataSourceStructure, error) {

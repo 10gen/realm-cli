@@ -133,6 +133,19 @@ func parseJSON(path string) (map[string]interface{}, error) {
 	return out, nil
 }
 
+func parseJSONArray(path string) ([]map[string]interface{}, error) {
+	data, dataErr := readFile(path)
+	if dataErr != nil {
+		return nil, dataErr
+	}
+
+	var out []map[string]interface{}
+	if err := unmarshalJSON(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func parseJSONFiles(rootDir string) ([]map[string]interface{}, error) {
 	if _, err := os.Stat(rootDir); err != nil {
 		if os.IsNotExist(err) {
