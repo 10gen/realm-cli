@@ -30,10 +30,10 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 	tmpDir, teardown, err := u.NewTempDir(name)
 	assert.Nil(t, err)
 
+	_, resetHomeDir := u.SetupHomeDir(tmpDir)
+
 	profile := NewProfile(t)
 	profile.WorkingDirectory = tmpDir
-
-	_, resetHomeDir := u.SetupHomeDir(tmpDir)
 
 	return profile,
 		func() {

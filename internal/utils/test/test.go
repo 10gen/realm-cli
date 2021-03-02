@@ -162,7 +162,7 @@ var SkipUnlessExpiredAccessTokenPresent = func() func(t *testing.T) {
 	return func(t *testing.T) {
 		skipUnlessExpiredAccessTokenCalled = true
 		if ExpiredAccessToken() == "" {
-			MustSkipf(t, "expired access token detected in environment")
+			MustSkipf(t, "expired access token not detected in environment")
 		}
 		return
 	}
