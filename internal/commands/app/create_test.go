@@ -230,222 +230,250 @@ func TestAppCreateHandler(t *testing.T) {
 		}, "\n"), out.String())
 	})
 
-	t.Run("should create minimal project with data source when data source is set", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
+	for _, tc := range []struct {
+		description string
+		cluster     string
+		dataLake    string
+		atlasClient atlas.Client
+	}{
+		{
+			description: "should create minimal project with a cluster data source when cluster is set",
+			cluster:     "test-cluster",
+			atlasClient: mock.AtlasClient{
+				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+					return []atlas.Cluster{{Name: "test-cluster"}}, nil
+				},
+			},
+		},
+		{
+			description: "should create minimal project with a data lake data source when data lake is set",
+			dataLake:    "test-datalake",
+			atlasClient: mock.AtlasClient{
+				DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
+					return []atlas.DataLake{{Name: "test-datalake"}}, nil
+				},
+			},
+		},
+		{
+			description: "should create minimal project with a data lake and cluster data source when data lake and cluster is set",
+			cluster:     "test-cluster",
+			dataLake:    "test-datalake",
+			atlasClient: mock.AtlasClient{
+				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+					return []atlas.Cluster{{Name: "test-cluster"}}, nil
+				},
+				DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
+					return []atlas.DataLake{{Name: "test-datalake"}}, nil
+				},
+			},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+			defer teardown()
+			profile.SetRealmBaseURL("http://localhost:8080")
 
-		out, ui := mock.NewUI()
+			out, ui := mock.NewUI()
 
-		var createdApp realm.App
-		rc := mock.RealmClient{}
-		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			createdApp = realm.App{
-				GroupID:     groupID,
-				ID:          "456",
-				ClientAppID: name + "-abcde",
-				Name:        name,
-				AppMeta:     meta,
+			var createdApp realm.App
+			rc := mock.RealmClient{}
+			rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+				createdApp = realm.App{
+					GroupID:     groupID,
+					ID:          "456",
+					ClientAppID: name + "-abcde",
+					Name:        name,
+					AppMeta:     meta,
+				}
+				return createdApp, nil
 			}
-			return createdApp, nil
-		}
 
-		var importAppData interface{}
-		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
-			importAppData = appData
-			return nil
-		}
+			var importAppData interface{}
+			rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+				importAppData = appData
+				return nil
+			}
 
-		ac := mock.AtlasClient{}
-		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
-			return []atlas.Cluster{{Name: "test-cluster"}}, nil
-		}
+			cmd := &CommandCreate{
+				inputs: createInputs{
+					newAppInputs: newAppInputs{
+						Name:            "test-app",
+						Project:         "123",
+						Location:        realm.LocationVirginia,
+						DeploymentModel: realm.DeploymentModelGlobal,
+					},
+					Cluster:  tc.cluster,
+					DataLake: tc.dataLake,
+				},
+			}
 
-		cmd := &CommandCreate{
-			inputs: createInputs{
-				newAppInputs: newAppInputs{
-					Name:            "test-app",
-					Project:         "123",
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: tc.atlasClient}))
+
+			localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+			assert.Nil(t, err)
+
+			assert.Equal(t, importAppData, localApp.AppData)
+			assert.Equal(t, realm.App{
+				ID:          "456",
+				GroupID:     "123",
+				Name:        "test-app",
+				ClientAppID: "test-app-abcde",
+				AppMeta: realm.AppMeta{
 					Location:        realm.LocationVirginia,
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
-				DataSource: "test-cluster"},
-		}
+			}, createdApp)
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+			// TODO(REALMC-8262): Investigate file path display options
+			dirLength := len(localApp.RootDir)
+			fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
-		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
-		assert.Nil(t, err)
+			var spaceBuffer, dashBuffer string
+			if tc.dataLake != "" {
+				spaceBuffer = "  "
+				dashBuffer = "--"
+			}
 
-		assert.Equal(t, importAppData, localApp.AppData)
-		assert.Equal(t, realm.App{
-			ID:          "456",
-			GroupID:     "123",
-			Name:        "test-app",
-			ClientAppID: "test-app-abcde",
-			AppMeta: realm.AppMeta{
+			display := make([]string, 0, 10)
+			display = append(display, "01:23:45 UTC INFO  Successfully created app",
+				fmt.Sprintf("  Info                   "+spaceBuffer+fmtStr, "Details"),
+				"  ---------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
+				fmt.Sprintf("  Client App ID          "+spaceBuffer+fmtStr, "test-app-abcde"),
+				"  Realm Directory        "+spaceBuffer+localApp.RootDir,
+				fmt.Sprintf("  Realm UI               "+spaceBuffer+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
+			)
+			if tc.cluster != "" {
+				display = append(display, fmt.Sprintf("  Data Source (Cluster)  "+spaceBuffer+fmtStr, "mongodb-atlas"))
+			}
+			if tc.dataLake != "" {
+				display = append(display, fmt.Sprintf("  Data Source (Data Lake)  "+fmtStr, "mongodb-datalake"))
+			}
+			display = append(display, "01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe", "")
+			assert.Equal(t, strings.Join(display, "\n"), out.String())
+		})
+	}
+
+	testApp := realm.App{
+		ID:          "789",
+		GroupID:     "123",
+		ClientAppID: "from-app-abcde",
+		Name:        "from-app",
+	}
+
+	for _, tc := range []struct {
+		description    string
+		from           string
+		cluster        string
+		clients        cli.Clients
+		createDisplay  string
+		clusterDisplay string
+	}{
+		{
+			description:   "should create a minimal project dry run",
+			createDisplay: "minimal Realm app",
+		},
+		{
+			description: "should create a dry run for the specified from app",
+			from:        "from-app",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+						return []realm.App{testApp}, nil
+					},
+				},
+			},
+			createDisplay: "Realm app based on the Realm app from-app",
+		},
+		{
+			description: "should create a minimal project dry run with cluster set",
+			cluster:     "test-cluster",
+			clients: cli.Clients{
+				Atlas: mock.AtlasClient{
+					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+						return []atlas.Cluster{{Name: "test-cluster"}}, nil
+					},
+				},
+			},
+			createDisplay: "minimal Realm app",
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+			defer teardown()
+			profile.SetRealmBaseURL("http://localhost:8080")
+
+			out, ui := mock.NewUI()
+
+			cmd := &CommandCreate{
+				inputs: createInputs{
+					newAppInputs: newAppInputs{
+						From:            tc.from,
+						Name:            "test-app",
+						Project:         "123",
+						Location:        realm.LocationVirginia,
+						DeploymentModel: realm.DeploymentModelGlobal,
+					},
+					Cluster: tc.cluster,
+					DryRun:  true,
+				},
+			}
+
+			assert.Nil(t, cmd.Handler(profile, ui, tc.clients))
+
+			expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
+			display := make([]string, 0, 4)
+			display = append(display, fmt.Sprintf("01:23:45 UTC INFO  A %s would be created at "+expectedDir, tc.createDisplay))
+			if tc.cluster != "" {
+				display = append(display, "01:23:45 UTC INFO  The cluster test-cluster would be linked as data source mongodb-atlas")
+			}
+			display = append(display, "01:23:45 UTC DEBUG To create this app run: "+cmd.display(true))
+			display = append(display, "")
+			assert.Equal(t, strings.Join(display, "\n"), out.String())
+		})
+	}
+
+	for _, tc := range []struct {
+		description string
+		from        string
+		clients     cli.Clients
+		expectedErr error
+	}{
+		{
+			description: "should error when resolving groupID when project is not set",
+			clients: cli.Clients{
+				Atlas: mock.AtlasClient{
+					GroupsFn: func() ([]atlas.Group, error) {
+						return nil, errors.New("atlas client error")
+					},
+				},
+			},
+			expectedErr: errors.New("atlas client error"),
+		}, {
+			description: "should error when resolving app when from is set",
+			from:        "from-app",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+						return nil, errors.New("realm client error")
+					},
+				},
+			},
+			expectedErr: errors.New("realm client error"),
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			profile := mock.NewProfileFromWd(t)
+
+			cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+				From:            tc.from,
+				Name:            "test-app",
 				Location:        realm.LocationVirginia,
 				DeploymentModel: realm.DeploymentModelGlobal,
-			},
-		}, createdApp)
+			}}}
 
-		// TODO(REALMC-8262): Investigate file path display options
-		dirLength := len(localApp.RootDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
-		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successfully created app",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "test-app-abcde"),
-			"  Realm Directory  " + localApp.RootDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			fmt.Sprintf("  Data Source      "+fmtStr, "mongodb-atlas"),
-			"01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe",
-			"",
-		}, "\n"), out.String())
-	})
-
-	t.Run("should create a minimal project dry run", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		out, ui := mock.NewUI()
-
-		cmd := &CommandCreate{
-			inputs: createInputs{
-				newAppInputs: newAppInputs{
-					Name:            "test-app",
-					Project:         "123",
-					Location:        realm.LocationVirginia,
-					DeploymentModel: realm.DeploymentModelGlobal,
-				},
-				DryRun: true,
-			},
-		}
-
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
-
-		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
-			"",
-		}, "\n"), out.String())
-	})
-
-	t.Run("should create a dry run for the specified from app", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		out, ui := mock.NewUI()
-
-		testApp := realm.App{
-			ID:          "789",
-			GroupID:     "123",
-			ClientAppID: "from-app-abcde",
-			Name:        "from-app",
-		}
-
-		client := mock.RealmClient{}
-		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{testApp}, nil
-		}
-
-		cmd := &CommandCreate{
-			inputs: createInputs{
-				newAppInputs: newAppInputs{
-					Name:            "test-app",
-					Project:         "123",
-					Location:        realm.LocationVirginia,
-					DeploymentModel: realm.DeploymentModelGlobal,
-					From:            "from-app",
-				},
-				DryRun: true,
-			},
-		}
-
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
-
-		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  A Realm app based on the Realm app from-app would be created at " + expectedDir,
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
-			"",
-		}, "\n"), out.String())
-	})
-
-	t.Run("should create a minimal project dry run with data source set", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		out, ui := mock.NewUI()
-
-		client := mock.AtlasClient{}
-		client.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
-			return []atlas.Cluster{{Name: "test-cluster"}}, nil
-		}
-
-		cmd := &CommandCreate{
-			inputs: createInputs{
-				newAppInputs: newAppInputs{
-					Name:            "test-app",
-					Project:         "123",
-					Location:        realm.LocationVirginia,
-					DeploymentModel: realm.DeploymentModelGlobal,
-				},
-				DataSource: "test-cluster",
-				DryRun:     true,
-			},
-		}
-
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Atlas: client}))
-
-		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
-			"01:23:45 UTC INFO  The cluster test-cluster would be linked as data source mongodb-atlas",
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
-			"",
-		}, "\n"), out.String())
-	})
-
-	t.Run("should error when resolving groupID when project is not set", func(t *testing.T) {
-		profile := mock.NewProfileFromWd(t)
-
-		client := mock.AtlasClient{}
-		client.GroupsFn = func() ([]atlas.Group, error) {
-			return nil, errors.New("atlas client error")
-		}
-
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Name:            "test-app",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}
-
-		assert.Equal(t, errors.New("atlas client error"), cmd.Handler(profile, nil, cli.Clients{Atlas: client}))
-	})
-
-	t.Run("should error when resolving app when from is set", func(t *testing.T) {
-		profile := mock.NewProfileFromWd(t)
-
-		client := mock.RealmClient{}
-		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, errors.New("realm client error")
-		}
-
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			From:            "test-app",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}
-
-		assert.Equal(t, errors.New("realm client error"), cmd.Handler(profile, nil, cli.Clients{Realm: client}))
-	})
+			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, nil, tc.clients))
+		})
+	}
 }
 
 func TestAppCreateCommandDisplay(t *testing.T) {
@@ -473,13 +501,14 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
-				Directory:  "realm-app",
-				DataSource: "Cluster0",
-				DryRun:     true,
+				Directory: "realm-app",
+				Cluster:   "Cluster0",
+				DataLake:  "DataLake0",
+				DryRun:    true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --location IE --deployment-model LOCAL --data-source Cluster0 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --deployment-model LOCAL --location IE --cluster Cluster0 --data-lake DataLake0 --dry-run",
 			cmd.display(false),
 		)
 	})

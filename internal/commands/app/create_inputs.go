@@ -17,12 +17,14 @@ import (
 
 var (
 	flagDirectory      = "app-dir"
-	flagDirectoryShort = "c"
+	flagDirectoryShort = "p"
 	flagDirectoryUsage = "the directory to create your new Realm app, defaults to Realm app name"
 
-	flagDataSource      = "data-source"
-	flagDataSourceShort = "s"
-	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
+	flagCluster      = "cluster"
+	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
+
+	flagDataLake      = "data-lake"
+	flagDataLakeUsage = "include to link an Atlas data lake to your Realm app"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
@@ -31,21 +33,32 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	Directory  string
-	DataSource string
-	DryRun     bool
+	Directory string
+	Cluster   string
+	DataLake  string
+	DryRun    bool
 }
 
-type dataSource struct {
-	Name   string           `json:"name"`
-	Type   string           `json:"type"`
-	Config dataSourceConfig `json:"config"`
+type clusterService struct {
+	Name   string        `json:"name"`
+	Type   string        `json:"type"`
+	Config clusterConfig `json:"config"`
 }
 
-type dataSourceConfig struct {
+type clusterConfig struct {
 	ClusterName         string `json:"clusterName"`
 	ReadPreference      string `json:"readPreference"`
 	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
+}
+
+type dataLakeService struct {
+	Name   string         `json:"name"`
+	Type   string         `json:"type"`
+	Config dataLakeConfig `json:"config"`
+}
+
+type dataLakeConfig struct {
+	DataLakeName string `json:"dataLakeName"`
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -102,31 +115,56 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client atlas.Client, groupID string) (dataSource, error) {
+func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (clusterService, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return dataSource{}, err
+		return clusterService{}, err
 	}
 	var clusterName string
 	for _, cluster := range clusters {
-		if i.DataSource == cluster.Name {
+		if i.Cluster == cluster.Name {
 			clusterName = cluster.Name
 			break
 		}
 	}
 	if clusterName == "" {
-		return dataSource{}, errors.New("failed to find Atlas cluster")
+		return clusterService{}, errors.New("failed to find Atlas cluster")
 	}
-	dataSource := dataSource{
+	clusterService := clusterService{
 		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
-		Config: dataSourceConfig{
+		Config: clusterConfig{
 			ClusterName:         clusterName,
 			ReadPreference:      "primary",
 			WireProtocolEnabled: false,
 		},
 	}
-	return dataSource, nil
+	return clusterService, nil
+}
+
+func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dataLakeService, error) {
+	dataLakes, err := client.DataLakes(groupID)
+	if err != nil {
+		return dataLakeService{}, err
+	}
+	var dataLakeName string
+	for _, dataLake := range dataLakes {
+		if i.DataLake == dataLake.Name {
+			dataLakeName = dataLake.Name
+			break
+		}
+	}
+	if dataLakeName == "" {
+		return dataLakeService{}, errors.New("failed to find Atlas data lake")
+	}
+	dataLakeService := dataLakeService{
+		Name: "mongodb-datalake",
+		Type: "datalake",
+		Config: dataLakeConfig{
+			DataLakeName: dataLakeName,
+		},
+	}
+	return dataLakeService, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {
@@ -149,8 +187,11 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.DeploymentModel != flagDeploymentModelDefault {
 		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})
 	}
-	if i.DataSource != "" {
-		args = append(args, flags.Arg{flagDataSource, i.DataSource})
+	if i.Cluster != "" {
+		args = append(args, flags.Arg{flagCluster, i.Cluster})
+	}
+	if i.DataLake != "" {
+		args = append(args, flags.Arg{flagDataLake, i.DataLake})
 	}
 	if i.DryRun && !omitDryRun {
 		args = append(args, flags.Arg{Name: flagDryRun})

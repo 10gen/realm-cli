@@ -197,7 +197,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 	})
 }
 
-func TestAppCreateInputsResolveDataSource(t *testing.T) {
+func TestAppCreateInputsResolveCluster(t *testing.T) {
 	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
@@ -206,15 +206,15 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataSource: "test-cluster"}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Cluster: "test-cluster"}
 
-		ds, err := inputs.resolveDataSource(ac, "123")
+		ds, err := inputs.resolveCluster(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, dataSource{
+		assert.Equal(t, clusterService{
 			Name: "mongodb-atlas",
 			Type: "mongodb-atlas",
-			Config: dataSourceConfig{
+			Config: clusterConfig{
 				ClusterName:         "test-cluster",
 				ReadPreference:      "primary",
 				WireProtocolEnabled: false,
@@ -231,9 +231,9 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return nil, nil
 		}
 
-		inputs := createInputs{DataSource: "test-cluster"}
+		inputs := createInputs{Cluster: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(ac, "123")
+		_, err := inputs.resolveCluster(ac, "123")
 		assert.Equal(t, errors.New("failed to find Atlas cluster"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
@@ -246,9 +246,9 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return nil, errors.New("client error")
 		}
 
-		inputs := createInputs{DataSource: "test-cluster"}
+		inputs := createInputs{Cluster: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(ac, "123")
+		_, err := inputs.resolveCluster(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
