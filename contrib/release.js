@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
+const manifestFilePath = 's3://realm-clis/versions/cloud-prod/CURRENT';
+
 const fs = require('fs');
-const child_process = require('child_process');
+const childProcess = require('child_process');
 const readline = require('readline').createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -23,12 +25,12 @@ async function run() {
     throw new Error('error: must specify a valid version');
   }
 
-  const githash = child_process
+  const githash = childProcess
     .execSync('git rev-parse HEAD')
     .toString()
     .trim();
 
-  const dir = child_process
+  const dir = childProcess
     .execSync(
       `aws s3 ls realm-clis --recursive | grep ${githash} | sort | tail -n 1 | awk '{print $4}' | cut -f 1-1 -d "/"`
     )
@@ -40,8 +42,8 @@ async function run() {
   }
 
   const currentData = JSON.parse(
-    child_process
-      .execSync(`aws s3 cp 's3://realm-clis/versions/cloud-prod/CURRENT' -`)
+    childProcess
+      .execSync(`aws s3 cp '${manifestFilePath}' -`)
       .toString()
       .trim()
   );
@@ -72,10 +74,7 @@ async function run() {
     '  '
   );
 
-  console.info(
-    "uploading the following JSON file to S3 bucket 'realm-clis/versions/cloud-prod/CURRENT':\n",
-    updatedData
-  );
+  console.info(`uploading the following JSON file to S3 bucket '${manifestFilePath}':\n`, updatedData);
 
   const response = await prompt('proceed? [y/n]');
   if (response !== 'y') {
@@ -83,9 +82,9 @@ async function run() {
     return;
   }
 
-  const uploadResult = child_process
+  const uploadResult = childProcess
     .execSync(
-      `echo '${updatedData}' | aws s3 cp - 's3://realm-clis/versions/cloud-prod/CURRENT' --content-type 'application/json' --acl 'public-read'`
+      `echo '${updatedData}' | aws s3 cp - '${manifestFilePath}' --content-type 'application/json' --acl 'public-read'`
     )
     .toString()
     .trim();
@@ -108,10 +107,10 @@ async function run() {
   );
 
   console.info('updating npm version and creating tag...');
-  child_process.execSync(`npm version --no-git-tag-version ${VERSION}`);
-  child_process.execSync(`git add ./version.json ./package*`);
-  child_process.execSync(`git commit -m "${VERSION}"`);
-  child_process.execSync(`git tag -m "${VERSION}" -a "v${VERSION}"`);
+  childProcess.execSync(`npm version --no-git-tag-version ${VERSION}`);
+  childProcess.execSync(`git add ./version.json ./package*`);
+  childProcess.execSync(`git commit -m "${VERSION}"`);
+  childProcess.execSync(`git tag -m "${VERSION}" -a "v${VERSION}"`);
 
   console.info('Success!');
 }
