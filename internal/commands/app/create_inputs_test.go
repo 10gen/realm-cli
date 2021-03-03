@@ -174,7 +174,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Nil(t, os.Remove(appName))
 	})
 
-	t.Run("should return path of wd with a new app name appended when from is set and from is a local directory", func(t *testing.T) {
+	t.Run("should return path of wd with a new app name appended trying to write to a local directory", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
@@ -186,17 +186,17 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		go func() {
 			defer close(doneCh)
 
-			console.ExpectString("Directory './from-app' already exists, writing app contents to that destination may result in file conflicts.")
-			console.ExpectString("Would you still like to write app contents to './from-app'? ('No' will prompt you to provide another destination)")
-			console.SendLine("yes")
+			console.ExpectString("Directory './test-app' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './test-app'? ('No' will prompt you to provide another destination)")
+			console.SendLine("no")
 			console.ExpectString("App Name")
 			console.SendLine("new-app")
 			console.ExpectEOF()
 		}()
 
-		inputs := createInputs{newAppInputs: newAppInputs{From: "from-app", Name: "from-app"}}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}}
 
-		err = os.Mkdir(path.Join(profile.WorkingDirectory, "from-app"), os.ModePerm)
+		err = os.Mkdir(path.Join(profile.WorkingDirectory, "test-app"), os.ModePerm)
 		assert.Nil(t, err)
 
 		dir, err := inputs.resolveDirectory(ui, profile.WorkingDirectory)

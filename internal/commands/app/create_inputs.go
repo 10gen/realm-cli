@@ -105,28 +105,26 @@ func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, erro
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	if i.From != "" && i.From == i.Directory {
-		ui.Print(terminal.NewWarningLog("Directory './%s' already exists, writing app contents to that destination may result in file conflicts.", i.Directory))
-		proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.Directory)
-		if err != nil {
-			return "", err
-		}
-		if proceed {
-			var newAppName string
-			if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
-				return "", err
-			}
-			i.Name = newAppName
-			i.Directory = i.Name
-			fullPath = path.Join(wd, i.Directory)
-		}
-	}
 	_, appOK, err := local.FindApp(fullPath)
 	if err != nil {
 		return "", err
 	}
 	if appOK {
 		return "", errProjectExists{fullPath}
+	}
+	ui.Print(terminal.NewWarningLog("Directory './%s' already exists, writing app contents to that destination may result in file conflicts.", i.Directory))
+	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.Directory)
+	if err != nil {
+		return "", err
+	}
+	if !proceed {
+		var newAppName string
+		if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
+			return "", err
+		}
+		i.Name = newAppName
+		i.Directory = i.Name
+		fullPath = path.Join(wd, i.Directory)
 	}
 	return fullPath, nil
 }
