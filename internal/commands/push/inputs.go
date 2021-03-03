@@ -5,6 +5,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 const (
@@ -18,10 +19,6 @@ const (
 	flagTo      = "to"
 	flagToShort = "t"
 	flagToUsage = "choose a Realm app to push changes towards"
-
-	flagAsNew      = "as-new"
-	flagAsNewShort = "n"
-	flagAsNewUsage = "specify the Realm app should be created as new when pushed"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
@@ -49,7 +46,6 @@ type inputs struct {
 	AppDirectory        string
 	Project             string
 	To                  string
-	AsNew               bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -98,4 +94,30 @@ func (i inputs) resolveTo(ui terminal.UI, client realm.Client) (to, error) {
 	t.GroupID = app.GroupID
 	t.AppID = app.ID
 	return t, nil
+}
+
+func (i inputs) args(omitDryRun bool) []flags.Arg {
+	args := make([]flags.Arg, 0, 7)
+	if i.Project != "" {
+		args = append(args, flags.Arg{flagProject, i.Project})
+	}
+	if i.AppDirectory != "" {
+		args = append(args, flags.Arg{flagAppDirectory, i.AppDirectory})
+	}
+	if i.To != "" {
+		args = append(args, flags.Arg{flagTo, i.To})
+	}
+	if i.IncludeDependencies {
+		args = append(args, flags.Arg{Name: flagIncludeDependencies})
+	}
+	if i.IncludeHosting {
+		args = append(args, flags.Arg{Name: flagIncludeHosting})
+	}
+	if i.ResetCDNCache {
+		args = append(args, flags.Arg{Name: flagResetCDNCache})
+	}
+	if i.DryRun && !omitDryRun {
+		args = append(args, flags.Arg{Name: flagDryRun})
+	}
+	return args
 }

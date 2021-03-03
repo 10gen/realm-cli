@@ -15,6 +15,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// set of supported `push` command strings
+const (
+	CommandUse = "push"
+)
+
+// set of supported `push` command strings
+var (
+	CommandAliases = []string{"import"}
+)
+
 // Command is the `push` command
 type Command struct {
 	inputs inputs
@@ -25,7 +35,6 @@ func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.AppDirectory, flagAppDirectory, flagAppDirectoryShort, "", flagAppDirectoryUsage)
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.To, flagTo, flagToShort, "", flagToUsage)
-	fs.BoolVarP(&cmd.inputs.AsNew, flagAsNew, flagAsNewShort, false, flagAsNewUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
@@ -62,7 +71,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		if cmd.inputs.DryRun {
 			ui.Print(
 				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
-				terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
+				terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.display(true)),
 			)
 			return nil
 		}
@@ -131,7 +140,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	if cmd.inputs.DryRun {
 		ui.Print(
 			terminal.NewTextLog("To push these changes, you must omit the 'dry-run' flag to proceed"),
-			terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.commandString(true)),
+			terminal.NewFollowupLog(terminal.MsgSuggestedCommands, cmd.display(true)),
 		)
 		return nil
 	}
@@ -239,6 +248,10 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 
 	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", app.ID()))
 	return nil
+}
+
+func (cmd *Command) display(omitDryRun bool) string {
+	return cli.CommandDisplay(CommandUse, cmd.inputs.args(omitDryRun))
 }
 
 type namer interface{ Name() string }
@@ -412,17 +425,4 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, to to, draftID
 
 	ui.Print(terminal.NewTextLog("Deployment complete"))
 	return nil
-}
-
-func (cmd *Command) commandString(omitDryRun bool) string {
-	sb := strings.Builder{}
-	sb.WriteString("realm-cli push")
-
-	// TODO(REALMC-7866): make this more accurate based on the inputs provided
-
-	if cmd.inputs.DryRun && !omitDryRun {
-		sb.WriteString(" --dry-run")
-	}
-
-	return sb.String()
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -126,4 +127,33 @@ func (i *createInputs) resolveDataSource(client atlas.Client, groupID string) (d
 		},
 	}
 	return dataSource, nil
+}
+
+func (i createInputs) args(omitDryRun bool) []flags.Arg {
+	args := make([]flags.Arg, 0, 8)
+	if i.Project != "" {
+		args = append(args, flags.Arg{flagProject, i.Project})
+	}
+	if i.Name != "" {
+		args = append(args, flags.Arg{flagName, i.Name})
+	}
+	if i.From != "" {
+		args = append(args, flags.Arg{flagFrom, i.From})
+	}
+	if i.Directory != "" {
+		args = append(args, flags.Arg{flagDirectory, i.Directory})
+	}
+	if i.Location != flagLocationDefault {
+		args = append(args, flags.Arg{flagLocation, i.Location.String()})
+	}
+	if i.DeploymentModel != flagDeploymentModelDefault {
+		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})
+	}
+	if i.DataSource != "" {
+		args = append(args, flags.Arg{flagDataSource, i.DataSource})
+	}
+	if i.DryRun && !omitDryRun {
+		args = append(args, flags.Arg{Name: flagDryRun})
+	}
+	return args
 }
