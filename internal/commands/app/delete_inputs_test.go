@@ -92,7 +92,8 @@ func TestResolveApps(t *testing.T) {
 			go func() {
 				defer close(doneCh)
 
-				console.ExpectString("Select App(s)")
+				console.ExpectString("App Name")
+				console.ExpectString("App Name")
 				console.Send("app2")
 				console.SendLine(" ")
 				console.ExpectEOF()

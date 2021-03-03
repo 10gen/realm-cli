@@ -66,7 +66,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return err
 	}
 
-	dir, err := cmd.inputs.resolveDirectory(profile.WorkingDirectory)
+	dir, err := cmd.inputs.resolveDirectory(ui, profile.WorkingDirectory)
 	if err != nil {
 		return err
 	}

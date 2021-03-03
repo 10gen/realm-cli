@@ -90,7 +90,7 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) 
 	return nil
 }
 
-func (i *createInputs) resolveDirectory(wd string) (string, error) {
+func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, error) {
 	if i.Directory == "" {
 		i.Directory = i.Name
 	}
@@ -104,6 +104,16 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	}
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
+	}
+	if i.From != "" && i.From == i.Directory {
+		ui.Print(terminal.NewWarningLog("The directory '%s' already exists locally. It is advised to use a different Realm app name.", i.Directory))
+		var newAppName string
+		if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
+			return "", err
+		}
+		i.Name = newAppName
+		i.Directory = i.Name
+		fullPath = path.Join(wd, i.Directory)
 	}
 	_, appOK, err := local.FindApp(fullPath)
 	if err != nil {

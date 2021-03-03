@@ -138,7 +138,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		appName := "test-app"
 		inputs := createInputs{newAppInputs: newAppInputs{Name: appName}}
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
@@ -150,7 +150,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		specifiedDir := "test-dir"
 		inputs := createInputs{Directory: specifiedDir}
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, specifiedDir), dir)
@@ -167,11 +167,39 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Nil(t, testFile.Close())
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
 		assert.Nil(t, os.Remove(appName))
+	})
+
+	t.Run("should return path of wd with a new app name appended when from is set and from is a local directory", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("The directory")
+			console.ExpectString("App Name")
+			console.SendLine("new-app")
+			console.ExpectEOF()
+		}()
+
+		inputs := createInputs{newAppInputs: newAppInputs{From: "from-app", Name: "from-app"}}
+
+		err = os.Mkdir(path.Join(profile.WorkingDirectory, "from-app"), os.ModePerm)
+		assert.Nil(t, err)
+
+		dir, err := inputs.resolveDirectory(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
 	})
 
 	t.Run("should error when path specified is another realm app", func(t *testing.T) {
@@ -190,7 +218,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		)
 		assert.Nil(t, localApp.WriteConfig())
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
 		assert.Equal(t, errProjectExists{fullDir}, err)
