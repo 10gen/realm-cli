@@ -424,7 +424,7 @@ func TestAppCreateHandler(t *testing.T) {
 			display := make([]string, 0, 4)
 			display = append(display, fmt.Sprintf("01:23:45 UTC INFO  A %s would be created at "+expectedDir, tc.createDisplay))
 			if tc.cluster != "" {
-				display = append(display, "01:23:45 UTC INFO  The cluster test-cluster would be linked as data source mongodb-atlas")
+				display = append(display, "01:23:45 UTC INFO  The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'")
 			}
 			display = append(display, "01:23:45 UTC DEBUG To create this app run: "+cmd.display(true))
 			display = append(display, "")
