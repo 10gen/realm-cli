@@ -95,10 +95,10 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app %s would be created at %s", cmd.inputs.From, dir))
 		}
 		if cs.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The cluster %s would be linked as data source %s", cmd.inputs.Cluster, cs.Name))
+			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, cs.Name))
 		}
 		if ds.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The data lake %s would be linked as data source %s", cmd.inputs.DataLake, ds.Name))
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLake, ds.Name))
 		}
 		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)

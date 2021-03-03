@@ -253,3 +253,58 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		assert.Equal(t, "123", expectedGroupID)
 	})
 }
+
+func TestAppCreateInputsResolveDataLake(t *testing.T) {
+	t.Run("should return data source config of a provided data lake", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return []atlas.DataLake{{Name: "test-datalake"}}, nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLake: "test-datalake"}
+
+		ds, err := inputs.resolveDataLake(ac, "123")
+		assert.Nil(t, err)
+
+		assert.Equal(t, dataLakeService{
+			Name: "mongodb-datalake",
+			Type: "datalake",
+			Config: dataLakeConfig{
+				DataLakeName: "test-datalake",
+			},
+		}, ds)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should not be able to find specified data lake", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return nil, nil
+		}
+
+		inputs := createInputs{DataLake: "test-datalake"}
+
+		_, err := inputs.resolveDataLake(ac, "123")
+		assert.Equal(t, errors.New("failed to find Atlas data lake"), err)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should error from client", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return nil, errors.New("client error")
+		}
+
+		inputs := createInputs{DataLake: "test-datalake"}
+
+		_, err := inputs.resolveDataLake(ac, "123")
+		assert.Equal(t, errors.New("client error"), err)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+}
