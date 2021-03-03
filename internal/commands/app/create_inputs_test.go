@@ -211,7 +211,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		ds, err := inputs.resolveCluster(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, clusterService{
+		assert.Equal(t, dataSourceCluster{
 			Name: "mongodb-atlas",
 			Type: "mongodb-atlas",
 			Config: clusterConfig{
@@ -268,7 +268,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		ds, err := inputs.resolveDataLake(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, dataLakeService{
+		assert.Equal(t, dataSourceDataLake{
 			Name: "mongodb-datalake",
 			Type: "datalake",
 			Config: dataLakeConfig{

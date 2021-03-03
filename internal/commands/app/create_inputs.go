@@ -39,7 +39,7 @@ type createInputs struct {
 	DryRun    bool
 }
 
-type clusterService struct {
+type dataSourceCluster struct {
 	Name   string        `json:"name"`
 	Type   string        `json:"type"`
 	Config clusterConfig `json:"config"`
@@ -51,7 +51,7 @@ type clusterConfig struct {
 	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
 }
 
-type dataLakeService struct {
+type dataSourceDataLake struct {
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`
 	Config dataLakeConfig `json:"config"`
@@ -115,10 +115,10 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (clusterService, error) {
+func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (dataSourceCluster, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return clusterService{}, err
+		return dataSourceCluster{}, err
 	}
 	var clusterName string
 	for _, cluster := range clusters {
@@ -128,9 +128,9 @@ func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (clus
 		}
 	}
 	if clusterName == "" {
-		return clusterService{}, errors.New("failed to find Atlas cluster")
+		return dataSourceCluster{}, errors.New("failed to find Atlas cluster")
 	}
-	clusterService := clusterService{
+	dsCluster := dataSourceCluster{
 		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
 		Config: clusterConfig{
@@ -139,13 +139,13 @@ func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (clus
 			WireProtocolEnabled: false,
 		},
 	}
-	return clusterService, nil
+	return dsCluster, nil
 }
 
-func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dataLakeService, error) {
+func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dataSourceDataLake, error) {
 	dataLakes, err := client.DataLakes(groupID)
 	if err != nil {
-		return dataLakeService{}, err
+		return dataSourceDataLake{}, err
 	}
 	var dataLakeName string
 	for _, dataLake := range dataLakes {
@@ -155,16 +155,16 @@ func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dat
 		}
 	}
 	if dataLakeName == "" {
-		return dataLakeService{}, errors.New("failed to find Atlas data lake")
+		return dataSourceDataLake{}, errors.New("failed to find Atlas data lake")
 	}
-	dataLakeService := dataLakeService{
+	dsDataLake := dataSourceDataLake{
 		Name: "mongodb-datalake",
 		Type: "datalake",
 		Config: dataLakeConfig{
 			DataLakeName: dataLakeName,
 		},
 	}
-	return dataLakeService, nil
+	return dsDataLake, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {
