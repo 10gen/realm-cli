@@ -42,10 +42,10 @@ type createInputs struct {
 type dataSourceCluster struct {
 	Name   string        `json:"name"`
 	Type   string        `json:"type"`
-	Config clusterConfig `json:"config"`
+	Config configCluster `json:"config"`
 }
 
-type clusterConfig struct {
+type configCluster struct {
 	ClusterName         string `json:"clusterName"`
 	ReadPreference      string `json:"readPreference"`
 	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
@@ -54,10 +54,10 @@ type clusterConfig struct {
 type dataSourceDataLake struct {
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`
-	Config dataLakeConfig `json:"config"`
+	Config configDataLake `json:"config"`
 }
 
-type dataLakeConfig struct {
+type configDataLake struct {
 	DataLakeName string `json:"dataLakeName"`
 }
 
@@ -106,14 +106,20 @@ func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, erro
 		return fullPath, nil
 	}
 	if i.From != "" && i.From == i.Directory {
-		ui.Print(terminal.NewWarningLog("The directory '%s' already exists locally. It is advised to use a different Realm app name.", i.Directory))
-		var newAppName string
-		if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
+		ui.Print(terminal.NewWarningLog("Directory './%s' already exists, writing app contents to that destination may result in file conflicts.", i.Directory))
+		proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.Directory)
+		if err != nil {
 			return "", err
 		}
-		i.Name = newAppName
-		i.Directory = i.Name
-		fullPath = path.Join(wd, i.Directory)
+		if proceed {
+			var newAppName string
+			if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
+				return "", err
+			}
+			i.Name = newAppName
+			i.Directory = i.Name
+			fullPath = path.Join(wd, i.Directory)
+		}
 	}
 	_, appOK, err := local.FindApp(fullPath)
 	if err != nil {
@@ -143,7 +149,7 @@ func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (data
 	dsCluster := dataSourceCluster{
 		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
-		Config: clusterConfig{
+		Config: configCluster{
 			ClusterName:         clusterName,
 			ReadPreference:      "primary",
 			WireProtocolEnabled: false,
@@ -170,7 +176,7 @@ func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dat
 	dsDataLake := dataSourceDataLake{
 		Name: "mongodb-datalake",
 		Type: "datalake",
-		Config: dataLakeConfig{
+		Config: configDataLake{
 			DataLakeName: dataLakeName,
 		},
 	}

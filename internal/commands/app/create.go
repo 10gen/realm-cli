@@ -88,7 +88,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	if cmd.inputs.DryRun {
-		logs := make([]terminal.Log, 0, 5)
+		logs := make([]terminal.Log, 0, 4)
 		if from.IsZero() {
 			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
 		} else {

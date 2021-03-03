@@ -186,7 +186,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		go func() {
 			defer close(doneCh)
 
-			console.ExpectString("The directory")
+			console.ExpectString("Directory './from-app' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './from-app'? ('No' will prompt you to provide another destination)")
+			console.SendLine("yes")
 			console.ExpectString("App Name")
 			console.SendLine("new-app")
 			console.ExpectEOF()
@@ -242,7 +244,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		assert.Equal(t, dataSourceCluster{
 			Name: "mongodb-atlas",
 			Type: "mongodb-atlas",
-			Config: clusterConfig{
+			Config: configCluster{
 				ClusterName:         "test-cluster",
 				ReadPreference:      "primary",
 				WireProtocolEnabled: false,
@@ -299,7 +301,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		assert.Equal(t, dataSourceDataLake{
 			Name: "mongodb-datalake",
 			Type: "datalake",
-			Config: dataLakeConfig{
+			Config: configDataLake{
 				DataLakeName: "test-datalake",
 			},
 		}, ds)
