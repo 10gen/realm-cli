@@ -361,12 +361,11 @@ func TestAppCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		description    string
-		from           string
-		cluster        string
-		clients        cli.Clients
-		createDisplay  string
-		clusterDisplay string
+		description   string
+		from          string
+		cluster       string
+		clients       cli.Clients
+		createDisplay string
 	}{
 		{
 			description:   "should create a minimal project dry run",
@@ -435,6 +434,9 @@ func TestAppCreateHandler(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 		from        string
+		groupID     string
+		cluster     string
+		dataLake    string
 		clients     cli.Clients
 		expectedErr error
 	}{
@@ -448,7 +450,34 @@ func TestAppCreateHandler(t *testing.T) {
 				},
 			},
 			expectedErr: errors.New("atlas client error"),
-		}, {
+		},
+		{
+			description: "should error when resolving clusters when cluster is set",
+			groupID:     "123",
+			cluster:     "test-cluster",
+			clients: cli.Clients{
+				Atlas: mock.AtlasClient{
+					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+						return nil, errors.New("atlas client error")
+					},
+				},
+			},
+			expectedErr: errors.New("atlas client error"),
+		},
+		{
+			description: "should error when resolving data lakes when data lake is set",
+			groupID:     "123",
+			dataLake:    "test-datalake",
+			clients: cli.Clients{
+				Atlas: mock.AtlasClient{
+					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
+						return nil, errors.New("atlas client error")
+					},
+				},
+			},
+			expectedErr: errors.New("atlas client error"),
+		},
+		{
 			description: "should error when resolving app when from is set",
 			from:        "from-app",
 			clients: cli.Clients{
@@ -464,12 +493,17 @@ func TestAppCreateHandler(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			profile := mock.NewProfileFromWd(t)
 
-			cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-				From:            tc.from,
-				Name:            "test-app",
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			}}}
+			cmd := &CommandCreate{createInputs{
+				newAppInputs: newAppInputs{
+					From:            tc.from,
+					Project:         tc.groupID,
+					Name:            "test-app",
+					Location:        realm.LocationVirginia,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				},
+				Cluster:  tc.cluster,
+				DataLake: tc.dataLake,
+			}}
 
 			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, nil, tc.clients))
 		})
