@@ -330,7 +330,7 @@ func TestAppCreateHandler(t *testing.T) {
 		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
 		assert.Equal(t, strings.Join([]string{
 			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
 			"",
 		}, "\n"), out.String())
 	})
@@ -372,7 +372,7 @@ func TestAppCreateHandler(t *testing.T) {
 		expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
 		assert.Equal(t, strings.Join([]string{
 			"01:23:45 UTC INFO  A Realm app based on the Realm app from-app would be created at " + expectedDir,
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
 			"",
 		}, "\n"), out.String())
 	})
@@ -408,7 +408,7 @@ func TestAppCreateHandler(t *testing.T) {
 		assert.Equal(t, strings.Join([]string{
 			"01:23:45 UTC INFO  A minimal Realm app would be created at " + expectedDir,
 			"01:23:45 UTC INFO  The cluster test-cluster would be linked as data source mongodb-atlas",
-			"01:23:45 UTC DEBUG To create this app run: " + cmd.commandString(true),
+			"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
 			"",
 		}, "\n"), out.String())
 	})
@@ -448,7 +448,7 @@ func TestAppCreateHandler(t *testing.T) {
 	})
 }
 
-func TestAppCreateCommandString(t *testing.T) {
+func TestAppCreateCommandDisplay(t *testing.T) {
 	t.Run("should create a minimal command", func(t *testing.T) {
 		cmd := &CommandCreate{
 			inputs: createInputs{
@@ -460,7 +460,7 @@ func TestAppCreateCommandString(t *testing.T) {
 				},
 			},
 		}
-		assert.Equal(t, cli.Name+" app create --project 123 --name test-app", cmd.commandString(false))
+		assert.Equal(t, cli.Name+" app create --project 123 --name test-app", cmd.display(false))
 	})
 
 	t.Run("should create a command with all inputs", func(t *testing.T) {
@@ -479,8 +479,8 @@ func TestAppCreateCommandString(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --deployment-model LOCAL --location IE --data-source Cluster0 --dry-run",
-			cmd.commandString(false),
+			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --location IE --deployment-model LOCAL --data-source Cluster0 --dry-run",
+			cmd.display(false),
 		)
 	})
 }

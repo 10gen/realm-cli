@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -12,6 +11,11 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
+)
+
+// set of supported `app create` command strings
+const (
+	CommandCreateDisplay = "app create"
 )
 
 // CommandCreate is the `app create` command
@@ -84,7 +88,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if ds.Name != "" {
 			logs = append(logs, terminal.NewTextLog("The cluster %s would be linked as data source %s", cmd.inputs.DataSource, ds.Name))
 		}
-		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.commandString(true)))
+		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)
 		return nil
 	}
@@ -166,41 +170,6 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	return nil
 }
 
-func (cmd *CommandCreate) commandString(omitDryRun bool) string {
-	sb := strings.Builder{}
-	sb.WriteString(cli.Name)
-	sb.WriteString(" app create")
-	if cmd.inputs.Project != "" {
-		sb.WriteString(" --project ")
-		sb.WriteString(cmd.inputs.Project)
-	}
-	if cmd.inputs.Name != "" {
-		sb.WriteString(" --name ")
-		sb.WriteString(cmd.inputs.Name)
-	}
-	if cmd.inputs.From != "" {
-		sb.WriteString(" --from ")
-		sb.WriteString(cmd.inputs.From)
-	}
-	if cmd.inputs.Directory != "" {
-		sb.WriteString(" --app-dir ")
-		sb.WriteString(cmd.inputs.Directory)
-	}
-	if cmd.inputs.DeploymentModel != flagDeploymentModelDefault {
-		sb.WriteString(" --deployment-model ")
-		sb.WriteString(cmd.inputs.DeploymentModel.String())
-	}
-	if cmd.inputs.Location != flagLocationDefault {
-		sb.WriteString(" --location ")
-		sb.WriteString(cmd.inputs.Location.String())
-	}
-	if cmd.inputs.DataSource != "" {
-		sb.WriteString(" --data-source ")
-		sb.WriteString(cmd.inputs.DataSource)
-	}
-	if cmd.inputs.DryRun && !omitDryRun {
-		sb.WriteString(" --dry-run")
-	}
-
-	return sb.String()
+func (cmd *CommandCreate) display(omitDryRun bool) string {
+	return cli.CommandDisplay(CommandCreateDisplay, cmd.inputs.args(omitDryRun))
 }

@@ -35,8 +35,8 @@ var (
 
 	Push = cli.CommandDefinition{
 		Command:     &push.Command{},
-		Use:         "push",
-		Aliases:     []string{"import"},
+		Use:         push.CommandUse,
+		Aliases:     push.CommandAliases,
 		Description: "Push and deploy changes from your local directory to your Realm app",
 		Help: `Push and deploy changes from your local directory to your Realm app
 
@@ -76,14 +76,14 @@ Realm app will be exported as well.`,
 			},
 			{
 				Use:         "create",
-				Display:     "app create",
+				Display:     app.CommandCreateDisplay,
 				Description: "Create a remote Realm app from your current working directory",
-				Help: `Creates a new Realm app in the cloud, and saves your configuration files on 
-a new disk. This command will create a new directory for your project. 
+				Help: `Creates a new Realm app in the cloud, and saves your configuration files on
+a new disk. This command will create a new directory for your project.
 To initialize a Realm app in your current working directory, use ‘app init’.
 
-You can specify a '--from' input to create a Realm app from 
-an existing app. If you do not specify a '--from' input, 
+You can specify a '--from' input to create a Realm app from
+an existing app. If you do not specify a '--from' input,
 the CLI will create a non-personalized Realm app.`,
 				Command: &app.CommandCreate{},
 			},
@@ -100,8 +100,8 @@ the CLI will create a non-personalized Realm app.`,
 				Aliases:     []string{},
 				Display:     "app diff",
 				Description: "Show differences between your Realm app and your local directory",
-				Help: `Displays file-by-file differences between the latest version of your Realm app and your local directory. 
-If you have more than one Realm app, you will be prompted to select a Realm app that you would like to 
+				Help: `Displays file-by-file differences between the latest version of your Realm app and your local directory.
+If you have more than one Realm app, you will be prompted to select a Realm app that you would like to
 display from a list of all Realm apps associated with your user profile.`,
 				Command: &app.CommandDiff{},
 			},
@@ -109,7 +109,7 @@ display from a list of all Realm apps associated with your user profile.`,
 				Use:         "delete",
 				Display:     "app delete",
 				Description: "Delete a Realm app",
-				Help: `If you have more than one Realm app, you will be prompted to select one or multiple app(s) that you would like to delete 
+				Help: `If you have more than one Realm app, you will be prompted to select one or multiple app(s) that you would like to delete
 from a list of all your Realm apps. The list includes Realm apps from all projects associated with your user profile.`,
 				Command: &app.CommandDelete{},
 			},

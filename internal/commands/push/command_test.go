@@ -625,7 +625,7 @@ func TestPushHandler(t *testing.T) {
 
 				assert.Equal(t, tc.groupsCalled, calledGroups)
 				assert.Equal(t, `01:23:45 UTC INFO  This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli push
+01:23:45 UTC DEBUG Try running instead: realm-cli push --app-dir testdata/project --to appID
 `, out.String())
 			})
 		}
@@ -701,7 +701,7 @@ func TestPushHandler(t *testing.T) {
 diff1
 diff2
 01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli push
+01:23:45 UTC DEBUG Try running instead: realm-cli push --app-dir testdata/project --to appID
 `, out.String())
 	})
 
@@ -1345,6 +1345,49 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			assert.Equal(t, "01:23:45 UTC INFO  Deployment complete\n", out.String())
 		})
 	})
+}
+
+func TestPushCommandDisplay(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		inputs      inputs
+		omitDryRun  bool
+		display     string
+	}{
+		{
+			description: "should print a minimal command string",
+			display:     "realm-cli push",
+		},
+		{
+			description: "should print a minimal dry run command string",
+			inputs:      inputs{DryRun: true},
+			display:     "realm-cli push --dry-run",
+		},
+		{
+			description: "should print a minimal command string with dry run set but omitted",
+			inputs:      inputs{DryRun: true},
+			omitDryRun:  true,
+			display:     "realm-cli push",
+		},
+		{
+			description: "should print a complete command string",
+			inputs: inputs{
+				Project:             "project",
+				AppDirectory:        "directory",
+				To:                  "to",
+				IncludeDependencies: true,
+				IncludeHosting:      true,
+				ResetCDNCache:       true,
+				DryRun:              true,
+			},
+			display: "realm-cli push --project project --app-dir directory --to to --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			cmd := &Command{tc.inputs}
+			assert.Equal(t, tc.display, cmd.display(tc.omitDryRun))
+		})
+	}
 }
 
 func runImport(t *testing.T, realmClient realm.Client, appDirectory string) {

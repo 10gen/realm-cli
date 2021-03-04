@@ -1,10 +1,14 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/pflag"
 )
@@ -79,4 +83,17 @@ type CommandDefinition struct {
 	// Aliases is the list of supported aliases for the command
 	// This value maps 1:1 to Cobra's `Aliases` property
 	Aliases []string
+}
+
+// CommandDisplay returns the command display with the provided flags
+func CommandDisplay(cmd string, args []flags.Arg) string {
+	sb := strings.Builder{}
+
+	fmt.Fprintf(&sb, "%s %s", Name, cmd)
+
+	for _, arg := range args {
+		sb.WriteString(arg.String())
+	}
+
+	return sb.String()
 }
