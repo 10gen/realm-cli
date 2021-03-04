@@ -2,6 +2,7 @@ package pull
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -144,7 +145,12 @@ func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, gro
 		to = name
 	}
 
-	target := filepath.Join(profile.WorkingDirectory, to)
+	relativeToPath, err := filepath.Rel(profile.WorkingDirectory, to)
+	if err != nil {
+		return "", nil, err
+	}
+
+	target := filepath.Join(profile.WorkingDirectory, relativeToPath)
 
 	return target, zipPkg, nil
 }
