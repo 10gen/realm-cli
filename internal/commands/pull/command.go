@@ -144,9 +144,13 @@ func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, gro
 		to = name
 	}
 
-	relativeToPath, err := filepath.Rel(profile.WorkingDirectory, to)
-	if err != nil {
-		return "", nil, err
+	relativeToPath := to
+	if filepath.IsAbs(to) {
+		var err error
+		relativeToPath, err = filepath.Rel(profile.WorkingDirectory, to)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	target := filepath.Join(profile.WorkingDirectory, relativeToPath)
