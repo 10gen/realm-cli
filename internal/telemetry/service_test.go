@@ -2,6 +2,9 @@ package telemetry
 
 import (
 	"errors"
+	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -9,7 +12,39 @@ import (
 
 func TestNewService(t *testing.T) {
 	t.Run("Should create the expected Service", func(t *testing.T) {
-		service := NewService(ModeOn, "userID", nil, "command")
+		service := NewService(ModeStdout, "userID", nil, "command")
+
+		assert.Equal(t, "command", service.command)
+		assert.True(t, service.executionID != "", "service execution id must not be blank")
+		assert.Equal(t, "userID", service.userID)
+		assert.NotNil(t, service.tracker)
+	})
+
+	createSegmentFn := func() *Service {
+		return NewService(ModeOn, "userID", log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix), "command")
+	}
+	t.Run("Should create a segment tracking service if the segmentWriteKey is there", func(t *testing.T) {
+		swk := segmentWriteKey
+		defer func() { segmentWriteKey = swk }()
+
+		segmentWriteKey = "testing"
+		testServiceStdoutput(t, createSegmentFn, "")
+
+		service := createSegmentFn()
+
+		assert.Equal(t, "command", service.command)
+		assert.True(t, service.executionID != "", "service execution id must not be blank")
+		assert.Equal(t, "userID", service.userID)
+		assert.NotNil(t, service.tracker)
+	})
+
+	t.Run("Should disable the service if the segmentWriteKey is empty", func(t *testing.T) {
+		swk := segmentWriteKey
+		defer func() { segmentWriteKey = swk }()
+
+		segmentWriteKey = ""
+		testServiceStdoutput(t, createSegmentFn, "LogPrefix unable to connect to Segment due to missing key, CLI telemetry will be disabled\n")
+		service := createSegmentFn()
 
 		assert.Equal(t, "command", service.command)
 		assert.True(t, service.executionID != "", "service execution id must not be blank")
@@ -46,4 +81,21 @@ type testTracker struct {
 
 func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
+}
+func testServiceStdoutput(t *testing.T, createFn func() *Service, expected string) {
+	t.Helper()
+
+	stdout := os.Stdout
+	defer func() { os.Stdout = stdout }()
+	r, w, err := os.Pipe()
+	assert.Nil(t, err)
+	os.Stdout = w
+
+	createFn()
+
+	assert.Nil(t, w.Close())
+
+	out, err := ioutil.ReadAll(r)
+	assert.Nil(t, err)
+	assert.Equal(t, expected, string(out))
 }
