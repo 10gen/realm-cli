@@ -22,7 +22,7 @@ func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return errProjectExists{}
 	}
 
-	if i.From == "" {
+	if i.Remote == "" {
 		if i.Name == "" {
 			if err := ui.AskOne(&i.Name, &survey.Input{Message: "App Name"}); err != nil {
 				return err
