@@ -62,7 +62,7 @@ type configDataLake struct {
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if i.From == "" {
+	if i.Remote == "" {
 		if i.Name == "" {
 			if err := ui.AskOne(&i.Name, &survey.Input{Message: "App Name"}); err != nil {
 				return err
@@ -79,18 +79,18 @@ func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) error {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, r appRemote) error {
 	if i.Name == "" {
-		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: f.GroupID, App: f.AppID})
+		remote, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: r.GroupID, App: r.AppID})
 		if err != nil {
 			return err
 		}
-		i.Name = app.Name
+		i.Name = remote.Name
 	}
 	return nil
 }
 
-func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, error) {
+func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
 	if i.Directory == "" {
 		i.Directory = i.Name
 	}
@@ -188,8 +188,8 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.Name != "" {
 		args = append(args, flags.Arg{flagName, i.Name})
 	}
-	if i.From != "" {
-		args = append(args, flags.Arg{flagFrom, i.From})
+	if i.Remote != "" {
+		args = append(args, flags.Arg{flagRemote, i.Remote})
 	}
 	if i.Directory != "" {
 		args = append(args, flags.Arg{flagDirectory, i.Directory})

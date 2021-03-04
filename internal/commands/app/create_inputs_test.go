@@ -83,7 +83,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         createInputs
-		from           from
+		appRemote      appRemote
 		expectedName   string
 		expectedFilter realm.AppFilter
 	}{
@@ -93,8 +93,8 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 			expectedName: testApp.Name,
 		},
 		{
-			description:    "should use from app for name if name is not set",
-			from:           from{testApp.GroupID, testApp.ID},
+			description:    "should use remote app for name if name is not set",
+			appRemote:      appRemote{testApp.GroupID, testApp.ID},
 			expectedName:   testApp.Name,
 			expectedFilter: realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID},
 		},
@@ -107,7 +107,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 				return []realm.App{testApp}, nil
 			}
 
-			err := tc.inputs.resolveName(nil, rc, tc.from)
+			err := tc.inputs.resolveName(nil, rc, tc.appRemote)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedName, tc.inputs.Name)
@@ -123,7 +123,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 			return nil, errors.New("realm client error")
 		}
 		inputs := createInputs{}
-		err := inputs.resolveName(nil, rc, from{testApp.GroupID, testApp.ID})
+		err := inputs.resolveName(nil, rc, appRemote{testApp.GroupID, testApp.ID})
 
 		assert.Equal(t, errors.New("realm client error"), err)
 		assert.Equal(t, "", inputs.Name)
@@ -138,7 +138,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		appName := "test-app"
 		inputs := createInputs{newAppInputs: newAppInputs{Name: appName}}
 
-		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
+		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
@@ -150,7 +150,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		specifiedDir := "test-dir"
 		inputs := createInputs{Directory: specifiedDir}
 
-		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
+		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, specifiedDir), dir)
@@ -167,7 +167,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Nil(t, testFile.Close())
 
-		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
+		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
@@ -199,7 +199,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		err = os.Mkdir(path.Join(profile.WorkingDirectory, "test-app"), os.ModePerm)
 		assert.Nil(t, err)
 
-		dir, err := inputs.resolveDirectory(ui, profile.WorkingDirectory)
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
 		assert.Equal(t, "new-app", inputs.Directory)
@@ -213,15 +213,15 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		inputs := createInputs{Directory: specifiedDir}
 		fullDir := path.Join(profile.WorkingDirectory, specifiedDir)
 
-		localApp := local.NewApp(
+		appLocal := local.NewApp(
 			fullDir,
 			"test-app",
 			flagLocationDefault,
 			flagDeploymentModelDefault,
 		)
-		assert.Nil(t, localApp.WriteConfig())
+		assert.Nil(t, appLocal.WriteConfig())
 
-		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
+		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
 		assert.Equal(t, errProjectExists{fullDir}, err)
