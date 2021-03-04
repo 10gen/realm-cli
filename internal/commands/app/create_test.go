@@ -361,15 +361,23 @@ func TestAppCreateHandler(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		description   string
-		from          string
-		cluster       string
-		clients       cli.Clients
-		createDisplay string
+		description     string
+		from            string
+		cluster         string
+		dataLake        string
+		datalake        string
+		clients         cli.Clients
+		displayExpected func(dir string, cmd *CommandCreate) string
 	}{
 		{
-			description:   "should create a minimal project dry run",
-			createDisplay: "minimal Realm app",
+			description: "should create a minimal project dry run",
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
+					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
 		},
 		{
 			description: "should create a dry run for the specified from app",
@@ -381,7 +389,13 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 			},
-			createDisplay: "Realm app based on the Realm app from-app",
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("01:23:45 UTC INFO  A Realm app based on the Realm app 'from-app' would be created at %s", dir),
+					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
 		},
 		{
 			description: "should create a minimal project dry run with cluster set",
@@ -393,7 +407,33 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 			},
-			createDisplay: "minimal Realm app",
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
+					"01:23:45 UTC INFO  The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'",
+					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
+		},
+		{
+			description: "should create a minimal project dry run with data lake set",
+			dataLake:    "test-datalake",
+			clients: cli.Clients{
+				Atlas: mock.AtlasClient{
+					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
+						return []atlas.DataLake{{Name: "test-datalake"}}, nil
+					},
+				},
+			},
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
+					"01:23:45 UTC INFO  The data lake 'test-datalake' would be linked as data source 'mongodb-datalake'",
+					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -412,22 +452,16 @@ func TestAppCreateHandler(t *testing.T) {
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
 					},
-					Cluster: tc.cluster,
-					DryRun:  true,
+					Cluster:  tc.cluster,
+					DataLake: tc.dataLake,
+					DryRun:   true,
 				},
 			}
 
 			assert.Nil(t, cmd.Handler(profile, ui, tc.clients))
 
 			expectedDir := filepath.Join(profile.WorkingDirectory, "test-app")
-			display := make([]string, 0, 4)
-			display = append(display, fmt.Sprintf("01:23:45 UTC INFO  A %s would be created at "+expectedDir, tc.createDisplay))
-			if tc.cluster != "" {
-				display = append(display, "01:23:45 UTC INFO  The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'")
-			}
-			display = append(display, "01:23:45 UTC DEBUG To create this app run: "+cmd.display(true))
-			display = append(display, "")
-			assert.Equal(t, strings.Join(display, "\n"), out.String())
+			assert.Equal(t, tc.displayExpected(expectedDir, cmd), out.String())
 		})
 	}
 
@@ -542,7 +576,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --deployment-model LOCAL --location IE --cluster Cluster0 --data-lake DataLake0 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
 			cmd.display(false),
 		)
 	})

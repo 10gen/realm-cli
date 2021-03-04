@@ -189,7 +189,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 			console.ExpectString("Directory './test-app' already exists, writing app contents to that destination may result in file conflicts.")
 			console.ExpectString("Would you still like to write app contents to './test-app'? ('No' will prompt you to provide another destination)")
 			console.SendLine("no")
-			console.ExpectString("App Name")
+			console.ExpectString("Directory")
 			console.SendLine("new-app")
 			console.ExpectEOF()
 		}()
@@ -202,6 +202,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveDirectory(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
+		assert.Equal(t, "new-app", inputs.Directory)
 	})
 
 	t.Run("should error when path specified is another realm app", func(t *testing.T) {

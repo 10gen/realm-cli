@@ -118,12 +118,11 @@ func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, erro
 		return "", err
 	}
 	if !proceed {
-		var newAppName string
-		if err := ui.AskOne(&newAppName, &survey.Input{Message: "App Name"}); err != nil {
+		var newDir string
+		if err := ui.AskOne(&newDir, &survey.Input{Message: "Directory"}); err != nil {
 			return "", err
 		}
-		i.Name = newAppName
-		i.Directory = i.Name
+		i.Directory = newDir
 		fullPath = path.Join(wd, i.Directory)
 	}
 	return fullPath, nil
