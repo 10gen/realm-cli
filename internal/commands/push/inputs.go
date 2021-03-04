@@ -9,16 +9,14 @@ import (
 )
 
 const (
-	flagAppDirectory      = "app-dir"
-	flagAppDirectoryShort = "p"
-	flagAppDirectoryUsage = "provide the path to a Realm app containing the changes to push"
+	flagLocalPath      = "local"
+	flagLocalPathUsage = "provide the path to a Realm app containing the changes to push"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
 
-	flagTo      = "to"
-	flagToShort = "t"
-	flagToUsage = "choose a Realm app to push changes towards"
+	flagRemote      = "remote"
+	flagRemoteUsage = "choose a Realm app to push changes towards"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
@@ -37,15 +35,15 @@ const (
 	flagResetCDNCacheUsage = "include to reset the Realm app hosting CDN cache"
 )
 
-type to struct {
+type appRemote struct {
 	GroupID string
 	AppID   string
 }
 
 type inputs struct {
-	AppDirectory        string
+	LocalPath           string
 	Project             string
-	To                  string
+	Remote              string
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -53,7 +51,7 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	wd := i.AppDirectory
+	wd := i.LocalPath
 	if wd == "" {
 		wd = profile.WorkingDirectory
 	}
@@ -63,37 +61,37 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	if i.AppDirectory == "" {
+	if i.LocalPath == "" {
 		if app.RootDir == "" {
 			return errProjectNotFound{}
 		}
-		i.AppDirectory = app.RootDir
+		i.LocalPath = app.RootDir
 	}
 
-	if i.To == "" {
-		i.To = app.Option()
+	if i.Remote == "" {
+		i.Remote = app.Option()
 	}
 
 	return nil
 }
 
-func (i inputs) resolveTo(ui terminal.UI, client realm.Client) (to, error) {
-	t := to{GroupID: i.Project}
+func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
+	r := appRemote{GroupID: i.Project}
 
-	if i.To == "" {
-		return t, nil
+	if i.Remote == "" {
+		return r, nil
 	}
 
-	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.To})
+	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.Remote})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); !ok {
-			return to{}, err
+			return appRemote{}, err
 		}
 	}
 
-	t.GroupID = app.GroupID
-	t.AppID = app.ID
-	return t, nil
+	r.GroupID = app.GroupID
+	r.AppID = app.ID
+	return r, nil
 }
 
 func (i inputs) args(omitDryRun bool) []flags.Arg {
@@ -101,11 +99,11 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	if i.Project != "" {
 		args = append(args, flags.Arg{flagProject, i.Project})
 	}
-	if i.AppDirectory != "" {
-		args = append(args, flags.Arg{flagAppDirectory, i.AppDirectory})
+	if i.LocalPath != "" {
+		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
 	}
-	if i.To != "" {
-		args = append(args, flags.Arg{flagTo, i.To})
+	if i.Remote != "" {
+		args = append(args, flags.Arg{flagRemote, i.Remote})
 	}
 	if i.IncludeDependencies {
 		args = append(args, flags.Arg{Name: flagIncludeDependencies})
