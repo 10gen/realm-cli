@@ -2,7 +2,6 @@ package pull
 
 import (
 	"archive/zip"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
