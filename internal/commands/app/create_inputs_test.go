@@ -138,7 +138,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		appName := "test-app"
 		inputs := createInputs{newAppInputs: newAppInputs{Name: appName}}
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
@@ -150,7 +150,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		specifiedDir := "test-dir"
 		inputs := createInputs{Directory: specifiedDir}
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, specifiedDir), dir)
@@ -167,11 +167,42 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Nil(t, testFile.Close())
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
 		assert.Nil(t, os.Remove(appName))
+	})
+
+	t.Run("should return path of wd with a new app name appended trying to write to a local directory", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("Directory './test-app' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './test-app'? ('No' will prompt you to provide another destination)")
+			console.SendLine("no")
+			console.ExpectString("Directory")
+			console.SendLine("new-app")
+			console.ExpectEOF()
+		}()
+
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}}
+
+		err = os.Mkdir(path.Join(profile.WorkingDirectory, "test-app"), os.ModePerm)
+		assert.Nil(t, err)
+
+		dir, err := inputs.resolveDirectory(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
+		assert.Equal(t, "new-app", inputs.Directory)
 	})
 
 	t.Run("should error when path specified is another realm app", func(t *testing.T) {
@@ -190,14 +221,14 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		)
 		assert.Nil(t, localApp.WriteConfig())
 
-		dir, err := inputs.resolveDirectory(profile.WorkingDirectory)
+		dir, err := inputs.resolveDirectory(nil, profile.WorkingDirectory)
 
 		assert.Equal(t, "", dir)
 		assert.Equal(t, errProjectExists{fullDir}, err)
 	})
 }
 
-func TestAppCreateInputsResolveDataSource(t *testing.T) {
+func TestAppCreateInputsResolveCluster(t *testing.T) {
 	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
@@ -206,15 +237,15 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataSource: "test-cluster"}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Cluster: "test-cluster"}
 
-		ds, err := inputs.resolveDataSource(ac, "123")
+		ds, err := inputs.resolveCluster(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, dataSource{
+		assert.Equal(t, dataSourceCluster{
 			Name: "mongodb-atlas",
 			Type: "mongodb-atlas",
-			Config: dataSourceConfig{
+			Config: configCluster{
 				ClusterName:         "test-cluster",
 				ReadPreference:      "primary",
 				WireProtocolEnabled: false,
@@ -231,9 +262,9 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return nil, nil
 		}
 
-		inputs := createInputs{DataSource: "test-cluster"}
+		inputs := createInputs{Cluster: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(ac, "123")
+		_, err := inputs.resolveCluster(ac, "123")
 		assert.Equal(t, errors.New("failed to find Atlas cluster"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
@@ -246,9 +277,64 @@ func TestAppCreateInputsResolveDataSource(t *testing.T) {
 			return nil, errors.New("client error")
 		}
 
-		inputs := createInputs{DataSource: "test-cluster"}
+		inputs := createInputs{Cluster: "test-cluster"}
 
-		_, err := inputs.resolveDataSource(ac, "123")
+		_, err := inputs.resolveCluster(ac, "123")
+		assert.Equal(t, errors.New("client error"), err)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+}
+
+func TestAppCreateInputsResolveDataLake(t *testing.T) {
+	t.Run("should return data source config of a provided data lake", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return []atlas.DataLake{{Name: "test-datalake"}}, nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLake: "test-datalake"}
+
+		ds, err := inputs.resolveDataLake(ac, "123")
+		assert.Nil(t, err)
+
+		assert.Equal(t, dataSourceDataLake{
+			Name: "mongodb-datalake",
+			Type: "datalake",
+			Config: configDataLake{
+				DataLakeName: "test-datalake",
+			},
+		}, ds)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should not be able to find specified data lake", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return nil, nil
+		}
+
+		inputs := createInputs{DataLake: "test-datalake"}
+
+		_, err := inputs.resolveDataLake(ac, "123")
+		assert.Equal(t, errors.New("failed to find Atlas data lake"), err)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should error from client", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return nil, errors.New("client error")
+		}
+
+		inputs := createInputs{DataLake: "test-datalake"}
+
+		_, err := inputs.resolveDataLake(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})

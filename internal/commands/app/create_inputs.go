@@ -17,12 +17,14 @@ import (
 
 var (
 	flagDirectory      = "app-dir"
-	flagDirectoryShort = "c"
+	flagDirectoryShort = "p"
 	flagDirectoryUsage = "the directory to create your new Realm app, defaults to Realm app name"
 
-	flagDataSource      = "data-source"
-	flagDataSourceShort = "s"
-	flagDataSourceUsage = "include to link an Atlas cluster to your Realm app, defaults to first available"
+	flagCluster      = "cluster"
+	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
+
+	flagDataLake      = "data-lake"
+	flagDataLakeUsage = "include to link an Atlas data lake to your Realm app"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
@@ -31,21 +33,32 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	Directory  string
-	DataSource string
-	DryRun     bool
+	Directory string
+	Cluster   string
+	DataLake  string
+	DryRun    bool
 }
 
-type dataSource struct {
-	Name   string           `json:"name"`
-	Type   string           `json:"type"`
-	Config dataSourceConfig `json:"config"`
+type dataSourceCluster struct {
+	Name   string        `json:"name"`
+	Type   string        `json:"type"`
+	Config configCluster `json:"config"`
 }
 
-type dataSourceConfig struct {
+type configCluster struct {
 	ClusterName         string `json:"clusterName"`
 	ReadPreference      string `json:"readPreference"`
 	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
+}
+
+type dataSourceDataLake struct {
+	Name   string         `json:"name"`
+	Type   string         `json:"type"`
+	Config configDataLake `json:"config"`
+}
+
+type configDataLake struct {
+	DataLakeName string `json:"dataLakeName"`
 }
 
 func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
@@ -77,7 +90,7 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, f from) 
 	return nil
 }
 
-func (i *createInputs) resolveDirectory(wd string) (string, error) {
+func (i *createInputs) resolveDirectory(ui terminal.UI, wd string) (string, error) {
 	if i.Directory == "" {
 		i.Directory = i.Name
 	}
@@ -99,34 +112,72 @@ func (i *createInputs) resolveDirectory(wd string) (string, error) {
 	if appOK {
 		return "", errProjectExists{fullPath}
 	}
+	ui.Print(terminal.NewWarningLog("Directory './%s' already exists, writing app contents to that destination may result in file conflicts.", i.Directory))
+	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.Directory)
+	if err != nil {
+		return "", err
+	}
+	if !proceed {
+		var newDir string
+		if err := ui.AskOne(&newDir, &survey.Input{Message: "Directory"}); err != nil {
+			return "", err
+		}
+		i.Directory = newDir
+		fullPath = path.Join(wd, i.Directory)
+	}
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveDataSource(client atlas.Client, groupID string) (dataSource, error) {
+func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (dataSourceCluster, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return dataSource{}, err
+		return dataSourceCluster{}, err
 	}
 	var clusterName string
 	for _, cluster := range clusters {
-		if i.DataSource == cluster.Name {
+		if i.Cluster == cluster.Name {
 			clusterName = cluster.Name
 			break
 		}
 	}
 	if clusterName == "" {
-		return dataSource{}, errors.New("failed to find Atlas cluster")
+		return dataSourceCluster{}, errors.New("failed to find Atlas cluster")
 	}
-	dataSource := dataSource{
+	dsCluster := dataSourceCluster{
 		Name: "mongodb-atlas",
 		Type: "mongodb-atlas",
-		Config: dataSourceConfig{
+		Config: configCluster{
 			ClusterName:         clusterName,
 			ReadPreference:      "primary",
 			WireProtocolEnabled: false,
 		},
 	}
-	return dataSource, nil
+	return dsCluster, nil
+}
+
+func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dataSourceDataLake, error) {
+	dataLakes, err := client.DataLakes(groupID)
+	if err != nil {
+		return dataSourceDataLake{}, err
+	}
+	var dataLakeName string
+	for _, dataLake := range dataLakes {
+		if i.DataLake == dataLake.Name {
+			dataLakeName = dataLake.Name
+			break
+		}
+	}
+	if dataLakeName == "" {
+		return dataSourceDataLake{}, errors.New("failed to find Atlas data lake")
+	}
+	dsDataLake := dataSourceDataLake{
+		Name: "mongodb-datalake",
+		Type: "datalake",
+		Config: configDataLake{
+			DataLakeName: dataLakeName,
+		},
+	}
+	return dsDataLake, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {
@@ -149,8 +200,11 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.DeploymentModel != flagDeploymentModelDefault {
 		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})
 	}
-	if i.DataSource != "" {
-		args = append(args, flags.Arg{flagDataSource, i.DataSource})
+	if i.Cluster != "" {
+		args = append(args, flags.Arg{flagCluster, i.Cluster})
+	}
+	if i.DataLake != "" {
+		args = append(args, flags.Arg{flagDataLake, i.DataLake})
 	}
 	if i.DryRun && !omitDryRun {
 		args = append(args, flags.Arg{Name: flagDryRun})

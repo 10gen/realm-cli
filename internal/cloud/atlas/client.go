@@ -25,6 +25,7 @@ type Client interface {
 	Groups() ([]Group, error)
 
 	Clusters(groupID string) ([]Cluster, error)
+	DataLakes(groupID string) ([]DataLake, error)
 
 	Status() error
 }
