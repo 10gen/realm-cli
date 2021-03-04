@@ -52,28 +52,24 @@ func TestStdoutTracker(t *testing.T) {
 }
 
 func TestSegmentTracker(t *testing.T) {
-	client := &testClient{}
 	t.Run("should create the segment tracker and should print the tracking information to the logger", func(t *testing.T) {
+		client := &testClient{}
 		tracker := segmentTracker{}
 		tracker.client = client
 		tracker.Track(createEvent(EventTypeCommandError, []EventData{{Key: EventDataKeyErr, Value: "Something"}}, "someCommand"))
 
-		testClientResults := tracker.client.(*testClient)
 		expectedTrack := analytics.Track{
 			MessageId: testID,
 			UserId:    testUserID,
 			Timestamp: testTime,
 			Event:     string(EventTypeCommandError),
 			Properties: map[string]interface{}{
-				string(EventDataKeyErr):         "Something",
-				string(eventDataKeyCmd):         "someCommand",
-				string(eventDataKeyExecutionID): testExecutionID,
+				EventDataKeyErr:         "Something",
+				eventDataKeyCommand:     "someCommand",
+				eventDataKeyExecutionID: testExecutionID,
 			},
 		}
-
-		actualTrack := testClientResults.calls[0].(analytics.Track)
-		assert.NotNil(t, actualTrack)
-		assert.Equal(t, []interface{}{expectedTrack}, testClientResults.calls)
+		assert.Equal(t, []interface{}{expectedTrack}, client.calls)
 	})
 }
 

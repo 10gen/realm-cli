@@ -40,7 +40,7 @@ type segmentTracker struct {
 
 func newSegmentTracker(logger *log.Logger) Tracker {
 	if len(segmentWriteKey) == 0 {
-		log.Print("unable to connect to Segment due to missing key, CLI telemetry will be disabled")
+		logger.Print("unable to connect to Segment due to missing key, CLI telemetry will be disabled")
 		return &noopTracker{}
 	}
 	client := analytics.New(segmentWriteKey)
@@ -49,10 +49,11 @@ func newSegmentTracker(logger *log.Logger) Tracker {
 
 func (tracker *segmentTracker) Track(event event) {
 	properties := make(map[string]interface{}, len(event.data)+2)
-	properties[string(eventDataKeyCmd)] = event.command
-	properties[string(eventDataKeyExecutionID)] = event.executionID
+	properties[eventDataKeyCommand] = event.command
+	properties[eventDataKeyExecutionID] = event.executionID
+
 	for _, datum := range event.data {
-		properties[string(datum.Key)] = datum.Value
+		properties[datum.Key] = datum.Value
 	}
 	if err := tracker.client.Enqueue(analytics.Track{
 		MessageId:  event.id,
