@@ -1374,13 +1374,13 @@ func TestPushCommandDisplay(t *testing.T) {
 			inputs: inputs{
 				Project:             "project",
 				LocalPath:           "directory",
-				RemoteApp:           "local",
+				RemoteApp:           "remote",
 				IncludeDependencies: true,
 				IncludeHosting:      true,
 				ResetCDNCache:       true,
 				DryRun:              true,
 			},
-			display: "realm-cli push --project project --local directory --remote to --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
+			display: "realm-cli push --project project --local directory --remote remote --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
