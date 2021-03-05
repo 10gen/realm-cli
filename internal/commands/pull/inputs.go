@@ -21,8 +21,8 @@ const (
 	flagAppVersion      = "app-version"
 	flagAppVersionUsage = "specify the app config version to pull changes down as"
 
-	flagLocal      = "local"
-	flagLocalUsage = "provide the local path to export a Realm app to"
+	flagLocalPath      = "local"
+	flagLocalPathUsage = "specify the local path to export a Realm app to"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"

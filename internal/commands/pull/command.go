@@ -23,7 +23,7 @@ type Command struct {
 
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocal, "", flagLocalUsage)
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.Var(&cmd.inputs.AppVersion, flagAppVersion, flagAppVersionUsage)

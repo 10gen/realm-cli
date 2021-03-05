@@ -40,7 +40,7 @@ type CommandDiff struct {
 
 // Flags is the command flags
 func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.inputs.LocalPath, flagLocalPath, flagLocalPathShort, "", flagLocalPathUsage)
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 

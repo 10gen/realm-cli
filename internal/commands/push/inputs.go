@@ -10,7 +10,7 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "provide the local path to a Realm app containing the changes to push"
+	flagLocalPathUsage = "specify the local path to a Realm app containing the changes to push"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"

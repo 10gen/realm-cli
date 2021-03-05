@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	flagLocalPath      = "local-path"
-	flagLocalPathShort = "p"
+	flagLocalPath      = "local"
 	flagLocalPathUsage = "the local path to create your new Realm app, defaults to Realm app name"
 
 	flagCluster      = "cluster"
@@ -112,7 +111,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	if appOK {
 		return "", errProjectExists{fullPath}
 	}
-	ui.Print(terminal.NewWarningLog("Local Path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
+	ui.Print(terminal.NewWarningLog("Local path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
 	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.LocalPath)
 	if err != nil {
 		return "", err

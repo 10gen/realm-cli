@@ -576,7 +576,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --app-dir realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
 			cmd.display(false),
 		)
 	})
