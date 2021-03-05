@@ -11,13 +11,9 @@ import (
 )
 
 const (
-	testUser = "userID"
+	testUser    = "userID"
 	testCommand = "command"
-	testXID = "executionID"
-)
-
-var (
-	testLogger = log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix)
+	testXID     = "executionID"
 )
 
 func TestNewService(t *testing.T) {
@@ -41,7 +37,6 @@ func TestNewService(t *testing.T) {
 	t.Run("Should disable the service if the segmentWriteKey is empty", func(t *testing.T) {
 		swk := segmentWriteKey
 		defer func() { segmentWriteKey = swk }()
-
 		segmentWriteKey = ""
 		testServiceOutput(t, ModeOn, "LogPrefix unable to connect to Segment due to missing key, CLI telemetry will be disabled\n")
 	})
@@ -77,20 +72,29 @@ func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
 }
 
-func newService(mode Mode) *Service{
-	return NewService(mode, testUser, testLogger, testCommand)
+func newService(mode Mode, logger *log.Logger) *Service {
+	return NewService(mode, testUser, logger, testCommand)
+}
+
+func mockStdoutSetup(t *testing.T) (*os.File, *os.File, func()) {
+	t.Helper()
+
+	stdout := os.Stdout
+
+	r, w, err := os.Pipe()
+	assert.Nil(t, err)
+	os.Stdout = w
+
+	return r, w, func() { os.Stdout = stdout }
 }
 
 func testServiceOutput(t *testing.T, mode Mode, expected string) {
 	t.Helper()
 
-	stdout := os.Stdout
-	defer func() { os.Stdout = stdout }()
-	r, w, err := os.Pipe()
-	assert.Nil(t, err)
-	os.Stdout = w
+	r, w, resetStdout := mockStdoutSetup(t)
+	defer resetStdout()
 
-	newService(mode)
+	newService(mode, log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix))
 
 	assert.Nil(t, w.Close())
 

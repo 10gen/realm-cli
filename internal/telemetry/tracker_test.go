@@ -25,7 +25,7 @@ func (client *mockSegmentClient) Close() error {
 	return nil
 }
 
-type mockFailureSegmentClient struct {}
+type mockFailureSegmentClient struct{}
 
 func (client *mockFailureSegmentClient) Enqueue(track analytics.Message) error {
 	return errors.New("failed to enqueue")
@@ -89,11 +89,8 @@ func TestSegmentTracker(t *testing.T) {
 		tracker := &segmentTracker{}
 		tracker.client = client
 
-		stdout := os.Stdout
-		defer func() { os.Stdout = stdout }()
-		r, w, err := os.Pipe()
-		assert.Nil(t, err)
-		os.Stdout = w
+		r, w, resetStdout := mockStdoutSetup(t)
+		defer resetStdout()
 
 		tracker.logger = log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix)
 
@@ -103,20 +100,19 @@ func TestSegmentTracker(t *testing.T) {
 		))
 
 		assert.Nil(t, w.Close())
+		expected := "LogPrefix failed to send Segment event \"COMMAND_ERROR\": failed to enqueue\n"
+
 		out, err := ioutil.ReadAll(r)
 		assert.Nil(t, err)
-		assert.Equal(t, "LogPrefix failed to send Segment event \"COMMAND_ERROR\": failed to enqueue\n", string(out))
+		assert.Equal(t, expected, string(out))
 	})
 }
 
 func testTrackerOutput(t *testing.T, tracker Tracker, event event, expected string) {
 	t.Helper()
 
-	stdout := os.Stdout
-	defer func() { os.Stdout = stdout }()
-	r, w, err := os.Pipe()
-	assert.Nil(t, err)
-	os.Stdout = w
+	r, w, resetStdout := mockStdoutSetup(t)
+	defer resetStdout()
 
 	tracker.Track(event)
 
