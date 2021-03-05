@@ -40,8 +40,8 @@ type AuthStructure struct {
 
 // DataSourceStructure represents the v2 Realm app data source structure
 type DataSourceStructure struct {
-	Config map[string]interface{} `json:"config,omitempty"`
-	// TODO(REALMC-8016): include latest rules/schema for a data source
+	Config map[string]interface{}   `json:"config,omitempty"`
+	Rules  []map[string]interface{} `json:"rules,omitempty"`
 }
 
 // FunctionsStructure represents the v2 Realm app functions structure
@@ -244,13 +244,44 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 			return err
 		}
 
-		// TODO(REALMC-8016): include latest rules/schema for a data source
-		// rules, err := parseJSONFiles(filepath.Join(path, NameRules))
-		// if err != nil {
-		// 	return err
-		// }
+		var rules []map[string]interface{}
 
-		out = append(out, DataSourceStructure{config})
+		dbs := directoryWalker{path: path, onlyDirs: true}
+		if err := dbs.walk(func(db os.FileInfo, dbPath string) error {
+
+			colls := directoryWalker{path: dbPath, onlyDirs: true}
+			if err := colls.walk(func(coll os.FileInfo, collPath string) error {
+
+				rulePath := filepath.Join(collPath, FileRules.String())
+				if _, err := os.Stat(rulePath); err != nil {
+					if os.IsNotExist(err) {
+						return nil // skip directories that do not contain `rules.json`
+					}
+					return err
+				}
+
+				rule, err := parseJSON(rulePath)
+				if err != nil {
+					return err
+				}
+
+				schema, err := parseJSON(filepath.Join(collPath, FileSchema.String()))
+				if err != nil {
+					return err
+				}
+				rule[NameSchema] = schema
+
+				rules = append(rules, rule)
+				return nil
+			}); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+
+		out = append(out, DataSourceStructure{config, rules})
 		return nil
 	}); err != nil {
 		return nil, err

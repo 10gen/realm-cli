@@ -59,6 +59,7 @@ const (
 	NameHTTPEndpoints    = "http_endpoints"
 	NameIncomingWebhooks = "incoming_webhooks"
 	NameRules            = "rules"
+	NameSchema           = "schema"
 	NameServices         = "services"
 
 	// triggers
@@ -82,6 +83,10 @@ var (
 	// auth
 	FileCustomUserData = File{NameCustomUserData, extJSON}
 	FileProviders      = File{NameProviders, extJSON}
+
+	// data sources
+	FileRules  = File{NameRules, extJSON}
+	FileSchema = File{NameSchema, extJSON}
 
 	// functions
 	FileSource = File{NameSource, extJS}

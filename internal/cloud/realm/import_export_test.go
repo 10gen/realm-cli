@@ -290,11 +290,18 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			},
 		},
 		DataSources: []local.DataSourceStructure{
-			{Config: map[string]interface{}{"name": "mdb", "type": "mongodb-atlas", "config": map[string]interface{}{
-				"clusterName":         "Cluster0",
-				"readPreference":      "primary",
-				"wireProtocolEnabled": false,
-			}}},
+			{
+				Config: map[string]interface{}{"name": "mdb", "type": "mongodb-atlas", "config": map[string]interface{}{
+					"clusterName":         "Cluster0",
+					"readPreference":      "primary",
+					"wireProtocolEnabled": false,
+				}},
+				Rules: []map[string]interface{}{{
+					"database":   "db",
+					"collection": "coll",
+					"schema":     map[string]interface{}{},
+				}},
+			},
 		},
 		HTTPEndpoints: []local.HTTPEndpointStructure{
 			{
