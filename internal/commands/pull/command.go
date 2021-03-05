@@ -23,9 +23,9 @@ type Command struct {
 
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.Local, flagLocal, "", flagLocalUsage)
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocal, "", flagLocalUsage)
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	fs.StringVar(&cmd.inputs.Remote, flagRemote, "", flagRemoteUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.Var(&cmd.inputs.AppVersion, flagAppVersion, flagAppVersionUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
@@ -39,12 +39,12 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	remote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
 	}
 
-	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, remote.GroupID, remote.AppID)
+	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, appRemote.GroupID, appRemote.AppID)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 			s.Start()
 			defer s.Stop()
 
-			archiveName, archivePkg, err := clients.Realm.ExportDependencies(remote.GroupID, remote.AppID)
+			archiveName, archivePkg, err := clients.Realm.ExportDependencies(appRemote.GroupID, appRemote.AppID)
 			if err != nil {
 				return err
 			}
@@ -108,12 +108,12 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 			s.Start()
 			defer s.Stop()
 
-			appAssets, err := clients.Realm.HostingAssets(remote.GroupID, remote.AppID)
+			appAssets, err := clients.Realm.HostingAssets(appRemote.GroupID, appRemote.AppID)
 			if err != nil {
 				return err
 			}
 
-			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, remote.GroupID, remote.AppID, appAssets)
+			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, appRemote.GroupID, appRemote.AppID, appAssets)
 		}
 
 		if err := exportHostingAssets(); err != nil {
@@ -136,15 +136,15 @@ func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, gro
 		return "", nil, exportErr
 	}
 
-	local := cmd.inputs.Local
-	if local == "" {
+	pathLocal := cmd.inputs.LocalPath
+	if pathLocal == "" {
 		if idx := strings.LastIndex(name, "_"); idx != -1 {
 			name = name[:idx]
 		}
-		local = name
+		pathLocal = name
 	}
 
-	target := filepath.Join(profile.WorkingDirectory, local)
+	target := filepath.Join(profile.WorkingDirectory, pathLocal)
 
 	return target, zipPkg, nil
 }

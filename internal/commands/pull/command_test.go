@@ -28,7 +28,7 @@ func TestPullHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{Remote: "somewhere"}}
+		cmd := &Command{inputs{RemoteApp: "somewhere"}}
 
 		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -45,7 +45,7 @@ func TestPullHandler(t *testing.T) {
 			return "", nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{Remote: "somewhere"}}
+		cmd := &Command{inputs{RemoteApp: "somewhere"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -69,7 +69,7 @@ func TestPullHandler(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{DryRun: true, Local: "app"}}
+			cmd := &Command{inputs{DryRun: true, LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
@@ -88,7 +88,7 @@ func TestPullHandler(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Local: "app"}}
+			cmd := &Command{inputs{LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
@@ -128,7 +128,7 @@ func TestPullHandler(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Local: "app"}}
+			cmd := &Command{inputs{LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
@@ -143,7 +143,7 @@ func TestPullHandler(t *testing.T) {
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Local: "app", IncludeDependencies: true}}
+			cmd := &Command{inputs{LocalPath: "app", IncludeDependencies: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -175,7 +175,7 @@ func TestPullHandler(t *testing.T) {
 			return "node_modules.zip", depsPkg, nil
 		}
 
-		cmd := &Command{inputs{Local: "app", IncludeDependencies: true}}
+		cmd := &Command{inputs{LocalPath: "app", IncludeDependencies: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
@@ -209,7 +209,7 @@ func TestPullHandler(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Local: "app"}}
+			cmd := &Command{inputs{LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
@@ -224,7 +224,7 @@ func TestPullHandler(t *testing.T) {
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Local: "app", IncludeHosting: true}}
+			cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -296,7 +296,7 @@ func TestPullHandler(t *testing.T) {
 			}, nil
 		})
 
-		cmd := &Command{inputs{Local: "app", IncludeHosting: true}}
+		cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, HostingAsset: hostingAssetClient}))
 		assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
@@ -378,7 +378,7 @@ func TestPullCommandDoExport(t *testing.T) {
 					return tc.zipName, &zip.Reader{}, nil
 				}
 
-				cmd := &Command{inputs{Local: tc.flagLocal}}
+				cmd := &Command{inputs{LocalPath: tc.flagLocal}}
 
 				path, zipPkg, err := cmd.doExport(profile, realmClient, "", "")
 				assert.Nil(t, err)

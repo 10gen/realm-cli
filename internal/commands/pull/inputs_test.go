@@ -37,8 +37,8 @@ func TestPullInputsResolve(t *testing.T) {
 			var i inputs
 			assert.Nil(t, i.Resolve(profile, nil))
 
-			assert.Equal(t, profile.WorkingDirectory, i.Local)
-			assert.Equal(t, "eggcorn-abcde", i.Remote)
+			assert.Equal(t, profile.WorkingDirectory, i.LocalPath)
+			assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
 			assert.Equal(t, realm.AppConfigVersion20210101, i.AppVersion)
 		})
 
@@ -71,10 +71,10 @@ func TestPullInputsResolve(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				profile := mock.NewProfile(t)
 
-				i := inputs{Local: tc.targetFlag}
+				i := inputs{LocalPath: tc.targetFlag}
 				assert.Nil(t, i.Resolve(profile, nil))
 
-				assert.Equal(t, tc.expectedTarget, i.Local)
+				assert.Equal(t, tc.expectedTarget, i.LocalPath)
 			})
 		}
 	})
@@ -103,7 +103,7 @@ func TestPullInputsResolveFrom(t *testing.T) {
 			return []realm.App{app}, nil
 		}
 
-		i := inputs{Project: app.GroupID, Remote: app.ClientAppID}
+		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
 
 		f, err := i.resolveRemoteApp(nil, client)
 		assert.Nil(t, err)
