@@ -20,15 +20,15 @@ const (
 )
 
 type diffInputs struct {
-	AppDirectory        string
+	LocalPath           string
 	IncludeDependencies bool
 	IncludeHosting      bool
 	cli.ProjectInputs
 }
 
 func (i *diffInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if i.AppDirectory == "" {
-		i.AppDirectory = profile.WorkingDirectory
+	if i.LocalPath == "" {
+		i.LocalPath = profile.WorkingDirectory
 	}
 	return nil
 }
@@ -40,7 +40,7 @@ type CommandDiff struct {
 
 // Flags is the command flags
 func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.inputs.AppDirectory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
+	fs.StringVarP(&cmd.inputs.LocalPath, flagLocalPath, flagLocalPathShort, "", flagLocalPathUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 
@@ -54,7 +54,7 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	app, err := local.LoadApp(cmd.inputs.AppDirectory)
+	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err
 	}

@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	flagDirectory      = "app-dir"
-	flagDirectoryShort = "p"
-	flagDirectoryUsage = "the directory to create your new Realm app, defaults to Realm app name"
+	flagLocalPath      = "local-path"
+	flagLocalPathShort = "p"
+	flagLocalPathUsage = "the local path to create your new Realm app, defaults to Realm app name"
 
 	flagCluster      = "cluster"
 	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
@@ -33,7 +33,7 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	Directory string
+	LocalPath string
 	Cluster   string
 	DataLake  string
 	DryRun    bool
@@ -91,10 +91,10 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, r appRem
 }
 
 func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
-	if i.Directory == "" {
-		i.Directory = i.Name
+	if i.LocalPath == "" {
+		i.LocalPath = i.Name
 	}
-	fullPath := path.Join(wd, i.Directory)
+	fullPath := path.Join(wd, i.LocalPath)
 	fi, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -112,18 +112,18 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	if appOK {
 		return "", errProjectExists{fullPath}
 	}
-	ui.Print(terminal.NewWarningLog("Directory './%s' already exists, writing app contents to that destination may result in file conflicts.", i.Directory))
-	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.Directory)
+	ui.Print(terminal.NewWarningLog("Local Path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
+	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.LocalPath)
 	if err != nil {
 		return "", err
 	}
 	if !proceed {
 		var newDir string
-		if err := ui.AskOne(&newDir, &survey.Input{Message: "Directory"}); err != nil {
+		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path"}); err != nil {
 			return "", err
 		}
-		i.Directory = newDir
-		fullPath = path.Join(wd, i.Directory)
+		i.LocalPath = newDir
+		fullPath = path.Join(wd, i.LocalPath)
 	}
 	return fullPath, nil
 }
@@ -191,8 +191,8 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.RemoteApp != "" {
 		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
 	}
-	if i.Directory != "" {
-		args = append(args, flags.Arg{flagDirectory, i.Directory})
+	if i.LocalPath != "" {
+		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})

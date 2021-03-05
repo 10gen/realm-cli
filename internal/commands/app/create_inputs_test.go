@@ -144,16 +144,16 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Equal(t, path.Join(profile.WorkingDirectory, appName), dir)
 	})
 
-	t.Run("should return path of wd with directory appended when directory is set", func(t *testing.T) {
+	t.Run("should return path of wd with directory appended when local path is set", func(t *testing.T) {
 		profile := mock.NewProfileFromWd(t)
 
-		specifiedDir := "test-dir"
-		inputs := createInputs{Directory: specifiedDir}
+		specifiedPath := "test-dir"
+		inputs := createInputs{LocalPath: specifiedPath}
 
 		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
 
 		assert.Nil(t, err)
-		assert.Equal(t, path.Join(profile.WorkingDirectory, specifiedDir), dir)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, specifiedPath), dir)
 	})
 
 	t.Run("should return path of wd with app name appended even with file of app name in wd", func(t *testing.T) {
@@ -202,7 +202,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
-		assert.Equal(t, "new-app", inputs.Directory)
+		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 
 	t.Run("should error when path specified is another realm app", func(t *testing.T) {
@@ -210,7 +210,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		defer teardown()
 
 		specifiedDir := "test-dir"
-		inputs := createInputs{Directory: specifiedDir}
+		inputs := createInputs{LocalPath: specifiedDir}
 		fullDir := path.Join(profile.WorkingDirectory, specifiedDir)
 
 		appLocal := local.NewApp(

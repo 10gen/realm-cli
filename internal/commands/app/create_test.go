@@ -569,7 +569,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
-				Directory: "realm-app",
+				LocalPath: "realm-app",
 				Cluster:   "Cluster0",
 				DataLake:  "DataLake0",
 				DryRun:    true,
