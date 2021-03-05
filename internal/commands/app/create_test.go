@@ -191,7 +191,7 @@ func TestAppCreateHandler(t *testing.T) {
 		}
 
 		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Remote:          testApp.Name,
+			RemoteApp:       testApp.Name,
 			Project:         testApp.GroupID,
 			Location:        realm.LocationIreland,
 			DeploymentModel: realm.DeploymentModelGlobal,
@@ -199,7 +199,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Remote))
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.RemoteApp))
 		assert.Nil(t, err)
 
 		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
@@ -446,7 +446,7 @@ func TestAppCreateHandler(t *testing.T) {
 			cmd := &CommandCreate{
 				inputs: createInputs{
 					newAppInputs: newAppInputs{
-						Remote:          tc.appRemote,
+						RemoteApp:       tc.appRemote,
 						Name:            "test-app",
 						Project:         "123",
 						Location:        realm.LocationVirginia,
@@ -529,7 +529,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 			cmd := &CommandCreate{createInputs{
 				newAppInputs: newAppInputs{
-					Remote:          tc.appRemote,
+					RemoteApp:       tc.appRemote,
 					Project:         tc.groupID,
 					Name:            "test-app",
 					Location:        realm.LocationVirginia,
@@ -565,7 +565,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 				newAppInputs: newAppInputs{
 					Name:            "test-app",
 					Project:         "123",
-					Remote:          "remote-app",
+					RemoteApp:       "remote-app",
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},

@@ -74,7 +74,7 @@ func TestAppInitHandler(t *testing.T) {
 			return "", &zipPkg.Reader, err
 		}
 
-		cmd := &CommandInit{initInputs{newAppInputs{Remote: "test"}}}
+		cmd := &CommandInit{initInputs{newAppInputs{RemoteApp: "test"}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 

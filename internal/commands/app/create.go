@@ -27,7 +27,7 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
-	fs.StringVar(&cmd.inputs.Remote, flagRemote, "", flagRemoteUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.StringVarP(&cmd.inputs.Directory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
@@ -92,7 +92,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if appRemote.IsZero() {
 			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
 		} else {
-			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.Remote, dir))
+			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
 		}
 		if dsCluster.Name != "" {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))

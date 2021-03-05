@@ -17,7 +17,7 @@ type CommandInit struct {
 // Flags is the command flags
 func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	fs.StringVar(&cmd.inputs.Remote, flagRemote, "", flagRemoteUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)

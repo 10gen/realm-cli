@@ -35,13 +35,13 @@ func TestAppNewAppInputsResolveFrom(t *testing.T) {
 	}{
 		{
 			description:    "should return the app id and group id of specified app when from is set",
-			inputs:         newAppInputs{Remote: testApp.ID},
+			inputs:         newAppInputs{RemoteApp: testApp.ID},
 			expectedRemote: appRemote{GroupID: testApp.GroupID, AppID: testApp.ID},
 			expectedFilter: realm.AppFilter{App: testApp.ID},
 		},
 		{
 			description:    "should error when finding app",
-			inputs:         newAppInputs{Remote: testApp.ID},
+			inputs:         newAppInputs{RemoteApp: testApp.ID},
 			expectedFilter: realm.AppFilter{App: testApp.ID},
 			expectedErr:    errors.New("realm client error"),
 		},

@@ -11,7 +11,7 @@ const (
 	flagProjectUsage = "the MongoDB cloud project id"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "choose an application or template to initialize the Realm app with"
+	flagRemoteUsage = "choose an application to initialize the Realm app with"
 
 	flagName      = "name"
 	flagNameShort = "n"
@@ -39,7 +39,7 @@ func (r appRemote) IsZero() bool {
 
 type newAppInputs struct {
 	Project         string
-	Remote          string
+	RemoteApp       string
 	Name            string
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
@@ -47,13 +47,13 @@ type newAppInputs struct {
 
 func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (appRemote, error) {
 	var r appRemote
-	if i.Remote != "" {
-		remote, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.Remote})
+	if i.RemoteApp != "" {
+		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.RemoteApp})
 		if err != nil {
 			return appRemote{}, err
 		}
-		r.GroupID = remote.GroupID
-		r.AppID = remote.ID
+		r.GroupID = app.GroupID
+		r.AppID = app.ID
 	}
 	return r, nil
 }
