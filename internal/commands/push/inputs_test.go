@@ -35,7 +35,7 @@ func TestPushInputsResolve(t *testing.T) {
 		assert.Nil(t, i.Resolve(profile, nil))
 
 		assert.Equal(t, profile.WorkingDirectory, i.LocalPath)
-		assert.Equal(t, "eggcorn-abcde", i.Remote)
+		assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
 	})
 }
 
@@ -62,7 +62,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 			return []realm.App{app}, nil
 		}
 
-		i := inputs{Project: app.GroupID, Remote: app.ClientAppID}
+		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
 
 		f, err := i.resolveRemoteApp(nil, client)
 		assert.Nil(t, err)

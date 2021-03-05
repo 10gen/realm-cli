@@ -51,7 +51,7 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Project: "groupID", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", Project: "groupID", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -100,7 +100,7 @@ func TestPushHandler(t *testing.T) {
 			return realm.App{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -125,7 +125,7 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -156,7 +156,7 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDraft{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -193,7 +193,7 @@ func TestPushHandler(t *testing.T) {
 			return errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -233,7 +233,7 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDeployment{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -290,7 +290,7 @@ func TestPushHandler(t *testing.T) {
 					return nil, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -315,7 +315,7 @@ func TestPushHandler(t *testing.T) {
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -356,7 +356,7 @@ func TestPushHandler(t *testing.T) {
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("1 error(s) occurred while importing hosting assets"), err)
@@ -399,7 +399,7 @@ func TestPushHandler(t *testing.T) {
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -445,7 +445,7 @@ func TestPushHandler(t *testing.T) {
 				}, nil
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true}}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -486,7 +486,7 @@ func TestPushHandler(t *testing.T) {
 				return errors.New("something bad happened")
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true, ResetCDNCache: true}}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -515,7 +515,7 @@ func TestPushHandler(t *testing.T) {
 				return nil
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", Remote: "appID", IncludeHosting: true, ResetCDNCache: true}}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -539,7 +539,7 @@ func TestPushHandler(t *testing.T) {
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
@@ -555,7 +555,7 @@ func TestPushHandler(t *testing.T) {
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID", IncludeDependencies: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
 
 				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("something bad happened"), err)
@@ -570,7 +570,7 @@ func TestPushHandler(t *testing.T) {
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID", IncludeDependencies: true}}
+			cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
@@ -613,7 +613,7 @@ func TestPushHandler(t *testing.T) {
 					return []realm.App{{GroupID: tc.groupID}}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, Remote: "appID"}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, RemoteApp: "appID"}}
 
 				out, ui := mock.NewUI()
 
@@ -650,7 +650,7 @@ func TestPushHandler(t *testing.T) {
 			console.ExpectEOF()
 		}()
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
@@ -671,7 +671,7 @@ func TestPushHandler(t *testing.T) {
 			return []string{}, nil
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
@@ -691,7 +691,7 @@ func TestPushHandler(t *testing.T) {
 
 		out, ui := mock.NewUI()
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", DryRun: true, RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
@@ -727,7 +727,7 @@ diff2
 			console.ExpectEOF()
 		}()
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", Remote: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
@@ -1374,7 +1374,7 @@ func TestPushCommandDisplay(t *testing.T) {
 			inputs: inputs{
 				Project:             "project",
 				LocalPath:           "directory",
-				Remote:              "local",
+				RemoteApp:           "local",
 				IncludeDependencies: true,
 				IncludeHosting:      true,
 				ResetCDNCache:       true,
@@ -1394,7 +1394,7 @@ func runImport(t *testing.T, realmClient realm.Client, appDirectory string) {
 	out := new(bytes.Buffer)
 	ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-	cmd := &Command{inputs{LocalPath: appDirectory, Remote: "appID"}}
+	cmd := &Command{inputs{LocalPath: appDirectory, RemoteApp: "appID"}}
 
 	assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	assert.Equal(t, `01:23:45 UTC INFO  Determining changes

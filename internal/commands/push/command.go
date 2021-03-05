@@ -34,7 +34,7 @@ type Command struct {
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	fs.StringVar(&cmd.inputs.Remote, flagRemote, "", flagRemoteUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
@@ -53,21 +53,21 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return err
 	}
 
-	remote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
 	}
 
-	if remote.GroupID == "" {
+	if appRemote.GroupID == "" {
 		groupID, err := cli.ResolveGroupID(ui, clients.Atlas)
 		if err != nil {
 			return err
 		}
-		remote.GroupID = groupID
+		appRemote.GroupID = groupID
 	}
 
 	var isNewApp bool
-	if remote.AppID == "" {
+	if appRemote.AppID == "" {
 		if cmd.inputs.DryRun {
 			ui.Print(
 				terminal.NewTextLog("This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed"),
@@ -76,7 +76,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 			return nil
 		}
 
-		app, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.LocalPath, remote.GroupID, app.AppData)
+		app, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.LocalPath, appRemote.GroupID, app.AppData)
 		if err != nil {
 			return err
 		}
@@ -84,12 +84,12 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 			return nil
 		}
 
-		remote.AppID = app.ID
+		appRemote.AppID = app.ID
 		isNewApp = true
 	}
 
 	ui.Print(terminal.NewTextLog("Determining changes"))
-	appDiffs, err := clients.Realm.Diff(remote.GroupID, remote.AppID, app.AppData)
+	appDiffs, err := clients.Realm.Diff(appRemote.GroupID, appRemote.AppID, app.AppData)
 	if err != nil {
 		return err
 	}
@@ -101,12 +101,12 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 
 	var hostingDiffs local.HostingDiffs
 	if cmd.inputs.IncludeHosting {
-		appAssets, err := clients.Realm.HostingAssets(remote.GroupID, remote.AppID)
+		appAssets, err := clients.Realm.HostingAssets(appRemote.GroupID, appRemote.AppID)
 		if err != nil {
 			return err
 		}
 
-		hostingDiffs, err = hosting.Diffs(profile.HostingAssetCachePath(), remote.AppID, appAssets)
+		hostingDiffs, err = hosting.Diffs(profile.HostingAssetCachePath(), appRemote.AppID, appAssets)
 		if err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	ui.Print(terminal.NewTextLog("Creating draft"))
-	draft, proceed, err := createNewDraft(ui, clients.Realm, remote)
+	draft, proceed, err := createNewDraft(ui, clients.Realm, appRemote)
 	if err != nil {
 		return err
 	}
@@ -163,12 +163,12 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	ui.Print(terminal.NewTextLog("Pushing changes"))
-	if err := clients.Realm.Import(remote.GroupID, remote.AppID, app.AppData); err != nil {
+	if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
 		return err
 	}
 
 	ui.Print(terminal.NewTextLog("Deploying draft"))
-	if err := deployDraftAndWait(ui, clients.Realm, remote, draft.ID); err != nil {
+	if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
 		return err
 	}
 
@@ -200,7 +200,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		}
 		defer os.Remove(uploadPath) //nolint:errcheck
 
-		if err := clients.Realm.ImportDependencies(remote.GroupID, remote.AppID, uploadPath); err != nil {
+		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPath); err != nil {
 			return err
 		}
 		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
@@ -216,8 +216,8 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 
 			return hosting.UploadHostingAssets(
 				clients.Realm,
-				remote.GroupID,
-				remote.AppID,
+				appRemote.GroupID,
+				appRemote.AppID,
 				hostingDiffs,
 				func(err error) { ui.Print(terminal.NewWarningLog(err.Error())) },
 			)
@@ -236,7 +236,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 				s.Start()
 				defer s.Stop()
 
-				return clients.Realm.HostingCacheInvalidate(remote.GroupID, remote.AppID, "/*")
+				return clients.Realm.HostingCacheInvalidate(appRemote.GroupID, appRemote.AppID, "/*")
 			}
 
 			if err := invalidateCache(); err != nil {
@@ -410,7 +410,7 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 			deployment, err = realmClient.Deployment(remote.GroupID, remote.AppID, deployment.ID)
 			if err != nil {
 				if e := realmClient.DiscardDraft(remote.GroupID, remote.AppID, draftID); e != nil {
-					ui.Print(terminal.NewWarningLog("Failed local discard the draft created for your deployment"))
+					ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
 				}
 				return err
 			}

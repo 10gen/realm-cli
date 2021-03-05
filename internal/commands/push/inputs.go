@@ -10,13 +10,13 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "provide the path to a Realm app containing the changes to push"
+	flagLocalPathUsage = "provide the local path to a Realm app containing the changes to push"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "choose a Realm app to push changes towards"
+	flagRemoteUsage = "specify a remote Realm app to push changes towards"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
@@ -43,7 +43,7 @@ type appRemote struct {
 type inputs struct {
 	LocalPath           string
 	Project             string
-	Remote              string
+	RemoteApp           string
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -68,8 +68,8 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		i.LocalPath = app.RootDir
 	}
 
-	if i.Remote == "" {
-		i.Remote = app.Option()
+	if i.RemoteApp == "" {
+		i.RemoteApp = app.Option()
 	}
 
 	return nil
@@ -78,11 +78,11 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
 	r := appRemote{GroupID: i.Project}
 
-	if i.Remote == "" {
+	if i.RemoteApp == "" {
 		return r, nil
 	}
 
-	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.Remote})
+	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); !ok {
 			return appRemote{}, err
@@ -102,8 +102,8 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
 	}
-	if i.Remote != "" {
-		args = append(args, flags.Arg{flagRemote, i.Remote})
+	if i.RemoteApp != "" {
+		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
 	}
 	if i.IncludeDependencies {
 		args = append(args, flags.Arg{Name: flagIncludeDependencies})
