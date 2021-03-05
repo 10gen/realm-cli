@@ -10,32 +10,32 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
+const (
+	testUser = "userID"
+	testCommand = "command"
+	testXID = "executionID"
+)
+
+var (
+	testLogger = log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix)
+)
+
 func TestNewService(t *testing.T) {
 	t.Run("Should create the expected Service", func(t *testing.T) {
-		service := NewService(ModeStdout, "userID", nil, "command")
+		service := NewService(ModeStdout, testUser, nil, testCommand)
 
-		assert.Equal(t, "command", service.command)
+		assert.Equal(t, testCommand, service.command)
 		assert.True(t, service.executionID != "", "service execution id must not be blank")
-		assert.Equal(t, "userID", service.userID)
+		assert.Equal(t, testUser, service.userID)
 		assert.NotNil(t, service.tracker)
 	})
 
-	createSegmentFn := func() *Service {
-		return NewService(ModeOn, "userID", log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix), "command")
-	}
 	t.Run("Should create a segment tracking service if the segmentWriteKey is there", func(t *testing.T) {
 		swk := segmentWriteKey
 		defer func() { segmentWriteKey = swk }()
 
 		segmentWriteKey = "testing"
-		testServiceStdoutput(t, createSegmentFn, "")
-
-		service := createSegmentFn()
-
-		assert.Equal(t, "command", service.command)
-		assert.True(t, service.executionID != "", "service execution id must not be blank")
-		assert.Equal(t, "userID", service.userID)
-		assert.NotNil(t, service.tracker)
+		testServiceOutput(t, ModeOn, "")
 	})
 
 	t.Run("Should disable the service if the segmentWriteKey is empty", func(t *testing.T) {
@@ -43,13 +43,7 @@ func TestNewService(t *testing.T) {
 		defer func() { segmentWriteKey = swk }()
 
 		segmentWriteKey = ""
-		testServiceStdoutput(t, createSegmentFn, "LogPrefix unable to connect to Segment due to missing key, CLI telemetry will be disabled\n")
-		service := createSegmentFn()
-
-		assert.Equal(t, "command", service.command)
-		assert.True(t, service.executionID != "", "service execution id must not be blank")
-		assert.Equal(t, "userID", service.userID)
-		assert.NotNil(t, service.tracker)
+		testServiceOutput(t, ModeOn, "LogPrefix unable to connect to Segment due to missing key, CLI telemetry will be disabled\n")
 	})
 }
 
@@ -57,20 +51,20 @@ func TestServiceTrackEvent(t *testing.T) {
 	t.Run("Should track the expected event", func(t *testing.T) {
 		tracker := &testTracker{}
 		service := &Service{
-			command:     "command",
-			executionID: "executionID",
-			userID:      "userID",
+			command:     testCommand,
+			executionID: testXID,
+			userID:      testUser,
 			tracker:     tracker,
 		}
 
-		service.TrackEvent(EventTypeCommandError, EventData{Key: EventDataKeyErr, Value: errors.New("error")})
+		service.TrackEvent(EventTypeCommandError, EventData{Key: EventDataKeyError, Value: errors.New("error")})
 
 		assert.Equal(t, EventTypeCommandError, tracker.lastTrackedEvent.eventType)
-		assert.Equal(t, "command", tracker.lastTrackedEvent.command)
-		assert.Equal(t, "executionID", tracker.lastTrackedEvent.executionID)
-		assert.Equal(t, "userID", tracker.lastTrackedEvent.userID)
+		assert.Equal(t, testCommand, tracker.lastTrackedEvent.command)
+		assert.Equal(t, testXID, tracker.lastTrackedEvent.executionID)
+		assert.Equal(t, testUser, tracker.lastTrackedEvent.userID)
 		assert.Equal(t, 1, len(tracker.lastTrackedEvent.data))
-		assert.Equal(t, EventDataKeyErr, tracker.lastTrackedEvent.data[0].Key)
+		assert.Equal(t, EventDataKeyError, tracker.lastTrackedEvent.data[0].Key)
 		assert.Equal(t, errors.New("error"), tracker.lastTrackedEvent.data[0].Value)
 	})
 }
@@ -82,7 +76,12 @@ type testTracker struct {
 func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
 }
-func testServiceStdoutput(t *testing.T, createFn func() *Service, expected string) {
+
+func newService(mode Mode) *Service{
+	return NewService(mode, testUser, testLogger, testCommand)
+}
+
+func testServiceOutput(t *testing.T, mode Mode, expected string) {
 	t.Helper()
 
 	stdout := os.Stdout
@@ -91,7 +90,7 @@ func testServiceStdoutput(t *testing.T, createFn func() *Service, expected strin
 	assert.Nil(t, err)
 	os.Stdout = w
 
-	createFn()
+	newService(mode)
 
 	assert.Nil(t, w.Close())
 

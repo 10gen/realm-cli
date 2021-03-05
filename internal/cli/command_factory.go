@@ -106,7 +106,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
-					telemetry.EventData{Key: telemetry.EventDataKeyErr, Value: err},
+					telemetry.EventData{Key: telemetry.EventDataKeyError, Value: err},
 				)
 				return fmt.Errorf("%s failed: %w", display, errDisableUsage{err})
 			}

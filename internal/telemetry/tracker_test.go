@@ -1,7 +1,9 @@
 package telemetry
 
 import (
+	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 	"time"
@@ -10,16 +12,26 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
-type testClient struct {
+type mockSegmentClient struct {
 	calls []interface{}
 }
 
-func (client *testClient) Enqueue(track analytics.Message) error {
+func (client *mockSegmentClient) Enqueue(track analytics.Message) error {
 	client.calls = append(client.calls, track)
 	return nil
 }
 
-func (client *testClient) Close() error {
+func (client *mockSegmentClient) Close() error {
+	return nil
+}
+
+type mockFailureSegmentClient struct {}
+
+func (client *mockFailureSegmentClient) Enqueue(track analytics.Message) error {
+	return errors.New("failed to enqueue")
+}
+
+func (client *mockFailureSegmentClient) Close() error {
 	return nil
 }
 
@@ -34,29 +46,29 @@ var testTime = time.Date(2021, 1, 2, 3, 4, 5, 6, time.UTC)
 func TestNoopTracker(t *testing.T) {
 	t.Run("should create a noop tracker and should not do anything when track is called", func(t *testing.T) {
 		tracker := noopTracker{}
-		testEvent := createEvent(EventTypeCommandStart, nil, "someCommand")
-		testTrackStdoutOutput(t, &tracker, testEvent, "")
+		testEvent := createEvent(EventTypeCommandStart, nil, testCommand)
+		testTrackerOutput(t, &tracker, testEvent, "")
 	})
 }
 
 func TestStdoutTracker(t *testing.T) {
 	t.Run("should create an stdout tracker and should print the tracking information to stdout", func(t *testing.T) {
 		tracker := stdoutTracker{}
-		testTrackStdoutOutput(
+		testTrackerOutput(
 			t,
 			&tracker,
-			createEvent(EventTypeCommandComplete, nil, "someCommand"),
-			"03:04:05 UTC TELEM someCommand: COMMAND_COMPLETE[]\n",
+			createEvent(EventTypeCommandComplete, nil, testCommand),
+			"03:04:05 UTC TELEM command: COMMAND_COMPLETE[]\n",
 		)
 	})
 }
 
 func TestSegmentTracker(t *testing.T) {
 	t.Run("should create the segment tracker and should print the tracking information to the logger", func(t *testing.T) {
-		client := &testClient{}
+		client := &mockSegmentClient{}
 		tracker := segmentTracker{}
 		tracker.client = client
-		tracker.Track(createEvent(EventTypeCommandError, []EventData{{Key: EventDataKeyErr, Value: "Something"}}, "someCommand"))
+		tracker.Track(createEvent(EventTypeCommandError, []EventData{{Key: EventDataKeyError, Value: "Something"}}, testCommand))
 
 		expectedTrack := analytics.Track{
 			MessageId: testID,
@@ -64,16 +76,40 @@ func TestSegmentTracker(t *testing.T) {
 			Timestamp: testTime,
 			Event:     string(EventTypeCommandError),
 			Properties: map[string]interface{}{
-				EventDataKeyErr:         "Something",
-				eventDataKeyCommand:     "someCommand",
+				EventDataKeyError:       "Something",
+				eventDataKeyCommand:     testCommand,
 				eventDataKeyExecutionID: testExecutionID,
 			},
 		}
 		assert.Equal(t, []interface{}{expectedTrack}, client.calls)
 	})
+
+	t.Run("should capture the error in the logger passed in", func(t *testing.T) {
+		client := &mockFailureSegmentClient{}
+		tracker := &segmentTracker{}
+		tracker.client = client
+
+		stdout := os.Stdout
+		defer func() { os.Stdout = stdout }()
+		r, w, err := os.Pipe()
+		assert.Nil(t, err)
+		os.Stdout = w
+
+		tracker.logger = log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix)
+
+		tracker.Track(createEvent(
+			EventTypeCommandError,
+			[]EventData{{Key: EventDataKeyError, Value: "Something"}}, testCommand,
+		))
+
+		assert.Nil(t, w.Close())
+		out, err := ioutil.ReadAll(r)
+		assert.Nil(t, err)
+		assert.Equal(t, "LogPrefix failed to send Segment event \"COMMAND_ERROR\": failed to enqueue\n", string(out))
+	})
 }
 
-func testTrackStdoutOutput(t *testing.T, tracker Tracker, event event, expected string) {
+func testTrackerOutput(t *testing.T, tracker Tracker, event event, expected string) {
 	t.Helper()
 
 	stdout := os.Stdout

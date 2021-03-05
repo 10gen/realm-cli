@@ -32,8 +32,8 @@ const (
 
 // set of event data keys
 const (
-	eventDataKeyCommand     string = "cmd"
-	eventDataKeyExecutionID string = "xid"
+	eventDataKeyCommand     = "cmd"
+	eventDataKeyExecutionID = "xid"
 
-	EventDataKeyErr string = "err"
+	EventDataKeyError = "err"
 )
