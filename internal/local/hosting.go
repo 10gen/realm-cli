@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -273,7 +272,7 @@ func WriteHostingAssets(assetClient HostingAssetClient, rootDir, groupID, appID 
 				// and its value equals the content type specified by its file extension
 				contentType, ok := api.ContentTypeByExtension(ext[1:])
 				if ok && contentType == appAsset.Attrs[0].Value {
-					continue // do not add it to metdata.json
+					continue // do not add it to metadata.json
 				}
 			}
 		}
@@ -476,7 +475,7 @@ func walkFiles(rootDir, appID string, locallyRegisteredAssets map[string]hosting
 
 	for k := range locallyRegisteredAssets {
 		if _, ok := assetsByPath[k]; !ok {
-			return nil, errors.New(fmt.Sprintf("path found in metadata.json: %q, could not be found locally", k))
+			return nil, fmt.Errorf("path found in metadata.json: %q, could not be found locally", k)
 		}
 	}
 	return assets, nil
