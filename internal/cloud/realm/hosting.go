@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
@@ -68,7 +69,7 @@ func (c *client) HostingAssets(groupID, appID string) ([]HostingAsset, error) {
 }
 
 func (c *client) HostingAssetUpload(groupID, appID, rootDir string, asset HostingAsset) error {
-	file, err := os.Open(filepath.Join(rootDir, asset.FilePath))
+	file, err := os.Open(filepath.Join(rootDir, local.NameFiles, asset.FilePath))
 	if err != nil {
 		return err
 	}

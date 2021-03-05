@@ -126,7 +126,7 @@ type ModifiedHostingAsset struct {
 // Diffs returns the local Realm app's hosting asset differences
 // with the provided remote Realm app's hosting assets
 func (h Hosting) Diffs(cachePath, appID string, appAssets []realm.HostingAsset) (HostingDiffs, error) {
-	assets, err := readMetadata(h.RootDir)
+	locallyRegisteredAssets, err := readMetadata(h.RootDir)
 	if err != nil {
 		return HostingDiffs{}, err
 	}
@@ -135,7 +135,8 @@ func (h Hosting) Diffs(cachePath, appID string, appAssets []realm.HostingAsset) 
 	if err != nil {
 		return HostingDiffs{}, err
 	}
-	localAssets, err := walkFiles(h.RootDir, appID, assets, assetCache)
+
+	localAssets, err := walkFiles(h.RootDir, appID, locallyRegisteredAssets, assetCache)
 	if err != nil {
 		return HostingDiffs{}, err
 	}
@@ -407,7 +408,7 @@ func readMetadata(rootDir string) (map[string]hostingAsset, error) {
 	return assetsByPath, nil
 }
 
-func walkFiles(rootDir, appID string, localAssets map[string]hostingAsset, assetCache *hostingAssetCache) ([]realm.HostingAsset, error) {
+func walkFiles(rootDir, appID string, locallyRegisteredAssets map[string]hostingAsset, assetCache *hostingAssetCache) ([]realm.HostingAsset, error) {
 	dir := filepath.Join(rootDir, NameFiles)
 
 	var assets []realm.HostingAsset
@@ -428,7 +429,7 @@ func walkFiles(rootDir, appID string, localAssets map[string]hostingAsset, asset
 
 		assetPath := "/" + normalizePathSeparator(pathRelative)
 
-		localAsset, localAssetOK := localAssets[assetPath]
+		localAsset, localAssetOK := locallyRegisteredAssets[assetPath]
 
 		var attrs []realm.HostingAssetAttribute
 		if localAssetOK {
@@ -473,9 +474,9 @@ func walkFiles(rootDir, appID string, localAssets map[string]hostingAsset, asset
 		assetsByPath[asset.FilePath] = asset
 	}
 
-	for k := range localAssets {
+	for k := range locallyRegisteredAssets {
 		if _, ok := assetsByPath[k]; !ok {
-			return nil, errors.New("uh oh")
+			return nil, errors.New(fmt.Sprintf("path found in metadata.json: %q, could not be found locally", k))
 		}
 	}
 	return assets, nil
