@@ -215,6 +215,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 		appLocal := local.NewApp(
 			fullDir,
+			"test-app-abcde",
 			"test-app",
 			flagLocationDefault,
 			flagDeploymentModelDefault,

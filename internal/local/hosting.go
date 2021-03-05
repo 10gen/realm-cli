@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -208,10 +207,12 @@ func (h Hosting) UploadHostingAssets(realmClient realm.Client, groupID, appID st
 		}()
 	}
 
+	assetsDir := filepath.Join(h.RootDir, NameFiles)
+
 	for _, added := range hostingDiffs.Added {
 		asset := added // the closure otherwise sees the same value for `added` each iteration
 		jobCh <- func() {
-			if err := realmClient.HostingAssetUpload(groupID, appID, h.RootDir, asset); err != nil {
+			if err := realmClient.HostingAssetUpload(groupID, appID, assetsDir, asset); err != nil {
 				errCh <- fmt.Errorf("failed to add %s: %w", asset.FilePath, err)
 			}
 		}
@@ -234,7 +235,7 @@ func (h Hosting) UploadHostingAssets(realmClient realm.Client, groupID, appID st
 					errCh <- fmt.Errorf("failed to update attributes for %s: %w", asset.FilePath, err)
 				}
 			} else {
-				if err := realmClient.HostingAssetUpload(groupID, appID, h.RootDir, asset.HostingAsset); err != nil {
+				if err := realmClient.HostingAssetUpload(groupID, appID, assetsDir, asset.HostingAsset); err != nil {
 					errCh <- fmt.Errorf("failed to update %s: %w", asset.FilePath, err)
 				}
 			}
@@ -272,7 +273,7 @@ func WriteHostingAssets(assetClient HostingAssetClient, rootDir, groupID, appID 
 				// and its value equals the content type specified by its file extension
 				contentType, ok := api.ContentTypeByExtension(ext[1:])
 				if ok && contentType == appAsset.Attrs[0].Value {
-					continue // do not add it to metdata.json
+					continue // do not add it to metadata.json
 				}
 			}
 		}
@@ -390,6 +391,9 @@ type hostingAsset struct {
 func readMetadata(rootDir string) (map[string]hostingAsset, error) {
 	f, err := os.Open(filepath.Join(rootDir, NameMetadata+extJSON))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	defer f.Close()
@@ -475,7 +479,7 @@ func walkFiles(rootDir, appID string, localAssets map[string]hostingAsset, asset
 
 	for k := range localAssets {
 		if _, ok := assetsByPath[k]; !ok {
-			return nil, errors.New("uh oh")
+			return nil, fmt.Errorf("file '%s' has an entry in metadata file, but does not appear in files directory", k)
 		}
 	}
 	return assets, nil

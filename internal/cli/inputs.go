@@ -14,9 +14,6 @@ import (
 )
 
 const (
-	// project app inputs field names, per survey
-	appFieldName = "app"
-
 	flagApp      = "app"
 	flagAppUsage = "the Realm app name or id to manage"
 
@@ -46,21 +43,17 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
 		return appErr
 	}
 
-	var questions []*survey.Question
 	if i.App == "" {
-		questions = append(questions, &survey.Question{
-			Name: appFieldName,
-			Prompt: &survey.Input{
-				Message: "App Filter",
-				Default: app.Option(),
-			},
-		})
-	}
+		var appOption string
 
-	if len(questions) > 0 {
-		if err := ui.Ask(i, questions...); err != nil {
-			return err
+		if app.RootDir != "" {
+			appOption = app.Option()
+		} else {
+			if err := ui.AskOne(&appOption, &survey.Input{Message: "App Filter"}); err != nil {
+				return err
+			}
 		}
+		i.App = appOption
 	}
 
 	return nil

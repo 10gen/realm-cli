@@ -19,14 +19,14 @@ func TestNewApp(t *testing.T) {
 			Config:  FileRealmConfig,
 			AppData: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
 				ConfigVersion:   realm.AppConfigVersion20210101,
-				ID:              "",
+				ID:              "testID",
 				Name:            "testName",
 				Location:        realm.LocationOregon,
 				DeploymentModel: realm.DeploymentModelGlobal,
 			}}},
 		}
 
-		app := NewApp("/path/to/project", "testName", realm.LocationOregon, realm.DeploymentModelGlobal)
+		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal)
 		assert.Equal(t, expectedApp, app)
 	})
 }

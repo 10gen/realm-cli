@@ -127,13 +127,13 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 }
 
 func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, groupID, appID string) (string, *zip.Reader, error) {
-	name, zipPkg, exportErr := realmClient.Export(
+	name, zipPkg, err := realmClient.Export(
 		groupID,
 		appID,
 		realm.ExportRequest{ConfigVersion: cmd.inputs.AppVersion},
 	)
-	if exportErr != nil {
-		return "", nil, exportErr
+	if err != nil {
+		return "", nil, err
 	}
 
 	pathLocal := cmd.inputs.LocalPath
@@ -142,6 +142,13 @@ func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, gro
 			name = name[:idx]
 		}
 		pathLocal = name
+	}
+
+	if filepath.IsAbs(pathLocal) {
+		pathLocal, err = filepath.Rel(profile.WorkingDirectory, pathLocal)
+		if err != nil {
+			return "", nil, err
+		}
 	}
 
 	target := filepath.Join(profile.WorkingDirectory, pathLocal)

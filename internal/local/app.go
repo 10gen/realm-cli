@@ -37,9 +37,10 @@ func (a App) Option() string {
 }
 
 // NewApp returns a new local app
-func NewApp(rootDir, name string, location realm.Location, deploymentModel realm.DeploymentModel) App {
+func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel) App {
 	return AsApp(rootDir, realm.App{
-		Name: name,
+		ClientAppID: clientAppID,
+		Name:        name,
 		AppMeta: realm.AppMeta{
 			Location:        location,
 			DeploymentModel: deploymentModel,
