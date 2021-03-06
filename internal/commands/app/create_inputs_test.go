@@ -186,10 +186,10 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		go func() {
 			defer close(doneCh)
 
-			console.ExpectString("Directory './test-app' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Local path './test-app' already exists, writing app contents to that destination may result in file conflicts.")
 			console.ExpectString("Would you still like to write app contents to './test-app'? ('No' will prompt you to provide another destination)")
 			console.SendLine("no")
-			console.ExpectString("Directory")
+			console.ExpectString("Local Path")
 			console.SendLine("new-app")
 			console.ExpectEOF()
 		}()
