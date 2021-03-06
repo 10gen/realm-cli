@@ -14,9 +14,9 @@ import (
 func TestAppNewAppInputsResolveFrom(t *testing.T) {
 	t.Run("should do nothing if from is not set", func(t *testing.T) {
 		var i newAppInputs
-		f, err := i.resolveFrom(nil, nil)
+		r, err := i.resolveRemoteApp(nil, nil)
 		assert.Nil(t, err)
-		assert.Equal(t, from{}, f)
+		assert.Equal(t, appRemote{}, r)
 	})
 
 	testApp := realm.App{
@@ -29,19 +29,19 @@ func TestAppNewAppInputsResolveFrom(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         newAppInputs
-		expectedFrom   from
+		expectedRemote appRemote
 		expectedFilter realm.AppFilter
 		expectedErr    error
 	}{
 		{
 			description:    "should return the app id and group id of specified app when from is set",
-			inputs:         newAppInputs{From: testApp.ID},
-			expectedFrom:   from{GroupID: testApp.GroupID, AppID: testApp.ID},
+			inputs:         newAppInputs{RemoteApp: testApp.ID},
+			expectedRemote: appRemote{GroupID: testApp.GroupID, AppID: testApp.ID},
 			expectedFilter: realm.AppFilter{App: testApp.ID},
 		},
 		{
 			description:    "should error when finding app",
-			inputs:         newAppInputs{From: testApp.ID},
+			inputs:         newAppInputs{RemoteApp: testApp.ID},
 			expectedFilter: realm.AppFilter{App: testApp.ID},
 			expectedErr:    errors.New("realm client error"),
 		},
@@ -54,10 +54,10 @@ func TestAppNewAppInputsResolveFrom(t *testing.T) {
 				return []realm.App{testApp}, tc.expectedErr
 			}
 
-			f, err := tc.inputs.resolveFrom(nil, rc)
+			r, err := tc.inputs.resolveRemoteApp(nil, rc)
 
 			assert.Equal(t, tc.expectedErr, err)
-			assert.Equal(t, tc.expectedFrom, f)
+			assert.Equal(t, tc.expectedRemote, r)
 			assert.Equal(t, tc.expectedFilter, appFilter)
 		})
 	}

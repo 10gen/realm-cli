@@ -40,33 +40,33 @@ func TestAppDiffHandler(t *testing.T) {
 		},
 		{
 			description:        "with no project flag set and an app flag set should show the diff for the app",
-			inputs:             diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
+			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:        "with no diffs between local and remote app",
-			inputs:             diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
+			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiffOutput: "01:23:45 UTC INFO  Deployed app is identical to proposed version\n",
 		},
 		{
 			description:        "with a project flag set and no app flag set should diff based on input",
-			inputs:             diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1}},
+			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1}},
 			expectedAppFilter:  realm.AppFilter{GroupID: groupID1},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:       "error on the diff",
-			inputs:            diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
+			inputs:            diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 		},
 		{
 			description:       "error on finding apps",
-			inputs:            diffInputs{AppDirectory: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
+			inputs:            diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 			appError:          true,
@@ -141,7 +141,7 @@ diff2
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{AppDirectory: "testdata/diff", IncludeHosting: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/diff", IncludeHosting: true}}
 		assert.Equal(t, nil, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app

@@ -82,8 +82,8 @@ Realm app will be exported as well.`,
 a new disk. This command will create a new directory for your project.
 To initialize a Realm app in your current working directory, use ‘app init’.
 
-You can specify a '--from' input to create a Realm app from
-an existing app. If you do not specify a '--from' input,
+You can specify a '--remote' input to create a Realm app from
+an existing app. If you do not specify a '--remote' input,
 the CLI will create a non-personalized Realm app.`,
 				Command: &app.CommandCreate{},
 			},

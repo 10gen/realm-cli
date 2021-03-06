@@ -19,7 +19,7 @@ import (
 )
 
 func TestAppCreateHandler(t *testing.T) {
-	t.Run("should create minimal project when no from type is specified", func(t *testing.T) {
+	t.Run("should create minimal project when no remote type is specified", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -49,7 +49,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
-		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
 		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
@@ -57,10 +57,10 @@ func TestAppCreateHandler(t *testing.T) {
 			Name:            "test-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}, localApp.AppData)
+		}}}, appLocal.AppData)
 
 		// TODO(REALMC-8262): Investigate file path display options
-		dirLength := len(localApp.RootDir)
+		dirLength := len(appLocal.RootDir)
 		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
 		assert.Equal(t, strings.Join([]string{
@@ -68,14 +68,14 @@ func TestAppCreateHandler(t *testing.T) {
 			fmt.Sprintf("  Info             "+fmtStr, "Details"),
 			"  ---------------  " + strings.Repeat("-", dirLength),
 			fmt.Sprintf("  Client App ID    "+fmtStr, "test-app-abcde"),
-			"  Realm Directory  " + localApp.RootDir,
+			"  Realm Directory  " + appLocal.RootDir,
 			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
 			"01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
 	})
 
-	t.Run("when from and project is not set should create minimal project and prompt for project", func(t *testing.T) {
+	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -130,7 +130,7 @@ func TestAppCreateHandler(t *testing.T) {
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
 		expectedAppData := local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
@@ -140,7 +140,7 @@ func TestAppCreateHandler(t *testing.T) {
 			DeploymentModel: realm.DeploymentModelGlobal,
 		}}}
 
-		assert.Equal(t, &expectedAppData, localApp.AppData)
+		assert.Equal(t, &expectedAppData, appLocal.AppData)
 		assert.Equal(t, realm.App{
 			ID:          "456",
 			GroupID:     "123",
@@ -153,7 +153,7 @@ func TestAppCreateHandler(t *testing.T) {
 		}, createdApp)
 	})
 
-	t.Run("should create a new app with a structure based on the specified from app", func(t *testing.T) {
+	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -163,8 +163,8 @@ func TestAppCreateHandler(t *testing.T) {
 		testApp := realm.App{
 			ID:          "789",
 			GroupID:     "123",
-			ClientAppID: "from-app-abcde",
-			Name:        "from-app",
+			ClientAppID: "remote-app-abcde",
+			Name:        "remote-app",
 		}
 
 		zipPkg, err := zip.OpenReader("testdata/project.zip")
@@ -191,7 +191,7 @@ func TestAppCreateHandler(t *testing.T) {
 		}
 
 		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			From:            testApp.Name,
+			RemoteApp:       testApp.Name,
 			Project:         testApp.GroupID,
 			Location:        realm.LocationIreland,
 			DeploymentModel: realm.DeploymentModelGlobal,
@@ -199,7 +199,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
-		localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.From))
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.RemoteApp))
 		assert.Nil(t, err)
 
 		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
@@ -212,20 +212,20 @@ func TestAppCreateHandler(t *testing.T) {
 				Providers:      map[string]interface{}{},
 			},
 			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-		}}}, localApp.AppData)
+		}}}, appLocal.AppData)
 
 		// TODO(REALMC-8262): Investigate file path display options
-		dirLength := len(localApp.RootDir)
+		dirLength := len(appLocal.RootDir)
 		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
 		assert.Equal(t, strings.Join([]string{
 			"01:23:45 UTC INFO  Successfully created app",
 			fmt.Sprintf("  Info             "+fmtStr, "Details"),
 			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "from-app-abcde"),
-			"  Realm Directory  " + localApp.RootDir,
+			fmt.Sprintf("  Client App ID    "+fmtStr, "remote-app-abcde"),
+			"  Realm Directory  " + appLocal.RootDir,
 			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"01:23:45 UTC DEBUG Check out your app: cd ./from-app && realm-cli app describe",
+			"01:23:45 UTC DEBUG Check out your app: cd ./remote-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
 	})
@@ -356,13 +356,13 @@ func TestAppCreateHandler(t *testing.T) {
 	testApp := realm.App{
 		ID:          "789",
 		GroupID:     "123",
-		ClientAppID: "from-app-abcde",
-		Name:        "from-app",
+		ClientAppID: "remote-app-abcde",
+		Name:        "remote-app",
 	}
 
 	for _, tc := range []struct {
 		description     string
-		from            string
+		appRemote       string
 		cluster         string
 		dataLake        string
 		datalake        string
@@ -380,8 +380,8 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 		},
 		{
-			description: "should create a dry run for the specified from app",
-			from:        "from-app",
+			description: "should create a dry run for the specified remote app",
+			appRemote:   "remote-app",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
 					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -391,7 +391,7 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("01:23:45 UTC INFO  A Realm app based on the Realm app 'from-app' would be created at %s", dir),
+					fmt.Sprintf("01:23:45 UTC INFO  A Realm app based on the Realm app 'remote-app' would be created at %s", dir),
 					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
@@ -446,7 +446,7 @@ func TestAppCreateHandler(t *testing.T) {
 			cmd := &CommandCreate{
 				inputs: createInputs{
 					newAppInputs: newAppInputs{
-						From:            tc.from,
+						RemoteApp:       tc.appRemote,
 						Name:            "test-app",
 						Project:         "123",
 						Location:        realm.LocationVirginia,
@@ -467,7 +467,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 	for _, tc := range []struct {
 		description string
-		from        string
+		appRemote   string
 		groupID     string
 		cluster     string
 		dataLake    string
@@ -512,8 +512,8 @@ func TestAppCreateHandler(t *testing.T) {
 			expectedErr: errors.New("atlas client error"),
 		},
 		{
-			description: "should error when resolving app when from is set",
-			from:        "from-app",
+			description: "should error when resolving app when remote is set",
+			appRemote:   "remote-app",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
 					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -529,7 +529,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 			cmd := &CommandCreate{createInputs{
 				newAppInputs: newAppInputs{
-					From:            tc.from,
+					RemoteApp:       tc.appRemote,
 					Project:         tc.groupID,
 					Name:            "test-app",
 					Location:        realm.LocationVirginia,
@@ -565,18 +565,18 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 				newAppInputs: newAppInputs{
 					Name:            "test-app",
 					Project:         "123",
-					From:            "from-app",
+					RemoteApp:       "remote-app",
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
-				Directory: "realm-app",
+				LocalPath: "realm-app",
 				Cluster:   "Cluster0",
 				DataLake:  "DataLake0",
 				DryRun:    true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --from from-app --app-dir realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
 			cmd.display(false),
 		)
 	})

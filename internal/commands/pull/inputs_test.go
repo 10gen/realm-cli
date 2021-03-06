@@ -37,8 +37,8 @@ func TestPullInputsResolve(t *testing.T) {
 			var i inputs
 			assert.Nil(t, i.Resolve(profile, nil))
 
-			assert.Equal(t, profile.WorkingDirectory, i.To)
-			assert.Equal(t, "eggcorn-abcde", i.From)
+			assert.Equal(t, profile.WorkingDirectory, i.LocalPath)
+			assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
 			assert.Equal(t, realm.AppConfigVersion20210101, i.AppVersion)
 		})
 
@@ -71,10 +71,10 @@ func TestPullInputsResolve(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				profile := mock.NewProfile(t)
 
-				i := inputs{To: tc.targetFlag}
+				i := inputs{LocalPath: tc.targetFlag}
 				assert.Nil(t, i.Resolve(profile, nil))
 
-				assert.Equal(t, tc.expectedTarget, i.To)
+				assert.Equal(t, tc.expectedTarget, i.LocalPath)
 			})
 		}
 	})
@@ -83,9 +83,9 @@ func TestPullInputsResolve(t *testing.T) {
 func TestPullInputsResolveFrom(t *testing.T) {
 	t.Run("should do nothing if to is not set", func(t *testing.T) {
 		var i inputs
-		tt, err := i.resolveFrom(nil, nil)
+		tt, err := i.resolveRemoteApp(nil, nil)
 		assert.Nil(t, err)
-		assert.Equal(t, from{}, tt)
+		assert.Equal(t, appRemote{}, tt)
 	})
 
 	t.Run("should return the app id and group id of specified app if to is set to app", func(t *testing.T) {
@@ -103,12 +103,12 @@ func TestPullInputsResolveFrom(t *testing.T) {
 			return []realm.App{app}, nil
 		}
 
-		i := inputs{Project: app.GroupID, From: app.ClientAppID}
+		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
 
-		f, err := i.resolveFrom(nil, client)
+		f, err := i.resolveRemoteApp(nil, client)
 		assert.Nil(t, err)
 
-		assert.Equal(t, from{GroupID: app.GroupID, AppID: app.ID}, f)
+		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID}, f)
 		assert.Equal(t, realm.AppFilter{GroupID: app.GroupID, App: app.ClientAppID}, appFilter)
 	})
 }

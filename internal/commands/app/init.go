@@ -17,7 +17,7 @@ type CommandInit struct {
 // Flags is the command flags
 func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	fs.StringVarP(&cmd.inputs.From, flagFrom, flagFromShort, "", flagFromUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
@@ -30,17 +30,17 @@ func (cmd *CommandInit) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	from, err := cmd.inputs.resolveFrom(ui, clients.Realm)
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
 	}
 
-	if from.IsZero() {
+	if appRemote.IsZero() {
 		if err := cmd.writeAppFromScratch(profile.WorkingDirectory); err != nil {
 			return err
 		}
 	} else {
-		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, from.GroupID, from.AppID); err != nil {
+		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.AppID); err != nil {
 			return err
 		}
 	}

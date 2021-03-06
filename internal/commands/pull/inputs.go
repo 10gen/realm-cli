@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	flagFrom      = "from"
-	flagFromShort = "a"
-	flagFromUsage = "specify the app to pull changes down from"
+	flagRemote      = "remote"
+	flagRemoteUsage = "specify the remote app to pull changes down from"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
@@ -22,9 +21,8 @@ const (
 	flagAppVersion      = "app-version"
 	flagAppVersionUsage = "specify the app config version to pull changes down as"
 
-	flagTo      = "to"
-	flagToShort = "t"
-	flagToUsage = "provide the path to export a Realm app to"
+	flagLocalPath      = "local"
+	flagLocalPathUsage = "specify the local path to export a Realm app to"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
@@ -45,8 +43,8 @@ var (
 
 type inputs struct {
 	Project             string
-	From                string
-	To                  string
+	RemoteApp           string
+	LocalPath           string
 	AppVersion          realm.AppConfigVersion
 	IncludeDependencies bool
 	IncludeHosting      bool
@@ -54,7 +52,7 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	wd := i.To
+	wd := i.LocalPath
 	if wd == "" {
 		wd = profile.WorkingDirectory
 	}
@@ -64,17 +62,17 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		return appErr
 	}
 
-	var to string
-	if i.To == "" {
-		to = app.RootDir
+	var pathLocal string
+	if i.LocalPath == "" {
+		pathLocal = app.RootDir
 	} else {
-		t, err := homedir.Expand(i.To)
+		l, err := homedir.Expand(i.LocalPath)
 		if err != nil {
 			return err
 		}
-		to = t
+		pathLocal = l
 	}
-	i.To = to
+	i.LocalPath = pathLocal
 
 	if app.RootDir != "" {
 		if i.AppVersion == realm.AppConfigVersionZero {
@@ -83,34 +81,34 @@ func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 			return errConfigVersionMismatch
 		}
 
-		if i.From == "" {
-			i.From = app.Option()
+		if i.RemoteApp == "" {
+			i.RemoteApp = app.Option()
 		}
 	}
 
 	return nil
 }
 
-type from struct {
+type appRemote struct {
 	GroupID string
 	AppID   string
 }
 
-func (i inputs) resolveFrom(ui terminal.UI, client realm.Client) (from, error) {
-	f := from{GroupID: i.Project}
+func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
+	r := appRemote{GroupID: i.Project}
 
-	if i.From == "" {
-		return f, nil
+	if i.RemoteApp == "" {
+		return r, nil
 	}
 
-	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.From})
+	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); !ok {
-			return from{}, err
+			return appRemote{}, err
 		}
 	}
 
-	f.GroupID = app.GroupID
-	f.AppID = app.ID
-	return f, nil
+	r.GroupID = app.GroupID
+	r.AppID = app.ID
+	return r, nil
 }

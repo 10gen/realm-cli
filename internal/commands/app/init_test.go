@@ -17,7 +17,7 @@ import (
 )
 
 func TestAppInitHandler(t *testing.T) {
-	t.Run("should initialize an empty project when no from type is specified", func(t *testing.T) {
+	t.Run("should initialize an empty project when no remote type is specified", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
@@ -47,7 +47,7 @@ func TestAppInitHandler(t *testing.T) {
 		}}}, config)
 	})
 
-	t.Run("should initialze a templated app when from type is specified to app", func(t *testing.T) {
+	t.Run("should initialze a templated app when remote type is specified to app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_test")
 		defer teardown()
 
@@ -74,7 +74,7 @@ func TestAppInitHandler(t *testing.T) {
 			return "", &zipPkg.Reader, err
 		}
 
-		cmd := &CommandInit{initInputs{newAppInputs{From: "test"}}}
+		cmd := &CommandInit{initInputs{newAppInputs{RemoteApp: "test"}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
@@ -88,7 +88,7 @@ func TestAppInitHandler(t *testing.T) {
 			assert.Nil(t, json.Unmarshal(data, &config))
 			assert.Equal(t, local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 				ConfigVersion:   realm.DefaultAppConfigVersion,
-				Name:            "from-app",
+				Name:            "remote-app",
 				Location:        realm.LocationIreland,
 				DeploymentModel: realm.DeploymentModelGlobal,
 			}}}, config)

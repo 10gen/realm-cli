@@ -10,9 +10,8 @@ const (
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
 
-	flagFrom      = "from"
-	flagFromShort = "a"
-	flagFromUsage = "choose an application or template to initialize the Realm app with"
+	flagRemote      = "remote"
+	flagRemoteUsage = "choose an application to initialize the Realm app with"
 
 	flagName      = "name"
 	flagNameShort = "n"
@@ -29,32 +28,32 @@ const (
 	flagLocationDefault = realm.LocationVirginia
 )
 
-type from struct {
+type appRemote struct {
 	GroupID string
 	AppID   string
 }
 
-func (f from) IsZero() bool {
-	return f.GroupID == "" && f.AppID == ""
+func (r appRemote) IsZero() bool {
+	return r.GroupID == "" && r.AppID == ""
 }
 
 type newAppInputs struct {
 	Project         string
-	From            string
+	RemoteApp       string
 	Name            string
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
 }
 
-func (i *newAppInputs) resolveFrom(ui terminal.UI, rc realm.Client) (from, error) {
-	var f from
-	if i.From != "" {
-		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.From})
+func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (appRemote, error) {
+	var r appRemote
+	if i.RemoteApp != "" {
+		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.RemoteApp})
 		if err != nil {
-			return from{}, err
+			return appRemote{}, err
 		}
-		f.GroupID = app.GroupID
-		f.AppID = app.ID
+		r.GroupID = app.GroupID
+		r.AppID = app.ID
 	}
-	return f, nil
+	return r, nil
 }

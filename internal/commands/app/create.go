@@ -27,8 +27,8 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
-	fs.StringVarP(&cmd.inputs.From, flagFrom, flagFromShort, "", flagFromUsage)
-	fs.StringVarP(&cmd.inputs.Directory, flagDirectory, flagDirectoryShort, "", flagDirectoryUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
@@ -43,13 +43,13 @@ func (cmd *CommandCreate) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	from, err := cmd.inputs.resolveFrom(ui, clients.Realm)
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
 	}
 
 	var groupID = cmd.inputs.Project
-	if from.IsZero() {
+	if appRemote.IsZero() {
 		if groupID == "" {
 			id, err := cli.ResolveGroupID(ui, clients.Atlas)
 			if err != nil {
@@ -58,15 +58,15 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 			groupID = id
 		}
 	} else {
-		groupID = from.GroupID
+		groupID = appRemote.GroupID
 	}
 
-	err = cmd.inputs.resolveName(ui, clients.Realm, from)
+	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote)
 	if err != nil {
 		return err
 	}
 
-	dir, err := cmd.inputs.resolveDirectory(ui, profile.WorkingDirectory)
+	dir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 	if err != nil {
 		return err
 	}
@@ -89,10 +89,10 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
-		if from.IsZero() {
+		if appRemote.IsZero() {
 			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
 		} else {
-			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.From, dir))
+			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
 		}
 		if dsCluster.Name != "" {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))
@@ -105,21 +105,21 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return nil
 	}
 
-	if from.IsZero() {
-		localApp := local.NewApp(
+	if appRemote.IsZero() {
+		appLocal := local.NewApp(
 			dir,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
 			cmd.inputs.DeploymentModel,
 		)
-		err := localApp.WriteConfig()
+		err := appLocal.WriteConfig()
 		if err != nil {
 			return err
 		}
 	} else {
 		_, zipPkg, err := clients.Realm.Export(
-			from.GroupID,
-			from.AppID,
+			appRemote.GroupID,
+			appRemote.AppID,
 			realm.ExportRequest{},
 		)
 		if err != nil {
@@ -194,7 +194,7 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
-	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.Directory, cli.Name)))
+	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
 	return nil
 }
 
