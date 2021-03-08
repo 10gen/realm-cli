@@ -367,6 +367,11 @@ func TestPullCommandDoExport(t *testing.T) {
 				expectedPath: "/some/system/path/app",
 			},
 			{
+				description:  "with an absolute to flag set",
+				flagLocal:    "/some/system/path/my-project/app-abcde",
+				expectedPath: "/some/system/path/my-project/app-abcde",
+			},
+			{
 				description:  "with no to flag set and the zip file name has no timestamp",
 				zipName:      "app-abcde",
 				expectedPath: "/some/system/path/app-abcde",

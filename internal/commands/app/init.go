@@ -61,6 +61,7 @@ func (cmd *CommandInit) writeAppFromScratch(wd string) error {
 		this logic probably wants to live in local.App, where ConfigVersion actually determines what gets written/initialized
 	*/
 	return local.NewApp(wd,
+		"", // no app id yet
 		cmd.inputs.Name,
 		cmd.inputs.Location,
 		cmd.inputs.DeploymentModel,

@@ -105,9 +105,15 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return nil
 	}
 
+	newApp, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
+	if err != nil {
+		return err
+	}
+
 	if appRemote.IsZero() {
 		appLocal := local.NewApp(
 			dir,
+			newApp.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
 			cmd.inputs.DeploymentModel,
@@ -131,11 +137,6 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	}
 
 	loadedApp, err := local.LoadApp(dir)
-	if err != nil {
-		return err
-	}
-
-	newApp, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
 	if err != nil {
 		return err
 	}

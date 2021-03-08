@@ -153,23 +153,25 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return nil
 	}
 
-	ui.Print(terminal.NewTextLog("Creating draft"))
-	draft, proceed, err := createNewDraft(ui, clients.Realm, appRemote)
-	if err != nil {
-		return err
-	}
-	if !proceed {
-		return nil
-	}
+	if len(appDiffs) > 0 {
+		ui.Print(terminal.NewTextLog("Creating draft"))
+		draft, proceed, err := createNewDraft(ui, clients.Realm, appRemote)
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return nil
+		}
 
-	ui.Print(terminal.NewTextLog("Pushing changes"))
-	if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
-		return err
-	}
+		ui.Print(terminal.NewTextLog("Pushing changes"))
+		if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
+			return err
+		}
 
-	ui.Print(terminal.NewTextLog("Deploying draft"))
-	if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
-		return err
+		ui.Print(terminal.NewTextLog("Deploying draft"))
+		if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
+			return err
+		}
 	}
 
 	if cmd.inputs.IncludeDependencies {

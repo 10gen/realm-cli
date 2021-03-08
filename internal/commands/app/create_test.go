@@ -54,6 +54,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
+			ID:              "test-app-abcde",
 			Name:            "test-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
@@ -135,6 +136,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		expectedAppData := local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
+			ID:              "test-app-abcde",
 			Name:            "test-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
