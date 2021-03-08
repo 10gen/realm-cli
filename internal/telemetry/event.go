@@ -16,7 +16,7 @@ type event struct {
 
 // EventData holds additional event information
 type EventData struct {
-	Key   EventDataKey
+	Key   string
 	Value interface{}
 }
 
@@ -30,10 +30,10 @@ const (
 	EventTypeCommandError    EventType = "COMMAND_ERROR"
 )
 
-// EventDataKey is an event data key
-type EventDataKey string
-
 // set of event data keys
 const (
-	EventDataKeyErr EventDataKey = "err"
+	eventDataKeyCommand     = "cmd"
+	eventDataKeyExecutionID = "xid"
+
+	EventDataKeyError = "err"
 )
