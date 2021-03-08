@@ -15,8 +15,8 @@ type Command struct {
 
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.inputs.PublicAPIKey, flagPublicAPIKey, flagPublicAPIKeyShort, "", flagPublicAPIKeyUsage)
-	fs.StringVarP(&cmd.inputs.PrivateAPIKey, flagPrivateAPIKey, flagPrivateAPIKeyShort, "", flagPrivateAPIKeyUsage)
+	fs.StringVar(&cmd.inputs.PublicAPIKey, flagPublicAPIKey, "", flagPublicAPIKeyUsage)
+	fs.StringVar(&cmd.inputs.PrivateAPIKey, flagPrivateAPIKey, "", flagPrivateAPIKeyUsage)
 }
 
 // Inputs is the command inputs

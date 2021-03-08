@@ -5,6 +5,7 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/pflag"
 )
@@ -16,8 +17,10 @@ type CommandDelete struct {
 
 // Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	fs.StringSliceVarP(&cmd.inputs.Apps, flagApps, "", []string{}, flagAppsUsage)
+	fs.StringSliceVarP(&cmd.inputs.Apps, flagApp, flagAppShort, []string{}, flagAppUsage)
+
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
+	flags.MarkHidden(fs, flagProject)
 }
 
 // Handler is the command handler

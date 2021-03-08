@@ -21,14 +21,13 @@ type CommandRevoke struct {
 func (cmd *CommandRevoke) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserRevokeUsage)
-	fs.VarP(
+	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
+	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)
+	fs.Var(
 		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validAuthProviderTypes()),
 		flagProvider,
-		flagProviderShort,
 		flagProviderUsage,
 	)
-	fs.VarP(&cmd.inputs.State, flagState, flagStateShort, flagStateUsage)
-	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
 }
 
 // Inputs is the command inputs

@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	flagLocalPath      = "local"
-	flagLocalPathUsage = "the local path to create your new Realm app, defaults to Realm app name"
+	flagLocalPathCreate      = "local"
+	flagLocalPathCreateUsage = "the local path to create your new Realm app in, defaults to the Realm app name"
 
 	flagCluster      = "cluster"
 	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
@@ -27,7 +27,7 @@ var (
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without writing any changes to the file system or import/export the new Realm app"
+	flagDryRunUsage = "include to run without writing any changes to the file system nor deploying any changes to the Realm servers"
 )
 
 type createInputs struct {
@@ -194,7 +194,7 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
 	}
 	if i.LocalPath != "" {
-		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
+		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})

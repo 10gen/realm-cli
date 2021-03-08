@@ -12,6 +12,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -58,13 +59,18 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		Aliases: command.Aliases,
 	}
 
+	cmd.InheritedFlags().SortFlags = false // ensures command usage text displays global flags unsorted
+
 	for _, subCommand := range command.SubCommands {
 		cmd.AddCommand(factory.Build(subCommand))
 	}
 
 	if command.Command != nil {
+
 		if command, ok := command.Command.(CommandFlags); ok {
-			command.Flags(cmd.Flags())
+			fs := cmd.Flags()
+			fs.SortFlags = false // ensures command flags are added unsorted
+			command.Flags(fs)
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
@@ -150,17 +156,24 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 
 // SetGlobalFlags sets the global flags
 func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
-	// cli profile
-	fs.StringVarP(&factory.profile.Name, flagProfile, flagProfileShort, DefaultProfile, flagProfileUsage)
-	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
-	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
-	fs.VarP(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeShort, telemetry.FlagModeUsage)
+	fs.SortFlags = false // ensures global flags are added unsorted
 
-	// cli ui
-	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
-	fs.BoolVar(&factory.uiConfig.DisableColors, terminal.FlagDisableColors, false, terminal.FlagDisableColorsUsage)
-	fs.VarP(&factory.uiConfig.OutputFormat, terminal.FlagOutputFormat, terminal.FlagOutputFormatShort, terminal.FlagOutputFormatUsage)
+	// profile flags
+	fs.StringVar(&factory.profile.Name, flagProfile, DefaultProfile, flagProfileUsage)
+	fs.Var(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeUsage)
+
+	// ui flags
 	fs.StringVarP(&factory.uiConfig.OutputTarget, terminal.FlagOutputTarget, terminal.FlagOutputTargetShort, "", terminal.FlagOutputTargetUsage)
+	fs.VarP(&factory.uiConfig.OutputFormat, terminal.FlagOutputFormat, terminal.FlagOutputFormatShort, terminal.FlagOutputFormatUsage)
+	fs.BoolVar(&factory.uiConfig.DisableColors, terminal.FlagDisableColors, false, terminal.FlagDisableColorsUsage)
+	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
+
+	// hidden flags
+	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
+	flags.MarkHidden(fs, flagAtlasBaseURL)
+
+	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
+	flags.MarkHidden(fs, flagRealmBaseURL)
 }
 
 // Setup initializes the command factory

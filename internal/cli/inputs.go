@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/pflag"
@@ -15,7 +16,8 @@ import (
 
 const (
 	flagApp      = "app"
-	flagAppUsage = "the Realm app name or id to manage"
+	flagAppShort = "a"
+	flagAppUsage = "the remote Realm app name or id"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
@@ -32,8 +34,10 @@ func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Proje
 
 // Flags registers the project app input flags to the provided flag set
 func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
+	fs.StringVarP(&i.App, flagApp, flagAppShort, "", flagAppUsage)
+
 	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
-	fs.StringVar(&i.App, flagApp, "", flagAppUsage)
+	flags.MarkHidden(fs, flagProject)
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed

@@ -7,25 +7,25 @@ import (
 )
 
 const (
-	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
-
-	flagRemote      = "remote"
-	flagRemoteUsage = "choose an application to initialize the Realm app with"
-
 	flagName      = "name"
 	flagNameShort = "n"
-	flagNameUsage = "set the name of the Realm app to be initialized"
+	flagNameUsage = "set the name of the new Realm app"
+
+	flagRemote      = "remote"
+	flagRemoteUsage = "choose an application to build the new Realm app from"
 
 	flagDeploymentModel        = "deployment-model"
 	flagDeploymentModelShort   = "d"
-	flagDeploymentModelUsage   = `select the Realm app's deployment model, available options: ["global", "local"]`
+	flagDeploymentModelUsage   = `select the Realm app's deployment model, available options: ["GLOBAL", "LOCAL"]`
 	flagDeploymentModelDefault = realm.DeploymentModelGlobal
 
 	flagLocation        = "location"
 	flagLocationShort   = "l"
 	flagLocationUsage   = `select the Realm app's location, available options: ["US-VA", "local"]`
 	flagLocationDefault = realm.LocationVirginia
+
+	flagProject      = "project"
+	flagProjectUsage = "the MongoDB cloud project id"
 
 	flagConfigVersion      = "config-version"
 	flagConfigVersionUsage = "the config version of the Realm app structure; defaults to latest stable config version"

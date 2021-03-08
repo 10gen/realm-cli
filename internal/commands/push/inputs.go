@@ -10,29 +10,29 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "specify the local path to a Realm app containing the changes to push"
-
-	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagLocalPathUsage = "specify the local path to a Realm app to import"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "specify a remote Realm app to push changes towards"
+	flagRemoteUsage = "specify a remote Realm app (id or name) to push changes to"
+
+	flagIncludeDependencies      = "include-dependencies"
+	flagIncludeDependenciesShort = "d"
+	flagIncludeDependenciesUsage = "include to import Realm app dependencies changes as well"
+
+	flagIncludeHosting      = "include-hosting"
+	flagIncludeHostingShort = "s"
+	flagIncludeHostingUsage = "include to import Realm app hosting changes as well"
+
+	flagResetCDNCache      = "reset-cdn-cache"
+	flagResetCDNCacheShort = "c"
+	flagResetCDNCacheUsage = "include to reset the Realm app hosting CDN cache"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
 	flagDryRunUsage = "include to run without pushing any changes to the Realm server"
 
-	flagIncludeDependencies      = "include-dependencies"
-	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to push Realm app dependencies changes as well"
-
-	flagIncludeHosting      = "include-hosting"
-	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to push Realm app hosting changes as well"
-
-	flagResetCDNCache      = "reset-cdn-cache"
-	flagResetCDNCacheShort = "c"
-	flagResetCDNCacheUsage = "include to reset the Realm app hosting CDN cache"
+	flagProject      = "project"
+	flagProjectUsage = "the MongoDB cloud project id"
 )
 
 type appRemote struct {

@@ -10,7 +10,6 @@ import (
 // set of supported telemetry flags
 const (
 	FlagMode      = "telemetry"
-	FlagModeShort = "m"
 	FlagModeUsage = `enable or disable telemetry (this setting is remembered), available options: ["off", "on"]`
 )
 
