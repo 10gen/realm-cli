@@ -24,7 +24,7 @@ function getdownloadURL(cli) {
       throw new Error('Only Linux 64 bits supported.');
     }
   } else if (platform === 'darwin' || platform === 'freebsd') {
-    if (process.arch === 'x64') {
+    if (process.arch === 'x64' || process.arch === 'arm64') {
       downloadURL = cli ? macdownloadURL : macTranspilerdownloadURL;
     } else {
       throw new Error('Only Mac 64 bits supported.');
