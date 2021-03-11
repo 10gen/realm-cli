@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
@@ -17,12 +18,12 @@ import (
 
 // set of supported `push` command strings
 const (
-	CommandUse = "push"
+	CommandUse = "import"
 )
 
 // set of supported `push` command strings
 var (
-	CommandAliases = []string{"import"}
+	CommandAliases = []string{"push"}
 )
 
 // Command is the `push` command
@@ -33,12 +34,14 @@ type Command struct {
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
-	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 	fs.BoolVarP(&cmd.inputs.ResetCDNCache, flagResetCDNCache, flagResetCDNCacheShort, false, flagResetCDNCacheUsage)
+	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+
+	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
+	flags.MarkHidden(fs, flagProject)
 }
 
 // Inputs is the command inputs

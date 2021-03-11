@@ -14,19 +14,15 @@ import (
 
 const (
 	flagUserType      = "type"
-	flagUserTypeShort = "t"
 	flagUserTypeUsage = `select the type of user to create, available options: ["api-key", "email"]`
 
 	flagEmail      = "email"
-	flagEmailShort = "u"
 	flagEmailUsage = "sets the email of the user to be created"
 
 	flagPassword      = "password"
-	flagPasswordShort = "p"
 	flagPasswordUsage = "sets the password of the user to be created"
 
 	flagAPIKeyName      = "name"
-	flagAPIKeyNameShort = "n"
 	flagAPIKeyNameUsage = "sets the name of the api key to be created"
 )
 

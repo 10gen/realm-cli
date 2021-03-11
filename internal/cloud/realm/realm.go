@@ -96,7 +96,7 @@ func (dm DeploymentModel) Type() string { return flags.TypeString }
 
 // Set validates and sets the deployment model value
 func (dm *DeploymentModel) Set(val string) error {
-	newDeploymentModel := DeploymentModel(val)
+	newDeploymentModel := DeploymentModel(strings.ToUpper(val))
 
 	if !isValidDeploymentModel(newDeploymentModel) {
 		return errInvalidDeploymentModel
@@ -151,7 +151,7 @@ func (l Location) Type() string { return flags.TypeString }
 
 // Set validates and sets the Location value
 func (l *Location) Set(val string) error {
-	newLocation := Location(val)
+	newLocation := Location(strings.ToUpper(val))
 
 	if !isValidLocation(newLocation) {
 		return errInvalidLocation

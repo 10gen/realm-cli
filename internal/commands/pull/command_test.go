@@ -39,7 +39,7 @@ func TestPullHandler(t *testing.T) {
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "", nil, errors.New("something bad happened")

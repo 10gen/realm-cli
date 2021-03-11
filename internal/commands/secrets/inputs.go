@@ -4,16 +4,16 @@ package secrets
 const (
 	flagName            = "name"
 	flagNameShort       = "n"
-	flagNameUsageCreate = "the name of the secret to add to your Realm App"
-	flagNameUsageUpdate = "the new name for the secret"
+	flagNameUsageCreate = "the name of the secret"
+	flagNameUsageUpdate = "the new name of the secret"
 
 	flagValue            = "value"
 	flagValueShort       = "v"
-	flagValueUsageCreate = "the value of the secret to add to your Realm App"
-	flagValueUsageUpdate = "the new value for the secret"
+	flagValueUsageCreate = "the value of the secret"
+	flagValueUsageUpdate = "the new value of the secret"
 
 	flagSecret            = "secret"
 	flagSecretShort       = "s"
-	flagSecretUsageUpdate = "ID or name of the secret to update"
-	flagSecretUsageDelete = "set the list of secrets to delete by ID or Name"
+	flagSecretUsageUpdate = "the name or id of the secret to update"
+	flagSecretUsageDelete = "the name or id of the secret to delete"
 )

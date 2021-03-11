@@ -7,6 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/pflag"
 )
@@ -23,17 +24,20 @@ type CommandCreate struct {
 
 // Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathCreate, "", flagLocalPathCreateUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
-	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
+	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
 	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+
+	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
+	flags.MarkHidden(fs, flagProject)
+
 	fs.Var(&cmd.inputs.ConfigVersion, flagConfigVersion, flagConfigVersionUsage)
-	fs.MarkHidden(flagConfigVersion) //nolint: errcheck
+	flags.MarkHidden(fs, flagConfigVersion)
 }
 
 // Inputs is the command inputs

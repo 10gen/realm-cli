@@ -84,6 +84,7 @@ func (c *client) doJSON(method, path string, payload interface{}, options api.Re
 	if err != nil {
 		return nil, err
 	}
+
 	options.Body = bytes.NewReader(body)
 	options.ContentType = api.MediaTypeJSON
 

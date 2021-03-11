@@ -21,8 +21,7 @@ const (
 	profileType = "yaml"
 
 	flagProfile      = "profile"
-	flagProfileShort = "i"
-	flagProfileUsage = "this is the --profile, -p usage"
+	flagProfileUsage = "specify the profile name to use"
 
 	flagAtlasBaseURL      = "atlas-url"
 	flagAtlasBaseURLUsage = "specify the base Atlas server URL"

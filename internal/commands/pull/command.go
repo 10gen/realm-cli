@@ -11,6 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
@@ -24,12 +25,16 @@ type Command struct {
 // Flags is the command flags
 func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
-	fs.Var(&cmd.inputs.AppVersion, flagAppVersion, flagAppVersionUsage)
-	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
+	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+
+	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
+	flags.MarkHidden(fs, flagProject)
+
+	fs.Var(&cmd.inputs.AppVersion, flagConfigVersion, flagConfigVersionUsage)
+	flags.MarkHidden(fs, flagConfigVersion)
 }
 
 // Inputs is the command inputs

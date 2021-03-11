@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	flagApps      = "apps"
-	flagAppsUsage = "the Realm app names or ids to manage"
+	flagApp      = "app"
+	flagAppShort = "a"
+	flagAppUsage = "the remote Realm app name or id"
 )
 
 type deleteInputs struct {

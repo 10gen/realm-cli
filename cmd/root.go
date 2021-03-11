@@ -12,6 +12,9 @@ import (
 
 // Run runs the CLI
 func Run() {
+	// print commands in help/usage text in the order they are declared
+	cobra.EnableCommandSorting = false
+
 	cmd := &cobra.Command{
 		Version:       version.Version,
 		Use:           cli.Name,
@@ -25,13 +28,14 @@ func Run() {
 	cobra.OnInitialize(factory.Setup)
 	defer factory.Close()
 
+	cmd.Flags().SortFlags = false // ensures CLI help text displays global flags unsorted
 	factory.SetGlobalFlags(cmd.PersistentFlags())
 
-	cmd.AddCommand(factory.Build(commands.App))
 	cmd.AddCommand(factory.Build(commands.Login))
 	cmd.AddCommand(factory.Build(commands.Logout))
-	cmd.AddCommand(factory.Build(commands.Pull))
 	cmd.AddCommand(factory.Build(commands.Push))
+	cmd.AddCommand(factory.Build(commands.Pull))
+	cmd.AddCommand(factory.Build(commands.App))
 	cmd.AddCommand(factory.Build(commands.Secrets))
 	cmd.AddCommand(factory.Build(commands.User))
 	cmd.AddCommand(factory.Build(commands.Whoami))

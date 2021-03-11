@@ -12,29 +12,29 @@ import (
 )
 
 const (
-	flagRemote      = "remote"
-	flagRemoteUsage = "specify the remote app to pull changes down from"
-
-	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
-
-	flagAppVersion      = "app-version"
-	flagAppVersionUsage = "specify the app config version to pull changes down as"
-
 	flagLocalPath      = "local"
 	flagLocalPathUsage = "specify the local path to export a Realm app to"
 
+	flagRemote      = "remote"
+	flagRemoteUsage = "specify the remote app to pull changes down from"
+
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to to push Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "include to to export Realm app dependencies changes as well"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to push Realm app hosting changes as well"
+	flagIncludeHostingUsage = "include to export Realm app hosting changes as well"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
 	flagDryRunUsage = "include to run without writing any changes to the file system"
+
+	flagProject      = "project"
+	flagProjectUsage = "the MongoDB cloud project id"
+
+	flagConfigVersion      = "config-version"
+	flagConfigVersionUsage = "specify the app config version to export as"
 )
 
 var (
@@ -96,16 +96,16 @@ type appRemote struct {
 
 func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
 	r := appRemote{GroupID: i.Project}
-
 	if i.RemoteApp == "" {
 		return r, nil
 	}
 
 	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
-		if _, ok := err.(cli.ErrAppNotFound); !ok {
-			return appRemote{}, err
+		if _, ok := err.(cli.ErrAppNotFound); ok {
+			return appRemote{}, errProjectNotFound{}
 		}
+		return appRemote{}, err
 	}
 
 	r.GroupID = app.GroupID

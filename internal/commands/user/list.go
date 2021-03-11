@@ -27,15 +27,14 @@ type listInputs struct {
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
-	fs.VarP(&cmd.inputs.State, flagState, flagStateShort, flagStateUsage)
-	fs.BoolVarP(&cmd.inputs.Pending, flagPending, flagPendingShort, false, flagPendingUsage)
-	fs.VarP(
+	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserListUsage)
+	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
+	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)
+	fs.Var(
 		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validAuthProviderTypes()),
 		flagProvider,
-		flagProviderShort,
 		flagProviderUsage,
 	)
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserUsage)
 }
 
 // Inputs is the command inputs

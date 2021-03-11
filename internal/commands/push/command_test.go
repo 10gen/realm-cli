@@ -625,7 +625,7 @@ func TestPushHandler(t *testing.T) {
 
 				assert.Equal(t, tc.groupsCalled, calledGroups)
 				assert.Equal(t, `01:23:45 UTC INFO  This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli push --local testdata/project --remote appID
+01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 			})
 		}
@@ -701,7 +701,7 @@ func TestPushHandler(t *testing.T) {
 diff1
 diff2
 01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli push --local testdata/project --remote appID
+01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 	})
 
@@ -1358,18 +1358,18 @@ func TestPushCommandDisplay(t *testing.T) {
 	}{
 		{
 			description: "should print a minimal command string",
-			display:     "realm-cli push",
+			display:     "realm-cli import",
 		},
 		{
 			description: "should print a minimal dry run command string",
 			inputs:      inputs{DryRun: true},
-			display:     "realm-cli push --dry-run",
+			display:     "realm-cli import --dry-run",
 		},
 		{
 			description: "should print a minimal command string with dry run set but omitted",
 			inputs:      inputs{DryRun: true},
 			omitDryRun:  true,
-			display:     "realm-cli push",
+			display:     "realm-cli import",
 		},
 		{
 			description: "should print a complete command string",
@@ -1382,7 +1382,7 @@ func TestPushCommandDisplay(t *testing.T) {
 				ResetCDNCache:       true,
 				DryRun:              true,
 			},
-			display: "realm-cli push --project project --local directory --remote remote --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
+			display: "realm-cli import --project project --local directory --remote remote --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {

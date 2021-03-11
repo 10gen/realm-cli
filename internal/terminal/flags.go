@@ -8,7 +8,6 @@ import (
 )
 
 // set of supported terminal flags
-// TODO(REALMC-7429): fill out the flag usages
 const (
 	FlagAutoConfirm      = "yes"
 	FlagAutoConfirmShort = "y"

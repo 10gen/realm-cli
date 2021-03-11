@@ -11,6 +11,8 @@ import (
 )
 
 const (
+	flagLocalPathDiff            = "local"
+	flagLocalPathDiffUsage       = "the local path to your Realm app"
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
 	flagIncludeDependenciesUsage = "include to diff Realm app dependencies changes as well"
@@ -40,11 +42,11 @@ type CommandDiff struct {
 
 // Flags is the command flags
 func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
+	cmd.inputs.Flags(fs)
+
+	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathDiff, "", flagLocalPathDiffUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
-
-	cmd.inputs.Flags(fs)
 }
 
 // Inputs is the command inputs

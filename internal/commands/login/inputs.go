@@ -8,12 +8,10 @@ import (
 
 const (
 	flagPublicAPIKey      = "api-key"
-	flagPublicAPIKeyShort = "u"
-	flagPublicAPIKeyUsage = "this is the --api-key usage"
+	flagPublicAPIKeyUsage = "the public key of your programmatic API Key"
 
 	flagPrivateAPIKey      = "private-api-key"
-	flagPrivateAPIKeyShort = "p"
-	flagPrivateAPIKeyUsage = "this is the --private-api-key usage"
+	flagPrivateAPIKeyUsage = "the private key of your programmatic API Key"
 
 	inputFieldPublicAPIKey  = "publicAPIKey"
 	inputFieldPrivateAPIKey = "privateAPIKey"

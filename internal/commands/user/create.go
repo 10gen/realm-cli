@@ -18,10 +18,10 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
-	fs.VarP(&cmd.inputs.UserType, flagUserType, flagUserTypeShort, flagUserTypeUsage)
-	fs.StringVarP(&cmd.inputs.Email, flagEmail, flagEmailShort, "", flagEmailUsage)
-	fs.StringVarP(&cmd.inputs.Password, flagPassword, flagPasswordShort, "", flagPasswordUsage)
-	fs.StringVarP(&cmd.inputs.APIKeyName, flagAPIKeyName, flagAPIKeyNameShort, "", flagAPIKeyNameUsage)
+	fs.Var(&cmd.inputs.UserType, flagUserType, flagUserTypeUsage)
+	fs.StringVar(&cmd.inputs.APIKeyName, flagAPIKeyName, "", flagAPIKeyNameUsage)
+	fs.StringVar(&cmd.inputs.Email, flagEmail, "", flagEmailUsage)
+	fs.StringVar(&cmd.inputs.Password, flagPassword, "", flagPasswordUsage)
 }
 
 // Inputs is the command inputs
