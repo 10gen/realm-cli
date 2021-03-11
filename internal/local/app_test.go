@@ -1,6 +1,7 @@
 package local
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -23,10 +24,42 @@ func TestNewApp(t *testing.T) {
 				Name:            "testName",
 				Location:        realm.LocationOregon,
 				DeploymentModel: realm.DeploymentModelGlobal,
+				Environments: map[string]map[string]interface{}{
+					"development.json": {
+						"values": map[string]interface{}{},
+					},
+					"no-environment.json": {
+						"values": map[string]interface{}{},
+					},
+					"production.json": {
+						"values": map[string]interface{}{},
+					},
+					"qa.json": {
+						"values": map[string]interface{}{},
+					},
+					"testing.json": {
+						"values": map[string]interface{}{},
+					},
+				},
+				Auth: &AuthStructure{
+					CustomUserData: map[string]interface{}{"enabled": false},
+					Providers:      map[string]interface{}{},
+				},
+				Sync: &SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+				Functions: &FunctionsStructure{
+					Configs: []map[string]interface{}{},
+					Sources: map[string]string{},
+				},
+				GraphQL: &GraphQLStructure{
+					Config: map[string]interface{}{
+						"use_natural_pluralization": true,
+					},
+					CustomResolvers: []map[string]interface{}{},
+				},
 			}}},
 		}
 
-		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal)
+		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.DefaultAppConfigVersion)
 		assert.Equal(t, expectedApp, app)
 	})
 }
@@ -38,7 +71,7 @@ func TestLoadApp(t *testing.T) {
 	testRoot := wd
 	projectRoot := filepath.Join(testRoot, "testdata", "full_project")
 
-	expectedLocalApp := App{
+	expectedAppLocal := App{
 		RootDir: projectRoot,
 		Config:  FileConfig,
 		AppData: fullProject,
@@ -46,7 +79,7 @@ func TestLoadApp(t *testing.T) {
 
 	app, appErr := LoadApp(projectRoot)
 	assert.Nil(t, appErr)
-	assert.Equal(t, expectedLocalApp, app)
+	assert.Equal(t, expectedAppLocal, app)
 }
 
 func TestFindApp(t *testing.T) {
@@ -56,7 +89,7 @@ func TestFindApp(t *testing.T) {
 	for _, config := range []struct {
 		version       realm.AppConfigVersion
 		file          File
-		localAppData  AppData
+		appDataLocal  AppData
 		remoteAppData AppData
 	}{
 		{realm.AppConfigVersion20180301, FileStitch, &AppStitchJSON{appData20180301Local}, &AppStitchJSON{appData20180301Remote}},
@@ -80,7 +113,7 @@ func TestFindApp(t *testing.T) {
 				name    string
 				appData AppData
 			}{
-				{"local", config.localAppData},
+				{"local", config.appDataLocal},
 				{"remote", config.remoteAppData},
 			} {
 				t.Run(fmt.Sprintf("and a working directory at the root of a %s project", tcInner.name), func(t *testing.T) {
@@ -142,9 +175,9 @@ func TestAppWriteConfig(t *testing.T) {
     "deployment_model": "",
     "security": null,
     "custom_user_data_config": null,
-    "sync": null,
-    "graphql": {}
-}`,
+    "sync": null
+}
+`,
 			},
 			{
 				description: "with an empty config json",
@@ -157,9 +190,9 @@ func TestAppWriteConfig(t *testing.T) {
     "deployment_model": "",
     "security": null,
     "custom_user_data_config": null,
-    "sync": null,
-    "graphql": {}
-}`,
+    "sync": null
+}
+`,
 			},
 			{
 				description: "with an empty realm config json",
@@ -167,7 +200,8 @@ func TestAppWriteConfig(t *testing.T) {
 				config:      FileRealmConfig,
 				contents: `{
     "config_version": 0
-}`,
+}
+`,
 			},
 			{
 				description: "With a full 20180301 config",
@@ -198,9 +232,9 @@ func TestAppWriteConfig(t *testing.T) {
     },
     "sync": {
         "development_mode_enabled": true
-    },
-    "graphql": {}
-}`,
+    }
+}
+`,
 			},
 			{
 				description: "With a full 20200603 config",
@@ -231,9 +265,9 @@ func TestAppWriteConfig(t *testing.T) {
     },
     "sync": {
         "development_mode_enabled": true
-    },
-    "graphql": {}
-}`,
+    }
+}
+`,
 			},
 			{
 				description: "With a full 20210101 config",
@@ -255,12 +289,13 @@ func TestAppWriteConfig(t *testing.T) {
     "allowed_request_origins": [
         "http://localhost:8080"
     ]
-}`,
+}
+`,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
-				tmpDir, cleanupTmpDir, tmpDirErr := u.NewTempDir("")
-				assert.Nil(t, tmpDirErr)
+				tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+				assert.Nil(t, err)
 				defer cleanupTmpDir()
 
 				app := &App{
@@ -275,6 +310,208 @@ func TestAppWriteConfig(t *testing.T) {
 				assert.Equal(t, tc.contents, string(data))
 			})
 		}
+	})
+}
+
+func TestAppWrite20180301(t *testing.T) {
+	t.Run("should initialize an empty project", func(t *testing.T) {
+		tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+		assert.Nil(t, err)
+		defer cleanupTmpDir()
+
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20180301)
+
+		assert.Nil(t, app.Write())
+
+		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileRealmConfig.String()))
+		assert.Nil(t, readErr)
+
+		var config AppStitchJSON
+		assert.Nil(t, json.Unmarshal(data, &config))
+		assert.Equal(t, AppStitchJSON{AppDataV1{AppStructureV1{
+			ConfigVersion:        realm.AppConfigVersion20180301,
+			ID:                   "test-app-abcde",
+			Name:                 "test-app",
+			Location:             realm.LocationIreland,
+			DeploymentModel:      realm.DeploymentModelLocal,
+			CustomUserDataConfig: map[string]interface{}{"enabled": false},
+			Sync:                 map[string]interface{}{"development_mode_enabled": false},
+		}}}, config)
+
+		t.Run("should have auth providers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameAuthProviders))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have functions directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameFunctions))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have graphql custom resolvers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameGraphQL, NameCustomResolvers))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the graphql config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameGraphQL, FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "use_natural_pluralization": true
+}
+`, string(config))
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have values directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameValues))
+			assert.Nil(t, err)
+		})
+	})
+}
+
+func TestAppWrite20200603(t *testing.T) {
+	t.Run("should initialize an empty project", func(t *testing.T) {
+		tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+		assert.Nil(t, err)
+		defer cleanupTmpDir()
+
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20180301)
+
+		assert.Nil(t, app.Write())
+
+		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileRealmConfig.String()))
+		assert.Nil(t, readErr)
+
+		var config AppConfigJSON
+		assert.Nil(t, json.Unmarshal(data, &config))
+		assert.Equal(t, AppConfigJSON{AppDataV1{AppStructureV1{
+			ConfigVersion:        realm.AppConfigVersion20180301,
+			ID:                   "test-app-abcde",
+			Name:                 "test-app",
+			Location:             realm.LocationIreland,
+			DeploymentModel:      realm.DeploymentModelLocal,
+			CustomUserDataConfig: map[string]interface{}{"enabled": false},
+			Sync:                 map[string]interface{}{"development_mode_enabled": false},
+		}}}, config)
+
+		t.Run("should have auth providers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameAuthProviders))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have functions directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameFunctions))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have graphql custom resolvers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameGraphQL, NameCustomResolvers))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the graphql config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameGraphQL, FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "use_natural_pluralization": true
+}
+`, string(config))
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have values directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameValues))
+			assert.Nil(t, err)
+		})
+	})
+}
+
+func TestAppWrite20210101(t *testing.T) {
+	t.Run("should initialize an empty project", func(t *testing.T) {
+		tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+		assert.Nil(t, err)
+		defer cleanupTmpDir()
+
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20210101)
+
+		assert.Nil(t, app.Write())
+
+		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileRealmConfig.String()))
+		assert.Nil(t, readErr)
+
+		var config AppRealmConfigJSON
+		assert.Nil(t, json.Unmarshal(data, &config))
+		assert.Equal(t, AppRealmConfigJSON{AppDataV2{AppStructureV2{
+			ConfigVersion:   realm.DefaultAppConfigVersion,
+			ID:              "test-app-abcde",
+			Name:            "test-app",
+			Location:        realm.LocationIreland,
+			DeploymentModel: realm.DeploymentModelLocal,
+		}}}, config)
+
+		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameAuth, FileCustomUserData.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "{\n    \"enabled\": false\n}\n", string(config))
+		})
+
+		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameAuth, FileProviders.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "{}\n", string(config))
+		})
+
+		t.Run("should have data sources directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameDataSources))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the functions config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameFunctions, FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "[]\n", string(config))
+		})
+
+		t.Run("should have graphql custom resolvers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameGraphQL, NameCustomResolvers))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the graphql config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameGraphQL, FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "{\n    \"use_natural_pluralization\": true\n}\n", string(config))
+		})
+
+		t.Run("should have http endpoints directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameHTTPEndpoints))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameSync, FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "{\n    \"development_mode_enabled\": false\n}\n", string(config))
+		})
+
+		t.Run("should have values directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(tmpDir, NameValues))
+			assert.Nil(t, err)
+		})
 	})
 }
 

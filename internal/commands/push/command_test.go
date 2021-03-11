@@ -807,7 +807,8 @@ func TestPushCommandCreateNewApp(t *testing.T) {
     "name": "testApp",
     "location": "US-OR",
     "deployment_model": "LOCAL"
-}`, string(configData))
+}
+`, string(configData))
 					},
 					expectedApp: realm.App{
 						ID:      appID,
@@ -841,7 +842,8 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						assert.Equal(t, `{
     "config_version": 20210101,
     "name": "testApp"
-}`, string(configData))
+}
+`, string(configData))
 					},
 				},
 			} {

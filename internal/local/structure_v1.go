@@ -1,6 +1,10 @@
 package local
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -108,5 +112,122 @@ func (a *AppDataV1) LoadData(rootDir string) error {
 		return err
 	}
 	a.Services = services
+	return nil
+}
+
+// ConfigData marshals the config data out to JSON
+func (a AppDataV1) ConfigData() ([]byte, error) {
+	temp := &struct {
+		ConfigVersion        realm.AppConfigVersion `json:"config_version"`
+		ID                   string                 `json:"app_id,omitempty"`
+		Name                 string                 `json:"name"`
+		Location             realm.Location         `json:"location"`
+		DeploymentModel      realm.DeploymentModel  `json:"deployment_model"`
+		Environment          string                 `json:"environment,omitempty"`
+		Security             map[string]interface{} `json:"security"`
+		Hosting              map[string]interface{} `json:"hosting,omitempty"`
+		CustomUserDataConfig map[string]interface{} `json:"custom_user_data_config"`
+		Sync                 map[string]interface{} `json:"sync"`
+	}{
+		ConfigVersion:        a.ConfigVersion(),
+		ID:                   a.ID(),
+		Name:                 a.Name(),
+		Location:             a.Location(),
+		DeploymentModel:      a.DeploymentModel(),
+		Environment:          a.Environment,
+		Security:             a.Security,
+		CustomUserDataConfig: a.CustomUserDataConfig,
+		Sync:                 a.Sync,
+	}
+	return MarshalJSON(temp)
+}
+
+// WriteData will write the local Realm app data to disk
+func (a *AppDataV1) WriteData(rootDir string) error {
+	if err := writeSecrets(rootDir, a.Secrets); err != nil {
+		return err
+	}
+	if err := writeEnvironments(rootDir, a.Environments); err != nil {
+		return err
+	}
+	if err := writeValues(rootDir, a.Values); err != nil {
+		return err
+	}
+	if err := writeGraphQL(rootDir, a.GraphQL); err != nil {
+		return err
+	}
+	if err := writeServices(rootDir, a.Services); err != nil {
+		return err
+	}
+	if err := writeFunctionsV1(rootDir, a.Functions); err != nil {
+		return err
+	}
+	if err := writeAuthProviders(rootDir, a.AuthProviders); err != nil {
+		return err
+	}
+	if err := writeTriggers(rootDir, a.Triggers); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFunctionsV1(rootDir string, functions []map[string]interface{}) error {
+	dir := filepath.Join(rootDir, NameFunctions)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, function := range functions {
+		config, ok := function[NameConfig].(map[string]interface{})
+		if !ok {
+			return errors.New("error writing functions")
+		}
+		name, ok := config["name"].(string)
+		if !ok {
+			return errors.New("error writing functions")
+		}
+		data, err := MarshalJSON(config)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, name, FileConfig.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+		src, ok := function[NameSource].(string)
+		if !ok {
+			return errors.New("error writing functions")
+		}
+		if err = WriteFile(
+			filepath.Join(dir, name, FileSource.String()),
+			0666,
+			bytes.NewReader([]byte(src)),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeAuthProviders(rootDir string, authProviders []map[string]interface{}) error {
+	dir := filepath.Join(rootDir, NameAuthProviders)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, authProvider := range authProviders {
+		data, err := MarshalJSON(authProvider)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, fmt.Sprintf("%s%s", authProvider["name"], extJSON)),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
 	return nil
 }

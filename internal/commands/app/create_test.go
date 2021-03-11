@@ -4,6 +4,8 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -45,11 +47,14 @@ func TestAppCreateHandler(t *testing.T) {
 			Project:         "123",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
+			ConfigVersion:   realm.DefaultAppConfigVersion,
 		}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		fullDir := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name)
+
+		appLocal, err := local.LoadApp(fullDir)
 		assert.Nil(t, err)
 
 		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
@@ -58,6 +63,45 @@ func TestAppCreateHandler(t *testing.T) {
 			Name:            "test-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
+			Environments: map[string]map[string]interface{}{
+				"development.json": {
+					"values": map[string]interface{}{},
+				},
+				"no-environment.json": {
+					"values": map[string]interface{}{},
+				},
+				"production.json": {
+					"values": map[string]interface{}{},
+				},
+				"qa.json": {
+					"values": map[string]interface{}{},
+				},
+				"testing.json": {
+					"values": map[string]interface{}{},
+				},
+			},
+			Auth: &local.AuthStructure{
+				CustomUserData: map[string]interface{}{"enabled": false},
+				Providers: map[string]interface{}{
+					"api-key": map[string]interface{}{
+						"name":     "api-key",
+						"type":     "api-key",
+						"disabled": true,
+					},
+				},
+			},
+			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: &local.FunctionsStructure{
+				Configs: []map[string]interface{}{},
+				Sources: map[string]string{},
+			},
+			GraphQL: &local.GraphQLStructure{
+				Config: map[string]interface{}{
+					"use_natural_pluralization": true,
+				},
+				CustomResolvers: []map[string]interface{}{},
+			},
+			Values: []map[string]interface{}{},
 		}}}, appLocal.AppData)
 
 		// TODO(REALMC-8262): Investigate file path display options
@@ -74,6 +118,77 @@ func TestAppCreateHandler(t *testing.T) {
 			"01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
+
+		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameAuth, local.FileCustomUserData.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "enabled": false
+}
+`, string(config))
+		})
+
+		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameAuth, local.FileProviders.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "api-key": {
+        "disabled": true,
+        "name": "api-key",
+        "type": "api-key"
+    }
+}
+`, string(config))
+		})
+
+		t.Run("should have data sources directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(fullDir, local.NameDataSources))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the functions config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameFunctions, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, "[]\n", string(config))
+		})
+
+		t.Run("should have graphql custom resolvers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(fullDir, local.NameGraphQL, local.NameCustomResolvers))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the graphql config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameGraphQL, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "use_natural_pluralization": true
+}
+`, string(config))
+		})
+
+		t.Run("should have http endpoints directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(fullDir, local.NameHTTPEndpoints))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(fullDir, local.NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameSync, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "development_mode_enabled": false
+}
+`, string(config))
+		})
+
+		t.Run("should have values directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(fullDir, local.NameValues))
+			assert.Nil(t, err)
+		})
 	})
 
 	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
@@ -124,6 +239,7 @@ func TestAppCreateHandler(t *testing.T) {
 			Project:         "123",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
+			ConfigVersion:   realm.DefaultAppConfigVersion,
 		}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
@@ -134,15 +250,53 @@ func TestAppCreateHandler(t *testing.T) {
 		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
-		expectedAppData := local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			ID:              "test-app-abcde",
 			Name:            "test-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}
+			Environments: map[string]map[string]interface{}{
+				"development.json": {
+					"values": map[string]interface{}{},
+				},
+				"no-environment.json": {
+					"values": map[string]interface{}{},
+				},
+				"production.json": {
+					"values": map[string]interface{}{},
+				},
+				"qa.json": {
+					"values": map[string]interface{}{},
+				},
+				"testing.json": {
+					"values": map[string]interface{}{},
+				},
+			},
+			Auth: &local.AuthStructure{
+				CustomUserData: map[string]interface{}{"enabled": false},
+				Providers: map[string]interface{}{
+					"api-key": map[string]interface{}{
+						"name":     "api-key",
+						"type":     "api-key",
+						"disabled": true,
+					},
+				},
+			},
+			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: &local.FunctionsStructure{
+				Configs: []map[string]interface{}{},
+				Sources: map[string]string{},
+			},
+			GraphQL: &local.GraphQLStructure{
+				Config: map[string]interface{}{
+					"use_natural_pluralization": true,
+				},
+				CustomResolvers: []map[string]interface{}{},
+			},
+			Values: []map[string]interface{}{},
+		}}}, appLocal.AppData)
 
-		assert.Equal(t, &expectedAppData, appLocal.AppData)
 		assert.Equal(t, realm.App{
 			ID:          "456",
 			GroupID:     "123",
@@ -214,6 +368,14 @@ func TestAppCreateHandler(t *testing.T) {
 				Providers:      map[string]interface{}{},
 			},
 			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: &local.FunctionsStructure{
+				Configs: []map[string]interface{}{},
+				Sources: map[string]string{},
+			},
+			GraphQL: &local.GraphQLStructure{
+				CustomResolvers: []map[string]interface{}{},
+			},
+			Values: []map[string]interface{}{},
 		}}}, appLocal.AppData)
 
 		// TODO(REALMC-8262): Investigate file path display options
@@ -311,10 +473,10 @@ func TestAppCreateHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: tc.atlasClient}))
 
-			localApp, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+			appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 			assert.Nil(t, err)
 
-			assert.Equal(t, importAppData, localApp.AppData)
+			assert.Equal(t, importAppData, appLocal.AppData)
 			assert.Equal(t, realm.App{
 				ID:          "456",
 				GroupID:     "123",
@@ -327,7 +489,7 @@ func TestAppCreateHandler(t *testing.T) {
 			}, createdApp)
 
 			// TODO(REALMC-8262): Investigate file path display options
-			dirLength := len(localApp.RootDir)
+			dirLength := len(appLocal.RootDir)
 			fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
 			var spaceBuffer, dashBuffer string
@@ -341,7 +503,7 @@ func TestAppCreateHandler(t *testing.T) {
 				fmt.Sprintf("  Info                   "+spaceBuffer+fmtStr, "Details"),
 				"  ---------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
 				fmt.Sprintf("  Client App ID          "+spaceBuffer+fmtStr, "test-app-abcde"),
-				"  Realm Directory        "+spaceBuffer+localApp.RootDir,
+				"  Realm Directory        "+spaceBuffer+appLocal.RootDir,
 				fmt.Sprintf("  Realm UI               "+spaceBuffer+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
 			)
 			if tc.cluster != "" {

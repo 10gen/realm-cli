@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -23,17 +24,18 @@ func TestAppInitHandler(t *testing.T) {
 
 		out, ui := mock.NewUI()
 
-		cmd := &CommandInit{initInputs{newAppInputs{
+		cmd := &CommandInit{initInputs{newAppInputs: newAppInputs{
 			Name:            "test-app",
 			Project:         "test-project",
 			DeploymentModel: realm.DeploymentModelLocal,
 			Location:        realm.LocationSydney,
+			ConfigVersion:   realm.DefaultAppConfigVersion,
 		}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
-		data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
-		assert.Nil(t, readErr)
+		data, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
+		assert.Nil(t, err)
 
 		assert.Equal(t, "01:23:45 UTC INFO  Successfully initialized app\n", out.String())
 
@@ -45,6 +47,78 @@ func TestAppInitHandler(t *testing.T) {
 			Location:        realm.LocationSydney,
 			DeploymentModel: realm.DeploymentModelLocal,
 		}}}, config)
+
+		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "enabled": false
+}
+`, string(config))
+		})
+
+		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileProviders.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "api-key": {
+        "disabled": true,
+        "name": "api-key",
+        "type": "api-key"
+    }
+}
+`, string(config))
+		})
+
+		t.Run("should have data sources directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameDataSources))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the functions config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameFunctions, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `[]
+`, string(config))
+		})
+
+		t.Run("should have graphql custom resolvers directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameGraphQL, local.NameCustomResolvers))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the graphql config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameGraphQL, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "use_natural_pluralization": true
+}
+`, string(config))
+		})
+
+		t.Run("should have http endpoints directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameHTTPEndpoints))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameSync, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "development_mode_enabled": false
+}
+`, string(config))
+		})
+
+		t.Run("should have values directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameValues))
+			assert.Nil(t, err)
+		})
 	})
 
 	t.Run("should initialze a templated app when remote type is specified to app", func(t *testing.T) {
@@ -74,7 +148,7 @@ func TestAppInitHandler(t *testing.T) {
 			return "", &zipPkg.Reader, err
 		}
 
-		cmd := &CommandInit{initInputs{newAppInputs{RemoteApp: "test"}}}
+		cmd := &CommandInit{initInputs{newAppInputs: newAppInputs{RemoteApp: "test", ConfigVersion: realm.DefaultAppConfigVersion}}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
@@ -94,43 +168,44 @@ func TestAppInitHandler(t *testing.T) {
 			}}}, config)
 		})
 
-		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
-		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
-		// 			assert.Nil(t, err)
-		// 			assert.Equal(t, `{
-		//     "enabled": false
-		// }
-		// `, string(config))
-		// 		})
+		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "enabled": false
+}
+`, string(config))
+		})
 
-		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
-		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileProviders.String()))
-		// 			assert.Nil(t, err)
-		// 			assert.Equal(t, `{
-		//     "api-key": {
-		//         "name": "api-key",
-		//         "type": "api-key",
-		//         "enabled": false
-		//     },
-		// }
-		// `, string(config))
-		// 		})
+		t.Run("should have the expected contents in the auth providers file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileProviders.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{}
+`, string(config))
+		})
 
-		// TODO(REALMC-7886): once a full, minimal app is initialized, uncomment this test
-		// 		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
-		// 			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameAuth, local.FileCustomUserData.String()))
-		// 			assert.Nil(t, err)
-		// 			assert.Equal(t, `{
-		//     "development_mode_enabled": false
-		// }
-		// `, string(config))
-		// 		})
+		t.Run("should have data sources directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameDataSources))
+			assert.Nil(t, err)
+		})
 
-		// TODO(REALMC-7886): once a full, minimal app is initialized, implement these tests
-		// should have an empty http_endpoints directory
-		// should have an empty data_sources directory
-		// should have an empty services directory
+		t.Run("should have http endpoints directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameHTTPEndpoints))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have services directory", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, local.NameServices))
+			assert.Nil(t, err)
+		})
+
+		t.Run("should have the expected contents in the sync config file", func(t *testing.T) {
+			config, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.NameSync, local.FileConfig.String()))
+			assert.Nil(t, err)
+			assert.Equal(t, `{
+    "development_mode_enabled": false
+}
+`, string(config))
+		})
 	})
 }

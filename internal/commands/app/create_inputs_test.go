@@ -219,6 +219,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 			"test-app",
 			flagLocationDefault,
 			flagDeploymentModelDefault,
+			realm.DefaultAppConfigVersion,
 		)
 		assert.Nil(t, appLocal.WriteConfig())
 

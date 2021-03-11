@@ -73,6 +73,9 @@ func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
 		if i.Location == realm.LocationEmpty {
 			i.Location = flagLocationDefault
 		}
+		if i.ConfigVersion == realm.AppConfigVersionZero {
+			i.ConfigVersion = realm.DefaultAppConfigVersion
+		}
 	}
 
 	return nil
