@@ -322,7 +322,7 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		return realm.App{}, false, err
 	}
 
-	if err := local.AsApp(appDirectory, app).WriteConfig(); err != nil {
+	if err := local.AsApp(appDirectory, app, realm.DefaultAppConfigVersion).WriteConfig(); err != nil {
 		return realm.App{}, false, err
 	}
 	return app, true, nil

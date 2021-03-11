@@ -12,12 +12,14 @@ import (
 
 // AppData is the Realm app data
 type AppData interface {
+	ConfigData() ([]byte, error)
 	ConfigVersion() realm.AppConfigVersion
 	ID() string
 	Name() string
 	Location() realm.Location
 	DeploymentModel() realm.DeploymentModel
 	LoadData(rootDir string) error
+	WriteData(rootDir string) error
 }
 
 // set of supported local names
@@ -176,4 +178,31 @@ func unmarshalJSONWithOptions(data []byte, out interface{}, failOnEmpty bool) er
 		return nil
 	}
 	return json.Unmarshal(data, out)
+}
+
+// AddAuthProvider adds an auth provider to the provided app data
+func AddAuthProvider(appData AppData, name string, config map[string]interface{}) {
+	switch ad := appData.(type) {
+	case *AppStitchJSON:
+		ad.AuthProviders = append(ad.AuthProviders, config)
+	case *AppConfigJSON:
+		ad.AuthProviders = append(ad.AuthProviders, config)
+	case *AppRealmConfigJSON:
+		if ad.Auth == nil {
+			ad.Auth = &AuthStructure{Providers: map[string]interface{}{}}
+		}
+		ad.Auth.Providers[name] = config
+	}
+}
+
+// AddDataSource adds a data source to the app data
+func AddDataSource(appData AppData, config map[string]interface{}) {
+	switch ad := appData.(type) {
+	case *AppStitchJSON:
+		ad.Services = append(ad.Services, ServiceStructure{Config: config})
+	case *AppConfigJSON:
+		ad.Services = append(ad.Services, ServiceStructure{Config: config})
+	case *AppRealmConfigJSON:
+		ad.DataSources = append(ad.DataSources, DataSourceStructure{Config: config})
+	}
 }

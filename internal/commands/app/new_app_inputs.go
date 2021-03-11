@@ -26,6 +26,9 @@ const (
 	flagLocationShort   = "l"
 	flagLocationUsage   = `select the Realm app's location, available options: ["US-VA", "local"]`
 	flagLocationDefault = realm.LocationVirginia
+
+	flagConfigVersion      = "config-version"
+	flagConfigVersionUsage = "the config version of the Realm app structure; defaults to latest stable config version"
 )
 
 type appRemote struct {
@@ -43,6 +46,7 @@ type newAppInputs struct {
 	Name            string
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
+	ConfigVersion   realm.AppConfigVersion
 }
 
 func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (appRemote, error) {

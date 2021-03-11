@@ -1,7 +1,10 @@
 package local
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -229,4 +232,181 @@ func parseServices(rootDir string) ([]ServiceStructure, error) {
 	}
 
 	return out, nil
+}
+
+func writeSecrets(rootDir string, secrets *SecretsStructure) error {
+	if secrets == nil {
+		return nil
+	}
+	data, err := MarshalJSON(secrets)
+	if err != nil {
+		return err
+	}
+	return WriteFile(filepath.Join(rootDir, FileSecrets.String()), 0666, bytes.NewReader(data))
+}
+
+func writeEnvironments(rootDir string, environments map[string]map[string]interface{}) error {
+	for env, values := range environments {
+		data, err := MarshalJSON(values)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(rootDir, NameEnvironments, env),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeValues(rootDir string, values []map[string]interface{}) error {
+	dir := filepath.Join(rootDir, NameValues)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, value := range values {
+		data, err := MarshalJSON(value)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, fmt.Sprintf("%s%s", value["name"], extJSON)),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeGraphQL(rootDir string, graphql GraphQLStructure) error {
+	dir := filepath.Join(rootDir, NameGraphQL)
+	if err := os.MkdirAll(filepath.Join(dir, NameCustomResolvers), os.ModePerm); err != nil {
+		return err
+	}
+	if graphql.Config != nil {
+		data, err := MarshalJSON(graphql.Config)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, FileConfig.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	for _, customResolver := range graphql.CustomResolvers {
+		data, err := MarshalJSON(customResolver)
+		if err != nil {
+			return err
+		}
+		nameFile := strings.ToLower(fmt.Sprintf("%s_%s%s", customResolver["on_type"], customResolver["field_name"], extJSON))
+		if err = WriteFile(
+			filepath.Join(dir, NameCustomResolvers, nameFile),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeServices(rootDir string, services []ServiceStructure) error {
+	dir := filepath.Join(rootDir, NameServices)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, svc := range services {
+		nameSvc, ok := svc.Config["name"].(string)
+		if !ok {
+			return errors.New("error writing services")
+		}
+		dirSvc := filepath.Join(dir, nameSvc)
+		data, err := MarshalJSON(svc.Config)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dirSvc, FileConfig.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+		for _, webhook := range svc.IncomingWebhooks {
+			src, ok := webhook[NameSource].(string)
+			if !ok {
+				return errors.New("error writing services")
+			}
+			nameWebhook, ok := webhook["name"].(string)
+			if !ok {
+				return errors.New("error writing services")
+			}
+			webhookTemp := map[string]interface{}{}
+			for k, v := range webhook {
+				webhookTemp[k] = v
+			}
+			delete(webhookTemp, NameSource)
+			data, err := MarshalJSON(webhookTemp)
+			if err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dirSvc, NameIncomingWebhooks, nameWebhook, FileConfig.String()),
+				0666,
+				bytes.NewReader(data),
+			); err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dirSvc, NameIncomingWebhooks, nameWebhook, FileSource.String()),
+				0666,
+				bytes.NewReader([]byte(src)),
+			); err != nil {
+				return err
+			}
+		}
+		for _, rule := range svc.Rules {
+			data, err := MarshalJSON(rule)
+			if err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dirSvc, NameRules, fmt.Sprintf("%s%s", rule["name"], extJSON)),
+				0666,
+				bytes.NewReader(data),
+			); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeTriggers(rootDir string, triggers []map[string]interface{}) error {
+	for _, trigger := range triggers {
+		name, ok := trigger["name"].(string)
+		if !ok {
+			return errors.New("error writing triggers")
+		}
+		data, err := MarshalJSON(trigger)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(rootDir, NameTriggers, name+extJSON),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
 }

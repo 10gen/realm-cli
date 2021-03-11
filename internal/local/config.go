@@ -2,7 +2,6 @@ package local
 
 import (
 	"archive/zip"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -66,16 +65,8 @@ func MarshalJSON(o interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	data = append(data, "\n"...)
 	return data, nil
-}
-
-// WriteConfig writes the app config file to disk
-func (a App) WriteConfig() error {
-	data, err := MarshalJSON(a.AppData)
-	if err != nil {
-		return err
-	}
-	return WriteFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
 }
 
 // WriteZip writes the zip contents to the specified filepath

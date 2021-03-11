@@ -69,9 +69,9 @@ func TestRealmImportExportRoundTrip(t *testing.T) {
 			assert.Nil(t, local.WriteZip(wd, zipPkg))
 
 			t.Log("read the exported app data from disk")
-			localApp, localAppErr := local.LoadApp(wd)
-			assert.Nil(t, localAppErr)
-			assert.Equal(t, appData, localApp.AppData)
+			appLocal, appLocalErr := local.LoadApp(wd)
+			assert.Nil(t, appLocalErr)
+			assert.Equal(t, appData, appLocal.AppData)
 		})
 	}
 }

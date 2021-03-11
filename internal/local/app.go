@@ -1,6 +1,7 @@
 package local
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -37,7 +38,7 @@ func (a App) Option() string {
 }
 
 // NewApp returns a new local app
-func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel) App {
+func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel, configVersion realm.AppConfigVersion) App {
 	return AsApp(rootDir, realm.App{
 		ClientAppID: clientAppID,
 		Name:        name,
@@ -45,22 +46,146 @@ func NewApp(rootDir, clientAppID, name string, location realm.Location, deployme
 			Location:        location,
 			DeploymentModel: deploymentModel,
 		},
-	})
+	}, configVersion)
 }
 
 // AsApp converts the realm.App into a local app
-func AsApp(rootDir string, app realm.App) App {
-	return App{
-		RootDir: rootDir,
-		Config:  FileRealmConfig,
-		AppData: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-			ConfigVersion:   realm.AppConfigVersion20210101,
+func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) App {
+	var appData AppData
+	switch configVersion {
+	case realm.AppConfigVersion20180301:
+		appData = &AppStitchJSON{AppDataV1{AppStructureV1{
+			ConfigVersion:        configVersion,
+			ID:                   app.ClientAppID,
+			Name:                 app.Name,
+			Location:             app.Location,
+			DeploymentModel:      app.DeploymentModel,
+			CustomUserDataConfig: map[string]interface{}{"enabled": false},
+			Sync:                 map[string]interface{}{"development_mode_enabled": false},
+			Environments: map[string]map[string]interface{}{
+				"development.json": {
+					"values": map[string]interface{}{},
+				},
+				"no-environment.json": {
+					"values": map[string]interface{}{},
+				},
+				"production.json": {
+					"values": map[string]interface{}{},
+				},
+				"qa.json": {
+					"values": map[string]interface{}{},
+				},
+				"testing.json": {
+					"values": map[string]interface{}{},
+				},
+			},
+			GraphQL: GraphQLStructure{
+				Config: map[string]interface{}{
+					"use_natural_pluralization": true,
+				},
+			},
+		}}}
+	case realm.AppConfigVersion20200603:
+		appData = &AppConfigJSON{AppDataV1{AppStructureV1{
+			ConfigVersion:        configVersion,
+			ID:                   app.ClientAppID,
+			Name:                 app.Name,
+			Location:             app.Location,
+			DeploymentModel:      app.DeploymentModel,
+			CustomUserDataConfig: map[string]interface{}{"enabled": false},
+			Sync:                 map[string]interface{}{"development_mode_enabled": false},
+			Environments: map[string]map[string]interface{}{
+				"development.json": {
+					"values": map[string]interface{}{},
+				},
+				"no-environment.json": {
+					"values": map[string]interface{}{},
+				},
+				"production.json": {
+					"values": map[string]interface{}{},
+				},
+				"qa.json": {
+					"values": map[string]interface{}{},
+				},
+				"testing.json": {
+					"values": map[string]interface{}{},
+				},
+			},
+			GraphQL: GraphQLStructure{
+				Config: map[string]interface{}{
+					"use_natural_pluralization": true,
+				},
+			},
+		}}}
+	default:
+		appData = &AppRealmConfigJSON{AppDataV2{AppStructureV2{
+			ConfigVersion:   configVersion,
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,
 			DeploymentModel: app.DeploymentModel,
-		}}},
+			Environments: map[string]map[string]interface{}{
+				"development.json": {
+					"values": map[string]interface{}{},
+				},
+				"no-environment.json": {
+					"values": map[string]interface{}{},
+				},
+				"production.json": {
+					"values": map[string]interface{}{},
+				},
+				"qa.json": {
+					"values": map[string]interface{}{},
+				},
+				"testing.json": {
+					"values": map[string]interface{}{},
+				},
+			},
+			Auth: &AuthStructure{
+				CustomUserData: map[string]interface{}{"enabled": false},
+				Providers:      map[string]interface{}{},
+			},
+			Sync: &SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: &FunctionsStructure{
+				Configs: []map[string]interface{}{},
+				Sources: map[string]string{},
+			},
+			GraphQL: &GraphQLStructure{
+				Config: map[string]interface{}{
+					"use_natural_pluralization": true,
+				},
+				CustomResolvers: []map[string]interface{}{},
+			},
+		}}}
 	}
+	return App{
+		RootDir: rootDir,
+		Config:  FileRealmConfig,
+		AppData: appData,
+	}
+}
+
+// Write writes the app data to disk
+func (a App) Write() error {
+	if a.AppData == nil {
+		return nil
+	}
+	if err := a.WriteData(a.RootDir); err != nil {
+		return err
+	}
+	return a.WriteConfig()
+}
+
+// WriteConfig writes the app config file to disk
+func (a App) WriteConfig() error {
+	if a.AppData == nil {
+		return nil
+	}
+	data, err := a.AppData.ConfigData()
+	if err != nil {
+		return err
+	}
+	return WriteFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
 }
 
 // Load will load the entire local app's data

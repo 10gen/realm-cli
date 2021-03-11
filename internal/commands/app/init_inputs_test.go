@@ -49,7 +49,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		},
 		{
 			description: "with a name flag set should prompt for nothing else and set realm.Location and deployment model to defaults",
-			inputs:      initInputs{newAppInputs{Name: "test-app"}},
+			inputs:      initInputs{newAppInputs: newAppInputs{Name: "test-app"}},
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
@@ -59,7 +59,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		},
 		{
 			description: "with name realm.Location and deployment model flags set should prompt for nothing else",
-			inputs: initInputs{newAppInputs{
+			inputs: initInputs{newAppInputs: newAppInputs{
 				Name:            "test-app",
 				DeploymentModel: realm.DeploymentModelLocal,
 				Location:        realm.LocationOregon,

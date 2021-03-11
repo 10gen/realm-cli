@@ -1,6 +1,9 @@
 package local
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -33,7 +36,6 @@ type AppStructureV2 struct {
 
 // AuthStructure represents the v2 Realm app auth structure
 type AuthStructure struct {
-	Config         map[string]interface{} `json:"config,omitempty"`
 	CustomUserData map[string]interface{} `json:"custom_user_data,omitempty"`
 	Providers      map[string]interface{} `json:"providers,omitempty"`
 }
@@ -173,11 +175,6 @@ func parseAuth(rootDir string) (*AuthStructure, error) {
 		return nil, err
 	}
 
-	config, err := parseJSON(filepath.Join(dir, FileConfig.String()))
-	if err != nil {
-		return nil, err
-	}
-
 	customUserData, err := parseJSON(filepath.Join(dir, FileCustomUserData.String()))
 	if err != nil {
 		return nil, err
@@ -188,7 +185,7 @@ func parseAuth(rootDir string) (*AuthStructure, error) {
 		return nil, err
 	}
 
-	return &AuthStructure{config, customUserData, providers}, nil
+	return &AuthStructure{customUserData, providers}, nil
 }
 
 func parseFunctionsV2(rootDir string) (*FunctionsStructure, error) {
@@ -330,4 +327,269 @@ func parseSync(rootDir string) (*SyncStructure, error) {
 		return nil, err
 	}
 	return &SyncStructure{config}, nil
+}
+
+// ConfigData marshals the config data out to JSON
+func (a AppDataV2) ConfigData() ([]byte, error) {
+	temp := &struct {
+		ConfigVersion         realm.AppConfigVersion `json:"config_version"`
+		ID                    string                 `json:"app_id,omitempty"`
+		Name                  string                 `json:"name,omitempty"`
+		Location              realm.Location         `json:"location,omitempty"`
+		DeploymentModel       realm.DeploymentModel  `json:"deployment_model,omitempty"`
+		Environment           string                 `json:"environment,omitempty"`
+		AllowedRequestOrigins []string               `json:"allowed_request_origins,omitempty"`
+	}{
+		ConfigVersion:         a.ConfigVersion(),
+		ID:                    a.ID(),
+		Name:                  a.Name(),
+		Location:              a.Location(),
+		DeploymentModel:       a.DeploymentModel(),
+		Environment:           a.Environment,
+		AllowedRequestOrigins: a.AllowedRequestOrigins,
+	}
+	return MarshalJSON(temp)
+}
+
+// WriteData will write the local Realm app data to disk
+func (a AppDataV2) WriteData(rootDir string) error {
+	if err := writeSecrets(rootDir, a.Secrets); err != nil {
+		return err
+	}
+	if err := writeEnvironments(rootDir, a.Environments); err != nil {
+		return err
+	}
+	if err := writeValues(rootDir, a.Values); err != nil {
+		return err
+	}
+	// TODO(REALMC-8395): Revisit the app structure v2 and decide which directories are always present
+	graphQL := a.GraphQL
+	if a.GraphQL == nil {
+		graphQL = &GraphQLStructure{}
+	}
+	if err := writeGraphQL(rootDir, *graphQL); err != nil {
+		return err
+	}
+	if err := writeServices(rootDir, a.Services); err != nil {
+		return err
+	}
+	if err := writeFunctionsV2(rootDir, a.Functions); err != nil {
+		return err
+	}
+	if err := writeAuth(rootDir, a.Auth); err != nil {
+		return err
+	}
+	if err := writeSync(rootDir, a.Sync); err != nil {
+		return err
+	}
+	if err := writeDataSources(rootDir, a.DataSources); err != nil {
+		return err
+	}
+	if err := writeHTTPEndpoints(rootDir, a.HTTPEndpoints); err != nil {
+		return err
+	}
+	if err := writeHTTPEndpoints(rootDir, a.HTTPEndpoints); err != nil {
+		return err
+	}
+	if err := writeTriggers(rootDir, a.Triggers); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
+	var sources map[string]string
+	configs := []map[string]interface{}{}
+	if functions != nil {
+		configs = functions.Configs
+		sources = functions.Sources
+	}
+	dir := filepath.Join(rootDir, NameFunctions)
+	data, err := MarshalJSON(configs)
+	if err != nil {
+		return err
+	}
+	if err = WriteFile(
+		filepath.Join(dir, FileConfig.String()),
+		0666,
+		bytes.NewReader(data),
+	); err != nil {
+		return err
+	}
+	for path, src := range sources {
+		if err = WriteFile(
+			filepath.Join(dir, path),
+			0666,
+			bytes.NewReader([]byte(src)),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeAuth(rootDir string, auth *AuthStructure) error {
+	if auth == nil {
+		return nil
+	}
+	dir := filepath.Join(rootDir, NameAuth)
+	if auth.Providers != nil {
+		data, err := MarshalJSON(auth.Providers)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, FileProviders.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	if auth.CustomUserData != nil {
+		data, err := MarshalJSON(auth.CustomUserData)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, FileCustomUserData.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeSync(rootDir string, sync *SyncStructure) error {
+	if sync == nil || sync.Config == nil {
+		return nil
+	}
+	data, err := MarshalJSON(sync.Config)
+	if err != nil {
+		return err
+	}
+	if err = WriteFile(
+		filepath.Join(rootDir, NameSync, FileConfig.String()),
+		0666,
+		bytes.NewReader(data),
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
+	dir := filepath.Join(rootDir, NameDataSources)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, ds := range dataSources {
+		name, ok := ds.Config["name"].(string)
+		if !ok {
+			return errors.New("error writing datasources")
+		}
+		config, err := MarshalJSON(ds.Config)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, name, FileConfig.String()),
+			0666,
+			bytes.NewReader(config),
+		); err != nil {
+			return err
+		}
+		for _, rule := range ds.Rules {
+			schema := rule[NameSchema]
+			dataSchema, err := MarshalJSON(schema)
+			if err != nil {
+				return err
+			}
+			ruleTemp := map[string]interface{}{}
+			for k, v := range rule {
+				ruleTemp[k] = v
+			}
+			delete(ruleTemp, NameSchema)
+			dataRule, err := MarshalJSON(ruleTemp)
+			if err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRules.String()),
+				0666,
+				bytes.NewReader(dataRule),
+			); err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileSchema.String()),
+				0666,
+				bytes.NewReader(dataSchema),
+			); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) error {
+	dir := filepath.Join(rootDir, NameHTTPEndpoints)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, httpEndpoint := range httpEndpoints {
+		nameHTTPEndpoint, ok := httpEndpoint.Config["name"].(string)
+		if !ok {
+			return errors.New("error writing http endpoints")
+		}
+		data, err := MarshalJSON(httpEndpoint.Config)
+		if err != nil {
+			return err
+		}
+		if err = WriteFile(
+			filepath.Join(dir, nameHTTPEndpoint, FileConfig.String()),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+		for _, webhook := range httpEndpoint.IncomingWebhooks {
+			src, ok := webhook[NameSource].(string)
+			if !ok {
+				return errors.New("error writing http endpoints")
+			}
+			name, ok := webhook["name"].(string)
+			if !ok {
+				return errors.New("error writing http endpoints")
+			}
+			dirHTTPEndpoint := filepath.Join(dir, nameHTTPEndpoint, name)
+			webhookTemp := map[string]interface{}{}
+			for k, v := range webhook {
+				webhookTemp[k] = v
+			}
+			delete(webhookTemp, NameSource)
+			config, err := MarshalJSON(webhookTemp)
+			if err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dirHTTPEndpoint, FileConfig.String()),
+				0666,
+				bytes.NewReader(config),
+			); err != nil {
+				return err
+			}
+			if err = WriteFile(
+				filepath.Join(dirHTTPEndpoint, FileSource.String()),
+				0666,
+				bytes.NewReader([]byte(src)),
+			); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

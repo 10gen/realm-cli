@@ -1,9 +1,7 @@
 package app
 
 import (
-	"bytes"
 	"fmt"
-	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -34,6 +32,8 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
 	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+	fs.Var(&cmd.inputs.ConfigVersion, flagConfigVersion, flagConfigVersionUsage)
+	fs.MarkHidden(flagConfigVersion) //nolint: errcheck
 }
 
 // Inputs is the command inputs
@@ -105,23 +105,27 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		return nil
 	}
 
-	newApp, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
+	appRealm, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
 	if err != nil {
 		return err
 	}
 
+	var appLocal local.App
+
 	if appRemote.IsZero() {
-		appLocal := local.NewApp(
+		appLocal = local.NewApp(
 			dir,
-			newApp.ClientAppID,
+			appRealm.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
 			cmd.inputs.DeploymentModel,
+			cmd.inputs.ConfigVersion,
 		)
-		err := appLocal.WriteConfig()
-		if err != nil {
-			return err
-		}
+		local.AddAuthProvider(appLocal.AppData, "api-key", map[string]interface{}{
+			"name":     "api-key",
+			"type":     "api-key",
+			"disabled": true,
+		})
 	} else {
 		_, zipPkg, err := clients.Realm.Export(
 			appRemote.GroupID,
@@ -134,59 +138,50 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		if err := local.WriteZip(dir, zipPkg); err != nil {
 			return err
 		}
-	}
-
-	loadedApp, err := local.LoadApp(dir)
-	if err != nil {
-		return err
-	}
-
-	if dsCluster.Name != "" || dsDataLake.Name != "" {
-		var dataSourceDir string
-		switch loadedApp.ConfigVersion() {
-		case
-			realm.AppConfigVersion20200603,
-			realm.AppConfigVersion20180301:
-			dataSourceDir = local.NameServices
-		default:
-			dataSourceDir = local.NameDataSources
-		}
-		if dsCluster.Name != "" {
-			data, err := local.MarshalJSON(dsCluster)
-			if err != nil {
-				return err
-			}
-			path := filepath.Join(dataSourceDir, dsCluster.Name, local.FileConfig.String())
-			err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
-			if err != nil {
-				return err
-			}
-		}
-		if dsDataLake.Name != "" {
-			data, err := local.MarshalJSON(dsDataLake)
-			if err != nil {
-				return err
-			}
-			path := filepath.Join(dataSourceDir, dsDataLake.Name, local.FileConfig.String())
-			err = local.WriteFile(filepath.Join(dir, path), 0666, bytes.NewReader(data))
-			if err != nil {
-				return err
-			}
-		}
-		if err = loadedApp.Load(); err != nil {
+		appLocal, err = local.LoadApp(dir)
+		if err != nil {
 			return err
 		}
 	}
 
-	if err := clients.Realm.Import(newApp.GroupID, newApp.ID, loadedApp.AppData); err != nil {
+	if dsCluster.Name != "" {
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsCluster.Name,
+			"type": dsCluster.Type,
+			"config": map[string]interface{}{
+				"clusterName":         dsCluster.Config.ClusterName,
+				"readPreference":      dsCluster.Config.ReadPreference,
+				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
+			},
+		})
+	}
+	if dsDataLake.Name != "" {
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsDataLake.Name,
+			"type": dsDataLake.Type,
+			"config": map[string]interface{}{
+				"dataLakeName": dsDataLake.Config.DataLakeName,
+			},
+		})
+	}
+
+	if err = appLocal.Write(); err != nil {
+		return err
+	}
+
+	if err = appLocal.Load(); err != nil {
+		return err
+	}
+
+	if err := clients.Realm.Import(appRealm.GroupID, appRealm.ID, appLocal.AppData); err != nil {
 		return err
 	}
 
 	headers := []string{"Info", "Details"}
 	rows := make([]map[string]interface{}, 0, 5)
-	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": newApp.ClientAppID})
+	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
 	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
-	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), newApp.GroupID, newApp.ID)})
+	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
 	if dsCluster.Name != "" {
 		rows = append(rows, map[string]interface{}{"Info": "Data Source (Cluster)", "Details": dsCluster.Name})
 	}

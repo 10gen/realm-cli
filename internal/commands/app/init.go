@@ -21,6 +21,8 @@ func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
+	fs.Var(&cmd.inputs.ConfigVersion, flagConfigVersion, flagConfigVersionUsage)
+	fs.MarkHidden(flagConfigVersion) //nolint: errcheck
 }
 
 // Inputs is the command inputs
@@ -50,22 +52,19 @@ func (cmd *CommandInit) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 }
 
 func (cmd *CommandInit) writeAppFromScratch(wd string) error {
-	/*
-		TODO(REALMC-7886): initialize also the following:
-			- auth/custom_user_data.json: { "enabled": false }
-			- auth/providers.json: {}
-			- data_sources/
-			- http_endpoints/
-			- sync/config.json: { "development_mode_enabled": false }
-
-		this logic probably wants to live in local.App, where ConfigVersion actually determines what gets written/initialized
-	*/
-	return local.NewApp(wd,
+	appLocal := local.NewApp(wd,
 		"", // no app id yet
 		cmd.inputs.Name,
 		cmd.inputs.Location,
 		cmd.inputs.DeploymentModel,
-	).WriteConfig()
+		cmd.inputs.ConfigVersion,
+	)
+	local.AddAuthProvider(appLocal.AppData, "api-key", map[string]interface{}{
+		"name":     "api-key",
+		"type":     "api-key",
+		"disabled": true,
+	})
+	return appLocal.Write()
 }
 
 func (cmd *CommandInit) writeAppFromExisting(wd string, realmClient realm.Client, groupID, appID string) error {
