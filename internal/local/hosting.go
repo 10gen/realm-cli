@@ -42,19 +42,6 @@ type HostingAssetClient interface {
 	Get(url string) (*http.Response, error)
 }
 
-// NewHostingAssetClient returns a new hosting asset client
-func NewHostingAssetClient(fetcher func(url string) (*http.Response, error)) HostingAssetClient {
-	return &hostingAssetClient{fetcher}
-}
-
-type hostingAssetClient struct {
-	get func(url string) (*http.Response, error)
-}
-
-func (c *hostingAssetClient) Get(url string) (*http.Response, error) {
-	return c.get(url)
-}
-
 // FindAppHosting finds the local Realm app hosting files
 func FindAppHosting(path string) (Hosting, error) {
 	app, ok, err := FindApp(path)

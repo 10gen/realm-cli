@@ -7,7 +7,6 @@ import (
 	"github.com/10gen/realm-cli/internal/commands"
 
 	"github.com/spf13/cobra"
-	"honnef.co/go/tools/version"
 )
 
 // Run runs the CLI
@@ -16,7 +15,7 @@ func Run() {
 	cobra.EnableCommandSorting = false
 
 	cmd := &cobra.Command{
-		Version:       version.Version,
+		Version:       cli.Version,
 		Use:           cli.Name,
 		Short:         "CLI tool to manage your MongoDB Realm application",
 		Long:          fmt.Sprintf("Use %s command help for information on a specific command", cli.Name),

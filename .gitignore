@@ -4,4 +4,8 @@
 # IDEA
 .idea
 
+# npm
+node_modules/
+
+# build
 realm-cli*

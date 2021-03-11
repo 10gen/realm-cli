@@ -9,7 +9,6 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
-	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
@@ -90,6 +89,24 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				factory.errLogger,
 				display,
 			)
+
+			// TODO(REALMC-8399): check for version, send any obvserved errors to Segment
+			// newVersion, err := checkVersion(http.DefaultClient)
+			// if err != nil {
+			// 	factory.telemetryService.TrackEvent(
+			// 		telemetry.EventTypeCommandError,
+			// 		telemetry.EventData{telemetry.EventDataKeyError, err},
+			// 	)
+			// }
+			// if newVersion != "" {
+			// 	factory.ui.Print(
+			// 		terminal.NewWarningLog(newVersion),
+			// 		// TODO(REALMC-8399): confirm this language
+			// 		terminal.NewDebugLog("Note: we only check the current version once per day, so this will be the only notice you see regarding this today"),
+			// 	)
+			//
+			// 	// check with product: consider prompting the user if they wish to continue or stop to download new version
+			// }
 		}
 
 		if command, ok := command.Command.(CommandInputs); ok {
@@ -107,7 +124,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			err := command.Command.Handler(factory.profile, factory.ui, Clients{
 				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
 				Atlas:        atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.User()),
-				HostingAsset: local.NewHostingAssetClient(http.Get),
+				HostingAsset: http.DefaultClient,
 			})
 			if err != nil {
 				factory.telemetryService.TrackEvent(

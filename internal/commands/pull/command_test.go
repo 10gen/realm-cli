@@ -289,12 +289,7 @@ func TestPullHandler(t *testing.T) {
 			}, nil
 		}
 
-		hostingAssetClient := local.NewHostingAssetClient(func(url string) (*http.Response, error) {
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       ioutil.NopCloser(strings.NewReader("<html><body>hello world!</body></html>")),
-			}, nil
-		})
+		hostingAssetClient := mockHostingAssetClient{"<html><body>hello world!</body></html>"}
 
 		cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
 
@@ -463,4 +458,15 @@ func TestPullCommandCheckAppDestination(t *testing.T) {
 			})
 		}
 	})
+}
+
+type mockHostingAssetClient struct {
+	contents string
+}
+
+func (client mockHostingAssetClient) Get(url string) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(strings.NewReader(client.contents)),
+	}, nil
 }
