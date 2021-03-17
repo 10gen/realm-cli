@@ -8,7 +8,7 @@ This project follows [Semantic Versioning 2.0](https://semver.org/)
 
 1. Update the version field in `.evg.yml` and commit your changes
   ```bash
-  git commit -m "Bump version to 1.x.x"
+  git commit -m "Bump version to 2.x.x"
   ```
 
 2. Push to your fork and create a PR
@@ -21,7 +21,7 @@ This project follows [Semantic Versioning 2.0](https://semver.org/)
 4. *After* a successful build, run
 
   ```bash
-  ./contrib/release.js 1.x.x
+  ./contrib/release.js 2.x.x
   ```
 
   and follow the prompts. This will update local files and commit the changes for the release.

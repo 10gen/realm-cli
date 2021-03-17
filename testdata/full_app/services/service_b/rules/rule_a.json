@@ -1,6 +1,0 @@
-{
-  "_id" : "5a6a3b466cc3abb4d1826b1f",
-  "name" : "rule_a",
-  "actions" : [ ],
-  "when" : "{\"%%args.url.host\":{\"%in\":[\"google.com\"]}}"
-}

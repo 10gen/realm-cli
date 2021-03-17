@@ -1,0 +1,4 @@
+(io.Closer).Close
+(*io.PipeWriter).Close
+(*mime/multipart.Writer).Close
+(*os.File).Close

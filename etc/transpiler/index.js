@@ -1,18 +1,18 @@
-const babel = require('babel-standalone');
+const babel = require("@babel/standalone");
+const transformObjectRestSpread = require("@babel/plugin-proposal-object-rest-spread");
 
-const babelES2015 = require('babel-preset-es2015');
-
-babel.registerPreset('es2015', babelES2015);
+babel.registerPlugin("transform-object-rest-spread", transformObjectRestSpread);
 
 function processData(input) {
   const parsedInput = JSON.parse(input);
   const output = {
     results: [],
     errors: [],
+    warnings: [],
   };
   const opts = {
-    presets: ['es2015'],
-    plugins: ['transform-object-rest-spread', 'transform-regenerator'],
+    presets: [["env", { exclude: ["babel-plugin-transform-async-to-generator"] }]],
+    plugins: ["transform-object-rest-spread"],
     parserOpts: {
       allowReturnOutsideFunction: true,
     },
@@ -30,7 +30,7 @@ function processData(input) {
       const error = {
         index: i,
         // error message includes the snippet of code, which we don't want in the message
-        message: (e.message || '').split('\n')[0],
+        message: (e.message || "").split("\n")[0],
       };
       if (e.loc) {
         error.line = e.loc.line;
@@ -41,13 +41,15 @@ function processData(input) {
         https://github.com/protobufjs/protobuf.js/blob/master/cli/wrappers/es6.js
         the file contains unrecoverable errors for the parser:
               import * as $protobuf from $DEPENDENCY;
-
               $OUTPUT;
-
               export { $root as default };
         this error was added as a warning to still have visibility without causing termination
+        ---
+        ETA(REALMC-6584): the original check was failing TestES6FunctionsLoggedInWithApp/Creating_functions_with_invalid_js_syntax_in_the_source_code_should_fail/(0)_name_"badSyntax3"
+        Changing the check to "$DEPENDENCY" satisfies the source of this original issue (protobuf),
+        but still allows for other arbitrary errors containing "$" in the output to be recognized as errors
       */
-      if (e.message.includes('$')) {
+      if (e.message.includes("$DEPENDENCY")) {
         output.warnings.push(error);
         continue;
       }
@@ -61,6 +63,9 @@ function processData(input) {
   } else {
     delete output.results;
   }
+  if (output.warnings.length == 0) {
+    delete output.warnings;
+  }
 
   const outData = JSON.stringify(output, null, 2);
   const cb = () => process.exit(0);
@@ -69,15 +74,15 @@ function processData(input) {
   // so explicitly wait for it to drain before exiting the process.
   // See https://nodejs.org/api/stream.html#stream_writable_write_chunk_encoding_callback
   if (!process.stdout.write(outData, cb)) {
-    process.stdout.once('drain', cb);
+    process.stdout.once("drain", cb);
   } else {
     process.nextTick(cb);
   }
 }
 
 (function handleStream() {
-  let data = '';
-  process.stdin.on('readable', () => {
+  let data = "";
+  process.stdin.on("readable", () => {
     while (true) {
       const chunk = process.stdin.read();
       if (!chunk) {
@@ -87,11 +92,11 @@ function processData(input) {
     }
   });
 
-  process.stdin.on('end', () => {
+  process.stdin.on("end", () => {
     processData(data);
   });
 
-  process.stdin.on('error', () => {
+  process.stdin.on("error", () => {
     process.exit(2);
   });
 })();

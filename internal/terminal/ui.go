@@ -1,0 +1,137 @@
+package terminal
+
+import (
+	"fmt"
+	"io"
+	"log"
+
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/fatih/color"
+)
+
+// UI is a terminal UI
+type UI interface {
+	AutoConfirm() bool
+	Ask(answer interface{}, questions ...*survey.Question) error
+	AskOne(answer interface{}, prompt survey.Prompt) error
+	Confirm(format string, args ...interface{}) (bool, error)
+	Print(logs ...Log)
+}
+
+// NewUI creates a new terminal UI
+func NewUI(config UIConfig, in io.Reader, out, err io.Writer, errLogger *log.Logger) UI {
+	noColor := config.DisableColors
+	if config.OutputFormat == OutputFormatJSON {
+		noColor = true
+	}
+	color.NoColor = noColor
+
+	return &ui{
+		config,
+		fdReader{in},
+		fdWriter{out},
+		err,
+		errLogger,
+	}
+}
+
+type ui struct {
+	config    UIConfig
+	in        fdReader
+	out       fdWriter
+	err       io.Writer
+	errLogger *log.Logger
+}
+
+func (ui *ui) AutoConfirm() bool {
+	return ui.config.AutoConfirm
+}
+
+func (ui *ui) Ask(answer interface{}, questions ...*survey.Question) error {
+	return survey.Ask(
+		questions,
+		answer,
+		survey.WithStdio(ui.in, ui.out, ui.err),
+	)
+}
+
+func (ui *ui) AskOne(answer interface{}, prompt survey.Prompt) error {
+	return survey.AskOne(
+		prompt,
+		answer,
+		survey.WithStdio(ui.in, ui.out, ui.err),
+	)
+}
+
+func (ui *ui) Confirm(format string, args ...interface{}) (bool, error) {
+	if ui.AutoConfirm() {
+		return true, nil
+	}
+
+	var proceed bool
+	return proceed, ui.AskOne(
+		&proceed,
+		&survey.Confirm{Message: fmt.Sprintf(format, args...)},
+	)
+}
+
+func (ui *ui) Print(logs ...Log) {
+	for _, log := range logs {
+		output, err := log.Print(ui.config.OutputFormat)
+		if err != nil {
+			ui.Print(NewErrorLog(err))
+			return
+		}
+
+		var writer io.Writer
+		switch log.Level {
+		case LogLevelError:
+			writer = ui.err
+		default:
+			writer = ui.out
+		}
+
+		if _, err := fmt.Fprintln(writer, output); err != nil {
+			ui.errLogger.Fatal(output) // log the original failure
+		}
+	}
+}
+
+// UIConfig holds the global config for the CLI ui
+type UIConfig struct {
+	AutoConfirm   bool
+	DisableColors bool
+	OutputFormat  OutputFormat
+	OutputTarget  string
+}
+
+// FileDescriptor is a file descriptor
+type FileDescriptor interface {
+	Fd() uintptr
+}
+
+// fdReader wraps an io.Reader and exposes the FileDesriptor interface on it
+// the underlying io.Reader's Fd() implementation will be used if it exists
+type fdReader struct {
+	io.Reader
+}
+
+func (r fdReader) Fd() uintptr {
+	if fd, ok := r.Reader.(FileDescriptor); ok {
+		return fd.Fd()
+	}
+	return 0
+}
+
+// fdWriter wraps an io.Writer and exposes the FileDesriptor interface on it
+// the underlying io.Writer's Fd() implementation will be used if it exists
+type fdWriter struct {
+	io.Writer
+}
+
+func (w fdWriter) Fd() uintptr {
+	if fd, ok := w.Writer.(FileDescriptor); ok {
+		return fd.Fd()
+	}
+	return 0
+}
