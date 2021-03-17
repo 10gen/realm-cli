@@ -2,75 +2,87 @@
 
 ## Installation
 
-```
-npm install mongodb-realm-cli
-npm install -g mongodb-realm-cli
-```
-
-#### Building Binaries from Source
-Build binary in place:
-```
-go build
-```
-Or, to build binary and install in your Go workspace's bin directory:
-```
-go install
-```
-
-To upload dependencies, the transpiler needs to be built as well:
-```
-cd etc/transpiler
-yarn && yarn build
-```
+TODO
 
 ## Documentation
 
-https://docs.mongodb.com/realm/import-export/realm-cli-reference/
-
-#### When Using with a Local Realm Server
-When using `realm-cli` against a locally running Realm Server you can use any of the commands documented in the link above, however, you will need to pass some additional flags to the `realm-cli` command in order for it to work properly.
-
-##### `--base-url`
-For all local commands use the `--base-url` flag to specify the URL of your locally running Realm Server instance, e.g.:
-```
-realm-cli import --base-url=http://localhost:8080
-```
-
-Where `http://localhost:8080` is the URL of your locally running instance. This flag is required for any command you want to run against your local server.
-
-##### `--auth-provider=local-userpass`
-When using `realm-cli login` you will also need to include `--auth-provider=local-userpass` to authenticate with the local server using a username/password instead of the usual API Key method, e.g.:
-```
-realm-cli login --base-url=http://localhost:8080 --auth-provider=local-userpass --username=USERNAME --password=PASSWORD
-```
-
-Where `USERNAME` and `PASSWORD` are the credentials for an existing local user.
+TODO
 
 ## Linting
 
-provided by gometalinter
+To lint the project, run:
 
-```go
-go run github.com/golangci/golangci-lint/cmd/golangci-lint run ./...
+```cmd
+golangci-lint run
 ```
 
 ## Testing
 
-Run all tests:
+### Integration Tests with Realm Server
+
+To run integration tests against a Realm server locally, run `baas` with the `local_cloud_dev_config.json` server config via:
+
+```cmd
+go run -exec="env LD_LIBRARY_PATH=$LD_LIBRARY_PATH" cmd/server/main.go --configFile etc/configs/local_cloud_dev_config.json
+```
+
+Then, from the `realm-cli` project root, simply run:
+
+```cmd
+BAAS_MONGODB_CLOUD_GROUP_ID=${cloud_group_id} BAAS_MONGODB_CLOUD_USERNAME=${cloud_username} BAAS_MONGODB_CLOUD_API_KEY=${cloud_api_key} go test -v -tags debug github.com/10gen/realm-cli/internal/cloud/... -run 'Test'
+```
+
+> NOTE: with the above, you'll need to substitute `${cloud_group_id}`, `${cloud_username}`, and `${cloud_api_key}` with valid credentials of your own from `https://cloud-dev.mongodb.com`
+
+### Debugging an Interactive Test
+
+Have a test that relies on prompts to the user for input?  The `go-expect` framework handles those interactions and relies on "expected" output to wait for until proceeding with further instruction.  Often times, this can result in a test hanging indefinitely if the expected output doesn't match.  Unfortunately, in this case only a `Ctrl+C` (or timeout) ends the test and you are left without any output to inspect in order to determine a root cause.
+
+If you want to actually see the output headed to your "pseudo-terminal", you just have to use a different `stdout` than the `*bytes.Buffer` tests usually rely on.  For example:
 
 ```go
-go test -v $(go list github.com/10gen/realm-cli/...)
+out, outErr := mock.FileWriter(t)
+assert.Nil(t, outErr)
+defer out.Close()
+
+c, err := expect.NewConsole(expect.WithStdout(out))
+assert.Nil(t, err)
+defer c.Close()
 ```
 
+### E2E Tests
 
-### Mocks
+To write an end-to-end test for the CLI, use `exec.Command`.  An example usage is:
 
-A custom mock of `RealmClient` can be found in `utils/test/utils.go` which can be used for simple mocking of most `RealmClient` methods.
+```go
+func TestWhoamiE2E(t *testing.T) {
+	core.DisableColor = true
+	defer func() { core.DisableColor = false }()
 
-If you need more sophisticated mocking utilities (such as being able to mock calls to the same method more than once in a single test) you can use the [`gomock`](https://github.com/golang/mock) version found in `api/mocks/realm_api.go`
+	out := new(bytes.Buffer)
+	c, err := expect.NewConsole(expect.WithStdout(out))
+	assert.Nil(t, err)
+	defer c.Close()
 
-Run:
+	go func() {
+		c.ExpectEOF()
+	}()
 
-```
-go run github.com/golang/mock/mockgen -source ./api/realm_client.go -destination ./api/mocks/realm_client.go
+	cmd := exec.Command("../../main", "whoami")
+	cmd.Stdin = c.Tty()
+	cmd.Stdout = c.Tty()
+	cmd.Stderr = c.Tty()
+
+	if err = cmd.Start(); err != nil {
+		log.Fatal(err)
+	}
+	if err = cmd.Wait(); err != nil {
+		log.Fatal(err)
+	}
+
+  c.ExpectString("No user is currently logged in.")
+	c.Tty().Close()
+
+	fmt.Println(out.String()) // prints the output from the command
+}
 ```
