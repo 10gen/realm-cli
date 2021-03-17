@@ -1,13 +1,5 @@
 # MongoDB Realm CLI
 
-## Installation
-
-TODO
-
-## Documentation
-
-TODO
-
 ## Linting
 
 To lint the project, run:
