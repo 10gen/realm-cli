@@ -144,6 +144,12 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 // Close closes the command factory
 func (factory *CommandFactory) Close() {
+	if factory.telemetryService != nil {
+		if err := factory.telemetryService.Close(); err != nil {
+			factory.errLogger.Print(err)
+		}
+	}
+
 	if factory.uiConfig.OutputTarget != "" {
 		factory.outWriter.Close()
 	}

@@ -15,11 +15,15 @@ var (
 // Tracker is a telemetry event tracker
 type Tracker interface {
 	Track(event event)
+	Close() error
 }
 
 type noopTracker struct{}
 
 func (tracker *noopTracker) Track(event event) {}
+func (tracker *noopTracker) Close() error {
+	return nil
+}
 
 type stdoutTracker struct{}
 
@@ -31,6 +35,10 @@ func (tracker *stdoutTracker) Track(event event) {
 		event.eventType,
 		event.data,
 	)
+}
+
+func (tracker *stdoutTracker) Close() error {
+	return nil
 }
 
 type segmentTracker struct {
@@ -63,4 +71,9 @@ func (tracker *segmentTracker) Track(event event) {
 	}); err != nil {
 		tracker.logger.Printf("failed to send Segment event %q: %s", event.eventType, err)
 	}
+}
+
+func (tracker *segmentTracker) Close() error {
+	// flush the client on close so that all queued events are sent
+	return tracker.client.Close()
 }

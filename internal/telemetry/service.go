@@ -47,3 +47,8 @@ func (service *Service) TrackEvent(eventType EventType, data ...EventData) {
 		data:        data,
 	})
 }
+
+// Close shuts down the Service
+func (service Service) Close() error {
+	return service.tracker.Close()
+}
