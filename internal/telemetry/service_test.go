@@ -33,13 +33,6 @@ func TestNewService(t *testing.T) {
 		segmentWriteKey = "testing"
 		testServiceOutput(t, ModeOn, "")
 	})
-
-	t.Run("Should disable the service if the segmentWriteKey is empty", func(t *testing.T) {
-		swk := segmentWriteKey
-		defer func() { segmentWriteKey = swk }()
-		segmentWriteKey = ""
-		testServiceOutput(t, ModeOn, "LogPrefix unable to connect to Segment due to missing key, CLI telemetry will be disabled\n")
-	})
 }
 
 func TestServiceTrackEvent(t *testing.T) {
