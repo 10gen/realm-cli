@@ -40,7 +40,6 @@ type segmentTracker struct {
 
 func newSegmentTracker(logger *log.Logger) Tracker {
 	if len(segmentWriteKey) == 0 {
-		logger.Print("unable to connect to Segment due to missing key, CLI telemetry will be disabled")
 		return &noopTracker{}
 	}
 	client := analytics.New(segmentWriteKey)
