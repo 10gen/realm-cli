@@ -61,6 +61,9 @@ type Client interface {
 	HostingAssetAttributesUpdate(groupID, appID, path string, attrs ...HostingAssetAttribute) error
 	HostingCacheInvalidate(groupID, appID, path string) error
 
+	Functions(groupID, appID string) ([]Function, error)
+	AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (ResponseFunction, error)
+
 	Status() error
 }
 

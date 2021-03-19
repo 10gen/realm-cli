@@ -38,6 +38,7 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Secrets))
 	cmd.AddCommand(factory.Build(commands.User))
 	cmd.AddCommand(factory.Build(commands.Whoami))
+	cmd.AddCommand(factory.Build(commands.Function))
 
 	factory.Run(cmd)
 }
