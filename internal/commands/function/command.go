@@ -111,7 +111,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 	s.Suffix = fmt.Sprintf(" Running function %s with args %s...", cmd.inputs.Name, cmd.inputs.Args)
 
-	runFunction := func() (realm.ResponseFunction, error) {
+	runFunction := func() (realm.ExecutionResults, error) {
 		s.Start()
 		defer s.Stop()
 
@@ -131,8 +131,4 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	return nil
-}
-
-func (cmd *Command) display(omitDryRun bool) string {
-	return cli.CommandDisplay(CommandUse, cmd.inputs.args(omitDryRun))
 }

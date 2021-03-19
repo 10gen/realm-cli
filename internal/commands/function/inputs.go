@@ -7,24 +7,18 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/10gen/realm-cli/internal/utils/flags"
 	"github.com/AlecAivazis/survey/v2"
 )
 
 const (
 	flagFunctionName      = "function"
-	flagFunctionNameShort = "f"
 	flagFunctionNameUsage = "specify the function to run"
 
 	flagFunctionArgs      = "args"
 	flagFunctionArgsUsage = "specify the args to pass to your function"
 
 	flagAsUser      = "user"
-	flagAsUserShort = "u"
 	flagAsUserUsage = "specify the user to run the function as; defaults to system"
-
-	flagProject = "project"
-	flagApp     = "app"
 )
 
 type inputs struct {
@@ -77,24 +71,4 @@ func (i *inputs) ResolveFunction(ui terminal.UI, client realm.Client, groupID, a
 		return realm.Function{}, fmt.Errorf("failed to select function: %s", err)
 	}
 	return functionsByOption[selection], nil
-}
-
-func (i inputs) args(omitDryRun bool) []flags.Arg {
-	args := make([]flags.Arg, 0, 4)
-	if i.Project != "" {
-		args = append(args, flags.Arg{flagProject, i.Project})
-	}
-	if i.App != "" {
-		args = append(args, flags.Arg{flagApp, i.App})
-	}
-	if i.Name != "" {
-		args = append(args, flags.Arg{flagFunctionName, i.Name})
-	}
-	if i.Args != nil {
-		args = append(args, flags.Arg{flagFunctionArgs, i.args})
-	}
-	if i.User != "" {
-		args = append(args, flags.Arg{flagAsUser, i.User})
-	}
-	return args
 }

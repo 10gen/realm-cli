@@ -22,15 +22,15 @@ func TestFunctionHandler(t *testing.T) {
 		rc.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
 			return []realm.Function{{Name: "test"}}, nil
 		}
-		rc.AppDebugExecuteFunctionFn = func(groupID, appID, userID, name string, args []interface{}) (realm.ResponseFunction, error) {
-			return realm.ResponseFunction{Result: map[string]interface{}{
+		rc.AppDebugExecuteFunctionFn = func(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error) {
+			return realm.ExecutionResults{Result: map[string]interface{}{
 				"arg": []interface{}{
 					"hello",
 					map[string]interface{}{
-						"$numberInt": 1,
+						"$numberInt": "1",
 					},
 					map[string]interface{}{
-						"$numberDouble": 2.1,
+						"$numberDouble": "2.1",
 					},
 					map[string]interface{}{
 						"foo": "bar",
@@ -59,10 +59,10 @@ func TestFunctionHandler(t *testing.T) {
   "arg": [
     "hello",
     {
-      "$numberInt": 1
+      "$numberInt": "1"
     },
     {
-      "$numberDouble": 2.1
+      "$numberDouble": "2.1"
     },
     {
       "foo": "bar"
@@ -83,18 +83,18 @@ func TestFunctionHandler(t *testing.T) {
 		rc.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
 			return []realm.Function{{Name: "test"}}, nil
 		}
-		rc.AppDebugExecuteFunctionFn = func(groupID, appID, userID, name string, args []interface{}) (realm.ResponseFunction, error) {
-			return realm.ResponseFunction{Result: map[string]interface{}{
+		rc.AppDebugExecuteFunctionFn = func(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error) {
+			return realm.ExecutionResults{Result: map[string]interface{}{
 				"arg1": map[string]interface{}{
-					"value1": map[string]interface{}{"$numberInt": 1},
+					"value1": map[string]interface{}{"$numberInt": "1"},
 					"abcs":   []interface{}{"x", "y", "z"},
 				},
 				"arg2": []interface{}{
 					map[string]interface{}{
-						"$numberInt": 1,
+						"$numberInt": "1",
 					},
 					map[string]interface{}{
-						"$numberInt": 2,
+						"$numberInt": "2",
 					},
 				},
 			}}, nil
@@ -124,15 +124,15 @@ func TestFunctionHandler(t *testing.T) {
       "z"
     ],
     "value1": {
-      "$numberInt": 1
+      "$numberInt": "1"
     }
   },
   "arg2": [
     {
-      "$numberInt": 1
+      "$numberInt": "1"
     },
     {
-      "$numberInt": 2
+      "$numberInt": "2"
     }
   ]
 }
@@ -175,8 +175,8 @@ func TestFunctionHandler(t *testing.T) {
 				FunctionsFn: func(groupID, appID string) ([]realm.Function, error) {
 					return []realm.Function{{Name: "test"}}, nil
 				},
-				AppDebugExecuteFunctionFn: func(groupID, appID, userID, name string, args []interface{}) (realm.ResponseFunction, error) {
-					return realm.ResponseFunction{}, errors.New("function execution error")
+				AppDebugExecuteFunctionFn: func(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error) {
+					return realm.ExecutionResults{}, errors.New("function execution error")
 				},
 			},
 			errorExpected: errors.New("function execution error"),

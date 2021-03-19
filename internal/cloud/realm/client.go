@@ -62,7 +62,7 @@ type Client interface {
 	HostingCacheInvalidate(groupID, appID, path string) error
 
 	Functions(groupID, appID string) ([]Function, error)
-	AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (ResponseFunction, error)
+	AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (ExecutionResults, error)
 
 	Status() error
 }
