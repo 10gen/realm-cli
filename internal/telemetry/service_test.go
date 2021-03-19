@@ -65,6 +65,10 @@ func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
 }
 
+func (tracker *testTracker) Close() error {
+	return nil
+}
+
 func newService(mode Mode, logger *log.Logger) *Service {
 	return NewService(mode, testUser, logger, testCommand)
 }
