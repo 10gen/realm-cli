@@ -90,21 +90,25 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 					return err
 				}
 				args = append(args, argNew)
-			} else if isInt(arg) {
+				continue
+			}
+			if isInt(arg) {
 				num, err := strconv.Atoi(arg)
 				if err != nil {
 					return err
 				}
 				args = append(args, num)
-			} else if isFloat(arg) {
+				continue
+			}
+			if isFloat(arg) {
 				num, err := strconv.ParseFloat(arg, 64)
 				if err != nil {
 					return err
 				}
 				args = append(args, num)
-			} else {
-				args = append(args, arg)
+				continue
 			}
+			args = append(args, arg)
 		}
 	}
 

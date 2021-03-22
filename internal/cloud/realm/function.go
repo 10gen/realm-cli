@@ -33,21 +33,20 @@ type Function struct {
 }
 
 func (c *client) AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (ExecutionResults, error) {
-	runAsSystem := "true"
-	if userID != "" {
-		runAsSystem = "false"
-	}
-	body := map[string]interface{}{
-		"name":      name,
-		"arguments": args,
+	query := map[string]string{}
+	if userID == "" {
+		query["run_as_system"] = "true"
+	} else {
+		query["user_id"] = userID
 	}
 	res, err := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(AppDebugExecuteFunctionPattern, groupID, appID),
-		body,
-		api.RequestOptions{
-			Query: map[string]string{"user_id": userID, "run_as_system": runAsSystem},
+		map[string]interface{}{
+			"name":      name,
+			"arguments": args,
 		},
+		api.RequestOptions{Query: query},
 	)
 	if err != nil {
 		return ExecutionResults{}, err
