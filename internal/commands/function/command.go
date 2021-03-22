@@ -129,10 +129,10 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	if response.Logs != nil {
 		ui.Print(terminal.NewListLog("Logs", response.Logs))
 	}
-	ui.Print(terminal.NewJSONLog("Result", response.Result))
 	if response.ErrorLogs != nil {
 		ui.Print(terminal.NewJSONLog("Error Logs", response.ErrorLogs))
 	}
+	ui.Print(terminal.NewJSONLog("Result", response.Result))
 
 	return nil
 }
