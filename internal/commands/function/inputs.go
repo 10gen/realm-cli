@@ -7,6 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
+
 	"github.com/AlecAivazis/survey/v2"
 )
 

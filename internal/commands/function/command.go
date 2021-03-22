@@ -9,22 +9,22 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/briandowns/spinner"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
 )
 
-// set of supported `push` command strings
+// set of supported `function run` command strings
 const (
 	CommandUse = "function run"
 )
 
-// set of supported `push` command strings
+// set of supported `function run` command strings
 var (
 	CommandAliases = []string{"run"}
 )
 
-// Command is the `push` command
+// Command is the `function run` command
 type Command struct {
 	inputs inputs
 }
