@@ -3,6 +3,7 @@ package commands
 import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/commands/app"
+	"github.com/10gen/realm-cli/internal/commands/function"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/pull"
@@ -224,5 +225,19 @@ be modified.`,
 				Help:        `Removes a secret from your Realm app.`,
 			},
 		},
+	}
+
+	Function = cli.CommandDefinition{
+		Command:     &function.Command{},
+		Use:         function.CommandUse,
+		Aliases:     function.CommandAliases,
+		Description: "Run a function from your Realm app",
+		Help: `Realm Functions allow you to define and execute server-side logic for your
+Realm app. Once you select and run a function for your Realm app, the
+following will be displayed:
+ - A list of logs, if present
+ - The function result as a document
+ - A list of error logs, if present
+`,
 	}
 )

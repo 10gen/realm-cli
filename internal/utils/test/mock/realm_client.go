@@ -52,6 +52,9 @@ type RealmClient struct {
 	HostingAssetAttributesUpdateFn func(groupID, appID, path string, attrs ...realm.HostingAssetAttribute) error
 	HostingCacheInvalidateFn       func(groupID, appID, path string) error
 
+	FunctionsFn               func(groupID, appID string) ([]realm.Function, error)
+	AppDebugExecuteFunctionFn func(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error)
+
 	StatusFn func() error
 }
 
@@ -375,12 +378,32 @@ func (rc RealmClient) HostingCacheInvalidate(groupID, appID, path string) error 
 	return rc.Client.HostingCacheInvalidate(groupID, appID, path)
 }
 
+// Functions calls the mocked Functions implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Functions(groupID, appID string) ([]realm.Function, error) {
+	if rc.FunctionsFn != nil {
+		return rc.FunctionsFn(groupID, appID)
+	}
+	return rc.Client.Functions(groupID, appID)
+}
+
+// AppDebugExecuteFunction calls the mocked AppDebugExecuteFunction implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error) {
+	if rc.AppDebugExecuteFunctionFn != nil {
+		return rc.AppDebugExecuteFunctionFn(groupID, appID, userID, name, args)
+	}
+	return rc.Client.AppDebugExecuteFunction(groupID, appID, userID, name, args)
+}
+
 // Status calls the mocked Status implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
 func (rc RealmClient) Status() error {
 	if rc.StatusFn != nil {
-		return rc.Status()
+		return rc.StatusFn()
 	}
 	return rc.Client.Status()
 }
