@@ -11,7 +11,9 @@ function processData(input) {
     warnings: [],
   };
   const opts = {
-    presets: [["env", { exclude: ["babel-plugin-transform-async-to-generator"] }]],
+    presets: [
+      ["env", { exclude: ["babel-plugin-transform-async-to-generator"] }],
+    ],
     plugins: ["transform-object-rest-spread"],
     parserOpts: {
       allowReturnOutsideFunction: true,
@@ -25,7 +27,18 @@ function processData(input) {
       if (output.errors.length > 0) {
         continue;
       }
-      output.results.push({ code: result.code, map: result.map });
+      output.results.push({
+        // This has been introduced to replace the use of `eval` in @protobufjs/inquire
+        // which is used by any service module from the GCP family.
+        // TODO(REALMC-5102): Remove this temporary workaround to have the inquire
+        // module work (no more .replace should be needed with `eval` support). Alternatively
+        // if we decide to stay away from `eval` then remove this TODO.
+        code: result.code.replace(
+          `eval("quire".replace(/^/, "re"))`,
+          `require`
+        ),
+        map: result.map,
+      });
     } catch (e) {
       const error = {
         index: i,
