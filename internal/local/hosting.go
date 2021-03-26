@@ -23,12 +23,12 @@ const (
 
 var (
 	validAttrNames = map[string]struct{}{
-		api.HeaderContentType:             struct{}{},
-		api.HeaderContentDisposition:      struct{}{},
-		api.HeaderContentLanguage:         struct{}{},
-		api.HeaderContentEncoding:         struct{}{},
-		api.HeaderCacheControl:            struct{}{},
-		api.HeaderWebsiteRedirectLocation: struct{}{},
+		api.HeaderContentType:             {},
+		api.HeaderContentDisposition:      {},
+		api.HeaderContentLanguage:         {},
+		api.HeaderContentEncoding:         {},
+		api.HeaderCacheControl:            {},
+		api.HeaderWebsiteRedirectLocation: {},
 	}
 )
 
@@ -282,7 +282,7 @@ func WriteHostingAssets(assetClient HostingAssetClient, rootDir, groupID, appID 
 
 	if err := WriteFile(
 		filepath.Join(dir, NameMetadata+extJSON),
-		0755,
+		0666,
 		bytes.NewReader(metadata),
 	); err != nil {
 		return err
@@ -325,7 +325,7 @@ func WriteHostingAssets(assetClient HostingAssetClient, rootDir, groupID, appID 
 
 				if err := WriteFile(
 					filepath.Join(dir, NameFiles, asset.FilePath),
-					0755,
+					0666,
 					res.Body,
 				); err != nil {
 					errCh <- err

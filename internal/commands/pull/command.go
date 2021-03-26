@@ -94,7 +94,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 
 			return local.WriteFile(
 				filepath.Join(pathTarget, local.NameFunctions, archiveName),
-				0755,
+				0666,
 				archivePkg,
 			)
 		}

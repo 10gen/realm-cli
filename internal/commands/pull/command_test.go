@@ -300,9 +300,13 @@ func TestPullHandler(t *testing.T) {
 `, out.String())
 
 		t.Log("should have added the new file")
-		newData, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "index.html"))
+		filename := filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "index.html")
+		newData, err := ioutil.ReadFile(filename)
 		assert.Nil(t, err)
 		assert.Equal(t, "<html><body>hello world!</body></html>", string(newData))
+		fileInfo, err := os.Stat(filename)
+		assert.Nil(t, err)
+		assert.Equal(t, fileInfo.Mode().String(), "-rw-r--r--")
 
 		t.Log("should have preserved the existing file not found on the app")
 		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameHosting, local.NameFiles, "removed.html"))
