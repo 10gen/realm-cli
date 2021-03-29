@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mitchellh/cli"
 )
@@ -37,14 +38,17 @@ OPTIONS:` + whoami.BaseCommand.Help()
 
 // Run executes the command
 func (whoami *WhoamiCommand) Run(args []string) int {
+	whoami.service.TrackEvent(telemetry.EventTypeCommandStart, )
 	if err := whoami.BaseCommand.run(args); err != nil {
 		whoami.UI.Error(err.Error())
+		// error
 		return 1
 	}
 
 	user, err := whoami.User()
 	if err != nil {
 		whoami.UI.Error(err.Error())
+		// error
 		return 1
 	}
 
@@ -54,5 +58,6 @@ func (whoami *WhoamiCommand) Run(args []string) int {
 	}
 
 	whoami.UI.Info(message)
+	// end 
 	return 0
 }

@@ -5,6 +5,7 @@ package commands
 import (
 	"flag"
 	"fmt"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"net/http"
 	"os"
@@ -44,12 +45,14 @@ type BaseCommand struct {
 	realmClient api.RealmClient
 	user        *user.User
 	storage     *storage.Storage
+	service     *telemetry.Service
 
 	flagConfigPath    string
 	flagColorDisabled bool
 	flagBaseURL       string
 	flagAtlasBaseURL  string
 	flagYes           bool
+	flagTelemetryMode telemetry.Mode
 }
 
 // NewFlagSet builds and returns the default set of flags for all commands
@@ -63,7 +66,7 @@ func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
 	set.StringVar(&c.flagAtlasBaseURL, "atlas-base-url", api.DefaultAtlasBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
-
+	set.Var(&c.flagTelemetryMode, "telemetry", "")
 	c.FlagSet = set
 
 	return set
@@ -208,6 +211,8 @@ func (c *BaseCommand) run(args []string) error {
 
 		c.storage = storage.New(fileStrategy)
 	}
+
+	c.service = telemetry.NewService(c.flagTelemetryMode, c.user.APIKey, c.Name, c.UI)
 
 	return nil
 }
