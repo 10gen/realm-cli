@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"os"
 	"path/filepath"
@@ -134,6 +135,7 @@ func (ic *ImportCommand) Synopsis() string {
 
 // Run executes the command
 func (ic *ImportCommand) Run(args []string) int {
+	ic.service.TrackEvent(telemetry.EventTypeCommandStart)
 	flags := ic.NewFlagSet()
 
 	flags.StringVar(&ic.flagAppID, flagAppIDName, "", "")
@@ -147,22 +149,39 @@ func (ic *ImportCommand) Run(args []string) int {
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
+		ic.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	switch ic.flagStrategy {
 	case importStrategyMerge, importStrategyReplace, importStrategyReplaceByName:
 	default:
-		ic.UI.Error(fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName))
+		err := fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName)
+		ic.UI.Error(err)
+		ic.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	dryRun := false
 	if err := ic.importApp(dryRun); err != nil {
 		ic.UI.Error(err.Error())
+		ic.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
+	ic.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 

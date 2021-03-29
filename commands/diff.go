@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"os"
 
@@ -75,6 +76,7 @@ func (dc *DiffCommand) Synopsis() string {
 
 // Run executes the command
 func (dc *DiffCommand) Run(args []string) int {
+	dc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	flags := dc.NewFlagSet()
 
 	flags.StringVar(&dc.flagAppID, flagAppIDName, "", "")
@@ -85,6 +87,11 @@ func (dc *DiffCommand) Run(args []string) int {
 
 	if err := dc.BaseCommand.run(args); err != nil {
 		dc.UI.Error(err.Error())
+		dc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
@@ -106,7 +113,13 @@ func (dc *DiffCommand) Run(args []string) int {
 	dryRun := true
 	if err := ic.importApp(dryRun); err != nil {
 		dc.UI.Error(err.Error())
+		dc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
+	dc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }

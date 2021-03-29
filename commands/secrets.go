@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"os"
 
 	"github.com/10gen/realm-cli/models"
@@ -179,19 +180,31 @@ Usage: realm-cli secrets list [options]
 
 // Run executes the command
 func (slc *SecretsListCommand) Run(args []string) int {
+	slc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := slc.SecretsBaseCommand.run(args); err != nil {
 		slc.UI.Error(err.Error())
+		slc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	secrets, err := slc.listSecrets()
 	if err != nil {
 		slc.UI.Error(err.Error())
+		slc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	if len(secrets) == 0 {
 		slc.UI.Info("No secrets found for this app")
+		slc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 		return 0
 	}
 
@@ -199,7 +212,7 @@ func (slc *SecretsListCommand) Run(args []string) int {
 	for _, secret := range secrets {
 		slc.UI.Info(fmt.Sprintf("%s %s", secret.ID, secret.Name))
 	}
-
+	slc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 

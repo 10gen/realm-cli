@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"github.com/mitchellh/cli"
 )
 
@@ -36,15 +37,26 @@ OPTIONS:` +
 
 // Run executes the command
 func (lc *LogoutCommand) Run(args []string) int {
+	lc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := lc.BaseCommand.run(args); err != nil {
 		lc.UI.Error(err.Error())
+		lc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	if err := lc.storage.Clear(); err != nil {
 		lc.UI.Error(err.Error())
+		lc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
-
+	lc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }

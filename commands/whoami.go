@@ -38,17 +38,23 @@ OPTIONS:` + whoami.BaseCommand.Help()
 
 // Run executes the command
 func (whoami *WhoamiCommand) Run(args []string) int {
-	whoami.service.TrackEvent(telemetry.EventTypeCommandStart, )
+	whoami.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := whoami.BaseCommand.run(args); err != nil {
 		whoami.UI.Error(err.Error())
-		// error
+		whoami.service.TrackEvent(telemetry.EventTypeCommandError, telemetry.EventData{
+			Key: telemetry.EventDataKeyError,
+			Value: err,
+		})
 		return 1
 	}
 
 	user, err := whoami.User()
 	if err != nil {
 		whoami.UI.Error(err.Error())
-		// error
+		whoami.service.TrackEvent(telemetry.EventDataKeyError, telemetry.EventData{
+			Key: telemetry.EventDataKeyError,
+			Value: err,
+		})
 		return 1
 	}
 
@@ -58,6 +64,6 @@ func (whoami *WhoamiCommand) Run(args []string) int {
 	}
 
 	whoami.UI.Info(message)
-	// end 
+	whoami.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }

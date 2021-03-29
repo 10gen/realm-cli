@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/auth"
@@ -67,6 +68,7 @@ OPTIONS:` +
 
 // Run executes the command
 func (lc *LoginCommand) Run(args []string) int {
+	lc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	set := lc.NewFlagSet()
 
 	set.StringVar(&lc.flagAPIKey, flagLoginAPIKeyName, "", "")
@@ -77,14 +79,24 @@ func (lc *LoginCommand) Run(args []string) int {
 
 	if err := lc.BaseCommand.run(args); err != nil {
 		lc.UI.Error(err.Error())
+		lc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
 
 	if err := lc.logIn(); err != nil {
 		lc.UI.Error(err.Error())
+		lc.service.TrackEvent(telemetry.EventTypeCommandError,
+			telemetry.EventData{
+				Key:   telemetry.EventDataKeyError,
+				Value: err,
+			})
 		return 1
 	}
-
+	lc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 
