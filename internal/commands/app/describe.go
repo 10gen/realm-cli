@@ -8,7 +8,8 @@ import (
 
 // set of supported `app describe` command strings
 const (
-	CommandDescribeUse = "app describe"
+	CommandDescribeUse     = "describe"
+	CommandDescribeDisplay = "app describe"
 )
 
 // set of supported `app describe` command strings

@@ -130,6 +130,15 @@ Realm apps associated with your user profile.`,
 multiple app(s) that you would like to delete from a list of all your Realm apps.
 The list includes Realm apps from all projects associated with your user profile.`,
 			},
+			{
+				Command:     &app.CommandDescribe{},
+				Use:         app.CommandDescribeUse,
+				Display:     app.CommandDescribeDisplay,
+				Description: "View all of the configured and enabled aspects of your Realm app",
+				Help: `Displays information about your Realm app.
+If you have more than one Realm app, you will be prompted to select a Realm app that
+you would like to view from a list of all Realm apps associated with your user profile.`,
+			},
 		},
 	}
 

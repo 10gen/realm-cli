@@ -16,32 +16,32 @@ const (
 	appDescriptionPathPattern = appPathPattern + "/description"
 )
 
-// DataSourceSummary is a short description for an API data source model
+// DataSourceSummary is a short summary for a data source model
 type DataSourceSummary struct {
 	Name       string `json:"name"`
 	Type       string `json:"type"`
 	DataSource string `json:"data_source"`
 }
 
-// HTTPEndpointSummary is a short description for an API http endpoint model
+// HTTPEndpointSummary is a short summary for a http endpoint model
 type HTTPEndpointSummary struct {
 	Name string `json:"name"`
 }
 
-// ServiceSummary is a short description for an API service desc model
+// ServiceSummary is a short summary for a service desc model
 type ServiceSummary struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
-// AuthProviderSummary is a short description for an API auth provider config model
+// AuthProviderSummary is a short summary for a auth provider config model
 type AuthProviderSummary struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Enabled bool   `json:"enabled"`
 }
 
-// CustomUserDataSummary is a short description for an API custom user data config model
+// CustomUserDataSummary is a short summary for a custom user data config model
 type CustomUserDataSummary struct {
 	Enabled     bool   `json:"enabled"`
 	DataSource  string `json:"data_source"`
@@ -50,20 +50,20 @@ type CustomUserDataSummary struct {
 	UserIDField string `json:"user_id_field"`
 }
 
-// HostingSummary is a short description for an API hosting model
+// HostingSummary is a short summary for a hosting model
 type HostingSummary struct {
 	Enabled bool   `json:"enabled"`
 	Status  string `json:"status"`
 	URL     string `json:"url"`
 }
 
-// FunctionSummary is a short description for an API function model
+// FunctionSummary is a short summary for a function model
 type FunctionSummary struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
 }
 
-// SyncSummary is a short description for an API sync model
+// SyncSummary is a short summary for a sync model
 type SyncSummary struct {
 	State                  string `json:"state"`
 	DataSource             string `json:"data_source"`
@@ -71,20 +71,20 @@ type SyncSummary struct {
 	DevelopmentModeEnabled bool   `json:"development_mode_enabled"`
 }
 
-// GraphQLSummary is a short description for an API graphql model
+// GraphQLSummary is a short summary for a graphql model
 type GraphQLSummary struct {
 	URL             string   `json:"url"`
 	CustomResolvers []string `json:"custom_resolvers"`
 }
 
-// EventSubscriptionSummary is a short description for an API event subscription model
+// EventSubscriptionSummary is a short summary for a event subscription model
 type EventSubscriptionSummary struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Enabled bool   `json:"enabled"`
 }
 
-// AppDescription describes an API App
+// AppDescription describes an App
 type AppDescription struct {
 	ClientAppID       string                     `json:"client_app_id"`
 	Name              string                     `json:"name"`
