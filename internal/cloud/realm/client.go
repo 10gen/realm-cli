@@ -33,6 +33,7 @@ type Client interface {
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error
 	FindApps(filter AppFilter) ([]App, error)
+	AppDescription(groupID, appID string) (AppDescription, error)
 
 	CreateDraft(groupID, appID string) (AppDraft, error)
 	DeployDraft(groupID, appID, draftID string) (AppDeployment, error)
