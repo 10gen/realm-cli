@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/function"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
+	"github.com/10gen/realm-cli/internal/commands/logs"
 	"github.com/10gen/realm-cli/internal/commands/pull"
 	"github.com/10gen/realm-cli/internal/commands/push"
 	"github.com/10gen/realm-cli/internal/commands/secrets"
@@ -237,16 +238,40 @@ be modified.`,
 	}
 
 	Function = cli.CommandDefinition{
-		Command:     &function.Command{},
-		Use:         function.CommandUse,
-		Aliases:     function.CommandAliases,
-		Description: "Run a function from your Realm app",
-		Help: `Realm Functions allow you to define and execute server-side logic for your
+		Use:         "function",
+		Aliases:     []string{"functions"},
+		Description: "Manage the functions of your Realm app",
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &function.CommandRun{},
+				Use:         "run",
+				Description: "Run a function from your Realm app",
+				Help: `Realm Functions allow you to define and execute server-side logic for your
 Realm app. Once you select and run a function for your Realm app, the
 following will be displayed:
  - A list of logs, if present
  - The function result as a document
  - A list of error logs, if present
 `,
+			},
+		},
+	}
+
+	Logs = cli.CommandDefinition{
+		Use:         "logs",
+		Aliases:     []string{"log"},
+		Description: "Interact with the logs of your Realm app",
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &logs.CommandList{},
+				Use:         "list",
+				Aliases:     []string{"ls"},
+				Display:     "logs list",
+				Description: "Lists the logs in your Realm app",
+				Help: `Displays a list of your Realm app’s logs sorted by recentness, with most recent
+logs appearing towards the bottom.  You can specify a --tail flag to monitor
+your logs and follow any newly created logs in real-time.`,
+			},
+		},
 	}
 )

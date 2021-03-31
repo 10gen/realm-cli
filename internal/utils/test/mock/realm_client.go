@@ -57,6 +57,8 @@ type RealmClient struct {
 	FunctionsFn               func(groupID, appID string) ([]realm.Function, error)
 	AppDebugExecuteFunctionFn func(groupID, appID, userID, name string, args []interface{}) (realm.ExecutionResults, error)
 
+	LogsFn func(groupID, appID string, opts realm.LogsOptions) ([]realm.Log, error)
+
 	StatusFn func() error
 }
 
@@ -418,6 +420,16 @@ func (rc RealmClient) AppDebugExecuteFunction(groupID, appID, userID, name strin
 		return rc.AppDebugExecuteFunctionFn(groupID, appID, userID, name, args)
 	}
 	return rc.Client.AppDebugExecuteFunction(groupID, appID, userID, name, args)
+}
+
+// Logs calls the mocked Logs implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Logs(groupID, appID string, opts realm.LogsOptions) ([]realm.Log, error) {
+	if rc.LogsFn != nil {
+		return rc.LogsFn(groupID, appID, opts)
+	}
+	return rc.Client.Logs(groupID, appID, opts)
 }
 
 // Status calls the mocked Status implementation if provided,
