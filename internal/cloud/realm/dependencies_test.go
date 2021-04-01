@@ -67,7 +67,7 @@ func TestRealmDependencies(t *testing.T) {
 
 		assert.Equal(t, "node_modules.zip", name)
 
-		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0755, zipPkg))
+		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, zipPkg))
 
 		actualDeps, actualDepsErr := os.Open(filepath.Join(tmpDir, name))
 		assert.Nil(t, actualDepsErr)
