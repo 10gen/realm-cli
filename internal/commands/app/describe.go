@@ -12,7 +12,7 @@ type describeInputs struct {
 }
 
 func (i *describeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	return nil
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
 }
 
 // CommandDescribe is the `app describe` command

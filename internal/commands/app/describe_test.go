@@ -3,16 +3,44 @@ package app
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
 	"github.com/Netflix/go-expect"
 )
+
+func TestDescribeInputsResolve(t *testing.T) {
+	t.Run("should set app if in app directory", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app-describe-test")
+		defer teardown()
+
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()),
+			[]byte(`{"config_version":20210101,"app_id":"test-app-abcd","name":"test-app"}`),
+			0666,
+		))
+
+		inputs := describeInputs{}
+		assert.Nil(t, inputs.Resolve(profile, nil))
+		assert.Equal(t, "test-app-abcd", inputs.App)
+	})
+
+	t.Run("should not set app if not in app directory", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		inputs := describeInputs{}
+		assert.Nil(t, inputs.Resolve(profile, nil))
+		assert.Equal(t, "", inputs.App)
+	})
+}
 
 func TestAppDescribeHandler(t *testing.T) {
 	t.Run("should error if apps not found", func(t *testing.T) {

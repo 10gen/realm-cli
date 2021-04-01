@@ -41,7 +41,7 @@ func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
-func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
+func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) error {
 	app, appErr := local.LoadAppConfig(wd)
 	if appErr != nil {
 		return appErr
@@ -53,8 +53,10 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string) error {
 		if app.RootDir != "" {
 			appOption = app.Option()
 		} else {
-			if err := ui.AskOne(&appOption, &survey.Input{Message: "App Filter"}); err != nil {
-				return err
+			if !skipAppPrompt {
+				if err := ui.AskOne(&appOption, &survey.Input{Message: "App Filter"}); err != nil {
+					return err
+				}
 			}
 		}
 		i.App = appOption

@@ -85,7 +85,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			err := tc.inputs.Resolve(ui, tc.wd)
+			err := tc.inputs.Resolve(ui, tc.wd, false)
 			assert.Nil(t, err)
 
 			console.Tty().Close() // flush the writers
