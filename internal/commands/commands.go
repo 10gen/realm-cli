@@ -132,8 +132,8 @@ The list includes Realm apps from all projects associated with your user profile
 			},
 			{
 				Command:     &app.CommandDescribe{},
-				Use:         app.CommandDescribeUse,
-				Display:     app.CommandDescribeDisplay,
+				Use:         "describe",
+				Display:     "app describe",
 				Description: "View all of the configured and enabled aspects of your Realm app",
 				Help: `Displays information about your Realm app.
 If you have more than one Realm app, you will be prompted to select a Realm app that

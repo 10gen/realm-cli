@@ -3,18 +3,8 @@ package app
 import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/terminal"
+
 	"github.com/spf13/pflag"
-)
-
-// set of supported `app describe` command strings
-const (
-	CommandDescribeUse     = "describe"
-	CommandDescribeDisplay = "app describe"
-)
-
-// set of supported `app describe` command strings
-var (
-	CommandDescribeAliases = []string{}
 )
 
 type describeInputs struct {
