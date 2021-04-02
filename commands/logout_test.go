@@ -3,6 +3,8 @@ package commands
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/10gen/realm-cli/storage"
 	"github.com/10gen/realm-cli/user"
 	u "github.com/10gen/realm-cli/utils/test"
@@ -14,7 +16,8 @@ import (
 func TestLogoutCommand(t *testing.T) {
 	setup := func(storage *storage.Storage) (*LogoutCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		cmd, err := NewLogoutCommandFactory(mockUI)()
+		mockService := &telemetry.Service{}
+		cmd, err := NewLogoutCommandFactory(mockUI, mockService)()
 		if err != nil {
 			panic(err)
 		}

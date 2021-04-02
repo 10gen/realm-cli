@@ -1,8 +1,6 @@
 package telemetry
 
 import (
-	"fmt"
-	"github.com/mitchellh/cli"
 	"gopkg.in/segmentio/analytics-go.v3"
 )
 
@@ -23,15 +21,14 @@ func (n *noopTracker) Close() error      { return nil }
 
 type segmentTracker struct {
 	client analytics.Client
-	ui     cli.Ui
 }
 
-func newSegmentTracker(ui cli.Ui) Tracker {
+func newSegmentTracker() Tracker {
 	if len(segmentWriteKey) == 0 {
 		return &noopTracker{}
 	}
 	client := analytics.New(segmentWriteKey)
-	return &segmentTracker{client, ui}
+	return &segmentTracker{client}
 }
 
 func (s *segmentTracker) Track(event event) {
@@ -42,14 +39,16 @@ func (s *segmentTracker) Track(event event) {
 	for _, datum := range event.data {
 		properties[datum.Key] = datum.Value
 	}
-	if err := s.client.Enqueue(analytics.Track{
+
+	err := s.client.Enqueue(analytics.Track{
 		MessageId:  event.id,
 		Timestamp:  event.time,
 		Event:      string(event.eventType),
 		UserId:     event.userID,
 		Properties: properties,
-	}); err != nil {
-		s.ui.Info(fmt.Sprintf("failed to send Segment event %q: %s", event.eventType, err))
+	})
+	if err != nil {
+		return
 	}
 }
 

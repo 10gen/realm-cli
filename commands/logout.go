@@ -6,12 +6,13 @@ import (
 )
 
 // NewLogoutCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewLogoutCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewLogoutCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &LogoutCommand{
 			BaseCommand: &BaseCommand{
-				Name: "logout",
-				UI:   ui,
+				Name:    "logout",
+				UI:      ui,
+				Service: service,
 			},
 		}, nil
 	}
@@ -37,26 +38,14 @@ OPTIONS:` +
 
 // Run executes the command
 func (lc *LogoutCommand) Run(args []string) int {
-	lc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := lc.BaseCommand.run(args); err != nil {
 		lc.UI.Error(err.Error())
-		lc.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
 	if err := lc.storage.Clear(); err != nil {
 		lc.UI.Error(err.Error())
-		lc.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
-	lc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }

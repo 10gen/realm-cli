@@ -5,12 +5,13 @@ package commands
 import (
 	"flag"
 	"fmt"
-	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/api/mdbcloud"
@@ -37,22 +38,22 @@ type BaseCommand struct {
 
 	Name string
 
-	CLI *cli.CLI
-	UI  cli.Ui
+	CLI     *cli.CLI
+	UI      cli.Ui
+	Service *telemetry.Service
 
 	client      api.Client
 	atlasClient mdbcloud.Client
 	realmClient api.RealmClient
 	user        *user.User
 	storage     *storage.Storage
-	service     *telemetry.Service
 
 	flagConfigPath    string
 	flagColorDisabled bool
 	flagBaseURL       string
 	flagAtlasBaseURL  string
 	flagYes           bool
-	flagTelemetryMode telemetry.Mode
+	flagTelemetryOn   bool
 }
 
 // NewFlagSet builds and returns the default set of flags for all commands
@@ -66,7 +67,7 @@ func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
 	set.StringVar(&c.flagAtlasBaseURL, "atlas-base-url", api.DefaultAtlasBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
-	set.Var(&c.flagTelemetryMode, "telemetry", "")
+	set.BoolVar(&c.flagTelemetryOn, "telemetry", true, "")
 	c.FlagSet = set
 
 	return set
@@ -212,7 +213,13 @@ func (c *BaseCommand) run(args []string) error {
 		c.storage = storage.New(fileStrategy)
 	}
 
-	c.service = telemetry.NewService(c.flagTelemetryMode, c.user.APIKey, c.Name, c.UI)
+	user, err := c.User()
+	if err != nil {
+		return err
+	}
+
+	c.Service.SetFields(c.flagTelemetryOn, user.PublicAPIKey, c.Name)
+	c.Service.TrackEvent(telemetry.EventTypeCommandStart)
 
 	return nil
 }

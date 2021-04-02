@@ -2,11 +2,12 @@ package commands
 
 import (
 	"fmt"
-	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/models"
@@ -20,7 +21,7 @@ import (
 const numWorkers = 4
 
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewExportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -33,8 +34,9 @@ func NewExportCommandFactory(ui cli.Ui) cli.CommandFactory {
 			writeFileToDirectory: utils.WriteFileToDir,
 			getAssetAtURL:        getAssetAtURL,
 			BaseCommand: &BaseCommand{
-				Name: "export",
-				UI:   ui,
+				Name:    "export",
+				UI:      ui,
+				Service: service,
 			},
 		}, nil
 	}
@@ -94,7 +96,6 @@ func (ec *ExportCommand) Synopsis() string {
 
 // Run executes the command
 func (ec *ExportCommand) Run(args []string) int {
-	ec.service.TrackEvent(telemetry.EventTypeCommandStart)
 	set := ec.NewFlagSet()
 
 	set.StringVar(&ec.flagProjectID, flagProjectIDName, "", "")
@@ -108,24 +109,13 @@ func (ec *ExportCommand) Run(args []string) int {
 
 	if err := ec.BaseCommand.run(args); err != nil {
 		ec.UI.Error(err.Error())
-		ec.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
 	if err := ec.run(); err != nil {
 		ec.UI.Error(err.Error())
-		ec.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
-	ec.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 

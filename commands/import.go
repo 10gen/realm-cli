@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/10gen/realm-cli/utils/telemetry"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/hosting"
@@ -51,7 +52,7 @@ func errIncludeHosting(err error) error {
 }
 
 // NewImportCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewImportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -60,8 +61,9 @@ func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
 
 		return &ImportCommand{
 			BaseCommand: &BaseCommand{
-				Name: "import",
-				UI:   ui,
+				Name:    "import",
+				UI:      ui,
+				Service: service,
 			},
 			workingDirectory: workingDirectory,
 			writeToDirectory: utils.WriteZipToDir,
@@ -135,7 +137,6 @@ func (ic *ImportCommand) Synopsis() string {
 
 // Run executes the command
 func (ic *ImportCommand) Run(args []string) int {
-	ic.service.TrackEvent(telemetry.EventTypeCommandStart)
 	flags := ic.NewFlagSet()
 
 	flags.StringVar(&ic.flagAppID, flagAppIDName, "", "")
@@ -149,11 +150,6 @@ func (ic *ImportCommand) Run(args []string) int {
 
 	if err := ic.BaseCommand.run(args); err != nil {
 		ic.UI.Error(err.Error())
-		ic.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
@@ -162,26 +158,14 @@ func (ic *ImportCommand) Run(args []string) int {
 	default:
 		err := fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName)
 		ic.UI.Error(err)
-		ic.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
 	dryRun := false
 	if err := ic.importApp(dryRun); err != nil {
 		ic.UI.Error(err.Error())
-		ic.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
-
-	ic.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 

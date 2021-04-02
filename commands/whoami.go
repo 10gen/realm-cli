@@ -2,18 +2,19 @@ package commands
 
 import (
 	"fmt"
-	"github.com/10gen/realm-cli/utils/telemetry"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"github.com/mitchellh/cli"
 )
 
 // NewWhoamiCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewWhoamiCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewWhoamiCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &WhoamiCommand{
 			BaseCommand: &BaseCommand{
-				Name: "whoami",
-				UI:   ui,
+				Name:    "whoami",
+				UI:      ui,
+				Service: service,
 			},
 		}, nil
 	}
@@ -38,23 +39,14 @@ OPTIONS:` + whoami.BaseCommand.Help()
 
 // Run executes the command
 func (whoami *WhoamiCommand) Run(args []string) int {
-	whoami.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := whoami.BaseCommand.run(args); err != nil {
 		whoami.UI.Error(err.Error())
-		whoami.service.TrackEvent(telemetry.EventTypeCommandError, telemetry.EventData{
-			Key: telemetry.EventDataKeyError,
-			Value: err,
-		})
 		return 1
 	}
 
 	user, err := whoami.User()
 	if err != nil {
 		whoami.UI.Error(err.Error())
-		whoami.service.TrackEvent(telemetry.EventDataKeyError, telemetry.EventData{
-			Key: telemetry.EventDataKeyError,
-			Value: err,
-		})
 		return 1
 	}
 
@@ -64,6 +56,5 @@ func (whoami *WhoamiCommand) Run(args []string) int {
 	}
 
 	whoami.UI.Info(message)
-	whoami.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }

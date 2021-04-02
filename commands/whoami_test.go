@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/10gen/realm-cli/storage"
 	"github.com/10gen/realm-cli/user"
 	u "github.com/10gen/realm-cli/utils/test"
@@ -15,7 +17,8 @@ import (
 func TestWhoamiCommand(t *testing.T) {
 	setup := func(inMemoryUser *user.User, storage *storage.Storage) (*WhoamiCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		cmd, err := NewWhoamiCommandFactory(mockUI)()
+		mockService := &telemetry.Service{}
+		cmd, err := NewWhoamiCommandFactory(mockUI, mockService)()
 		if err != nil {
 			panic(err)
 		}

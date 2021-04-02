@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"github.com/10gen/realm-cli/utils/telemetry"
 	"github.com/mitchellh/cli"
 )
 
@@ -9,11 +10,12 @@ const (
 )
 
 // NewProjectCommand returns a new *ProjectCommand
-func NewProjectCommand(name string, ui cli.Ui) *ProjectCommand {
+func NewProjectCommand(name string, ui cli.Ui, service *telemetry.Service) *ProjectCommand {
 	return &ProjectCommand{
 		BaseCommand: &BaseCommand{
-			Name: name,
-			UI:   ui,
+			Name:    name,
+			UI:      ui,
+			Service: service,
 		},
 	}
 }

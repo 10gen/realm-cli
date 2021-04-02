@@ -4,6 +4,8 @@ import (
 	"io"
 	"testing"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/user"
 	u "github.com/10gen/realm-cli/utils/test"
@@ -13,7 +15,8 @@ import (
 
 func setUpBasicDiffCommand() (*DiffCommand, *cli.MockUi) {
 	mockUI := cli.NewMockUi()
-	cmd, err := NewDiffCommandFactory(mockUI)()
+	mockService := &telemetry.Service{}
+	cmd, err := NewDiffCommandFactory(mockUI, mockService)()
 	if err != nil {
 		panic(err)
 	}

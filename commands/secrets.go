@@ -2,8 +2,9 @@ package commands
 
 import (
 	"fmt"
-	"github.com/10gen/realm-cli/utils/telemetry"
 	"os"
+
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/secrets"
@@ -13,12 +14,13 @@ import (
 )
 
 // NewSecretsCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewSecretsCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &SecretsCommand{
 			BaseCommand: &BaseCommand{
-				Name: "secrets",
-				UI:   ui,
+				Name:    "secrets",
+				UI:      ui,
+				Service: service,
 			},
 		}, nil
 	}
@@ -60,9 +62,9 @@ var (
 )
 
 // NewSecretsBaseCommand returns a new *SecretsBaseCommand
-func NewSecretsBaseCommand(name, workingDirectory string, ui cli.Ui) *SecretsBaseCommand {
+func NewSecretsBaseCommand(name, workingDirectory string, ui cli.Ui, service *telemetry.Service) *SecretsBaseCommand {
 	return &SecretsBaseCommand{
-		ProjectCommand:   NewProjectCommand(name, ui),
+		ProjectCommand:   NewProjectCommand(name, ui, service),
 		workingDirectory: workingDirectory,
 	}
 }
@@ -146,7 +148,7 @@ func (sbc *SecretsBaseCommand) resolveApp() (*models.App, error) {
 }
 
 // NewSecretsListCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsListCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewSecretsListCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -154,7 +156,7 @@ func NewSecretsListCommandFactory(ui cli.Ui) cli.CommandFactory {
 		}
 
 		return &SecretsListCommand{
-			SecretsBaseCommand: NewSecretsBaseCommand("list", workingDirectory, ui),
+			SecretsBaseCommand: NewSecretsBaseCommand("list", workingDirectory, ui, service),
 		}, nil
 	}
 }
@@ -180,31 +182,19 @@ Usage: realm-cli secrets list [options]
 
 // Run executes the command
 func (slc *SecretsListCommand) Run(args []string) int {
-	slc.service.TrackEvent(telemetry.EventTypeCommandStart)
 	if err := slc.SecretsBaseCommand.run(args); err != nil {
 		slc.UI.Error(err.Error())
-		slc.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
 	secrets, err := slc.listSecrets()
 	if err != nil {
 		slc.UI.Error(err.Error())
-		slc.service.TrackEvent(telemetry.EventTypeCommandError,
-			telemetry.EventData{
-				Key:   telemetry.EventDataKeyError,
-				Value: err,
-			})
 		return 1
 	}
 
 	if len(secrets) == 0 {
 		slc.UI.Info("No secrets found for this app")
-		slc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 		return 0
 	}
 
@@ -212,7 +202,6 @@ func (slc *SecretsListCommand) Run(args []string) int {
 	for _, secret := range secrets {
 		slc.UI.Info(fmt.Sprintf("%s %s", secret.ID, secret.Name))
 	}
-	slc.service.TrackEvent(telemetry.EventTypeCommandEnd)
 	return 0
 }
 
@@ -231,7 +220,7 @@ func (slc *SecretsListCommand) listSecrets() ([]secrets.Secret, error) {
 }
 
 // NewSecretsAddCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsAddCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewSecretsAddCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -239,7 +228,7 @@ func NewSecretsAddCommandFactory(ui cli.Ui) cli.CommandFactory {
 		}
 
 		return &SecretsAddCommand{
-			SecretsBaseCommand: NewSecretsBaseCommand("add", workingDirectory, ui),
+			SecretsBaseCommand: NewSecretsBaseCommand("add", workingDirectory, ui, service),
 		}, nil
 	}
 }
@@ -324,7 +313,7 @@ func (sac *SecretsAddCommand) addSecret() error {
 }
 
 // NewSecretsUpdateCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsUpdateCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewSecretsUpdateCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -332,7 +321,7 @@ func NewSecretsUpdateCommandFactory(ui cli.Ui) cli.CommandFactory {
 		}
 
 		return &SecretsUpdateCommand{
-			SecretsBaseCommand: NewSecretsBaseCommand("update", workingDirectory, ui),
+			SecretsBaseCommand: NewSecretsBaseCommand("update", workingDirectory, ui, service),
 		}, nil
 	}
 }
@@ -423,7 +412,7 @@ func (suc *SecretsUpdateCommand) updateSecret() error {
 }
 
 // NewSecretsRemoveCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewSecretsRemoveCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewSecretsRemoveCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -431,7 +420,7 @@ func NewSecretsRemoveCommandFactory(ui cli.Ui) cli.CommandFactory {
 		}
 
 		return &SecretsRemoveCommand{
-			SecretsBaseCommand: NewSecretsBaseCommand("remove", workingDirectory, ui),
+			SecretsBaseCommand: NewSecretsBaseCommand("remove", workingDirectory, ui, service),
 		}, nil
 	}
 }

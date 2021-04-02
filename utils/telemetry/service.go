@@ -1,10 +1,9 @@
 package telemetry
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"time"
 
-	"github.com/mitchellh/cli"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // REALMC-7243 same as the new cli Segment tracking
@@ -16,25 +15,16 @@ type Service struct {
 	tracker     Tracker
 }
 
-func NewService(mode Mode, userID string, command string, ui cli.Ui) *Service {
-	if !isValid(mode){
-		return nil
-	}
-	service := Service{
-		userID:      userID,
-		executionID: primitive.NewObjectID().Hex(),
-		command:     command,
-	}
+func (s *Service) SetFields(mode bool, userID string, command string) {
+	s.userID = userID
+	s.executionID = primitive.NewObjectID().Hex()
+	s.command = command
 
-	switch mode {
-	case ModeOn, ModeEmpty:
-		service.tracker = newSegmentTracker(ui)
-	case ModeOff:
-		service.tracker = &noopTracker{}
-	default:
-		service.tracker = &noopTracker{}
+	if mode {
+		s.tracker = newSegmentTracker()
+	} else {
+		s.tracker = &noopTracker{}
 	}
-	return &service
 }
 
 func (s *Service) TrackEvent(eventType EventType, data ...EventData) {

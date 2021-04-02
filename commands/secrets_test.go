@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/secrets"
 	"github.com/10gen/realm-cli/user"
@@ -50,6 +52,7 @@ func setUpBasicSecretsCommand(
 }
 
 func TestSecretsCommand(t *testing.T) {
+	mockService := &telemetry.Service{}
 	validListArgs := []string{"--app-id=my-app-abcdef"}
 	validAddArgs := []string{"--app-id=my-app-abcdef", "--name=foo", "--value=bar"}
 	validUpdateByIDArgs := []string{"--app-id=my-app-abcdef", "--id=thisisanid", "--value=newvalue"}
@@ -63,7 +66,7 @@ func TestSecretsCommand(t *testing.T) {
 
 	t.Run("listing a secret should require the user to be logged in", func(t *testing.T) {
 		mockUI := cli.NewMockUi()
-		cmd, err := NewSecretsListCommandFactory(mockUI)()
+		cmd, err := NewSecretsListCommandFactory(mockUI, mockService)()
 		u.So(t, err, gc.ShouldBeNil)
 
 		listCommand := cmd.(*SecretsListCommand)
@@ -77,7 +80,7 @@ func TestSecretsCommand(t *testing.T) {
 
 	t.Run("adding a secret should require the user to be logged in", func(t *testing.T) {
 		mockUI := cli.NewMockUi()
-		cmd, err := NewSecretsAddCommandFactory(mockUI)()
+		cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 		u.So(t, err, gc.ShouldBeNil)
 
 		addCommand := cmd.(*SecretsAddCommand)
@@ -104,7 +107,7 @@ func TestSecretsCommand(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+			cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			updateCommand := cmd.(*SecretsUpdateCommand)
@@ -132,7 +135,7 @@ func TestSecretsCommand(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)
@@ -159,7 +162,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("adding a secret fails if the secret name is missing", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsAddCommandFactory(mockUI)()
+			cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			addCommand := cmd.(*SecretsAddCommand)
@@ -172,7 +175,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("adding a secret fails if the secret value is missing", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsAddCommandFactory(mockUI)()
+			cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			addCommand := cmd.(*SecretsAddCommand)
@@ -185,7 +188,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("removing a secret fails if the secret id and name are missing", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)
@@ -198,7 +201,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("listing a secret fails if the listing method fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsListCommandFactory(mockUI)()
+			cmd, err := NewSecretsListCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			listCommand := cmd.(*SecretsListCommand)
@@ -218,7 +221,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("adding a secret fails if adding the secret fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsAddCommandFactory(mockUI)()
+			cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			addCommand := cmd.(*SecretsAddCommand)
@@ -235,7 +238,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("updating a secret by id fails if updating the secret fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+			cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			updateCommand := cmd.(*SecretsUpdateCommand)
@@ -251,7 +254,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("updating a secret by name fails if updating the secret fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+			cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			updateCommand := cmd.(*SecretsUpdateCommand)
@@ -267,7 +270,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("removing a secret by id fails if removing the secret fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)
@@ -283,7 +286,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("removing a secret by name fails if removing the secret fails", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)
@@ -299,7 +302,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("it passes the correct flags to AddSecret", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsAddCommandFactory(mockUI)()
+			cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			var secretName string
@@ -333,7 +336,7 @@ func TestSecretsCommand(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				mockUI := cli.NewMockUi()
-				cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+				cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 				u.So(t, err, gc.ShouldBeNil)
 
 				var secretID string
@@ -365,7 +368,7 @@ func TestSecretsCommand(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				mockUI := cli.NewMockUi()
-				cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+				cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 				u.So(t, err, gc.ShouldBeNil)
 
 				var secretName string
@@ -397,7 +400,7 @@ func TestSecretsCommand(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				mockUI := cli.NewMockUi()
-				cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+				cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 				u.So(t, err, gc.ShouldBeNil)
 
 				removeCommand := cmd.(*SecretsRemoveCommand)
@@ -429,7 +432,7 @@ func TestSecretsCommand(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				mockUI := cli.NewMockUi()
-				cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+				cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 				u.So(t, err, gc.ShouldBeNil)
 
 				removeCommand := cmd.(*SecretsRemoveCommand)
@@ -448,7 +451,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("listing secrets works when there are none", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsListCommandFactory(mockUI)()
+			cmd, err := NewSecretsListCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			listCommand := cmd.(*SecretsListCommand)
@@ -460,7 +463,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("listing secrets works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsListCommandFactory(mockUI)()
+			cmd, err := NewSecretsListCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			listCommand := cmd.(*SecretsListCommand)
@@ -478,7 +481,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("adding a secret works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsAddCommandFactory(mockUI)()
+			cmd, err := NewSecretsAddCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			addCommand := cmd.(*SecretsAddCommand)
@@ -491,7 +494,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("updating a secret by id works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+			cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			updateCommand := cmd.(*SecretsUpdateCommand)
@@ -504,7 +507,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("updating a secret by name works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsUpdateCommandFactory(mockUI)()
+			cmd, err := NewSecretsUpdateCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			updateCommand := cmd.(*SecretsUpdateCommand)
@@ -517,7 +520,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("removing a secret by id works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)
@@ -530,7 +533,7 @@ func TestSecretsCommand(t *testing.T) {
 
 		t.Run("removing a secret by name works", func(t *testing.T) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewSecretsRemoveCommandFactory(mockUI)()
+			cmd, err := NewSecretsRemoveCommandFactory(mockUI, mockService)()
 			u.So(t, err, gc.ShouldBeNil)
 
 			removeCommand := cmd.(*SecretsRemoveCommand)

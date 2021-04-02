@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/10gen/realm-cli/auth"
 	"github.com/10gen/realm-cli/user"
 	u "github.com/10gen/realm-cli/utils/test"
@@ -17,7 +19,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("required arguments", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewLoginCommandFactory(mockUI)()
+			mockService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, mockService)()
 			if err != nil {
 				panic(err)
 			}
@@ -56,7 +59,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("when the user is not logged in", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewLoginCommandFactory(mockUI)()
+			mockService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, mockService)()
 			if err != nil {
 				panic(err)
 			}
@@ -107,7 +111,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("when the user is logged in", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi, *u.MockClient) {
 			mockUI := cli.NewMockUi()
-			cmd, err := NewLoginCommandFactory(mockUI)()
+			mockService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, mockService)()
 			if err != nil {
 				panic(err)
 			}
