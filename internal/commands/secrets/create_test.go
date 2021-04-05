@@ -52,7 +52,7 @@ func TestSecretsCreateHandler(t *testing.T) {
 		}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully created secret, id: secretID\n", out.String())
+		assert.Equal(t, "Successfully created secret, id: secretID\n", out.String())
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, realm.AppFilter{projectID, appID}, capturedFilter)

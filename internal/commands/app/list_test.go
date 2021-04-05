@@ -74,7 +74,7 @@ func TestAppListHandler(t *testing.T) {
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
-			assert.Equal(t, fmt.Sprintf(`01:23:45 UTC INFO  Found 3 apps
+			assert.Equal(t, fmt.Sprintf(`Found 3 apps
   app1-abcde (%s)
   app2-abcde (%s)
   app1-fghij (%s)

@@ -52,7 +52,7 @@ func TestSecretsDeleteHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, "01:23:45 UTC INFO  No secrets to delete\n", out.String())
+		assert.Equal(t, "No secrets to delete\n", out.String())
 	})
 
 	for _, tc := range []struct {
@@ -65,7 +65,7 @@ func TestSecretsDeleteHandler(t *testing.T) {
 			description: "should return successful outputs for proper secret inputs",
 			testInput:   []string{"secret_id_1"},
 			expectedOutput: strings.Join([]string{
-				"01:23:45 UTC INFO  Deleted 1 secret(s)",
+				"Deleted 1 secret(s)",
 				"  ID           Name           Deleted  Details",
 				"  -----------  -------------  -------  -------",
 				"  secret_id_1  secret_name_1  true            ",
@@ -77,7 +77,7 @@ func TestSecretsDeleteHandler(t *testing.T) {
 			testInput:   []string{"secret_id_0", "secret_id_6"},
 			deleteErr:   errors.New("something happened"),
 			expectedOutput: strings.Join([]string{
-				"01:23:45 UTC INFO  Deleted 2 secret(s)",
+				"Deleted 2 secret(s)",
 				"  ID           Name           Deleted  Details           ",
 				"  -----------  -------------  -------  ------------------",
 				"  secret_id_0  secret_name_0  false    something happened",

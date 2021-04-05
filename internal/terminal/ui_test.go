@@ -3,8 +3,6 @@ package terminal_test
 import (
 	"bytes"
 	"errors"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -23,17 +21,17 @@ func TestUIPrint(t *testing.T) {
 			{
 				description: "Should use the default writer while printing an INFO log",
 				log:         terminal.NewTextLog("test log"),
-				expectedOut: "01:23:45 UTC INFO  test log\n",
+				expectedOut: "test log\n",
 			},
 			{
 				description: "Should use the error writer while printing an ERROR log",
 				log:         terminal.NewErrorLog(errors.New("something bad happened")),
-				expectedErr: "01:23:45 UTC ERROR something bad happened\n",
+				expectedErr: "something bad happened\n",
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				out, err := new(bytes.Buffer), new(bytes.Buffer)
-				ui := terminal.NewUI(terminal.UIConfig{}, nil, out, err, logger)
+				ui := terminal.NewUI(terminal.UIConfig{}, nil, out, err)
 
 				tc.log.Time = mock.StaticTime
 				ui.Print(tc.log)
@@ -44,7 +42,3 @@ func TestUIPrint(t *testing.T) {
 		}
 	})
 }
-
-var (
-	logger = log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
-)

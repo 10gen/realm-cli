@@ -2,7 +2,6 @@ package telemetry
 
 import (
 	"fmt"
-	"time"
 
 	"gopkg.in/segmentio/analytics-go.v3"
 )
@@ -25,13 +24,7 @@ func (tracker *noopTracker) Close()            {}
 type stdoutTracker struct{}
 
 func (tracker *stdoutTracker) Track(event event) {
-	fmt.Printf(
-		"%s UTC TELEM %s: %s%v\n",
-		event.time.In(time.UTC).Format("15:04:05"),
-		event.command,
-		event.eventType,
-		event.data,
-	)
+	fmt.Printf("%s: %s%v\n", event.command, event.eventType, event.data)
 }
 
 func (tracker *stdoutTracker) Close() {}

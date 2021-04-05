@@ -48,7 +48,7 @@ func TestAppDeleteHandler(t *testing.T) {
 	}{
 		{
 			description:    "should delete no apps if none are found",
-			expectedOutput: "01:23:45 UTC INFO  No apps to delete\n",
+			expectedOutput: "No apps to delete\n",
 		},
 		{
 			description:  "with no project flag set and an apps flag set should delete all apps that match the apps flag",
@@ -57,7 +57,7 @@ func TestAppDeleteHandler(t *testing.T) {
 			expectedApps: []string{appID1},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Successfully deleted 1/1 app(s)",
+					"Successfully deleted 1/1 app(s)",
 					"  ID                        Name  Deleted  Details",
 					"  ------------------------  ----  -------  -------",
 					"  60344735b37e3733de2adf40  app1  true            ",
@@ -73,7 +73,7 @@ func TestAppDeleteHandler(t *testing.T) {
 			expectedApps: []string{appID1, appID3},
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Successfully deleted 2/2 app(s)",
+					"Successfully deleted 2/2 app(s)",
 					"  ID                        Name  Deleted  Details",
 					"  ------------------------  ----  -------  -------",
 					"  60344735b37e3733de2adf40  app1  true            ",
@@ -91,7 +91,7 @@ func TestAppDeleteHandler(t *testing.T) {
 			deleteErr:    errors.New("client error"),
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Successfully deleted 0/1 app(s)",
+					"Successfully deleted 0/1 app(s)",
 					"  ID                        Name  Deleted  Details     ",
 					"  ------------------------  ----  -------  ------------",
 					"  60344735b37e3733de2adf40  app1  false    client error",

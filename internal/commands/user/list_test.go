@@ -41,7 +41,7 @@ func TestUserListHandler(t *testing.T) {
 		}}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, "01:23:45 UTC INFO  No available users to show\n", out.String())
+		assert.Equal(t, "No available users to show\n", out.String())
 	})
 
 	t.Run("should display users by auth provider type", func(t *testing.T) {
@@ -67,19 +67,19 @@ func TestUserListHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Provider type: User/Password",
+			"Provider type: User/Password",
 			"  Email            ID      Type  Enabled  Last Authenticated",
 			"  ---------------  ------  ----  -------  ------------------",
 			"  user-2@test.com  user-2        true     n/a               ",
-			"01:23:45 UTC INFO  Provider type: ApiKey",
+			"Provider type: ApiKey",
 			"  Name    ID      Type  Enabled  Last Authenticated",
 			"  ------  ------  ----  -------  ------------------",
 			"  name-3  user-3        true     n/a               ",
-			"01:23:45 UTC INFO  Provider type: Anonymous",
+			"Provider type: Anonymous",
 			"  ID      Type    Enabled  Last Authenticated",
 			"  ------  ------  -------  ------------------",
 			"  user-1  type-1  true     n/a               ",
-			"01:23:45 UTC INFO  Provider type: Custom JWT",
+			"Provider type: Custom JWT",
 			"  ID      Type  Enabled  Last Authenticated",
 			"  ------  ----  -------  ------------------",
 			"  user-4        true     n/a               ",
@@ -115,7 +115,7 @@ func TestUserListHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Provider type: Anonymous",
+			"Provider type: Anonymous",
 			"  ID      Type    Enabled  Last Authenticated",
 			"  ------  ------  -------  ------------------",
 			"  user-1  type-1  true     n/a               ",

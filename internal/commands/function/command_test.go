@@ -54,7 +54,7 @@ func TestFunctionHandler(t *testing.T) {
 		}}
 		assert.Nil(t, cmd.Handler(profile, ui, clients))
 
-		display := `01:23:45 UTC INFO  Result
+		display := `Result
 {
   "arg": [
     "hello",
@@ -115,7 +115,7 @@ func TestFunctionHandler(t *testing.T) {
 		}}
 		assert.Nil(t, cmd.Handler(profile, ui, clients))
 
-		display := `01:23:45 UTC INFO  Result
+		display := `Result
 {
   "arg1": {
     "abcs": [

@@ -81,7 +81,7 @@ func TestSecretUpdateHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-			assert.Equal(t, "01:23:45 UTC INFO  Successfully updated secret\n", out.String())
+			assert.Equal(t, "Successfully updated secret\n", out.String())
 		})
 	}
 

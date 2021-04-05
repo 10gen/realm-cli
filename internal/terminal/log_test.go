@@ -72,7 +72,7 @@ func TestLogMessage(t *testing.T) {
 			level: LogLevelInfo,
 			data:  textMessage("this is a test log"),
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: "07:54:00 UTC INFO  this is a test log",
+				OutputFormatText: "this is a test log",
 				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"info","message":"this is a test log"}`,
 			},
 		},
@@ -80,7 +80,7 @@ func TestLogMessage(t *testing.T) {
 			level: LogLevelInfo,
 			data:  jsonDocument{"a json document", map[string]interface{}{"a": true, "b": 1, "c": "sea"}},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: `07:54:00 UTC INFO  a json document
+				OutputFormatText: `a json document
 {
   "a": true,
   "b": 1,
@@ -93,7 +93,7 @@ func TestLogMessage(t *testing.T) {
 			level: LogLevelError,
 			data:  errorMessage{errors.New("something bad happened")},
 			expectedOutputs: map[OutputFormat]string{
-				OutputFormatText: "07:54:00 UTC ERROR something bad happened",
+				OutputFormatText: "something bad happened",
 				OutputFormatJSON: `{"time":"1989-06-22T07:54:00Z","level":"error","err":"something bad happened"}`,
 			},
 		},

@@ -45,7 +45,7 @@ func TestUserCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successfully created user",
+			"Successfully created user",
 			"  ID                        Enabled  Email            Type  ",
 			"  ------------------------  -------  ---------------  ------",
 			fmt.Sprintf("  %s  true     user@domain.com  normal", id),
@@ -68,7 +68,7 @@ func TestUserCreateHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successfully created api key",
+			"Successfully created api key",
 			"  ID                        Enabled  Name  API Key",
 			"  ------------------------  -------  ----  -------",
 			fmt.Sprintf("  %s  true     name  key    ", id),

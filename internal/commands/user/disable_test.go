@@ -41,7 +41,7 @@ func TestUserDisableHandler(t *testing.T) {
 		}}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, "01:23:45 UTC INFO  No users to disable\n", out.String())
+		assert.Equal(t, "No users to disable\n", out.String())
 	})
 
 	t.Run("should display users disabled by auth provider type", func(t *testing.T) {
@@ -70,19 +70,19 @@ func TestUserDisableHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Provider type: User/Password",
+			"Provider type: User/Password",
 			"  Email            ID      Type  Enabled  Details",
 			"  ---------------  ------  ----  -------  -------",
 			"  user-2@test.com  user-2        false           ",
-			"01:23:45 UTC INFO  Provider type: ApiKey",
+			"Provider type: ApiKey",
 			"  Name    ID      Type  Enabled  Details",
 			"  ------  ------  ----  -------  -------",
 			"  name-3  user-3        false           ",
-			"01:23:45 UTC INFO  Provider type: Anonymous",
+			"Provider type: Anonymous",
 			"  ID      Type    Enabled  Details",
 			"  ------  ------  -------  -------",
 			"  user-1  type-1  false           ",
-			"01:23:45 UTC INFO  Provider type: Custom JWT",
+			"Provider type: Custom JWT",
 			"  ID      Type  Enabled  Details",
 			"  ------  ----  -------  -------",
 			"  user-4        false           ",
@@ -98,7 +98,7 @@ func TestUserDisableHandler(t *testing.T) {
 		{
 			description: "should disable a user when a user id is provided",
 			expectedOutput: strings.Join([]string{
-				"01:23:45 UTC INFO  Provider type: Anonymous",
+				"Provider type: Anonymous",
 				"  ID      Type    Enabled  Details",
 				"  ------  ------  -------  -------",
 				"  user-1  type-1  false           ",
@@ -109,7 +109,7 @@ func TestUserDisableHandler(t *testing.T) {
 			description: "should save failed disable errors",
 			disableErr:  errors.New("client error"),
 			expectedOutput: strings.Join([]string{
-				"01:23:45 UTC INFO  Provider type: Anonymous",
+				"Provider type: Anonymous",
 				"  ID      Type    Enabled  Details     ",
 				"  ------  ------  -------  ------------",
 				"  user-1  type-1  true     client error",
