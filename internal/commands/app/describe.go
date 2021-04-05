@@ -32,13 +32,6 @@ func (cmd *CommandDescribe) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDescribe) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	if cmd.inputs.Project == "" && cmd.inputs.App == "" {
-		projectID, err := cli.ResolveGroupID(ui, clients.Atlas)
-		if err != nil {
-			return err
-		}
-		cmd.inputs.Project = projectID
-	}
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
@@ -49,7 +42,6 @@ func (cmd *CommandDescribe) Handler(profile *cli.Profile, ui terminal.UI, client
 		return err
 	}
 
-	ui.Print(terminal.NewJSONLog("App Description", appDesc))
-
+	ui.Print(terminal.NewJSONLog("App description", appDesc))
 	return nil
 }

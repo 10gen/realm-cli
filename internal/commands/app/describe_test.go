@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -17,20 +16,20 @@ import (
 	"github.com/Netflix/go-expect"
 )
 
-func TestDescribeInputsResolve(t *testing.T) {
+func TestAppDescribeInputsResolve(t *testing.T) {
 	t.Run("should set app if in app directory", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app-describe-test")
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()),
-			[]byte(`{"config_version":20210101,"app_id":"test-app-abcd","name":"test-app"}`),
+			[]byte(`{"config_version":20210101,"app_id":"test-app-abcde","name":"test-app"}`),
 			0666,
 		))
 
 		inputs := describeInputs{}
 		assert.Nil(t, inputs.Resolve(profile, nil))
-		assert.Equal(t, "test-app-abcd", inputs.App)
+		assert.Equal(t, "test-app-abcde", inputs.App)
 	})
 
 	t.Run("should not set app if not in app directory", func(t *testing.T) {
@@ -57,20 +56,15 @@ func TestAppDescribeHandler(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 		inputs      describeInputs
-		groups      []atlas.Group
 		apps        []realm.App
 		procedure   func(c *expect.Console)
 	}{
 		{
-			description: "should prompt user to select project and select app to describe if nothing set",
-			groups:      []atlas.Group{{ID: "123", Name: "test"}, {Name: "another-one"}},
-			apps:        []realm.App{{ID: "456", ClientAppID: "test-app-abcd", GroupID: "123"}, {ClientAppID: "another-one-efgh"}},
+			description: "should prompt user to select app to describe if nothing set",
+			apps:        []realm.App{{ID: "456", ClientAppID: "test-app-abcde", GroupID: "123"}, {ClientAppID: "another-one-efghi"}},
 			procedure: func(c *expect.Console) {
-				c.ExpectString("Atlas Project")
-				c.Send("test")
-				c.SendLine(" ")
 				c.ExpectString("Select App")
-				c.Send("test-app-abcd")
+				c.Send("test-app-abcde")
 				c.SendLine(" ")
 				c.ExpectEOF()
 			},
@@ -78,10 +72,10 @@ func TestAppDescribeHandler(t *testing.T) {
 		{
 			description: "should prompt user to select app to describe if app is set and not found",
 			inputs:      describeInputs{cli.ProjectInputs{App: "another-test"}},
-			apps:        []realm.App{{ID: "456", ClientAppID: "test-app-abcd", GroupID: "123"}, {ClientAppID: "another-one-efgh"}},
+			apps:        []realm.App{{ID: "456", ClientAppID: "test-app-abcde", GroupID: "123"}, {ClientAppID: "another-one-efghi"}},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Select App")
-				c.Send("test-app-abcd")
+				c.Send("test-app-abcde")
 				c.SendLine(" ")
 				c.ExpectEOF()
 			},
@@ -98,11 +92,6 @@ func TestAppDescribeHandler(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			atlasClient := mock.AtlasClient{}
-			atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-				return tc.groups, nil
-			}
-
 			realmClient := mock.RealmClient{}
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return tc.apps, nil
@@ -115,7 +104,7 @@ func TestAppDescribeHandler(t *testing.T) {
 			}
 
 			cmd := &CommandDescribe{inputs: tc.inputs}
-			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Atlas: atlasClient, Realm: realmClient}))
+			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, "123", groupIDActual)
 			assert.Equal(t, "456", appIDActual)
 		})
@@ -126,7 +115,7 @@ func TestAppDescribeHandler(t *testing.T) {
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{{ID: "456", ClientAppID: "test-app-abcd", GroupID: "123"}}, nil
+			return []realm.App{{ID: "456", ClientAppID: "test-app-abcde", GroupID: "123"}}, nil
 		}
 		realmClient.AppDescriptionFn = func(groupID, appID string) (realm.AppDescription, error) {
 			return realm.AppDescription{
@@ -191,11 +180,11 @@ func TestAppDescribeHandler(t *testing.T) {
 				Functions: []realm.FunctionSummary{
 					{
 						Name: "func1",
-						Path: "func1.js",
+						Path: "",
 					},
 					{
 						Name: "func2",
-						Path: "nested/func2.js",
+						Path: "nested",
 					},
 				},
 				Sync: realm.SyncSummary{
@@ -221,10 +210,10 @@ func TestAppDescribeHandler(t *testing.T) {
 			}, nil
 		}
 
-		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "test-app-abcd"}}}
+		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "test-app-abcde"}}}
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, `01:23:45 UTC INFO  App Description
+		assert.Equal(t, `01:23:45 UTC INFO  App description
 {
   "client_app_id": "todo-abcde",
   "name": "todo",
@@ -288,11 +277,11 @@ func TestAppDescribeHandler(t *testing.T) {
   "functions": [
     {
       "name": "func1",
-      "path": "func1.js"
+      "path": ""
     },
     {
       "name": "func2",
-      "path": "nested/func2.js"
+      "path": "nested"
     }
   ],
   "sync": {
@@ -319,62 +308,26 @@ func TestAppDescribeHandler(t *testing.T) {
 `, out.String())
 	})
 
-	t.Run("should error if apps not found", func(t *testing.T) {
+	t.Run("should return an error when finding apps fails", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
-
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{}, nil
+			return nil, errors.New("realm client error")
 		}
 
-		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "test-app"}}}
-		assert.Equal(t, cli.ErrAppNotFound{App: "test-app"}, cmd.Handler(nil, nil, cli.Clients{Realm: realmClient}))
+		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{Project: "test", App: "test-app"}}}
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, nil, cli.Clients{Realm: realmClient}))
 	})
 
-	for _, tc := range []struct {
-		description   string
-		inputs        describeInputs
-		groups        []atlas.Group
-		errorGroups   error
-		apps          []realm.App
-		errorFindApps error
-		errorDescribe error
-		errorExpected error
-	}{
-		{
-			description:   "should error on groups",
-			errorGroups:   errors.New("atlas client error"),
-			errorExpected: errors.New("atlas client error"),
-		},
-		{
-			description:   "should error on find apps",
-			inputs:        describeInputs{cli.ProjectInputs{Project: "test", App: "test-app"}},
-			errorFindApps: errors.New("realm client error"),
-			errorExpected: errors.New("realm client error"),
-		},
-		{
-			description:   "should error on describe app",
-			inputs:        describeInputs{cli.ProjectInputs{Project: "test", App: "test-app"}},
-			apps:          []realm.App{{Name: "test-app"}},
-			errorDescribe: errors.New("realm client error"),
-			errorExpected: errors.New("realm client error"),
-		},
-	} {
-		t.Run(tc.description, func(t *testing.T) {
-			atlasClient := mock.AtlasClient{}
-			atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-				return tc.groups, tc.errorGroups
-			}
+	t.Run("should return an error when describing an app fails", func(t *testing.T) {
+		realmClient := mock.RealmClient{}
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{Name: "test-app"}}, nil
+		}
+		realmClient.AppDescriptionFn = func(groupID, appID string) (realm.AppDescription, error) {
+			return realm.AppDescription{}, errors.New("realm client error")
+		}
 
-			realmClient := mock.RealmClient{}
-			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-				return tc.apps, tc.errorFindApps
-			}
-			realmClient.AppDescriptionFn = func(groupID, appID string) (realm.AppDescription, error) {
-				return realm.AppDescription{}, tc.errorDescribe
-			}
-
-			cmd := &CommandDescribe{inputs: tc.inputs}
-			assert.Equal(t, tc.errorExpected, cmd.Handler(nil, nil, cli.Clients{Atlas: atlasClient, Realm: realmClient}))
-		})
-	}
+		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{Project: "test", App: "test-app"}}}
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, nil, cli.Clients{Realm: realmClient}))
+	})
 }
