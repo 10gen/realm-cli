@@ -21,9 +21,10 @@ type RealmClient struct {
 	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
 	ImportDependenciesFn func(groupID, appID, uploadPath string) error
 
-	CreateAppFn func(groupID, name string, meta realm.AppMeta) (realm.App, error)
-	DeleteAppFn func(groupID, appID string) error
-	FindAppsFn  func(filter realm.AppFilter) ([]realm.App, error)
+	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
+	DeleteAppFn      func(groupID, appID string) error
+	FindAppsFn       func(filter realm.AppFilter) ([]realm.App, error)
+	AppDescriptionFn func(groupID, appID string) (realm.AppDescription, error)
 
 	CreateDraftFn  func(groupID, appID string) (realm.AppDraft, error)
 	DiffDraftFn    func(groupID, appID, draftID string) (realm.AppDraftDiff, error)
@@ -136,6 +137,16 @@ func (rc RealmClient) FindApps(filter realm.AppFilter) ([]realm.App, error) {
 		return rc.FindAppsFn(filter)
 	}
 	return rc.Client.FindApps(filter)
+}
+
+// AppDescription calls the mocked AppDescription implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) AppDescription(groupID, appID string) (realm.AppDescription, error) {
+	if rc.AppDescriptionFn != nil {
+		return rc.AppDescriptionFn(groupID, appID)
+	}
+	return rc.Client.AppDescription(groupID, appID)
 }
 
 // CreateDraft calls the mocked CreateDraft implementation if provided,

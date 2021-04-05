@@ -82,7 +82,7 @@ type disableInputs struct {
 }
 
 func (i *disableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory)
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false)
 }
 
 func tableRowDisable(output userOutput, row map[string]interface{}) {

@@ -18,7 +18,7 @@ type updateInputs struct {
 }
 
 func (i *updateInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory); err != nil {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
 		return err
 	}
 	return nil

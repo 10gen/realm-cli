@@ -358,7 +358,7 @@ buildvariants:
     go_url: "https://dl.google.com/go/go1.14.13.linux-amd64.tar.gz"
     libmongo_url: "https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_9d94a997898b85fada11e619139c648e0b4be73f_5ff760db3627e064e1499e92_21_01_07_19_28_28/libmongo.so"
     mongodb_url: "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz"
-    realm_server_url: "http://localhost:8080"
+    realm_server_url: "http://localhost:9090"
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
     node_version: 12.16.2
     version: 2.0.0-beta.2

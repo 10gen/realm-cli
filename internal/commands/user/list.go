@@ -93,7 +93,7 @@ func getUserComparerByLastAuthentication(outputs []userOutput) func(i, j int) bo
 }
 
 func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory)
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false)
 }
 
 func tableRowList(output userOutput, row map[string]interface{}) {

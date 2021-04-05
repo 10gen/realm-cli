@@ -82,7 +82,7 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI, clients 
 }
 
 func (i *enableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory)
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false)
 }
 
 func tableRowEnable(output userOutput, row map[string]interface{}) {
