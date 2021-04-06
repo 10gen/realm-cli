@@ -3,7 +3,6 @@ package telemetry
 import (
 	"errors"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -13,16 +12,18 @@ import (
 const (
 	testUser    = "userID"
 	testCommand = "command"
+	testVersion = "version"
 	testXID     = "executionID"
 )
 
 func TestNewService(t *testing.T) {
 	t.Run("Should create the expected Service", func(t *testing.T) {
-		service := NewService(ModeStdout, testUser, nil, testCommand)
+		service := NewService(ModeStdout, testUser, testCommand, testVersion)
 
 		assert.Equal(t, testCommand, service.command)
 		assert.True(t, service.executionID != "", "service execution id must not be blank")
 		assert.Equal(t, testUser, service.userID)
+		assert.Equal(t, testVersion, service.version)
 		assert.NotNil(t, service.tracker)
 	})
 
@@ -40,8 +41,9 @@ func TestServiceTrackEvent(t *testing.T) {
 		tracker := &testTracker{}
 		service := &Service{
 			command:     testCommand,
-			executionID: testXID,
 			userID:      testUser,
+			version:     testVersion,
+			executionID: testXID,
 			tracker:     tracker,
 		}
 
@@ -51,6 +53,7 @@ func TestServiceTrackEvent(t *testing.T) {
 		assert.Equal(t, testCommand, tracker.lastTrackedEvent.command)
 		assert.Equal(t, testXID, tracker.lastTrackedEvent.executionID)
 		assert.Equal(t, testUser, tracker.lastTrackedEvent.userID)
+		assert.Equal(t, testVersion, tracker.lastTrackedEvent.version)
 		assert.Equal(t, 1, len(tracker.lastTrackedEvent.data))
 		assert.Equal(t, EventDataKeyError, tracker.lastTrackedEvent.data[0].Key)
 		assert.Equal(t, errors.New("error"), tracker.lastTrackedEvent.data[0].Value)
@@ -65,12 +68,10 @@ func (tracker *testTracker) Track(event event) {
 	tracker.lastTrackedEvent = event
 }
 
-func (tracker *testTracker) Close() error {
-	return nil
-}
+func (tracker *testTracker) Close() {}
 
-func newService(mode Mode, logger *log.Logger) *Service {
-	return NewService(mode, testUser, logger, testCommand)
+func newService(mode Mode) *Service {
+	return NewService(mode, testUser, testCommand, testVersion)
 }
 
 func mockStdoutSetup(t *testing.T) (*os.File, *os.File, func()) {
@@ -91,7 +92,7 @@ func testServiceOutput(t *testing.T, mode Mode, expected string) {
 	r, w, resetStdout := mockStdoutSetup(t)
 	defer resetStdout()
 
-	newService(mode, log.New(os.Stdout, "LogPrefix ", log.Lmsgprefix))
+	newService(mode)
 
 	assert.Nil(t, w.Close())
 

@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"log"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -10,16 +9,18 @@ import (
 // Service tracks telemetry events
 type Service struct {
 	userID      string
-	executionID string
 	command     string
+	version     string
+	executionID string
 	tracker     Tracker
 }
 
 // NewService creates a new telemetry service
-func NewService(mode Mode, userID string, logger *log.Logger, command string) *Service {
+func NewService(mode Mode, userID, command, version string) *Service {
 	service := Service{
 		userID:      userID,
 		command:     command,
+		version:     version,
 		executionID: primitive.NewObjectID().Hex(),
 	}
 
@@ -27,7 +28,7 @@ func NewService(mode Mode, userID string, logger *log.Logger, command string) *S
 	case ModeOff:
 		service.tracker = &noopTracker{}
 	case ModeEmpty, ModeOn:
-		service.tracker = newSegmentTracker(logger)
+		service.tracker = newSegmentTracker()
 	case ModeStdout:
 		service.tracker = &stdoutTracker{}
 	}
@@ -44,11 +45,12 @@ func (service *Service) TrackEvent(eventType EventType, data ...EventData) {
 		time:        time.Now(),
 		executionID: service.executionID,
 		command:     service.command,
+		version:     service.version,
 		data:        data,
 	})
 }
 
 // Close shuts down the Service
-func (service Service) Close() error {
-	return service.tracker.Close()
+func (service Service) Close() {
+	service.tracker.Close()
 }
