@@ -15,12 +15,12 @@ type Service struct {
 	tracker     Tracker
 }
 
-func (s *Service) SetFields(mode bool, userID string, command string) {
+func (s *Service) SetFields(telemetryOn bool, userID string, command string) {
 	s.userID = userID
 	s.executionID = primitive.NewObjectID().Hex()
 	s.command = command
 
-	if mode {
+	if telemetryOn {
 		s.tracker = newSegmentTracker()
 	} else {
 		s.tracker = &noopTracker{}

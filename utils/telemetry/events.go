@@ -35,5 +35,3 @@ const (
 
 	EventDataKeyError = "err"
 )
-
-type Mode bool
