@@ -705,6 +705,64 @@ Try running instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 	})
 
+	t.Run("with diffs including dependencies generated from the app but is a dry run", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+			return realm.DependenciesDiff{
+				Added:    []realm.DependencyData{{"twilio", "3.35.1"}},
+				Deleted:  []realm.DependencyData{{"debug", "4.3.1"}},
+				Modified: []realm.DependencyDiffData{{DependencyData: realm.DependencyData{"underscore", "1.9.2"}, PreviousVersion: "1.9.1"}},
+			}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
+
+		out, ui := mock.NewUI()
+
+		cmd := &Command{inputs{LocalPath: "testdata/dependencies", DryRun: true, RemoteApp: "appID", IncludeDependencies: true}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+
+		assert.Nil(t, err)
+		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
+01:23:45 UTC INFO  Transpiled dependency sources
+01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+diff1
+diff2
+Added Dependencies
+	+ twilio@3.35.1
+Removed Dependencies
+	- debug@4.3.1
+Modified Dependencies
+	* underscore@1.9.1 -> underscore@1.9.2
+01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
+01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
+`, out.String())
+	})
+
+	t.Run("should return error when diffs include dependencies and diff dependencies returns an error", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+			return realm.DependenciesDiff{}, errors.New("realm client error")
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
+
+		_, ui := mock.NewUI()
+
+		cmd := &Command{inputs{LocalPath: "testdata/dependencies", RemoteApp: "appID", IncludeDependencies: true}}
+
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+	})
+
 	t.Run("with diffs generated from the app but the user rejects them", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {

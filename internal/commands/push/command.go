@@ -126,8 +126,38 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		diffs = append(diffs, appDiffs...)
 
 		if cmd.inputs.IncludeDependencies {
-			// TODO(REALMC-8242): diff dependencies better
-			diffs = append(diffs, "+ New function dependencies")
+			dependencies, err := local.FindAppDependencies(app.RootDir)
+			if err != nil {
+				return err
+			}
+
+			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+			s.Suffix = " Transpiling dependency sources..."
+
+			prepareUpload := func() (string, error) {
+				s.Start()
+				defer s.Stop()
+
+				path, err := dependencies.PrepareUpload()
+				if err != nil {
+					return "", err
+				}
+
+				ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
+				return path, nil
+			}
+
+			uploadPath, err := prepareUpload()
+			if err != nil {
+				return err
+			}
+			defer os.Remove(uploadPath) //nolint:errcheck
+
+			dependenciesDiff, err := clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPath)
+			if err != nil {
+				return err
+			}
+			diffs = append(diffs, dependenciesDiff.Strings()...)
 		}
 
 		diffs = append(diffs, hostingDiffs.Strings()...)

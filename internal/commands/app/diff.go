@@ -1,11 +1,14 @@
 package app
 
 import (
+	"os"
 	"strings"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/briandowns/spinner"
 
 	"github.com/spf13/pflag"
 )
@@ -72,8 +75,38 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		// TODO(REALMC-8242): diff dependencies better
-		diffs = append(diffs, "+ New function dependencies")
+		dependencies, err := local.FindAppDependencies(app.RootDir)
+		if err != nil {
+			return err
+		}
+
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Transpiling dependency sources..."
+
+		prepareUpload := func() (string, error) {
+			s.Start()
+			defer s.Stop()
+
+			path, err := dependencies.PrepareUpload()
+			if err != nil {
+				return "", err
+			}
+
+			ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
+			return path, nil
+		}
+
+		uploadPath, err := prepareUpload()
+		if err != nil {
+			return err
+		}
+		defer os.Remove(uploadPath) //nolint:errcheck
+
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
+		if err != nil {
+			return err
+		}
+		diffs = append(diffs, dependenciesDiff.Strings()...)
 	}
 
 	if cmd.inputs.IncludeHosting {

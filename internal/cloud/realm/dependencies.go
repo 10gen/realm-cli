@@ -2,6 +2,7 @@ package realm
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +17,7 @@ import (
 const (
 	dependenciesPathPattern        = appPathPattern + "/dependencies"
 	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
+	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
 
 	paramFile = "file"
 )
@@ -84,4 +86,55 @@ func (c *client) ExportDependencies(groupID, appID string) (string, io.ReadClose
 	}
 
 	return filename, res.Body, nil
+}
+
+func (c *client) DiffDependencies(groupID, appID, uploadPath string) (DependenciesDiff, error) {
+	file, err := os.Open(uploadPath)
+	if err != nil {
+		return DependenciesDiff{}, err
+	}
+	defer file.Close()
+
+	fi, err := file.Stat()
+	if err != nil {
+		return DependenciesDiff{}, err
+	}
+
+	body := &bytes.Buffer{}
+	w := multipart.NewWriter(body)
+
+	form, err := w.CreateFormFile(paramFile, fi.Name())
+	if err != nil {
+		return DependenciesDiff{}, err
+	}
+
+	if _, err := io.Copy(form, file); err != nil {
+		return DependenciesDiff{}, err
+	}
+	if err := w.Close(); err != nil {
+		return DependenciesDiff{}, err
+	}
+
+	res, err := c.do(
+		http.MethodPost,
+		fmt.Sprintf(dependenciesDiffPathPattern, groupID, appID),
+		api.RequestOptions{
+			Body:        body,
+			ContentType: w.FormDataContentType(),
+		},
+	)
+	if err != nil {
+		return DependenciesDiff{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return DependenciesDiff{}, api.ErrUnexpectedStatusCode{"diff dependencies", res.StatusCode}
+	}
+	defer res.Body.Close()
+
+	var dependencies DependenciesDiff
+	if err := json.NewDecoder(res.Body).Decode(&dependencies); err != nil {
+		return DependenciesDiff{}, err
+	}
+
+	return dependencies, nil
 }

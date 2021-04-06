@@ -90,6 +90,29 @@ func (d DependenciesDiff) DiffList() []interface{} {
 	return diffs
 }
 
+// Cap returns the dependencies diffs' total capacity
+func (d DependenciesDiff) Cap() int {
+	return d.Len() + 3
+}
+
+// Strings returns the diffs as a list of strings
+func (d DependenciesDiff) Strings() []string {
+	diffs := make([]string, 0, d.Cap())
+	diffs = append(diffs, "Added Dependencies")
+	for _, dep := range d.Added {
+		diffs = append(diffs, fmt.Sprintf("\t+ %s", dep.String()))
+	}
+	diffs = append(diffs, "Removed Dependencies")
+	for _, dep := range d.Deleted {
+		diffs = append(diffs, fmt.Sprintf("\t- %s", dep.String()))
+	}
+	diffs = append(diffs, "Modified Dependencies")
+	for _, dep := range d.Modified {
+		diffs = append(diffs, fmt.Sprintf("\t* %s", dep.String()))
+	}
+	return diffs
+}
+
 // HasChanges returns whether the diff has any changes
 func (d DependenciesDiff) HasChanges() bool {
 	return d.Len() > 0
