@@ -189,7 +189,7 @@ func writeFunctionsV1(rootDir string, functions []map[string]interface{}) error 
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, name, FileConfig.String()),
 			0666,
 			bytes.NewReader(data),
@@ -200,7 +200,7 @@ func writeFunctionsV1(rootDir string, functions []map[string]interface{}) error 
 		if !ok {
 			return errors.New("error writing functions")
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, name, FileSource.String()),
 			0666,
 			bytes.NewReader([]byte(src)),
@@ -221,7 +221,7 @@ func writeAuthProviders(rootDir string, authProviders []map[string]interface{}) 
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, fmt.Sprintf("%s%s", authProvider["name"], extJSON)),
 			0666,
 			bytes.NewReader(data),

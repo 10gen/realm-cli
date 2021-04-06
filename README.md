@@ -65,10 +65,10 @@ func TestWhoamiE2E(t *testing.T) {
 	cmd.Stdout = c.Tty()
 	cmd.Stderr = c.Tty()
 
-	if err = cmd.Start(); err != nil {
+	if err := cmd.Start(); err != nil {
 		log.Fatal(err)
 	}
-	if err = cmd.Wait(); err != nil {
+	if err := cmd.Wait(); err != nil {
 		log.Fatal(err)
 	}
 
