@@ -515,11 +515,17 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		}
 		for _, rule := range ds.Rules {
 			schema := rule[NameSchema]
+			if schema == nil {
+				schema = map[string]interface{}{}
+			}
 			dataSchema, err := MarshalJSON(schema)
 			if err != nil {
 				return err
 			}
 			relationships := rule[NameRelationships]
+			if relationships == nil {
+				relationships = map[string]interface{}{}
+			}
 			dataRelationships, err := MarshalJSON(relationships)
 			if err != nil {
 				return err
