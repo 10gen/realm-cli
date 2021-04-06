@@ -19,7 +19,7 @@ type UI interface {
 }
 
 // NewUI creates a new terminal UI
-func NewUI(config UIConfig, in io.Reader, out, err io.Writer, errLogger *log.Logger) UI {
+func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
 	noColor := config.DisableColors
 	if config.OutputFormat == OutputFormatJSON {
 		noColor = true
@@ -31,16 +31,14 @@ func NewUI(config UIConfig, in io.Reader, out, err io.Writer, errLogger *log.Log
 		fdReader{in},
 		fdWriter{out},
 		err,
-		errLogger,
 	}
 }
 
 type ui struct {
-	config    UIConfig
-	in        fdReader
-	out       fdWriter
-	err       io.Writer
-	errLogger *log.Logger
+	config UIConfig
+	in     fdReader
+	out    fdWriter
+	err    io.Writer
 }
 
 func (ui *ui) AutoConfirm() bool {
@@ -76,15 +74,15 @@ func (ui *ui) Confirm(format string, args ...interface{}) (bool, error) {
 }
 
 func (ui *ui) Print(logs ...Log) {
-	for _, log := range logs {
-		output, err := log.Print(ui.config.OutputFormat)
+	for _, l := range logs {
+		output, err := l.Print(ui.config.OutputFormat)
 		if err != nil {
 			ui.Print(NewErrorLog(err))
 			return
 		}
 
 		var writer io.Writer
-		switch log.Level {
+		switch l.Level {
 		case LogLevelError:
 			writer = ui.err
 		default:
@@ -92,7 +90,7 @@ func (ui *ui) Print(logs ...Log) {
 		}
 
 		if _, err := fmt.Fprintln(writer, output); err != nil {
-			ui.errLogger.Fatal(output) // log the original failure
+			log.Fatal(output) // log the original failure
 		}
 	}
 }

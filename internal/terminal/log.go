@@ -3,7 +3,6 @@ package terminal
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/iancoleman/orderedmap"
@@ -18,20 +17,6 @@ const (
 	LogLevelError LogLevel = "error"
 	LogLevelWarn  LogLevel = "warn"
 	LogLevelDebug LogLevel = "debug"
-)
-
-var (
-	allLogLevels = []LogLevel{LogLevelInfo, LogLevelError}
-
-	longestLogLevel = func() LogLevel {
-		var longest LogLevel
-		for _, level := range allLogLevels {
-			if len(level) > len(longest) {
-				longest = level
-			}
-		}
-		return longest
-	}()
 )
 
 // LogData produces the log data
@@ -115,12 +100,7 @@ func (l Log) textLog() (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf(
-		fmt.Sprintf("%%s UTC %%-%ds %%s", len(longestLogLevel)),
-		l.Time.In(time.UTC).Format("15:04:05"),
-		strings.ToUpper(string(l.Level)),
-		message,
-	), nil
+	return message, nil
 }
 
 const (

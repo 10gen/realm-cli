@@ -37,7 +37,7 @@ func TestAppInitHandler(t *testing.T) {
 		data, err := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))
 		assert.Nil(t, err)
 
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully initialized app\n", out.String())
+		assert.Equal(t, "Successfully initialized app\n", out.String())
 
 		var config local.AppRealmConfigJSON
 		assert.Nil(t, json.Unmarshal(data, &config))
@@ -152,7 +152,7 @@ func TestAppInitHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
 
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully initialized app\n", out.String())
+		assert.Equal(t, "Successfully initialized app\n", out.String())
 
 		t.Run("should have the expected contents in the app config file", func(t *testing.T) {
 			data, readErr := ioutil.ReadFile(filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()))

@@ -53,7 +53,7 @@ func TestStdoutTracker(t *testing.T) {
 	t.Run("should create an stdout tracker and should print the tracking information to stdout", func(t *testing.T) {
 		tracker := stdoutTracker{}
 		testEvent := createEvent(EventTypeCommandComplete, nil, testCommand)
-		testTrackerOutput(t, &tracker, testEvent, "03:04:05 UTC TELEM command: COMMAND_COMPLETE[]\n")
+		testTrackerOutput(t, &tracker, testEvent, "command: COMMAND_COMPLETE[]\n")
 	})
 }
 

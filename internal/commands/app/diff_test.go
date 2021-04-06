@@ -36,27 +36,27 @@ func TestAppDiffHandler(t *testing.T) {
 		{
 			description:        "with no project nor app flag set should diff based on input",
 			expectedDiff:       []string{"diff1"},
-			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
+			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:        "with no project flag set and an app flag set should show the diff for the app",
 			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiff:       []string{"diff1"},
-			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
+			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:        "with no diffs between local and remote app",
 			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
-			expectedDiffOutput: "01:23:45 UTC INFO  Deployed app is identical to proposed version\n",
+			expectedDiffOutput: "Deployed app is identical to proposed version\n",
 		},
 		{
 			description:        "with a project flag set and no app flag set should diff based on input",
 			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1}},
 			expectedAppFilter:  realm.AppFilter{GroupID: groupID1},
 			expectedDiff:       []string{"diff1"},
-			expectedDiffOutput: "01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app\ndiff1\n",
+			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:       "error on the diff",
@@ -111,7 +111,7 @@ func TestAppDiffHandler(t *testing.T) {
 		cmd := &CommandDiff{diffInputs{IncludeDependencies: true}}
 		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `The following reflects the proposed changes to your Realm app
 diff1
 diff2
 + New function dependencies
@@ -144,7 +144,7 @@ diff2
 		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/diff", IncludeHosting: true}}
 		assert.Equal(t, nil, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, `01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `The following reflects the proposed changes to your Realm app
 diff1
 diff2
 New hosting files

@@ -294,13 +294,13 @@ func TestPushHandler(t *testing.T) {
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC WARN  failed to add /404.html: something bad happened
-01:23:45 UTC WARN  failed to add /index.html: something bad happened
+				assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+An error occurred while uploading hosting assets: failed to add /404.html: something bad happened
+An error occurred while uploading hosting assets: failed to add /index.html: something bad happened
 `, out.String())
 			})
 
@@ -319,13 +319,13 @@ func TestPushHandler(t *testing.T) {
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC WARN  failed to update /404.html: something bad happened
-01:23:45 UTC WARN  failed to update /index.html: something bad happened
+				assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+An error occurred while uploading hosting assets: failed to update /404.html: something bad happened
+An error occurred while uploading hosting assets: failed to update /index.html: something bad happened
 `, out.String())
 			})
 		})
@@ -360,12 +360,12 @@ func TestPushHandler(t *testing.T) {
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("1 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC WARN  failed to remove /deleteme.html: something bad happened
+				assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+An error occurred while uploading hosting assets: failed to remove /deleteme.html: something bad happened
 `, out.String())
 			})
 		})
@@ -403,13 +403,13 @@ func TestPushHandler(t *testing.T) {
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC WARN  failed to update attributes for /404.html: something bad happened
-01:23:45 UTC WARN  failed to update attributes for /index.html: something bad happened
+				assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+An error occurred while uploading hosting assets: failed to update attributes for /404.html: something bad happened
+An error occurred while uploading hosting assets: failed to update attributes for /index.html: something bad happened
 `, out.String())
 			})
 		})
@@ -449,13 +449,13 @@ func TestPushHandler(t *testing.T) {
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
-			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC INFO  Import hosting assets
-01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+			assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+Import hosting assets
+Successfully pushed app up: eggcorn-abcde
 `, out.String())
 
 			assert.Equal(t, []string{"/index.html"}, added)
@@ -519,14 +519,14 @@ func TestPushHandler(t *testing.T) {
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
-			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC INFO  Import hosting assets
-01:23:45 UTC INFO  Reset CDN cache
-01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+			assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+Import hosting assets
+Reset CDN cache
+Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
 
@@ -542,12 +542,12 @@ func TestPushHandler(t *testing.T) {
 				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-				assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+				assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+Successfully pushed app up: eggcorn-abcde
 `, out.String())
 			})
 
@@ -573,14 +573,14 @@ func TestPushHandler(t *testing.T) {
 			cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-			assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC INFO  Transpiled dependency sources
-01:23:45 UTC INFO  Uploaded dependencies archive
-01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+			assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+Transpiled dependency sources
+Uploaded dependencies archive
+Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
 	})
@@ -624,8 +624,8 @@ func TestPushHandler(t *testing.T) {
 				assert.Nil(t, err)
 
 				assert.Equal(t, tc.groupsCalled, calledGroups)
-				assert.Equal(t, `01:23:45 UTC INFO  This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/project --remote appID
+				assert.Equal(t, `This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
+Try running instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 			})
 		}
@@ -675,8 +675,8 @@ func TestPushHandler(t *testing.T) {
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
-		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Deployed app is identical to proposed version, nothing to do
+		assert.Equal(t, `Determining changes
+Deployed app is identical to proposed version, nothing to do
 `, out.String())
 	})
 
@@ -696,12 +696,12 @@ func TestPushHandler(t *testing.T) {
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		assert.Nil(t, err)
-		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `Determining changes
+The following reflects the proposed changes to your Realm app
 diff1
 diff2
-01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/project --remote appID
+To push these changes, you must omit the 'dry-run' flag to proceed
+Try running instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 	})
 
@@ -1190,14 +1190,14 @@ func TestPushCommandDiffDraft(t *testing.T) {
 		}{
 			{
 				description:      "with a client that returns an empty diff",
-				expectedContents: "01:23:45 UTC INFO  An empty draft already exists for your app\n",
+				expectedContents: "An empty draft already exists for your app\n",
 			},
 			{
 				description: "with a client that returns a minimal diff",
 				actualDiff:  realm.AppDraftDiff{Diffs: []string{"diff1", "diff2", "diff3"}},
 				expectedContents: strings.Join(
 					[]string{
-						"01:23:45 UTC INFO  The following draft already exists for your app...",
+						"The following draft already exists for your app...",
 						"  diff1",
 						"  diff2",
 						"  diff3\n",
@@ -1228,21 +1228,21 @@ func TestPushCommandDiffDraft(t *testing.T) {
 				},
 				expectedContents: strings.Join(
 					[]string{
-						"01:23:45 UTC INFO  The following draft already exists for your app...",
+						"The following draft already exists for your app...",
 						"  diff1",
 						"  diff2",
 						"  diff3",
-						"01:23:45 UTC INFO  With changes to your static hosting files...",
+						"With changes to your static hosting files...",
 						"  added: hosting_added1",
 						"  added: hosting_added2",
 						"  deleted: hosting_deleted1",
-						"01:23:45 UTC INFO  With changes to your app dependencies...",
+						"With changes to your app dependencies...",
 						"  + dep_added1@v1",
 						"  dep_modified1@v2 -> dep_modified1@v1",
 						"  dep_modified2@v1 -> dep_modified2@v2",
-						"01:23:45 UTC INFO  With changes to your GraphQL configuration...",
+						"With changes to your GraphQL configuration...",
 						"  gql_field1: previous -> updated",
-						"01:23:45 UTC INFO  With changes to your app schema...",
+						"With changes to your app schema...",
 						"  gql_validation_field1: old -> new",
 						"  rest_validation_field1: old -> new",
 						"",
@@ -1310,7 +1310,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 				{
 					description:      "and fails to discard the draft should return the deployment error and print a warning message",
 					discardDraftErr:  errors.New("failed to discard draft"),
-					expectedContents: "01:23:45 UTC WARN  Failed to discard the draft created for your deployment\n",
+					expectedContents: "Failed to discard the draft created for your deployment\n",
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -1344,7 +1344,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID}, draftID)
 			assert.Nil(t, err)
 
-			assert.Equal(t, "01:23:45 UTC INFO  Deployment complete\n", out.String())
+			assert.Equal(t, "Deployment complete\n", out.String())
 		})
 	})
 }
@@ -1399,11 +1399,11 @@ func runImport(t *testing.T, realmClient realm.Client, appDirectory string) {
 	cmd := &Command{inputs{LocalPath: appDirectory, RemoteApp: "appID"}}
 
 	assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-	assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Creating draft
-01:23:45 UTC INFO  Pushing changes
-01:23:45 UTC INFO  Deploying draft
-01:23:45 UTC INFO  Deployment complete
-01:23:45 UTC INFO  Successfully pushed app up: eggcorn-abcde
+	assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment complete
+Successfully pushed app up: eggcorn-abcde
 `, out.String())
 }

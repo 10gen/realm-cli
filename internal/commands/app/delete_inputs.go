@@ -53,7 +53,7 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 
 		if len(missingApps) > 0 {
 			ui.Print(terminal.NewWarningLog(
-				"unable to delete certain apps because they were not found: %s",
+				"Unable to delete certain apps because they were not found: %s",
 				strings.Join(missingApps, ", "),
 			))
 		}

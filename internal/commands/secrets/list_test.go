@@ -34,14 +34,14 @@ func TestSecretsListHandler(t *testing.T) {
 	}{
 		{
 			description:    "should list no secrets with no app secrets found",
-			expectedOutput: "01:23:45 UTC INFO  No available secrets to show\n",
+			expectedOutput: "No available secrets to show\n",
 		},
 		{
 			description: "should list the secrets found for the app",
 			secrets:     testSecrets,
 			expectedOutput: strings.Join(
 				[]string{
-					"01:23:45 UTC INFO  Found 4 secrets",
+					"Found 4 secrets",
 					"  ID       Name ",
 					"  -------  -----",
 					"  secret1  test1",

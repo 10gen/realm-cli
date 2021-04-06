@@ -109,13 +109,13 @@ func TestAppCreateHandler(t *testing.T) {
 		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successfully created app",
+			"Successfully created app",
 			fmt.Sprintf("  Info             "+fmtStr, "Details"),
 			"  ---------------  " + strings.Repeat("-", dirLength),
 			fmt.Sprintf("  Client App ID    "+fmtStr, "test-app-abcde"),
 			"  Realm Directory  " + appLocal.RootDir,
 			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe",
+			"Check out your app: cd ./test-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
 
@@ -383,13 +383,13 @@ func TestAppCreateHandler(t *testing.T) {
 		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
 
 		assert.Equal(t, strings.Join([]string{
-			"01:23:45 UTC INFO  Successfully created app",
+			"Successfully created app",
 			fmt.Sprintf("  Info             "+fmtStr, "Details"),
 			"  ---------------  " + strings.Repeat("-", dirLength),
 			fmt.Sprintf("  Client App ID    "+fmtStr, "remote-app-abcde"),
 			"  Realm Directory  " + appLocal.RootDir,
 			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"01:23:45 UTC DEBUG Check out your app: cd ./remote-app && realm-cli app describe",
+			"Check out your app: cd ./remote-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
 	})
@@ -499,7 +499,7 @@ func TestAppCreateHandler(t *testing.T) {
 			}
 
 			display := make([]string, 0, 10)
-			display = append(display, "01:23:45 UTC INFO  Successfully created app",
+			display = append(display, "Successfully created app",
 				fmt.Sprintf("  Info                   "+spaceBuffer+fmtStr, "Details"),
 				"  ---------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
 				fmt.Sprintf("  Client App ID          "+spaceBuffer+fmtStr, "test-app-abcde"),
@@ -512,7 +512,7 @@ func TestAppCreateHandler(t *testing.T) {
 			if tc.dataLake != "" {
 				display = append(display, fmt.Sprintf("  Data Source (Data Lake)  "+fmtStr, "mongodb-datalake"))
 			}
-			display = append(display, "01:23:45 UTC DEBUG Check out your app: cd ./test-app && realm-cli app describe", "")
+			display = append(display, "Check out your app: cd ./test-app && realm-cli app describe", "")
 			assert.Equal(t, strings.Join(display, "\n"), out.String())
 		})
 	}
@@ -537,8 +537,8 @@ func TestAppCreateHandler(t *testing.T) {
 			description: "should create a minimal project dry run",
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
-					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
+					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
 			},
@@ -555,8 +555,8 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("01:23:45 UTC INFO  A Realm app based on the Realm app 'remote-app' would be created at %s", dir),
-					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					fmt.Sprintf("A Realm app based on the Realm app 'remote-app' would be created at %s", dir),
+					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
 			},
@@ -573,9 +573,9 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
-					"01:23:45 UTC INFO  The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'",
-					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
+					"The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'",
+					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
 			},
@@ -592,9 +592,9 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("01:23:45 UTC INFO  A minimal Realm app would be created at %s", dir),
-					"01:23:45 UTC INFO  The data lake 'test-datalake' would be linked as data source 'mongodb-datalake'",
-					"01:23:45 UTC DEBUG To create this app run: " + cmd.display(true),
+					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
+					"The data lake 'test-datalake' would be linked as data source 'mongodb-datalake'",
+					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
 			},

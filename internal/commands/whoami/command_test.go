@@ -19,7 +19,7 @@ func TestWhoamiFeedback(t *testing.T) {
 			{
 				description: "with no user logged in",
 				test: func(t *testing.T, output string) {
-					assert.Equal(t, "01:23:45 UTC INFO  No user is currently logged in\n", output)
+					assert.Equal(t, "No user is currently logged in\n", output)
 				},
 			},
 			{
@@ -28,7 +28,7 @@ func TestWhoamiFeedback(t *testing.T) {
 					profile.SetUser(auth.User{"username", "my-super-secret-key"})
 				},
 				test: func(t *testing.T, output string) {
-					assert.Equal(t, "01:23:45 UTC INFO  The user, username, is not currently logged in\n", output)
+					assert.Equal(t, "The user, username, is not currently logged in\n", output)
 				},
 			},
 			{
@@ -38,7 +38,7 @@ func TestWhoamiFeedback(t *testing.T) {
 					profile.SetSession(auth.Session{"accessToken", "refreshToken"})
 				},
 				test: func(t *testing.T, output string) {
-					assert.Equal(t, "01:23:45 UTC INFO  Currently logged in user: username (**-*****-******-key)\n", output)
+					assert.Equal(t, "Currently logged in user: username (**-*****-******-key)\n", output)
 				},
 			},
 		} {

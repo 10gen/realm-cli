@@ -74,8 +74,8 @@ func TestPullHandler(t *testing.T) {
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
 
-			assert.Equal(t, `01:23:45 UTC INFO  No changes were written to your file system
-01:23:45 UTC DEBUG Contents would have been written to: app
+			assert.Equal(t, `No changes were written to your file system
+Contents would have been written to: app
 `, out.String())
 
 			_, err := os.Stat(destination)
@@ -93,8 +93,8 @@ func TestPullHandler(t *testing.T) {
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
 
-			assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
-01:23:45 UTC INFO  Successfully pulled app down: app
+			assert.Equal(t, `Saved app to disk
+Successfully pulled app down: app
 `, out.String())
 
 			_, err := os.Stat(destination)
@@ -132,8 +132,8 @@ func TestPullHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-			assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
-01:23:45 UTC INFO  Successfully pulled app down: app
+			assert.Equal(t, `Saved app to disk
+Successfully pulled app down: app
 `, out.String())
 		})
 
@@ -178,9 +178,9 @@ func TestPullHandler(t *testing.T) {
 		cmd := &Command{inputs{LocalPath: "app", IncludeDependencies: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
-01:23:45 UTC INFO  Fetched dependencies archive
-01:23:45 UTC INFO  Successfully pulled app down: app
+		assert.Equal(t, `Saved app to disk
+Fetched dependencies archive
+Successfully pulled app down: app
 `, out.String())
 
 		_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
@@ -213,8 +213,8 @@ func TestPullHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-			assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
-01:23:45 UTC INFO  Successfully pulled app down: app
+			assert.Equal(t, `Saved app to disk
+Successfully pulled app down: app
 `, out.String())
 		})
 
@@ -294,9 +294,9 @@ func TestPullHandler(t *testing.T) {
 		cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, HostingAsset: hostingAssetClient}))
-		assert.Equal(t, `01:23:45 UTC INFO  Saved app to disk
-01:23:45 UTC DEBUG Fetched hosting assets
-01:23:45 UTC INFO  Successfully pulled app down: app
+		assert.Equal(t, `Saved app to disk
+Fetched hosting assets
+Successfully pulled app down: app
 `, out.String())
 
 		t.Log("should have added the new file")

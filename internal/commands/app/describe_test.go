@@ -213,7 +213,7 @@ func TestAppDescribeHandler(t *testing.T) {
 		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "test-app-abcde"}}}
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, `01:23:45 UTC INFO  App description
+		assert.Equal(t, `App description
 {
   "client_app_id": "todo-abcde",
   "name": "todo",

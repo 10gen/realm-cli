@@ -224,7 +224,9 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 				appRemote.GroupID,
 				appRemote.AppID,
 				hostingDiffs,
-				func(err error) { ui.Print(terminal.NewWarningLog(err.Error())) },
+				func(err error) {
+					ui.Print(terminal.NewWarningLog("An error occurred while uploading hosting assets: %s", err.Error()))
+				},
 			)
 		}
 

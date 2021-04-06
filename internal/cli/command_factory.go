@@ -25,23 +25,17 @@ type CommandFactory struct {
 	inReader         *os.File
 	outWriter        *os.File
 	errWriter        *os.File
-	errLogger        *log.Logger
 	telemetryService *telemetry.Service
 }
 
 // NewCommandFactory creates a new command factory
 func NewCommandFactory() *CommandFactory {
-	errLogger := log.New(os.Stderr, "UTC ERROR ", log.Ltime|log.Lmsgprefix)
-
 	profile, profileErr := NewDefaultProfile()
 	if profileErr != nil {
-		errLogger.Fatal(profileErr)
+		log.Fatal(profileErr)
 	}
 
-	return &CommandFactory{
-		profile:   profile,
-		errLogger: errLogger,
-	}
+	return &CommandFactory{profile: profile}
 }
 
 // Build builds a Cobra command from the specified CommandDefinition
@@ -159,7 +153,7 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 		handleUsage(cmd, err)
 
 		if factory.ui == nil {
-			factory.errLogger.Fatal(err)
+			log.Fatal(err)
 		}
 
 		logs := []terminal.Log{terminal.NewErrorLog(err)}
@@ -200,13 +194,13 @@ func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 // Setup initializes the command factory
 func (factory *CommandFactory) Setup() {
 	if err := factory.profile.Load(); err != nil {
-		factory.errLogger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	if filepath := factory.uiConfig.OutputTarget; filepath != "" {
 		f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
 		if err != nil {
-			factory.errLogger.Fatal(fmt.Errorf("failed to open target file: %w", err))
+			log.Fatal(fmt.Errorf("failed to open target file: %w", err))
 		}
 		factory.outWriter = f
 	}
@@ -230,7 +224,7 @@ func (factory *CommandFactory) ensureUI() {
 	}
 
 	if factory.ui == nil {
-		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter, factory.errLogger)
+		factory.ui = terminal.NewUI(factory.uiConfig, factory.inReader, factory.outWriter, factory.errWriter)
 	}
 }
 

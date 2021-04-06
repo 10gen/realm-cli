@@ -72,6 +72,6 @@ func TestLogoutFeedback(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully logged out\n", out.String())
+		assert.Equal(t, "Successfully logged out\n", out.String())
 	})
 }

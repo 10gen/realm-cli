@@ -176,7 +176,7 @@ func TestLoginFeedback(t *testing.T) {
 		err := cmd.Handler(tc.profile, ui, cli.Clients{Realm: tc.realmClient})
 		assert.Nil(t, err)
 
-		assert.Equal(t, "01:23:45 UTC INFO  Successfully logged in\n", out.String())
+		assert.Equal(t, "Successfully logged in\n", out.String())
 	})
 }
 
