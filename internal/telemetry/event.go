@@ -11,6 +11,7 @@ type event struct {
 	time        time.Time
 	executionID string
 	command     string
+	version     string
 	data        []EventData
 }
 
@@ -34,6 +35,7 @@ const (
 const (
 	eventDataKeyCommand     = "cmd"
 	eventDataKeyExecutionID = "xid"
+	eventDataKeyVersion     = "v"
 
 	EventDataKeyError = "err"
 )

@@ -86,8 +86,8 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			factory.telemetryService = telemetry.NewService(
 				factory.profile.telemetryMode,
 				factory.profile.User().PublicAPIKey,
-				factory.errLogger,
 				display,
+				Version,
 			)
 
 			// TODO(REALMC-8399): check for version, send any obvserved errors to Segment
@@ -145,9 +145,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 // Close closes the command factory
 func (factory *CommandFactory) Close() {
 	if factory.telemetryService != nil {
-		if err := factory.telemetryService.Close(); err != nil {
-			factory.errLogger.Print(err)
-		}
+		factory.telemetryService.Close()
 	}
 
 	if factory.uiConfig.OutputTarget != "" {
