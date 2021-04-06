@@ -169,11 +169,11 @@ func (cmd *CommandCreate) Handler(profile *cli.Profile, ui terminal.UI, clients 
 		})
 	}
 
-	if err = appLocal.Write(); err != nil {
+	if err := appLocal.Write(); err != nil {
 		return err
 	}
 
-	if err = appLocal.Load(); err != nil {
+	if err := appLocal.Load(); err != nil {
 		return err
 	}
 

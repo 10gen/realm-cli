@@ -265,6 +265,13 @@ exports = function({ query }) {
 `,
 				},
 			},
+			Rules: []map[string]interface{}{{
+				"name":    "rule",
+				"actions": []interface{}{"get"},
+				"when": map[string]interface{}{`%%args.url.host`: map[string]interface{}{
+					`%in`: []interface{}{"google.com"},
+				}},
+			}},
 		}}
 
 		err := writeHTTPEndpoints(tmpDir, data)
@@ -280,7 +287,7 @@ exports = function({ query }) {
 }
 `, string(config))
 
-		webhook, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", "find", FileConfig.String()))
+		webhook, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", NameIncomingWebhooks, "find", FileConfig.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "can_evaluate": {},
@@ -298,7 +305,7 @@ exports = function({ query }) {
 }
 `, string(webhook))
 
-		src, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", "find", FileSource.String()))
+		src, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", NameIncomingWebhooks, "find", FileSource.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `
 exports = function({ query }) {
@@ -322,5 +329,22 @@ exports = function({ query }) {
         .find(filter)
 };
 `, string(src))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", NameRules, "rule.json"))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "actions": [
+        "get"
+    ],
+    "name": "rule",
+    "when": {
+        "%%args.url.host": {
+            "%in": [
+                "google.com"
+            ]
+        }
+    }
+}
+`, string(rule))
 	})
 }

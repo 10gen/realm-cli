@@ -56,6 +56,7 @@ type FunctionsStructure struct {
 type HTTPEndpointStructure struct {
 	Config           map[string]interface{}   `json:"config,omitempty"`
 	IncomingWebhooks []map[string]interface{} `json:"incoming_webhooks,omitempty"`
+	Rules            []map[string]interface{} `json:"rules,omitempty"`
 }
 
 // SyncStructure represents the v2 Realm app sync structure
@@ -299,12 +300,17 @@ func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
 			return err
 		}
 
-		webhooks, err := parseFunctions(filepath.Join(path))
+		webhooks, err := parseFunctions(filepath.Join(path, NameIncomingWebhooks))
 		if err != nil {
 			return err
 		}
 
-		out = append(out, HTTPEndpointStructure{config, webhooks})
+		rules, err := parseJSONFiles(filepath.Join(path, NameRules))
+		if err != nil {
+			return err
+		}
+
+		out = append(out, HTTPEndpointStructure{config, webhooks, rules})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -409,7 +415,7 @@ func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
 	if err != nil {
 		return err
 	}
-	if err = WriteFile(
+	if err := WriteFile(
 		filepath.Join(dir, FileConfig.String()),
 		0666,
 		bytes.NewReader(data),
@@ -417,7 +423,7 @@ func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
 		return err
 	}
 	for path, src := range sources {
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, path),
 			0666,
 			bytes.NewReader([]byte(src)),
@@ -438,7 +444,7 @@ func writeAuth(rootDir string, auth *AuthStructure) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, FileProviders.String()),
 			0666,
 			bytes.NewReader(data),
@@ -451,7 +457,7 @@ func writeAuth(rootDir string, auth *AuthStructure) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, FileCustomUserData.String()),
 			0666,
 			bytes.NewReader(data),
@@ -470,7 +476,7 @@ func writeSync(rootDir string, sync *SyncStructure) error {
 	if err != nil {
 		return err
 	}
-	if err = WriteFile(
+	if err := WriteFile(
 		filepath.Join(rootDir, NameSync, FileConfig.String()),
 		0666,
 		bytes.NewReader(data),
@@ -494,7 +500,7 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, name, FileConfig.String()),
 			0666,
 			bytes.NewReader(config),
@@ -516,14 +522,14 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			if err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRules.String()),
 				0666,
 				bytes.NewReader(dataRule),
 			); err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileSchema.String()),
 				0666,
 				bytes.NewReader(dataSchema),
@@ -549,7 +555,7 @@ func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) e
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, nameHTTPEndpoint, FileConfig.String()),
 			0666,
 			bytes.NewReader(data),
@@ -565,7 +571,7 @@ func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) e
 			if !ok {
 				return errors.New("error writing http endpoints")
 			}
-			dirHTTPEndpoint := filepath.Join(dir, nameHTTPEndpoint, name)
+			dirHTTPEndpoint := filepath.Join(dir, nameHTTPEndpoint, NameIncomingWebhooks, name)
 			webhookTemp := map[string]interface{}{}
 			for k, v := range webhook {
 				webhookTemp[k] = v
@@ -575,17 +581,30 @@ func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) e
 			if err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dirHTTPEndpoint, FileConfig.String()),
 				0666,
 				bytes.NewReader(config),
 			); err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dirHTTPEndpoint, FileSource.String()),
 				0666,
 				bytes.NewReader([]byte(src)),
+			); err != nil {
+				return err
+			}
+		}
+		for _, rule := range httpEndpoint.Rules {
+			data, err := MarshalJSON(rule)
+			if err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(dir, nameHTTPEndpoint, NameRules, fmt.Sprintf("%s%s", rule["name"], extJSON)),
+				0666,
+				bytes.NewReader(data),
 			); err != nil {
 				return err
 			}

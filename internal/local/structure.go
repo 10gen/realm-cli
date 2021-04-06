@@ -251,7 +251,7 @@ func writeEnvironments(rootDir string, environments map[string]map[string]interf
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(rootDir, NameEnvironments, env),
 			0666,
 			bytes.NewReader(data),
@@ -272,7 +272,7 @@ func writeValues(rootDir string, values []map[string]interface{}) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, fmt.Sprintf("%s%s", value["name"], extJSON)),
 			0666,
 			bytes.NewReader(data),
@@ -293,7 +293,7 @@ func writeGraphQL(rootDir string, graphql GraphQLStructure) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, FileConfig.String()),
 			0666,
 			bytes.NewReader(data),
@@ -307,7 +307,7 @@ func writeGraphQL(rootDir string, graphql GraphQLStructure) error {
 			return err
 		}
 		nameFile := strings.ToLower(fmt.Sprintf("%s_%s%s", customResolver["on_type"], customResolver["field_name"], extJSON))
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dir, NameCustomResolvers, nameFile),
 			0666,
 			bytes.NewReader(data),
@@ -333,7 +333,7 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(dirSvc, FileConfig.String()),
 			0666,
 			bytes.NewReader(data),
@@ -358,14 +358,14 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 			if err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dirSvc, NameIncomingWebhooks, nameWebhook, FileConfig.String()),
 				0666,
 				bytes.NewReader(data),
 			); err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dirSvc, NameIncomingWebhooks, nameWebhook, FileSource.String()),
 				0666,
 				bytes.NewReader([]byte(src)),
@@ -378,7 +378,7 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 			if err != nil {
 				return err
 			}
-			if err = WriteFile(
+			if err := WriteFile(
 				filepath.Join(dirSvc, NameRules, fmt.Sprintf("%s%s", rule["name"], extJSON)),
 				0666,
 				bytes.NewReader(data),
@@ -400,7 +400,7 @@ func writeTriggers(rootDir string, triggers []map[string]interface{}) error {
 		if err != nil {
 			return err
 		}
-		if err = WriteFile(
+		if err := WriteFile(
 			filepath.Join(rootDir, NameTriggers, name+extJSON),
 			0666,
 			bytes.NewReader(data),
