@@ -1,0 +1,9 @@
+{
+    "user_id": {
+      "ref": "#/relationship/mongodb-atlas/foo/bar",
+      "source_key": "user_id",
+      "foreign_key": "user_id",
+      "is_list": false
+    }
+}
+  

@@ -269,6 +269,12 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 				}
 				rule[NameSchema] = schema
 
+				relationships, err := parseJSON(filepath.Join(collPath, FileRelationships.String()))
+				if err != nil {
+					return err
+				}
+				rule[NameRelationships] = relationships
+
 				rules = append(rules, rule)
 				return nil
 			}); err != nil {
@@ -513,11 +519,17 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			if err != nil {
 				return err
 			}
+			relationships := rule[NameRelationships]
+			dataRelationships, err := MarshalJSON(relationships)
+			if err != nil {
+				return err
+			}
 			ruleTemp := map[string]interface{}{}
 			for k, v := range rule {
 				ruleTemp[k] = v
 			}
 			delete(ruleTemp, NameSchema)
+			delete(ruleTemp, NameRelationships)
 			dataRule, err := MarshalJSON(ruleTemp)
 			if err != nil {
 				return err
@@ -533,6 +545,13 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileSchema.String()),
 				0666,
 				bytes.NewReader(dataSchema),
+			); err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRelationships.String()),
+				0666,
+				bytes.NewReader(dataRelationships),
 			); err != nil {
 				return err
 			}
