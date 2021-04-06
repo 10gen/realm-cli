@@ -310,10 +310,16 @@ func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
 		if err != nil {
 			return err
 		}
+		if webhooks == nil {
+			webhooks = []map[string]interface{}{}
+		}
 
 		rules, err := parseJSONFiles(filepath.Join(path, NameRules))
 		if err != nil {
 			return err
+		}
+		if rules == nil {
+			rules = []map[string]interface{}{}
 		}
 
 		out = append(out, HTTPEndpointStructure{config, webhooks, rules})

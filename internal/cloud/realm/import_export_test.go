@@ -297,35 +297,18 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"wireProtocolEnabled": false,
 				}},
 				Rules: []map[string]interface{}{{
-					"database":   "db",
-					"collection": "coll",
-					"schema":     map[string]interface{}{},
+					"database":      "db",
+					"collection":    "coll",
+					"schema":        map[string]interface{}{},
+					"relationships": map[string]interface{}{},
 				}},
 			},
 		},
 		HTTPEndpoints: []local.HTTPEndpointStructure{
 			{
-				Config: map[string]interface{}{"name": "api", "type": "http", "config": map[string]interface{}{}},
-				IncomingWebhooks: []map[string]interface{}{{
-					"config": map[string]interface{}{
-						"name":                         "api_webhook",
-						"options":                      map[string]interface{}{"validationMethod": "VERIFY_PAYLOAD", "secret": "the_secret"},
-						"run_as_user_id":               "",
-						"run_as_user_id_script_source": "",
-						"run_as_authed_user":           false,
-						"create_user_on_auth":          false,
-						"fetch_custom_user_data":       false,
-						"respond_result":               false,
-					},
-					"source": "exports = function() { return false }",
-				}},
-				Rules: []map[string]interface{}{{
-					"name":    "rule",
-					"actions": []interface{}{"get"},
-					"when": map[string]interface{}{`%%args.url.host`: map[string]interface{}{
-						`%in`: []interface{}{"google.com"},
-					}},
-				}},
+				Config:           map[string]interface{}{"name": "api", "type": "http", "config": map[string]interface{}{}},
+				IncomingWebhooks: []map[string]interface{}{},
+				Rules:            []map[string]interface{}{},
 			},
 		},
 		Sync: &local.SyncStructure{
