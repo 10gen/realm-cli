@@ -546,22 +546,34 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			if err != nil {
 				return err
 			}
+			var database, collection string
+			if db, ok := rule["database"]; ok {
+				if db, ok := db.(string); ok {
+					database = db
+				}
+			}
+			if col, ok := rule["collection"]; ok {
+				if col, ok := col.(string); ok {
+					collection = col
+				}
+			}
+			ruleDir := filepath.Join(dir, name, database, collection)
 			if err := WriteFile(
-				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRules.String()),
+				filepath.Join(ruleDir, FileRules.String()),
 				0666,
 				bytes.NewReader(dataRule),
 			); err != nil {
 				return err
 			}
 			if err := WriteFile(
-				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileSchema.String()),
+				filepath.Join(ruleDir, FileSchema.String()),
 				0666,
 				bytes.NewReader(dataSchema),
 			); err != nil {
 				return err
 			}
 			if err := WriteFile(
-				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRelationships.String()),
+				filepath.Join(ruleDir, FileRelationships.String()),
 				0666,
 				bytes.NewReader(dataRelationships),
 			); err != nil {
