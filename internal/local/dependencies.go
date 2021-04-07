@@ -8,6 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/briandowns/spinner"
 )
 
 // Dependencies holds the data related to a local Realm app's dependencies
@@ -142,4 +146,29 @@ func (d Dependencies) PrepareUpload() (string, error) {
 		return "", err
 	}
 	return filepath.Abs(out.Name())
+}
+
+func PrepareDependencies(app App, ui terminal.UI) (string, error) {
+	dependencies, err := FindAppDependencies(app.RootDir)
+	if err != nil {
+		return "", err
+	}
+
+	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+	s.Suffix = " Transpiling dependency sources..."
+
+	prepareUpload := func() (string, error) {
+		s.Start()
+		defer s.Stop()
+
+		path, err := dependencies.PrepareUpload()
+		if err != nil {
+			return "", err
+		}
+
+		ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
+		return path, nil
+	}
+
+	return prepareUpload()
 }

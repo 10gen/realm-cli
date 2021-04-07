@@ -131,10 +131,10 @@ func (c *client) DiffDependencies(groupID, appID, uploadPath string) (Dependenci
 	}
 	defer res.Body.Close()
 
-	var dependencies DependenciesDiff
-	if err := json.NewDecoder(res.Body).Decode(&dependencies); err != nil {
+	var diff DependenciesDiff
+	if err := json.NewDecoder(res.Body).Decode(&diff); err != nil {
 		return DependenciesDiff{}, err
 	}
 
-	return dependencies, nil
+	return diff, nil
 }

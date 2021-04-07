@@ -728,19 +728,19 @@ Try running instead: realm-cli import --local testdata/project --remote appID
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 		assert.Nil(t, err)
-		assert.Equal(t, `01:23:45 UTC INFO  Determining changes
-01:23:45 UTC INFO  Transpiled dependency sources
-01:23:45 UTC INFO  The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `Determining changes
+Transpiled dependency sources
+The following reflects the proposed changes to your Realm app
 diff1
 diff2
 Added Dependencies
-	+ twilio@3.35.1
+  + twilio@3.35.1
 Removed Dependencies
-	- debug@4.3.1
+  - debug@4.3.1
 Modified Dependencies
-	* underscore@1.9.1 -> underscore@1.9.2
-01:23:45 UTC INFO  To push these changes, you must omit the 'dry-run' flag to proceed
-01:23:45 UTC DEBUG Try running instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
+  * underscore@1.9.1 -> underscore@1.9.2
+To push these changes, you must omit the 'dry-run' flag to proceed
+Try running instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
 `, out.String())
 	})
 

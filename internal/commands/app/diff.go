@@ -3,12 +3,10 @@ package app
 import (
 	"os"
 	"strings"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/briandowns/spinner"
 
 	"github.com/spf13/pflag"
 )
@@ -75,28 +73,7 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		dependencies, err := local.FindAppDependencies(app.RootDir)
-		if err != nil {
-			return err
-		}
-
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Transpiling dependency sources..."
-
-		prepareUpload := func() (string, error) {
-			s.Start()
-			defer s.Stop()
-
-			path, err := dependencies.PrepareUpload()
-			if err != nil {
-				return "", err
-			}
-
-			ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
-			return path, nil
-		}
-
-		uploadPath, err := prepareUpload()
+		uploadPath, err := local.PrepareDependencies(app, ui)
 		if err != nil {
 			return err
 		}

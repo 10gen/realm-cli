@@ -2,6 +2,8 @@ package realm
 
 import (
 	"fmt"
+
+	"github.com/10gen/realm-cli/internal/terminal"
 )
 
 // AppDraftDiff are the diffs for a Realm app draft and its corresponding app
@@ -98,17 +100,23 @@ func (d DependenciesDiff) Cap() int {
 // Strings returns the diffs as a list of strings
 func (d DependenciesDiff) Strings() []string {
 	diffs := make([]string, 0, d.Cap())
-	diffs = append(diffs, "Added Dependencies")
-	for _, dep := range d.Added {
-		diffs = append(diffs, fmt.Sprintf("\t+ %s", dep.String()))
+	if len(d.Added) > 0 {
+		diffs = append(diffs, "Added Dependencies")
+		for _, dep := range d.Added {
+			diffs = append(diffs, terminal.Indent+"+ "+dep.String())
+		}
 	}
-	diffs = append(diffs, "Removed Dependencies")
-	for _, dep := range d.Deleted {
-		diffs = append(diffs, fmt.Sprintf("\t- %s", dep.String()))
+	if len(d.Deleted) > 0 {
+		diffs = append(diffs, "Removed Dependencies")
+		for _, dep := range d.Deleted {
+			diffs = append(diffs, terminal.Indent+"- "+dep.String())
+		}
 	}
-	diffs = append(diffs, "Modified Dependencies")
-	for _, dep := range d.Modified {
-		diffs = append(diffs, fmt.Sprintf("\t* %s", dep.String()))
+	if len(d.Modified) > 0 {
+		diffs = append(diffs, "Modified Dependencies")
+		for _, dep := range d.Modified {
+			diffs = append(diffs, terminal.Indent+"* "+dep.String())
+		}
 	}
 	return diffs
 }

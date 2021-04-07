@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"errors"
 	"testing"
 
@@ -98,8 +97,7 @@ func TestAppDiffHandler(t *testing.T) {
 	}
 
 	t.Run("with include dependencies set should diff function dependencies", func(t *testing.T) {
-		out := new(bytes.Buffer)
-		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		out, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
 
@@ -124,17 +122,16 @@ func TestAppDiffHandler(t *testing.T) {
 diff1
 diff2
 Added Dependencies
-	+ twilio@3.35.1
+  + twilio@3.35.1
 Removed Dependencies
-	- debug@4.3.1
+  - debug@4.3.1
 Modified Dependencies
-	* underscore@1.9.1 -> underscore@1.9.2
+  * underscore@1.9.1 -> underscore@1.9.2
 `, out.String())
 	})
 
 	t.Run("should return error with include dependencies set and diff dependencies returns an error", func(t *testing.T) {
-		out := new(bytes.Buffer)
-		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		_, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
 
@@ -182,11 +179,11 @@ Modified Dependencies
 diff1
 diff2
 New hosting files
-	+ /index.html
+  + /index.html
 Removed hosting files
-	- /deleteme.html
+  - /deleteme.html
 Modified hosting files
-	* /404.html
+  * /404.html
 `, out.String())
 	})
 }
