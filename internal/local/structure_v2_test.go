@@ -55,14 +55,23 @@ func TestParseDataSources(t *testing.T) {
 			},
 			Rules: []map[string]interface{}{
 				{
-					"database":   "foo",
-					"collection": "bar",
-					"schema":     map[string]interface{}{"title": "foo.bar schema"},
+					"database":      "foo",
+					"collection":    "bar",
+					"schema":        map[string]interface{}{"title": "foo.bar schema"},
+					"relationships": map[string]interface{}{},
 				},
 				{
 					"database":   "test",
 					"collection": "test",
 					"schema":     map[string]interface{}{"title": "test.test schema"},
+					"relationships": map[string]interface{}{
+						"user_id": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/foo/bar",
+							"source_key":  "user_id",
+							"foreign_key": "user_id",
+							"is_list":     false,
+						},
+					},
 				},
 			},
 		}}, dataSources)
@@ -181,6 +190,14 @@ func TestWriteDataSources(t *testing.T) {
 					"schema": map[string]interface{}{
 						"title": "foo.bar schema",
 					},
+					"relationships": map[string]interface{}{
+						"user_id": map[string]interface{}{
+							"ref":         "#/relationship/another/db/coll",
+							"source_key":  "user_id",
+							"foreign_key": "user_id",
+							"is_list":     false,
+						},
+					},
 				},
 			},
 		}}
@@ -211,6 +228,18 @@ func TestWriteDataSources(t *testing.T) {
 		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, "{\n    \"title\": \"foo.bar schema\"\n}\n", string(schema))
+
+		relationships, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "user_id": {
+        "foreign_key": "user_id",
+        "is_list": false,
+        "ref": "#/relationship/another/db/coll",
+        "source_key": "user_id"
+    }
+}
+`, string(relationships))
 	})
 }
 

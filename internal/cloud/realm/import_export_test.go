@@ -297,9 +297,10 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"wireProtocolEnabled": false,
 				}},
 				Rules: []map[string]interface{}{{
-					"database":   "db",
-					"collection": "coll",
-					"schema":     map[string]interface{}{},
+					"database":      "db",
+					"collection":    "coll",
+					"schema":        map[string]interface{}{},
+					"relationships": map[string]interface{}{},
 				}},
 			},
 		},

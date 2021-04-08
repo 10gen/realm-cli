@@ -269,6 +269,12 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 				}
 				rule[NameSchema] = schema
 
+				relationships, err := parseJSON(filepath.Join(collPath, FileRelationships.String()))
+				if err != nil {
+					return err
+				}
+				rule[NameRelationships] = relationships
+
 				rules = append(rules, rule)
 				return nil
 			}); err != nil {
@@ -304,10 +310,16 @@ func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
 		if err != nil {
 			return err
 		}
+		if webhooks == nil {
+			webhooks = []map[string]interface{}{}
+		}
 
 		rules, err := parseJSONFiles(filepath.Join(path, NameRules))
 		if err != nil {
 			return err
+		}
+		if rules == nil {
+			rules = []map[string]interface{}{}
 		}
 
 		out = append(out, HTTPEndpointStructure{config, webhooks, rules})
@@ -509,7 +521,18 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		}
 		for _, rule := range ds.Rules {
 			schema := rule[NameSchema]
+			if schema == nil {
+				schema = map[string]interface{}{}
+			}
 			dataSchema, err := MarshalJSON(schema)
+			if err != nil {
+				return err
+			}
+			relationships := rule[NameRelationships]
+			if relationships == nil {
+				relationships = map[string]interface{}{}
+			}
+			dataRelationships, err := MarshalJSON(relationships)
 			if err != nil {
 				return err
 			}
@@ -518,21 +541,41 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 				ruleTemp[k] = v
 			}
 			delete(ruleTemp, NameSchema)
+			delete(ruleTemp, NameRelationships)
 			dataRule, err := MarshalJSON(ruleTemp)
 			if err != nil {
 				return err
 			}
+			var database, collection string
+			if db, ok := rule["database"]; ok {
+				if db, ok := db.(string); ok {
+					database = db
+				}
+			}
+			if coll, ok := rule["collection"]; ok {
+				if coll, ok := coll.(string); ok {
+					collection = coll
+				}
+			}
+			ruleDir := filepath.Join(dir, name, database, collection)
 			if err := WriteFile(
-				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileRules.String()),
+				filepath.Join(ruleDir, FileRules.String()),
 				0666,
 				bytes.NewReader(dataRule),
 			); err != nil {
 				return err
 			}
 			if err := WriteFile(
-				filepath.Join(dir, name, fmt.Sprintf("%s", rule["database"]), fmt.Sprintf("%s", rule["collection"]), FileSchema.String()),
+				filepath.Join(ruleDir, FileSchema.String()),
 				0666,
 				bytes.NewReader(dataSchema),
+			); err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(ruleDir, FileRelationships.String()),
+				0666,
+				bytes.NewReader(dataRelationships),
 			); err != nil {
 				return err
 			}

@@ -63,6 +63,7 @@ const (
 	NameRules            = "rules"
 	NameSchema           = "schema"
 	NameServices         = "services"
+	NameRelationships    = "relationships"
 
 	// triggers
 	NameTriggers = "triggers"
@@ -87,8 +88,9 @@ var (
 	FileProviders      = File{NameProviders, extJSON}
 
 	// data sources
-	FileRules  = File{NameRules, extJSON}
-	FileSchema = File{NameSchema, extJSON}
+	FileRules         = File{NameRules, extJSON}
+	FileSchema        = File{NameSchema, extJSON}
+	FileRelationships = File{NameRelationships, extJSON}
 
 	// functions
 	FileSource = File{NameSource, extJS}
