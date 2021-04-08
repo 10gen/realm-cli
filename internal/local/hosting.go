@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
@@ -81,21 +82,21 @@ func (d HostingDiffs) Strings() []string {
 	if len(d.Added) > 0 {
 		diffs = append(diffs, "New hosting files")
 		for _, added := range d.Added {
-			diffs = append(diffs, "\t+ "+added.FilePath)
+			diffs = append(diffs, terminal.Indent+"+ "+added.FilePath)
 		}
 	}
 
 	if len(d.Deleted) > 0 {
 		diffs = append(diffs, "Removed hosting files")
 		for _, deleted := range d.Deleted {
-			diffs = append(diffs, "\t- "+deleted.FilePath)
+			diffs = append(diffs, terminal.Indent+"- "+deleted.FilePath)
 		}
 	}
 
 	if len(d.Modified) > 0 {
 		diffs = append(diffs, "Modified hosting files")
 		for _, modified := range d.Modified {
-			diffs = append(diffs, "\t* "+modified.FilePath)
+			diffs = append(diffs, terminal.Indent+"* "+modified.FilePath)
 		}
 	}
 

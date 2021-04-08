@@ -81,6 +81,20 @@ func TestRealmDependencies(t *testing.T) {
 			assert.Equalf(t, parseZipArchive(t, expectedDeps), parseZipArchive(t, actualDeps), "expected archives to match")
 		})
 	})
+
+	t.Run("should successfully diff a zip node_modules archive", func(t *testing.T) {
+		wd, err := os.Getwd()
+		assert.Nil(t, err)
+
+		uploadPath := filepath.Join(wd, "testdata/dependencies_diff.zip")
+		diff, err := client.DiffDependencies(groupID, app.ID, uploadPath)
+		assert.Nil(t, err)
+		assert.Equal(t, realm.DependenciesDiff{
+			Added:    []realm.DependencyData{{"twilio", "3.35.1"}},
+			Deleted:  []realm.DependencyData{{"debug", "4.3.1"}},
+			Modified: []realm.DependencyDiffData{{DependencyData: realm.DependencyData{"underscore", "1.9.2"}, PreviousVersion: "1.9.1"}},
+		}, diff)
+	})
 }
 
 func parseZipArchive(t *testing.T, file *os.File) map[string]string {

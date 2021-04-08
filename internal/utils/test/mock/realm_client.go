@@ -20,6 +20,7 @@ type RealmClient struct {
 
 	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
 	ImportDependenciesFn func(groupID, appID, uploadPath string) error
+	DiffDependenciesFn   func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
@@ -337,6 +338,16 @@ func (rc RealmClient) ImportDependencies(groupID, appID, uploadPath string) erro
 		return rc.ImportDependenciesFn(groupID, appID, uploadPath)
 	}
 	return rc.Client.ImportDependencies(groupID, appID, uploadPath)
+}
+
+// DiffDependencies calls the mocked DiffDependencies implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DiffDependencies(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+	if rc.DiffDependenciesFn != nil {
+		return rc.DiffDependenciesFn(groupID, appID, uploadPath)
+	}
+	return rc.Client.DiffDependencies(groupID, appID, uploadPath)
 }
 
 // HostingAssets calls the mocked HostingAssets implementation if provided,

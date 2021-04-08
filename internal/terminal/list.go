@@ -52,7 +52,7 @@ func (l list) Payload() ([]string, map[string]interface{}, error) {
 func (l list) dataString() string {
 	data := make([]string, 0, len(l.data))
 	for _, item := range l.data {
-		data = append(data, indent+item)
+		data = append(data, Indent+item)
 	}
 	return strings.Join(data, "\n")
 }

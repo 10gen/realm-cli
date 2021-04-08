@@ -97,6 +97,20 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		return err
 	}
 
+	var uploadPathDependencies string
+	var dependenciesDiffs realm.DependenciesDiff
+	if cmd.inputs.IncludeDependencies {
+		uploadPathDependencies, err = local.PrepareDependencies(app, ui)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(uploadPathDependencies) //nolint:errcheck
+		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
+		if err != nil {
+			return err
+		}
+	}
+
 	hosting, err := local.FindAppHosting(app.RootDir)
 	if err != nil {
 		return err
@@ -115,7 +129,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		}
 	}
 
-	if len(appDiffs) == 0 && !cmd.inputs.IncludeDependencies && hostingDiffs.Size() == 0 {
+	if len(appDiffs) == 0 && dependenciesDiffs.Len() == 0 && hostingDiffs.Size() == 0 {
 		ui.Print(terminal.NewTextLog("Deployed app is identical to proposed version, nothing to do"))
 		return nil
 	}
@@ -126,8 +140,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		diffs = append(diffs, appDiffs...)
 
 		if cmd.inputs.IncludeDependencies {
-			// TODO(REALMC-8242): diff dependencies better
-			diffs = append(diffs, "+ New function dependencies")
+			diffs = append(diffs, dependenciesDiffs.Strings()...)
 		}
 
 		diffs = append(diffs, hostingDiffs.Strings()...)
@@ -178,34 +191,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		dependencies, err := local.FindAppDependencies(app.RootDir)
-		if err != nil {
-			return err
-		}
-
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Transpiling dependency sources..."
-
-		prepareUpload := func() (string, error) {
-			s.Start()
-			defer s.Stop()
-
-			path, err := dependencies.PrepareUpload()
-			if err != nil {
-				return "", err
-			}
-
-			ui.Print(terminal.NewTextLog("Transpiled dependency sources"))
-			return path, nil
-		}
-
-		uploadPath, err := prepareUpload()
-		if err != nil {
-			return err
-		}
-		defer os.Remove(uploadPath) //nolint:errcheck
-
-		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPath); err != nil {
+		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
 			return err
 		}
 		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
