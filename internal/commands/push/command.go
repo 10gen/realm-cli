@@ -98,17 +98,19 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	}
 
 	var uploadPathDependencies string
-	var dependenciesDiffs realm.DependenciesDiff
+	// var dependenciesDiffs realm.DependenciesDiff
 	if cmd.inputs.IncludeDependencies {
 		uploadPathDependencies, err = local.PrepareDependencies(app, ui)
 		if err != nil {
 			return err
 		}
 		defer os.Remove(uploadPathDependencies) //nolint:errcheck
-		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
-		if err != nil {
-			return err
-		}
+
+		// TODO(REALMC-8642): Support detailed dependencies diffs
+		// dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
+		// if err != nil {
+		// 	return err
+		// }
 	}
 
 	hosting, err := local.FindAppHosting(app.RootDir)
@@ -129,7 +131,9 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		}
 	}
 
-	if len(appDiffs) == 0 && dependenciesDiffs.Len() == 0 && hostingDiffs.Size() == 0 {
+	// TODO(REALMC-8642): Support detailed dependencies diffs
+	// if len(appDiffs) == 0 && dependenciesDiffs.Len() == 0 && hostingDiffs.Size() == 0 {
+	if len(appDiffs) == 0 && !cmd.inputs.IncludeDependencies && hostingDiffs.Size() == 0 {
 		ui.Print(terminal.NewTextLog("Deployed app is identical to proposed version, nothing to do"))
 		return nil
 	}
@@ -140,7 +144,9 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 		diffs = append(diffs, appDiffs...)
 
 		if cmd.inputs.IncludeDependencies {
-			diffs = append(diffs, dependenciesDiffs.Strings()...)
+			// TODO(REALMC-8642): Support detailed dependencies diffs
+			// diffs = append(diffs, dependenciesDiffs.Strings()...)
+			diffs = append(diffs, "+ New app dependencies")
 		}
 
 		diffs = append(diffs, hostingDiffs.Strings()...)
