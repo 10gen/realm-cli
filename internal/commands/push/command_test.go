@@ -531,6 +531,9 @@ Successfully pushed app up: eggcorn-abcde
 		})
 
 		t.Run("but fails to import dependencies", func(t *testing.T) {
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, nil
+			}
 			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
 				return errors.New("something bad happened")
 			}
@@ -574,11 +577,11 @@ Successfully pushed app up: eggcorn-abcde
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, `Determining changes
+Transpiled dependency sources
 Creating draft
 Pushing changes
 Deploying draft
 Deployment complete
-Transpiled dependency sources
 Uploaded dependencies archive
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
