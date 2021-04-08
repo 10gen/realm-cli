@@ -1,7 +1,6 @@
 package app
 
 import (
-	"os"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -73,17 +72,19 @@ func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		uploadPath, err := local.PrepareDependencies(app, ui)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(uploadPath) //nolint:errcheck
-
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
-		if err != nil {
-			return err
-		}
-		diffs = append(diffs, dependenciesDiff.Strings()...)
+		// TODO(REALMC-8642): Support detailed dependencies diffs
+		// uploadPath, err := local.PrepareDependencies(app, ui)
+		// if err != nil {
+		// 	return err
+		// }
+		// defer os.Remove(uploadPath) //nolint:errcheck
+		//
+		// dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
+		// if err != nil {
+		// 	return err
+		// }
+		// diffs = append(diffs, dependenciesDiff.Strings()...)
+		diffs = append(diffs, "+ New app dependencies")
 	}
 
 	if cmd.inputs.IncludeHosting {
