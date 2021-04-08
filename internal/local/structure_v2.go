@@ -205,7 +205,7 @@ func parseFunctionsV2(rootDir string) (*FunctionsStructure, error) {
 	}
 
 	sources := map[string]string{}
-	if err := walk(dir, func(file os.FileInfo, path string) error {
+	if err := walk(dir, map[string]struct{}{nameNodeModules: {}}, func(file os.FileInfo, path string) error {
 		if filepath.Ext(path) != extJS {
 			return nil // looking for javascript files
 		}
