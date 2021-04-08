@@ -149,6 +149,10 @@ func (d Dependencies) PrepareUpload() (string, error) {
 	return filepath.Abs(out.Name())
 }
 
+// PrepareDependencies finds and prepares an app's dependencies upload package
+// by creating a .zip file, while using the ui spinner during the transpiling
+// containing the specified archive's transpiled file contents in a tempmorary directory
+// and returns that file path
 func PrepareDependencies(app App, ui terminal.UI) (string, error) {
 	dependencies, err := FindAppDependencies(app.RootDir)
 	if err != nil {
