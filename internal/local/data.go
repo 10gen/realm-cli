@@ -107,11 +107,18 @@ type File struct {
 
 func (f File) String() string { return f.Name + f.Ext }
 
-func walk(rootDir string, fn func(file os.FileInfo, path string) error) error {
+func walk(rootDir string, ignorePaths map[string]struct{}, fn func(file os.FileInfo, path string) error) error {
+	if ignorePaths == nil {
+		ignorePaths = map[string]struct{}{}
+	}
+
 	dw := directoryWalker{path: rootDir}
 	if err := dw.walk(func(f os.FileInfo, p string) error {
+		if _, ok := ignorePaths[f.Name()]; ok {
+			return nil
+		}
 		if f.IsDir() {
-			return walk(p, fn)
+			return walk(p, ignorePaths, fn)
 		}
 		return fn(f, p)
 	}); err != nil {

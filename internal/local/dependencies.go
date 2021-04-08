@@ -33,7 +33,7 @@ func FindAppDependencies(path string) (Dependencies, error) {
 
 	rootDir := filepath.Join(app.RootDir, NameFunctions)
 
-	archives, archivesErr := filepath.Glob(filepath.Join(rootDir, "node_modules*"))
+	archives, archivesErr := filepath.Glob(filepath.Join(rootDir, nameNodeModules+"*"))
 	if archivesErr != nil {
 		return Dependencies{}, archivesErr
 	}
@@ -74,7 +74,7 @@ func (d Dependencies) PrepareUpload() (string, error) {
 		return "", err
 	}
 
-	out, err := os.Create(filepath.Join(dir, "node_modules.zip"))
+	out, err := os.Create(filepath.Join(dir, nameNodeModules+extZip))
 	if err != nil {
 		return "", err
 	}
