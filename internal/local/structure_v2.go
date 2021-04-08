@@ -552,9 +552,9 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 					database = db
 				}
 			}
-			if col, ok := rule["collection"]; ok {
-				if col, ok := col.(string); ok {
-					collection = col
+			if coll, ok := rule["collection"]; ok {
+				if coll, ok := coll.(string); ok {
+					collection = coll
 				}
 			}
 			ruleDir := filepath.Join(dir, name, database, collection)
