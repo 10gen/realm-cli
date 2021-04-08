@@ -11,15 +11,12 @@ import (
 const (
 	logFieldHeaders = "headers"
 	logFieldData    = "data"
-
-	// gutter is the gap between table columns
-	gutter = "  "
 )
 
-// set of supported spacing options
+// set of exported spacing options
 const (
-	// Indent is the indentation used
 	Indent = "  "
+	Gutter = "  "
 )
 
 var (
@@ -102,7 +99,7 @@ func (t table) headerString() string {
 			strings.Repeat(" ", t.columnWidths[header]-len(header)),
 		)
 	}
-	return Indent + strings.Join(headers, gutter)
+	return Indent + strings.Join(headers, Gutter)
 }
 
 func (t table) dataString() string {
@@ -116,7 +113,7 @@ func (t table) dataString() string {
 				strings.Repeat(" ", t.columnWidths[header]-len(row[header])),
 			)
 		}
-		rows[i] = Indent + strings.Join(cells, gutter)
+		rows[i] = Indent + strings.Join(cells, Gutter)
 	}
 	return strings.Join(rows, "\n")
 }
@@ -126,7 +123,7 @@ func (t table) dividerString() string {
 	for i, header := range t.headers {
 		dashes[i] = strings.Repeat("-", t.columnWidths[header])
 	}
-	return Indent + strings.Join(dashes, gutter)
+	return Indent + strings.Join(dashes, Gutter)
 }
 
 func parseValue(value interface{}) string {

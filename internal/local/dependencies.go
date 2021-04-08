@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/terminal"
+
 	"github.com/briandowns/spinner"
 )
 
