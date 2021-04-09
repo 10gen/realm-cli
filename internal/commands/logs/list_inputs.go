@@ -1,6 +1,10 @@
 package logs
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -19,17 +23,25 @@ const (
 
 	flagEndDate      = "end"
 	flagEndDateUsage = "specify the end date to finish listing logs from"
+
+	flagTail      = "tail"
+	flagTailUsage = "specify to view logs in real-time (note: start and end dates are ignored here)"
 )
 
 type listInputs struct {
 	cli.ProjectInputs
-	Types  []string
-	Errors bool
-	Start  flags.Date
-	End    flags.Date
+	Types       []string
+	Errors      bool
+	Start       flags.Date
+	End         flags.Date
+	Tail        bool
+	sigShutdown chan os.Signal
 }
 
 func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+	i.sigShutdown = make(chan os.Signal, 1)
+	signal.Notify(i.sigShutdown, syscall.SIGTERM, syscall.SIGINT)
+
 	return nil
 }
 

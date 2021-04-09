@@ -1,0 +1,17 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "objectId"
+        },
+        "date": {
+            "bsonType": "date"
+        },
+        "email": {
+            "bsonType": "string"
+        }
+    },
+    "required": [
+        "email"
+    ],
+    "title": "coll"
+}

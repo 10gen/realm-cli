@@ -56,6 +56,13 @@ type LogsOptions struct {
 	End        time.Time
 }
 
+// Logs is an array of Realm app logs
+type Logs []Log
+
+func (l Logs) Len() int           { return len(l) }
+func (l Logs) Less(i, j int) bool { return l[i].Started.Before(l[j].Started) }
+func (l Logs) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
+
 // Log is a Realm app log
 type Log struct {
 	Messages              []interface{} `json:"messages"`
@@ -85,7 +92,7 @@ type logsResponse struct {
 	Logs []Log `json:"logs"`
 }
 
-func (c *client) Logs(groupID, appID string, opts LogsOptions) ([]Log, error) {
+func (c *client) Logs(groupID, appID string, opts LogsOptions) (Logs, error) {
 	query := map[string]string{}
 	if len(opts.Types) > 0 {
 		query[logsQueryType] = strings.Join(opts.Types, ",")
