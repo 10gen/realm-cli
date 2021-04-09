@@ -14,23 +14,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// set of supported `function run` command strings
-const (
-	CommandUse = "function run"
-)
-
-// set of supported `function run` command strings
-var (
-	CommandAliases = []string{"run"}
-)
-
-// Command is the `function run` command
-type Command struct {
+// CommandRun is the `function run` command
+type CommandRun struct {
 	inputs inputs
 }
 
 // Flags is the command flags
-func (cmd *Command) Flags(fs *pflag.FlagSet) {
+func (cmd *CommandRun) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
 	fs.StringVar(&cmd.inputs.Name, flagFunctionName, "", flagFunctionNameUsage)
@@ -39,7 +29,7 @@ func (cmd *Command) Flags(fs *pflag.FlagSet) {
 }
 
 // Inputs is the command inputs
-func (cmd *Command) Inputs() cli.InputResolver {
+func (cmd *CommandRun) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
 
@@ -70,7 +60,7 @@ func isFloat(data string) bool {
 }
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandRun) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err

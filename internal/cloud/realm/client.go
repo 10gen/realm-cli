@@ -66,6 +66,8 @@ type Client interface {
 	Functions(groupID, appID string) ([]Function, error)
 	AppDebugExecuteFunction(groupID, appID, userID, name string, args []interface{}) (ExecutionResults, error)
 
+	Logs(groupID, appID string, opts LogsOptions) ([]Log, error)
+
 	Status() error
 }
 

@@ -39,6 +39,7 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.User))
 	cmd.AddCommand(factory.Build(commands.Whoami))
 	cmd.AddCommand(factory.Build(commands.Function))
+	cmd.AddCommand(factory.Build(commands.Logs))
 
 	factory.Run(cmd)
 }
