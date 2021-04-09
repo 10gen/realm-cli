@@ -18,8 +18,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("required arguments", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			mockTelemetryService := &telemetry.Service{}
-			cmd, err := NewLoginCommandFactory(mockUI, mockTelemetryService)()
+			emptyService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, emptyService)()
 			if err != nil {
 				panic(err)
 			}
@@ -58,8 +58,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("when the user is not logged in", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			mockTelemetryService := &telemetry.Service{}
-			cmd, err := NewLoginCommandFactory(mockUI, mockTelemetryService)()
+			emptyService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, emptyService)()
 			if err != nil {
 				panic(err)
 			}
@@ -110,8 +110,8 @@ func TestLoginCommand(t *testing.T) {
 	t.Run("when the user is logged in", func(t *testing.T) {
 		setup := func() (*LoginCommand, *cli.MockUi, *u.MockClient) {
 			mockUI := cli.NewMockUi()
-			mockTelemetryService := &telemetry.Service{}
-			cmd, err := NewLoginCommandFactory(mockUI, mockTelemetryService)()
+			emptyService := &telemetry.Service{}
+			cmd, err := NewLoginCommandFactory(mockUI, emptyService)()
 			if err != nil {
 				panic(err)
 			}

@@ -25,8 +25,8 @@ import (
 func TestExportCommand(t *testing.T) {
 	setup := func() (*ExportCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		mockTelemetryService := &telemetry.Service{}
-		cmd, err := NewExportCommandFactory(mockUI, mockTelemetryService)()
+		emptyService := &telemetry.Service{}
+		cmd, err := NewExportCommandFactory(mockUI, emptyService)()
 		if err != nil {
 			panic(err)
 		}
@@ -63,8 +63,8 @@ func TestExportCommand(t *testing.T) {
 	t.Run("when the user is logged in", func(t *testing.T) {
 		setup := func() (*ExportCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			mockTelemetryService := &telemetry.Service{}
-			cmd, err := NewExportCommandFactory(mockUI, mockTelemetryService)()
+			emptyService := &telemetry.Service{}
+			cmd, err := NewExportCommandFactory(mockUI, emptyService)()
 			if err != nil {
 				panic(err)
 			}

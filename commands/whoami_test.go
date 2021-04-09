@@ -16,8 +16,8 @@ import (
 func TestWhoamiCommand(t *testing.T) {
 	setup := func(inMemoryUser *user.User, storage *storage.Storage) (*WhoamiCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		mockTelemetryService := &telemetry.Service{}
-		cmd, err := NewWhoamiCommandFactory(mockUI, mockTelemetryService)()
+		emptyService := &telemetry.Service{}
+		cmd, err := NewWhoamiCommandFactory(mockUI, emptyService)()
 		if err != nil {
 			panic(err)
 		}

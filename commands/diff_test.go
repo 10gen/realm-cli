@@ -16,8 +16,8 @@ import (
 
 func setUpBasicDiffCommand() (*DiffCommand, *cli.MockUi) {
 	mockUI := cli.NewMockUi()
-	mockTelemetryService := &telemetry.Service{}
-	cmd, err := NewDiffCommandFactory(mockUI, mockTelemetryService)()
+	emptyService := &telemetry.Service{}
+	cmd, err := NewDiffCommandFactory(mockUI, emptyService)()
 	if err != nil {
 		panic(err)
 	}
