@@ -4,15 +4,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/mitchellh/cli"
 )
 
 // NewDiffCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewDiffCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
+func NewDiffCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -21,9 +21,9 @@ func NewDiffCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFac
 
 		return &DiffCommand{
 			BaseCommand: &BaseCommand{
-				Name:    "diff",
-				UI:      ui,
-				Service: service,
+				Name:             "diff",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 			workingDirectory: workingDirectory,
 			writeToDirectory: utils.WriteZipToDir,

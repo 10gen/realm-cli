@@ -4,17 +4,18 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/mitchellh/cli"
 )
 
 // NewWhoamiCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewWhoamiCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
+func NewWhoamiCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &WhoamiCommand{
 			BaseCommand: &BaseCommand{
-				Name:    "whoami",
-				UI:      ui,
-				Service: service,
+				Name:             "whoami",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 		}, nil
 	}

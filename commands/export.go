@@ -7,12 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/models"
 	u "github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
@@ -21,7 +20,7 @@ import (
 const numWorkers = 4
 
 // NewExportCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewExportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
+func NewExportCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -34,9 +33,9 @@ func NewExportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandF
 			writeFileToDirectory: utils.WriteFileToDir,
 			getAssetAtURL:        getAssetAtURL,
 			BaseCommand: &BaseCommand{
-				Name:    "export",
-				UI:      ui,
-				Service: service,
+				Name:             "export",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 		}, nil
 	}

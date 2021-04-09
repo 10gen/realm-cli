@@ -9,25 +9,24 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/hosting"
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	u "github.com/10gen/realm-cli/utils/test"
-	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
 	"github.com/mitchellh/go-homedir"
+	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func TestExportCommand(t *testing.T) {
 	setup := func() (*ExportCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		mockService := &telemetry.Service{}
-		cmd, err := NewExportCommandFactory(mockUI, mockService)()
+		mockTelemetryService := &telemetry.Service{}
+		cmd, err := NewExportCommandFactory(mockUI, mockTelemetryService)()
 		if err != nil {
 			panic(err)
 		}
@@ -64,8 +63,8 @@ func TestExportCommand(t *testing.T) {
 	t.Run("when the user is logged in", func(t *testing.T) {
 		setup := func() (*ExportCommand, *cli.MockUi) {
 			mockUI := cli.NewMockUi()
-			mockService := &telemetry.Service{}
-			cmd, err := NewExportCommandFactory(mockUI, mockService)()
+			mockTelemetryService := &telemetry.Service{}
+			cmd, err := NewExportCommandFactory(mockUI, mockTelemetryService)()
 			if err != nil {
 				panic(err)
 			}

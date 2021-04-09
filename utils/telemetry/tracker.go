@@ -8,16 +8,16 @@ var (
 	segmentWriteKey string //value will be injected at build-time
 )
 
-// REALMC-7243 same as the new cli Segment tracking
+// Tracker is a telemetry event tracker
 type Tracker interface {
 	Track(event event)
-	Close() error
+	Close()
 }
 
 type noopTracker struct{}
 
 func (n *noopTracker) Track(event event) {}
-func (n *noopTracker) Close() error      { return nil }
+func (n *noopTracker) Close()            {}
 
 type segmentTracker struct {
 	client analytics.Client
@@ -32,9 +32,10 @@ func newSegmentTracker() Tracker {
 }
 
 func (s *segmentTracker) Track(event event) {
-	properties := make(map[string]interface{}, len(event.data)+2)
+	properties := make(map[string]interface{}, len(event.data)+3)
 	properties[eventDataKeyCommand] = event.command
 	properties[eventDataKeyExecutionID] = event.executionID
+	properties[eventDataKeyVersion] = event.version
 
 	for _, datum := range event.data {
 		properties[datum.Key] = datum.Value
@@ -48,10 +49,11 @@ func (s *segmentTracker) Track(event event) {
 		Properties: properties,
 	})
 	if err != nil {
-		return
+		return // do nothing
 	}
 }
 
-func (s *segmentTracker) Close() error {
-	return s.client.Close()
+func (s *segmentTracker) Close() {
+	// flush the client on close so that all queued events are sent
+	s.client.Close()
 }

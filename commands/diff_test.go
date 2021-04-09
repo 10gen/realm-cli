@@ -9,14 +9,15 @@ import (
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/user"
 	u "github.com/10gen/realm-cli/utils/test"
+
 	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func setUpBasicDiffCommand() (*DiffCommand, *cli.MockUi) {
 	mockUI := cli.NewMockUi()
-	mockService := &telemetry.Service{}
-	cmd, err := NewDiffCommandFactory(mockUI, mockService)()
+	mockTelemetryService := &telemetry.Service{}
+	cmd, err := NewDiffCommandFactory(mockUI, mockTelemetryService)()
 	if err != nil {
 		panic(err)
 	}

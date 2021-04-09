@@ -17,13 +17,13 @@ const (
 )
 
 // NewLoginCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewLoginCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
+func NewLoginCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &LoginCommand{
 			BaseCommand: &BaseCommand{
-				Name:    "login",
-				UI:      ui,
-				Service: service,
+				Name:             "login",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 		}, nil
 	}

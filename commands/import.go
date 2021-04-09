@@ -10,13 +10,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/hosting"
 	"github.com/10gen/realm-cli/models"
 	u "github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mitchellh/cli"
 )
@@ -52,7 +51,7 @@ func errIncludeHosting(err error) error {
 }
 
 // NewImportCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewImportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandFactory {
+func NewImportCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -61,9 +60,9 @@ func NewImportCommandFactory(ui cli.Ui, service *telemetry.Service) cli.CommandF
 
 		return &ImportCommand{
 			BaseCommand: &BaseCommand{
-				Name:    "import",
-				UI:      ui,
-				Service: service,
+				Name:             "import",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 			workingDirectory: workingDirectory,
 			writeToDirectory: utils.WriteZipToDir,

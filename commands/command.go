@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/api/mdbcloud"
 	"github.com/10gen/realm-cli/storage"
 	"github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/cli"
@@ -38,9 +37,9 @@ type BaseCommand struct {
 
 	Name string
 
-	CLI     *cli.CLI
-	UI      cli.Ui
-	Service *telemetry.Service
+	CLI              *cli.CLI
+	UI               cli.Ui
+	TelemetryService *telemetry.Service
 
 	client      api.Client
 	atlasClient mdbcloud.Client
@@ -53,7 +52,6 @@ type BaseCommand struct {
 	flagBaseURL       string
 	flagAtlasBaseURL  string
 	flagYes           bool
-	flagTelemetryOn   bool
 }
 
 // NewFlagSet builds and returns the default set of flags for all commands
@@ -67,7 +65,7 @@ func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
 	set.StringVar(&c.flagAtlasBaseURL, "atlas-base-url", api.DefaultAtlasBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
-	set.BoolVar(&c.flagTelemetryOn, "telemetry", true, "")
+	set.BoolVar(&c.TelemetryService.NoTelemetry, "no-telemetry", false, "")
 	c.FlagSet = set
 
 	return set
@@ -218,8 +216,9 @@ func (c *BaseCommand) run(args []string) error {
 		return err
 	}
 
-	c.Service.SetFields(c.flagTelemetryOn, user.PublicAPIKey, c.Name)
-	c.Service.TrackEvent(telemetry.EventTypeCommandStart)
+	c.TelemetryService.Setup(c.Name)
+	c.TelemetryService.SetUser(user.PublicAPIKey)
+	c.TelemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 	return nil
 }

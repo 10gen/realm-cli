@@ -12,8 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/utils/telemetry"
-
 	"github.com/golang/mock/gomock"
 
 	"github.com/10gen/realm-cli/api"
@@ -23,16 +21,17 @@ import (
 	"github.com/10gen/realm-cli/models"
 	"github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	u "github.com/10gen/realm-cli/utils/test"
-	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
+	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
 	mockUI := cli.NewMockUi()
-	mockService := &telemetry.Service{}
-	cmd, err := NewImportCommandFactory(mockUI, mockService)()
+	mockTelemetryService := &telemetry.Service{}
+	cmd, err := NewImportCommandFactory(mockUI, mockTelemetryService)()
 	if err != nil {
 		panic(err)
 	}

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	u "github.com/10gen/realm-cli/utils/test"
+
 	"github.com/mitchellh/cli"
 	gc "github.com/smartystreets/goconvey/convey"
 )

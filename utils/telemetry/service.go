@@ -6,41 +6,45 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// REALMC-7243 same as the new cli Segment tracking
-
+// Service tracks telemetry events
 type Service struct {
+	NoTelemetry bool
 	userID      string
 	executionID string
 	command     string
 	tracker     Tracker
 }
 
-func (s *Service) SetFields(telemetryOn bool, userID string, command string) {
-	s.userID = userID
-	s.executionID = primitive.NewObjectID().Hex()
+// Setup sets up the tracker for this service
+func (s *Service) Setup(command string) {
 	s.command = command
-
-	if telemetryOn {
-		s.tracker = newSegmentTracker()
-	} else {
+	s.executionID = primitive.NewObjectID().Hex()
+	if s.NoTelemetry {
 		s.tracker = &noopTracker{}
+	} else {
+		s.tracker = newSegmentTracker()
 	}
 }
 
-func (s *Service) TrackEvent(eventType EventType, data ...EventData) {
-	s.tracker.Track(
-		event{
-			id:          primitive.NewObjectID().Hex(),
-			eventType:   eventType,
-			userID:      s.userID,
-			time:        time.Now(),
-			executionID: s.executionID,
-			command:     s.command,
-			data:        data,
-		},
-	)
+// SetUser sets the userID for this service to track
+func (s *Service) SetUser(userID string) {
+	s.userID = userID
 }
 
-func (s *Service) Close() error {
-	return s.tracker.Close()
+// TrackEvent tracks the event based on the tracker
+func (s *Service) TrackEvent(eventType EventType, data ...EventData) {
+	s.tracker.Track(event{
+		id:          primitive.NewObjectID().Hex(),
+		eventType:   eventType,
+		userID:      s.userID,
+		time:        time.Now(),
+		executionID: s.executionID,
+		command:     s.command,
+		data:        data,
+	})
+}
+
+// Close shuts down the Service
+func (s *Service) Close() {
+	s.tracker.Close()
 }

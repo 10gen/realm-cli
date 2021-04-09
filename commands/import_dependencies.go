@@ -13,6 +13,7 @@ import (
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/dependency/transpiler"
 	"github.com/10gen/realm-cli/utils"
+
 	"github.com/mitchellh/cli"
 )
 
