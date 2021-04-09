@@ -3,7 +3,9 @@ package logs
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +13,10 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+)
+
+const (
+	testDateFormat = "2006-01-02T15:04:05-0700" // avoid millisecond precision
 )
 
 func TestLogsList(t *testing.T) {
@@ -31,7 +37,7 @@ func TestLogsList(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{}}, nil
 		}
-		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) ([]realm.Log, error) {
+		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error) {
 			return nil, errors.New("something bad happened")
 		}
 
@@ -46,8 +52,8 @@ func TestLogsList(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{}}, nil
 		}
-		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) ([]realm.Log, error) {
-			return []realm.Log{
+		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error) {
+			return realm.Logs{
 				{
 					Type:         realm.LogTypeServiceStreamFunction,
 					Messages:     []interface{}{"a test log message"},
@@ -87,6 +93,146 @@ func TestLogsList(t *testing.T) {
   blue message
 2021-06-22T07:54:42.000+0000  [1.234s] Stream Function -> Service func0: OK
   a test log message
+`, out.String())
+	})
+}
+
+func TestLogsListTail(t *testing.T) {
+	t.Run("should poll for logs until a shutdown signal is received", func(t *testing.T) {
+		var logIdx int
+		testLogs := []realm.Logs{
+			{{
+				Type:      realm.LogTypeAuth,
+				Started:   time.Date(2019, time.June, 22, 7, 54, 42, 0, time.UTC),
+				Completed: time.Date(2019, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+				Messages:  []interface{}{"initial log"},
+			}},
+			{{
+				Type:      realm.LogTypeAuth,
+				Started:   time.Date(2020, time.June, 22, 7, 54, 42, 0, time.UTC),
+				Completed: time.Date(2020, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+				Messages:  []interface{}{"second log"},
+			}},
+			{{
+				Type:      realm.LogTypeAuth,
+				Started:   time.Date(2021, time.June, 22, 7, 54, 42, 0, time.UTC),
+				Completed: time.Date(2021, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+				Messages:  []interface{}{"third log"},
+			}},
+		}
+		startDates := make([]time.Time, len(testLogs))
+
+		var wg sync.WaitGroup
+		wg.Add(len(testLogs))
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{}}, nil
+		}
+
+		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error) {
+			logs := testLogs[logIdx]
+			startDates[logIdx] = opts.Start
+
+			wg.Done()
+			logIdx++
+
+			return logs, nil
+		}
+
+		out, ui := mock.NewUI()
+
+		sigShutdown := make(chan os.Signal, 1)
+		go func() {
+			wg.Wait()
+			sigShutdown <- os.Interrupt
+		}()
+
+		cmd := &CommandList{listInputs{sigShutdown: sigShutdown, Tail: true}}
+
+		cmdStart := time.Now()
+		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+
+		assert.Equal(t, `2019-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  initial log
+2020-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  second log
+2021-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  third log
+`, out.String())
+
+		assert.Equal(t, time.Time{}, startDates[0])
+		for i := 0; i < len(startDates)-1; i++ {
+			expectedStart := cmdStart.Add(time.Duration(5*i) * time.Second).Format(testDateFormat)
+			actualStart := startDates[i+1].Format(testDateFormat)
+
+			assert.Equal(t, expectedStart, actualStart)
+		}
+	})
+
+	t.Run("should poll for logs until an api call returns an error", func(t *testing.T) {
+		origTailLookBehind := tailLookBehind
+		defer func() { tailLookBehind = origTailLookBehind }()
+		tailLookBehind = 2
+
+		testLogs := []realm.Logs{
+			{
+				{
+					Type:      realm.LogTypeAuth,
+					Started:   time.Date(2021, time.June, 22, 7, 54, 42, 0, time.UTC),
+					Completed: time.Date(2021, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+					Messages:  []interface{}{"lower log"},
+				},
+				{
+					Type:      realm.LogTypeAuth,
+					Started:   time.Date(2020, time.June, 22, 7, 54, 42, 0, time.UTC),
+					Completed: time.Date(2020, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+					Messages:  []interface{}{"upper log"},
+				},
+				{
+					Type:      realm.LogTypeAuth,
+					Started:   time.Date(2019, time.June, 22, 7, 54, 42, 0, time.UTC),
+					Completed: time.Date(2019, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+					Messages:  []interface{}{"skipped log"},
+				},
+			},
+			{{
+				Type:      realm.LogTypeAuth,
+				Started:   time.Date(2022, time.June, 22, 7, 54, 42, 0, time.UTC),
+				Completed: time.Date(2022, time.June, 22, 7, 54, 42, 5_000_000, time.UTC),
+				Messages:  []interface{}{"tailed log"},
+			}},
+		}
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{}}, nil
+		}
+
+		var counter int
+		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error) {
+			defer func() { counter++ }()
+			if counter < len(testLogs) {
+				return testLogs[counter], nil
+			}
+			return nil, errors.New("something bad happened")
+		}
+
+		out, ui := mock.NewUI()
+
+		cmd := &CommandList{listInputs{Tail: true}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("something bad happened"), err)
+
+		assert.Equal(t, `2020-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  upper log
+2021-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  lower log
+2022-06-22T07:54:42.000+0000     [5ms]             Authentication: OK
+  tailed log
 `, out.String())
 	})
 }

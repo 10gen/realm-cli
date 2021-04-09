@@ -3,6 +3,7 @@ package logs
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -14,6 +15,10 @@ import (
 
 const (
 	dateFormat = "2006-01-02T15:04:05.000-0700"
+)
+
+var (
+	tailLookBehind = 5
 )
 
 // CommandList is the `logs list` command
@@ -29,6 +34,7 @@ func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 	fs.BoolVar(&cmd.inputs.Errors, flagErrors, false, flagErrorsUsage)
 	fs.Var(&cmd.inputs.Start, flagStartDate, flagStartDateUsage)
 	fs.Var(&cmd.inputs.End, flagEndDate, flagEndDateUsage)
+	fs.BoolVar(&cmd.inputs.Tail, flagTail, false, flagTailUsage)
 }
 
 // Inputs is the command inputs
@@ -38,25 +44,86 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+	cmdStart := time.Now() // for use with tail later
+
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}
 
-	logs, err := clients.Realm.Logs(app.GroupID, app.ID, realm.LogsOptions{
+	opts := realm.LogsOptions{
 		Types:      cmd.inputs.Types,
 		ErrorsOnly: cmd.inputs.Errors,
-		Start:      cmd.inputs.Start.Time,
-		End:        cmd.inputs.End.Time,
-	})
+	}
+	if !cmd.inputs.Tail {
+		opts.Start = cmd.inputs.Start.Time
+		opts.End = cmd.inputs.End.Time
+	}
+
+	logs, err := clients.Realm.Logs(app.GroupID, app.ID, opts)
 	if err != nil {
 		return err
 	}
 
-	sort.SliceStable(logs, func(i, j int) bool {
-		return logs[i].Started.Before(logs[j].Started)
-	})
+	if cmd.inputs.Tail && len(logs) > tailLookBehind {
+		logs = logs[0:tailLookBehind]
+	}
 
+	printLogs(ui, logs)
+	if !cmd.inputs.Tail {
+		return nil // if not tailing, command stops here
+	}
+
+	logsCh, errCh, closeCh := make(chan realm.Logs), make(chan error), make(chan struct{})
+	defer close(closeCh)
+
+	opts.Start = cmdStart
+	go pollForLogs(clients.Realm, app.GroupID, app.ID, opts, logsCh, errCh, closeCh)
+
+	for {
+		select {
+		case logs := <-logsCh:
+			printLogs(ui, logs)
+		case err := <-errCh:
+			return err
+		case <-cmd.inputs.sigShutdown:
+			return nil
+		}
+	}
+}
+
+func pollForLogs(realmClient realm.Client, groupID, appID string, opts realm.LogsOptions, logsCh chan<- realm.Logs, errCh chan<- error, closeCh <-chan struct{}) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-closeCh:
+			return
+		case <-ticker.C:
+			startNext := time.Now()
+
+			logs, err := realmClient.Logs(groupID, appID, opts)
+			if err != nil {
+				select {
+				case <-closeCh: // if closed during API call
+				case errCh <- err:
+				}
+				return
+			}
+			select {
+			case <-closeCh:
+				return // if closed during API call
+			case logsCh <- logs:
+			}
+
+			opts.Start = startNext
+		}
+	}
+}
+
+func printLogs(ui terminal.UI, logs realm.Logs) {
+	sort.Sort(logs)
 	for _, log := range logs {
 		ui.Print(terminal.NewListLog(
 			fmt.Sprintf(
@@ -70,7 +137,6 @@ func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cl
 			log.Messages...,
 		))
 	}
-	return nil
 }
 
 func logNameDisplay(log realm.Log) string {
