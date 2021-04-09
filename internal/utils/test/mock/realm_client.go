@@ -59,6 +59,8 @@ type RealmClient struct {
 
 	LogsFn func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error)
 
+	SchemaModelsFn func(groupID, appID, language string) ([]realm.SchemaModel, error)
+
 	StatusFn func() error
 }
 
@@ -430,6 +432,16 @@ func (rc RealmClient) Logs(groupID, appID string, opts realm.LogsOptions) (realm
 		return rc.LogsFn(groupID, appID, opts)
 	}
 	return rc.Client.Logs(groupID, appID, opts)
+}
+
+// SchemaModels calls the mocked SchemaModels implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) SchemaModels(groupID, appID, language string) ([]realm.SchemaModel, error) {
+	if rc.SchemaModelsFn != nil {
+		return rc.SchemaModelsFn(groupID, appID, language)
+	}
+	return rc.Client.SchemaModels(groupID, appID, language)
 }
 
 // Status calls the mocked Status implementation if provided,

@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/logs"
 	"github.com/10gen/realm-cli/internal/commands/pull"
 	"github.com/10gen/realm-cli/internal/commands/push"
+	"github.com/10gen/realm-cli/internal/commands/schema"
 	"github.com/10gen/realm-cli/internal/commands/secrets"
 	"github.com/10gen/realm-cli/internal/commands/user"
 	"github.com/10gen/realm-cli/internal/commands/whoami"
@@ -271,6 +272,31 @@ following will be displayed:
 				Help: `Displays a list of your Realm app’s logs sorted by recentness, with most recent
 logs appearing towards the bottom.  You can specify a --tail flag to monitor
 your logs and follow any newly created logs in real-time.`,
+			},
+		},
+	}
+
+	Schema = cli.CommandDefinition{
+		Use:         "schema",
+		Aliases:     []string{"schemas"},
+		Description: "Manage the schemas of your Realm app",
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &schema.CommandDatamodels{},
+				Use:         "datamodels",
+				Aliases:     []string{"datamodel"},
+				Display:     "schema datamodels",
+				Description: "Generate data models based on your schema",
+				Help: `Translates your schema’s objects into Realm data models. The data models define
+your data as native objects, which can be easily integrated into your
+application to use with Realm Sync. Note that you must have a valid JSON schema
+before using this command.
+
+With this command, you can:
+  - Specify the language with a --language flag
+  - Filter which schema objects you’d like to include in your output with --name flags
+  - Combine your schema objects into a single output with a --flat flag
+  - Omit import groups from your model with a --no-imports flag`,
 			},
 		},
 	}
