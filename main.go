@@ -48,7 +48,7 @@ func main() {
 	}
 
 	if exitStatus == 0 {
-		telemetryService.TrackEvent(telemetry.EventTypeCommandEnd)
+		telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
 	}
 
 	os.Exit(exitStatus)

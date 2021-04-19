@@ -189,6 +189,8 @@ func (c *BaseCommand) run(args []string) error {
 		c.UI.Info(url)
 	}
 
+	c.TelemetryService.Setup(c.Name)
+
 	if c.storage == nil {
 		path, err := homedir.Expand(c.flagConfigPath)
 		if err != nil {
@@ -216,7 +218,6 @@ func (c *BaseCommand) run(args []string) error {
 		return err
 	}
 
-	c.TelemetryService.Setup(c.Name)
 	c.TelemetryService.SetUser(user.PublicAPIKey)
 	c.TelemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 

@@ -26,16 +26,16 @@ type EventType string
 
 // set of supported EventTypes
 const (
-	EventTypeCommandStart EventType = "COMMAND_START"
-	EventTypeCommandEnd   EventType = "COMMAND_END"
-	EventTypeCommandError EventType = "COMMAND_ERROR"
+	EventTypeCommandStart    EventType = "COMMAND_START"
+	EventTypeCommandComplete EventType = "COMMAND_COMPLETE"
+	EventTypeCommandError    EventType = "COMMAND_ERROR"
 )
 
 // set of event data keys
 const (
-	eventDataKeyCommand     = "command"
+	eventDataKeyCommand     = "cmd"
 	eventDataKeyExecutionID = "xid"
-	eventDataKeyVersion     = "version"
+	eventDataKeyVersion     = "v"
 
 	EventDataKeyError = "err"
 )

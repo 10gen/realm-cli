@@ -15,8 +15,8 @@ import (
 func TestLogoutCommand(t *testing.T) {
 	setup := func(storage *storage.Storage) (*LogoutCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		emptyService := &telemetry.Service{}
-		cmd, err := NewLogoutCommandFactory(mockUI, emptyService)()
+		telemetryServiceNoop := &telemetry.Service{}
+		cmd, err := NewLogoutCommandFactory(mockUI, telemetryServiceNoop)()
 		if err != nil {
 			panic(err)
 		}

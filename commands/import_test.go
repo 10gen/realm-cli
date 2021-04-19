@@ -30,8 +30,8 @@ import (
 
 func setUpBasicCommand() (*ImportCommand, *cli.MockUi) {
 	mockUI := cli.NewMockUi()
-	emptyService := &telemetry.Service{}
-	cmd, err := NewImportCommandFactory(mockUI, emptyService)()
+	telemetryServiceNoop := &telemetry.Service{}
+	cmd, err := NewImportCommandFactory(mockUI, telemetryServiceNoop)()
 	if err != nil {
 		panic(err)
 	}
