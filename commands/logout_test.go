@@ -5,16 +5,18 @@ import (
 
 	"github.com/10gen/realm-cli/storage"
 	"github.com/10gen/realm-cli/user"
+	"github.com/10gen/realm-cli/utils/telemetry"
 	u "github.com/10gen/realm-cli/utils/test"
-	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
+	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLogoutCommand(t *testing.T) {
 	setup := func(storage *storage.Storage) (*LogoutCommand, *cli.MockUi) {
 		mockUI := cli.NewMockUi()
-		cmd, err := NewLogoutCommandFactory(mockUI)()
+		telemetryServiceNoop := &telemetry.Service{}
+		cmd, err := NewLogoutCommandFactory(mockUI, telemetryServiceNoop)()
 		if err != nil {
 			panic(err)
 		}

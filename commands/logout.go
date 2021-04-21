@@ -1,16 +1,19 @@
 package commands
 
 import (
+	"github.com/10gen/realm-cli/utils/telemetry"
+
 	"github.com/mitchellh/cli"
 )
 
 // NewLogoutCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewLogoutCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewLogoutCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &LogoutCommand{
 			BaseCommand: &BaseCommand{
-				Name: "logout",
-				UI:   ui,
+				Name:             "logout",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 		}, nil
 	}
@@ -45,6 +48,5 @@ func (lc *LogoutCommand) Run(args []string) int {
 		lc.UI.Error(err.Error())
 		return 1
 	}
-
 	return 0
 }

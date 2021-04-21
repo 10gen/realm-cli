@@ -15,6 +15,7 @@ import (
 	"github.com/10gen/realm-cli/models"
 	u "github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mitchellh/cli"
 )
@@ -50,7 +51,7 @@ func errIncludeHosting(err error) error {
 }
 
 // NewImportCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewImportCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		workingDirectory, err := os.Getwd()
 		if err != nil {
@@ -59,8 +60,9 @@ func NewImportCommandFactory(ui cli.Ui) cli.CommandFactory {
 
 		return &ImportCommand{
 			BaseCommand: &BaseCommand{
-				Name: "import",
-				UI:   ui,
+				Name:             "import",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 			workingDirectory: workingDirectory,
 			writeToDirectory: utils.WriteZipToDir,
@@ -153,7 +155,8 @@ func (ic *ImportCommand) Run(args []string) int {
 	switch ic.flagStrategy {
 	case importStrategyMerge, importStrategyReplace, importStrategyReplaceByName:
 	default:
-		ic.UI.Error(fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName))
+		err := fmt.Sprintf("unknown import strategy %q; accepted values are [%s|%s|%s]", ic.flagStrategy, importStrategyMerge, importStrategyReplace, importStrategyReplaceByName)
+		ic.UI.Error(err)
 		return 1
 	}
 
@@ -162,7 +165,6 @@ func (ic *ImportCommand) Run(args []string) int {
 		ic.UI.Error(err.Error())
 		return 1
 	}
-
 	return 0
 }
 

@@ -11,9 +11,9 @@ import (
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/hosting"
 	u "github.com/10gen/realm-cli/utils/test"
-	gc "github.com/smartystreets/goconvey/convey"
 
 	"github.com/mitchellh/cli"
+	gc "github.com/smartystreets/goconvey/convey"
 )
 
 func TestImportHosting(t *testing.T) {

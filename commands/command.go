@@ -16,6 +16,7 @@ import (
 	"github.com/10gen/realm-cli/storage"
 	"github.com/10gen/realm-cli/user"
 	"github.com/10gen/realm-cli/utils"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/cli"
@@ -36,8 +37,9 @@ type BaseCommand struct {
 
 	Name string
 
-	CLI *cli.CLI
-	UI  cli.Ui
+	CLI              *cli.CLI
+	UI               cli.Ui
+	TelemetryService *telemetry.Service
 
 	client      api.Client
 	atlasClient mdbcloud.Client
@@ -63,7 +65,7 @@ func (c *BaseCommand) NewFlagSet() *flag.FlagSet {
 	set.StringVar(&c.flagBaseURL, "base-url", api.DefaultBaseURL, "")
 	set.StringVar(&c.flagAtlasBaseURL, "atlas-base-url", api.DefaultAtlasBaseURL, "")
 	set.StringVar(&c.flagConfigPath, "config-path", "", "")
-
+	set.BoolVar(&c.TelemetryService.NoTelemetry, "no-telemetry", false, "")
 	c.FlagSet = set
 
 	return set
@@ -187,6 +189,8 @@ func (c *BaseCommand) run(args []string) error {
 		c.UI.Info(url)
 	}
 
+	c.TelemetryService.Setup(c.Name)
+
 	if c.storage == nil {
 		path, err := homedir.Expand(c.flagConfigPath)
 		if err != nil {
@@ -208,6 +212,14 @@ func (c *BaseCommand) run(args []string) error {
 
 		c.storage = storage.New(fileStrategy)
 	}
+
+	user, err := c.User()
+	if err != nil {
+		return err
+	}
+
+	c.TelemetryService.SetUser(user.PublicAPIKey)
+	c.TelemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 	return nil
 }

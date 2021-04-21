@@ -5,6 +5,7 @@ import (
 
 	"github.com/10gen/realm-cli/api"
 	"github.com/10gen/realm-cli/auth"
+	"github.com/10gen/realm-cli/utils/telemetry"
 
 	"github.com/mitchellh/cli"
 )
@@ -16,12 +17,13 @@ const (
 )
 
 // NewLoginCommandFactory returns a new cli.CommandFactory given a cli.Ui
-func NewLoginCommandFactory(ui cli.Ui) cli.CommandFactory {
+func NewLoginCommandFactory(ui cli.Ui, telemetryService *telemetry.Service) cli.CommandFactory {
 	return func() (cli.Command, error) {
 		return &LoginCommand{
 			BaseCommand: &BaseCommand{
-				Name: "login",
-				UI:   ui,
+				Name:             "login",
+				UI:               ui,
+				TelemetryService: telemetryService,
 			},
 		}, nil
 	}

@@ -278,20 +278,21 @@ tasks:
 
             cd $ROOT_DIR/realm-cli
             export VERSION="${version}"
+            export SEGMENT_WRITE_KEY="${realm_cli_segment_write_key}"
             export GOARCH=amd64
             export GOOS=linux
             export OSARCH=linux-amd64
             echo "Building realm-cli for $GOOS on $GOARCH"
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH -X github.com/10gen/realm-cli/utils/telemetry.segmentWriteKey=$SEGMENT_WRITE_KEY\""
             eval go build $REPLACE_VARS -o realm-cli-linux-amd64 main.go
             export GOOS=darwin
             export OSARCH=macos-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH -X github.com/10gen/realm-cli/utils/telemetry.segmentWriteKey=$SEGMENT_WRITE_KEY\""
             echo "Building realm-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o realm-cli-macos-amd64 main.go
             export GOOS=windows
             export OSARCH=windows-amd64
-            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH\""
+            REPLACE_VARS="-ldflags \"-X github.com/10gen/realm-cli/utils.CLIVersion=$VERSION -X github.com/10gen/realm-cli/utils.cliOSArch=$OSARCH -X github.com/10gen/realm-cli/utils/telemetry.segmentWriteKey=$SEGMENT_WRITE_KEY\""
             echo "Building realm-cli for $GOOS on $GOARCH"
             eval go build $REPLACE_VARS -o realm-cli-windows-amd64 main.go
 
