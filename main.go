@@ -16,7 +16,7 @@ func main() {
 	c := cli.NewCLI(filepath.Base(os.Args[0]), utils.CLIVersion)
 	c.Args = os.Args[1:]
 
-	telemetryService := &telemetry.Service{}
+	telemetryService := &telemetry.Service{Tracker: &telemetry.NoopTracker{}}
 
 	var ui cli.Ui = &cli.BasicUi{
 		Reader:      os.Stdin,

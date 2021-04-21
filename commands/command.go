@@ -219,7 +219,6 @@ func (c *BaseCommand) run(args []string) error {
 	}
 
 	c.TelemetryService.SetUser(user.PublicAPIKey)
-	c.TelemetryService.SetVersion(utils.CLIVersion)
 	c.TelemetryService.TrackEvent(telemetry.EventTypeCommandStart)
 
 	return nil
