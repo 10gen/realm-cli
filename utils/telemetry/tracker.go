@@ -14,10 +14,10 @@ type Tracker interface {
 	Close()
 }
 
-type noopTracker struct{}
+type NoopTracker struct{}
 
-func (n *noopTracker) Track(event event) {}
-func (n *noopTracker) Close()            {}
+func (n *NoopTracker) Track(event event) {}
+func (n *NoopTracker) Close()            {}
 
 type segmentTracker struct {
 	client analytics.Client
@@ -25,7 +25,7 @@ type segmentTracker struct {
 
 func newSegmentTracker() Tracker {
 	if len(segmentWriteKey) == 0 {
-		return &noopTracker{}
+		return &NoopTracker{}
 	}
 	client := analytics.New(segmentWriteKey)
 	return &segmentTracker{client}
