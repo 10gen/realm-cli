@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/utils/api"
 
 	"github.com/edaniels/digest"
@@ -36,10 +36,10 @@ func NewClient(baseURL string) Client {
 }
 
 // NewAuthClient returns a new authenticated MongoDB Cloud Atlas client
-func NewAuthClient(baseURL string, user auth.User) Client {
+func NewAuthClient(baseURL string, creds user.Credentials) Client {
 	return &client{
 		baseURL:   baseURL,
-		transport: digest.NewTransport(user.PublicAPIKey, user.PrivateAPIKey),
+		transport: digest.NewTransport(creds.PublicAPIKey, creds.PrivateAPIKey),
 	}
 }
 

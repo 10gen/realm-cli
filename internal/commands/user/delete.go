@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
@@ -36,7 +37,7 @@ func (cmd *CommandDelete) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
@@ -90,7 +91,7 @@ type deleteInputs struct {
 	multiUserInputs
 }
 
-func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *deleteInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
 		return err
 	}

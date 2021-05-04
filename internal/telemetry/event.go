@@ -26,9 +26,10 @@ type EventType string
 
 // set of supported cli event types
 const (
-	EventTypeCommandStart    EventType = "COMMAND_START"
-	EventTypeCommandComplete EventType = "COMMAND_COMPLETE"
-	EventTypeCommandError    EventType = "COMMAND_ERROR"
+	EventTypeCommandStart        EventType = "COMMAND_START"
+	EventTypeCommandComplete     EventType = "COMMAND_COMPLETE"
+	EventTypeCommandError        EventType = "COMMAND_ERROR"
+	EventTypeCommandVersionCheck EventType = "COMMAND_VERSION_CHECK"
 )
 
 // set of event data keys

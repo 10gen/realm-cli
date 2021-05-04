@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
@@ -24,7 +25,7 @@ func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 }
 
 // Handler is the command handler
-func (cmd *CommandDelete) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	apps, err := cmd.inputs.resolveApps(ui, clients.Realm)
 	if err != nil {
 		return err

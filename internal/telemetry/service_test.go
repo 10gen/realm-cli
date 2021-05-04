@@ -20,11 +20,14 @@ func TestNewService(t *testing.T) {
 	t.Run("Should create the expected Service", func(t *testing.T) {
 		service := NewService(ModeStdout, testUser, testCommand, testVersion)
 
-		assert.Equal(t, testCommand, service.command)
-		assert.True(t, service.executionID != "", "service execution id must not be blank")
-		assert.Equal(t, testUser, service.userID)
-		assert.Equal(t, testVersion, service.version)
-		assert.NotNil(t, service.tracker)
+		s, ok := service.(*trackingService)
+		assert.True(t, ok, "should be a tracking service")
+
+		assert.Equal(t, testCommand, s.command)
+		assert.True(t, s.executionID != "", "service execution id must not be blank")
+		assert.Equal(t, testUser, s.userID)
+		assert.Equal(t, testVersion, s.version)
+		assert.NotNil(t, s.tracker)
 	})
 
 	t.Run("Should create a segment tracking service if the segmentWriteKey is there", func(t *testing.T) {
@@ -39,7 +42,8 @@ func TestNewService(t *testing.T) {
 func TestServiceTrackEvent(t *testing.T) {
 	t.Run("Should track the expected event", func(t *testing.T) {
 		tracker := &testTracker{}
-		service := &Service{
+
+		service := &trackingService{
 			command:     testCommand,
 			userID:      testUser,
 			version:     testVersion,
@@ -70,7 +74,7 @@ func (tracker *testTracker) Track(event event) {
 
 func (tracker *testTracker) Close() {}
 
-func newService(mode Mode) *Service {
+func newService(mode Mode) Service {
 	return NewService(mode, testUser, testCommand, testVersion)
 }
 

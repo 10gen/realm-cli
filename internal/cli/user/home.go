@@ -1,4 +1,4 @@
-package cli
+package user
 
 import (
 	"fmt"
@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	// DirProfile is the CLI profile directory
-	DirProfile = ".config/realm-cli"
+	servicePath = ".config/realm-cli"
 )
 
 // HomeDir returns the CLI home directory
@@ -17,5 +16,5 @@ func HomeDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s/%s", home, DirProfile), nil
+	return fmt.Sprintf("%s/%s", home, servicePath), nil
 }

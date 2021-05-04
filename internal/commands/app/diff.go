@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -28,7 +29,7 @@ type diffInputs struct {
 	cli.ProjectInputs
 }
 
-func (i *diffInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.LocalPath == "" {
 		i.LocalPath = profile.WorkingDirectory
 	}
@@ -55,7 +56,7 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandDiff) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err

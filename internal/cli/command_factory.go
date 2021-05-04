@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
@@ -19,18 +21,18 @@ import (
 
 // CommandFactory is a command factory
 type CommandFactory struct {
-	profile          *Profile
+	profile          *user.Profile
 	ui               terminal.UI
 	uiConfig         terminal.UIConfig
 	inReader         *os.File
 	outWriter        *os.File
 	errWriter        *os.File
-	telemetryService *telemetry.Service
+	telemetryService telemetry.Service
 }
 
 // NewCommandFactory creates a new command factory
 func NewCommandFactory() *CommandFactory {
-	profile, profileErr := NewDefaultProfile()
+	profile, profileErr := user.NewDefaultProfile()
 	if profileErr != nil {
 		log.Fatal(profileErr)
 	}
@@ -72,35 +74,19 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			cmd.SetOut(factory.outWriter)
 			cmd.SetErr(factory.errWriter)
 
-			if err := factory.profile.resolveFlags(); err != nil {
+			if err := factory.profile.ResolveFlags(); err != nil {
 				factory.ui.Print(terminal.NewErrorLog(err))
 				os.Exit(1)
 			}
 
 			factory.telemetryService = telemetry.NewService(
-				factory.profile.telemetryMode,
-				factory.profile.User().PublicAPIKey,
+				factory.profile.Flags.TelemetryMode,
+				factory.profile.Credentials().PublicAPIKey,
 				display,
 				Version,
 			)
 
-			// TODO(REALMC-8399): check for version, send any obvserved errors to Segment
-			// newVersion, err := checkVersion(http.DefaultClient)
-			// if err != nil {
-			// 	factory.telemetryService.TrackEvent(
-			// 		telemetry.EventTypeCommandError,
-			// 		telemetry.EventData{telemetry.EventDataKeyError, err},
-			// 	)
-			// }
-			// if newVersion != "" {
-			// 	factory.ui.Print(
-			// 		terminal.NewWarningLog(newVersion),
-			// 		// TODO(REALMC-8399): confirm this language
-			// 		terminal.NewDebugLog("Note: we only check the current version once per day, so this will be the only notice you see regarding this today"),
-			// 	)
-			//
-			// 	// check with product: consider prompting the user if they wish to continue or stop to download new version
-			// }
+			factory.checkForNewVersion(http.DefaultClient)
 		}
 
 		if command, ok := command.Command.(CommandInputs); ok {
@@ -117,7 +103,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 
 			err := command.Command.Handler(factory.profile, factory.ui, Clients{
 				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
-				Atlas:        atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.User()),
+				Atlas:        atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.Credentials()),
 				HostingAsset: http.DefaultClient,
 			})
 			if err != nil {
@@ -174,8 +160,8 @@ func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 	fs.SortFlags = false // ensures global flags are added unsorted
 
 	// profile flags
-	fs.StringVar(&factory.profile.Name, flagProfile, DefaultProfile, flagProfileUsage)
-	fs.Var(&factory.profile.telemetryMode, telemetry.FlagMode, telemetry.FlagModeUsage)
+	fs.StringVar(&factory.profile.Name, user.FlagProfile, user.DefaultProfile, user.FlagProfileUsage)
+	fs.Var(&factory.profile.Flags.TelemetryMode, telemetry.FlagMode, telemetry.FlagModeUsage)
 
 	// ui flags
 	fs.StringVarP(&factory.uiConfig.OutputTarget, terminal.FlagOutputTarget, terminal.FlagOutputTargetShort, "", terminal.FlagOutputTargetUsage)
@@ -184,11 +170,11 @@ func (factory *CommandFactory) SetGlobalFlags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&factory.uiConfig.AutoConfirm, terminal.FlagAutoConfirm, terminal.FlagAutoConfirmShort, false, terminal.FlagAutoConfirmUsage)
 
 	// hidden flags
-	fs.StringVar(&factory.profile.atlasBaseURL, flagAtlasBaseURL, "", flagAtlasBaseURLUsage)
-	flags.MarkHidden(fs, flagAtlasBaseURL)
+	fs.StringVar(&factory.profile.Flags.AtlasBaseURL, user.FlagAtlasBaseURL, "", user.FlagAtlasBaseURLUsage)
+	flags.MarkHidden(fs, user.FlagAtlasBaseURL)
 
-	fs.StringVar(&factory.profile.realmBaseURL, flagRealmBaseURL, "", flagRealmBaseURLUsage)
-	flags.MarkHidden(fs, flagRealmBaseURL)
+	fs.StringVar(&factory.profile.Flags.RealmBaseURL, user.FlagRealmBaseURL, "", user.FlagRealmBaseURLUsage)
+	flags.MarkHidden(fs, user.FlagRealmBaseURL)
 }
 
 // Setup initializes the command factory
@@ -204,6 +190,43 @@ func (factory *CommandFactory) Setup() {
 		}
 		factory.outWriter = f
 	}
+}
+
+func (factory *CommandFactory) checkForNewVersion(client VersionManifestClient) {
+	now := time.Now()
+	lastVersionCheck := factory.profile.LastVersionCheck()
+
+	// check once per day
+	if now.Year() == lastVersionCheck.Year() && now.Month() == lastVersionCheck.Month() && now.Day() == lastVersionCheck.Day() {
+		return
+	}
+
+	v, err := checkVersion(client)
+	if err != nil {
+		factory.telemetryService.TrackEvent(
+			telemetry.EventTypeCommandError,
+			telemetry.EventData{telemetry.EventDataKeyError, err},
+		)
+		return
+	}
+
+	defer factory.profile.SetLastVersionCheck(now)
+
+	if v.Semver == "" {
+		return
+	}
+
+	factory.ui.Print(
+		terminal.NewWarningLog("New version (v%s) of CLI available: %s", v.Semver, v.URL),
+		terminal.NewDebugLog("Note: This is the only time this alert will display today"),
+		terminal.NewFollowupLog(
+			"To install",
+			fmt.Sprintf("npm install -g mongodb-%s@v%s", Name, v.Semver),
+			fmt.Sprintf("curl -o ./mongodb-%s %s && chmod +x ./mongodb-%s", Name, v.URL, Name),
+		),
+	)
+
+	factory.telemetryService.TrackEvent(telemetry.EventTypeCommandVersionCheck)
 }
 
 func (factory *CommandFactory) ensureUI() {

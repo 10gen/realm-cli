@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -50,7 +51,7 @@ func (cmd *Command) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err

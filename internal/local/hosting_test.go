@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/api"
 	u "github.com/10gen/realm-cli/internal/utils/test"
@@ -33,7 +34,7 @@ func TestHostingFind(t *testing.T) {
 			assert.Nil(t, err)
 			defer teardown()
 
-			hostingDiffs, err := hosting.Diffs(filepath.Join(tmpDir, NameAssetCache, "test.json"), "", []realm.HostingAsset{
+			hostingDiffs, err := hosting.Diffs(filepath.Join(tmpDir, user.HostingAssetCacheDir, "test.json"), "", []realm.HostingAsset{
 				{HostingAssetData: realm.HostingAssetData{FilePath: "/deleteme.html"}},
 				{
 					HostingAssetData: realm.HostingAssetData{FilePath: "/404.html", FileHash: "7785338f982ac81219ef449f4943ec89"},

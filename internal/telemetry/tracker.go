@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"errors"
 	"fmt"
 
 	"gopkg.in/segmentio/analytics-go.v3"
@@ -16,34 +17,29 @@ type Tracker interface {
 	Close()
 }
 
-type noopTracker struct{}
-
-func (tracker *noopTracker) Track(event event) {}
-func (tracker *noopTracker) Close()            {}
-
 type stdoutTracker struct{}
 
-func (tracker *stdoutTracker) Track(event event) {
+func (tracker stdoutTracker) Track(event event) {
 	fmt.Printf("%s: %s%v\n", event.command, event.eventType, event.data)
 }
 
-func (tracker *stdoutTracker) Close() {}
+func (tracker stdoutTracker) Close() {}
 
 type segmentTracker struct {
 	client analytics.Client
 }
 
-func newSegmentTracker() Tracker {
+func newSegmentTracker() (Tracker, error) {
 	if len(segmentWriteKey) == 0 {
-		return &noopTracker{}
+		return nil, errors.New("no write key")
 	}
 
 	client, err := analytics.NewWithConfig(segmentWriteKey, analytics.Config{Logger: segmentNoopLogger{}})
 	if err != nil {
-		return &noopTracker{}
+		return nil, err
 	}
 
-	return &segmentTracker{client}
+	return &segmentTracker{client}, nil
 }
 
 func (tracker *segmentTracker) Track(event event) {

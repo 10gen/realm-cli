@@ -3,7 +3,7 @@ package realm_test
 import (
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -101,7 +101,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
 			// set the access token value to an expired token
-			profile.SetSession(auth.Session{u.ExpiredAccessToken(), session.RefreshToken})
+			profile.SetSession(user.Session{u.ExpiredAccessToken(), session.RefreshToken})
 
 			client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err = client.AuthProfile()
@@ -119,7 +119,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 			defer teardown()
 			profile.SetRealmBaseURL(u.RealmServerURL())
 			// set the access and refresh token values to expired tokens
-			profile.SetSession(auth.Session{u.ExpiredAccessToken(), u.ExpiredAccessToken()})
+			profile.SetSession(user.Session{u.ExpiredAccessToken(), u.ExpiredAccessToken()})
 
 			client := realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err := client.AuthProfile()

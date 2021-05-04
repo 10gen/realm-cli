@@ -3,7 +3,7 @@ package atlas_test
 import (
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -24,7 +24,7 @@ func TestAtlasGroups(t *testing.T) {
 		},
 		{
 			description: "With a client with bad credentials",
-			client:      atlas.NewAuthClient(u.AtlasServerURL(), auth.User{"username", "password"}),
+			client:      atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{"username", "password"}),
 			expectedErr: atlas.ErrUnauthorized{"You are not authorized for this resource."},
 		},
 	} {
@@ -44,5 +44,5 @@ func TestAtlasGroups(t *testing.T) {
 }
 
 func newAuthClient(t *testing.T) atlas.Client {
-	return atlas.NewAuthClient(u.AtlasServerURL(), auth.User{u.CloudUsername(), u.CloudAPIKey()})
+	return atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{u.CloudUsername(), u.CloudAPIKey()})
 }

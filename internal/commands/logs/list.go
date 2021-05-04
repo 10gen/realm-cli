@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
@@ -43,7 +44,7 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	cmdStart := time.Now() // for use with tail later
 
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())

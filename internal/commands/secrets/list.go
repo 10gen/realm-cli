@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -30,7 +31,7 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandList) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, appErr := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if appErr != nil {
 		return appErr
@@ -65,7 +66,7 @@ func tableRowsList(secrets []realm.Secret) []map[string]interface{} {
 	return rows
 }
 
-func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *listInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
 		return err
 	}

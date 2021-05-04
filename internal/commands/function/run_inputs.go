@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -29,7 +30,7 @@ type inputs struct {
 	User string
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.Name == "" {
 		if err := ui.AskOne(&i.Name, &survey.Input{Message: "Function Name"}); err != nil {
 			return err

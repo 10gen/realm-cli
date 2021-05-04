@@ -18,26 +18,29 @@ func TestVersionCheck(t *testing.T) {
 	defer func() { osArch = origOSArch }()
 
 	for _, tc := range []struct {
-		description string
-		nextVersion string
-		expectedMsg string
+		description     string
+		nextVersion     string
+		expectedMsg     string
+		expectedVersion string
 	}{
 		{
 			description: "should return nothing if the current version is not greater than the current version",
 			nextVersion: "0.0.0",
 		},
 		{
-			description: "should return a helpful message if there is a newer version",
-			nextVersion: "0.1.0",
-			expectedMsg: "New version (v0.1.0) of CLI available: http://whatever.com/test",
+			description:     "should return a helpful message if there is a newer version",
+			nextVersion:     "0.1.0",
+			expectedMsg:     "http://whatever.com/test",
+			expectedVersion: "0.1.0",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			client := testClient{http.StatusOK, tc.nextVersion, osArch, "http://whatever.com/test"}
 
-			versionMsg, err := checkVersion(client)
+			v, err := checkVersion(client)
 			assert.Nil(t, err)
-			assert.Equal(t, tc.expectedMsg, versionMsg)
+			assert.Equal(t, tc.expectedMsg, v.URL)
+			assert.Equal(t, tc.expectedVersion, v.Semver)
 		})
 	}
 

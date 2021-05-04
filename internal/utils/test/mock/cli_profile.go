@@ -4,8 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -14,9 +13,9 @@ import (
 )
 
 // NewProfile returns a new CLI profile with a random name
-func NewProfile(t *testing.T) *cli.Profile {
+func NewProfile(t *testing.T) *user.Profile {
 	t.Helper()
-	profile, err := cli.NewProfile(primitive.NewObjectID().Hex())
+	profile, err := user.NewProfile(primitive.NewObjectID().Hex())
 	assert.Nil(t, err)
 	return profile
 }
@@ -24,7 +23,7 @@ func NewProfile(t *testing.T) *cli.Profile {
 // NewProfileFromTmpDir returns a new CLI profile with a random name
 // and a current working directory based on a temporary directory
 // along with the associated cleanup function
-func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
+func NewProfileFromTmpDir(t *testing.T, name string) (*user.Profile, func()) {
 	t.Helper()
 
 	tmpDir, teardown, err := u.NewTempDir(name)
@@ -44,7 +43,7 @@ func NewProfileFromTmpDir(t *testing.T, name string) (*cli.Profile, func()) {
 
 // NewProfileFromWd returns a new CLI profile with a random name
 // and the current working directory
-func NewProfileFromWd(t *testing.T) *cli.Profile {
+func NewProfileFromWd(t *testing.T) *user.Profile {
 	t.Helper()
 
 	wd, err := os.Getwd()
@@ -57,9 +56,9 @@ func NewProfileFromWd(t *testing.T) *cli.Profile {
 }
 
 // NewProfileWithSession returns a new CLI profile with a session
-func NewProfileWithSession(t *testing.T, session realm.Session) *cli.Profile {
+func NewProfileWithSession(t *testing.T, session realm.Session) *user.Profile {
 	profile := NewProfile(t)
 	profile.SetRealmBaseURL(u.RealmServerURL())
-	profile.SetSession(auth.Session{session.AccessToken, session.RefreshToken})
+	profile.SetSession(user.Session{session.AccessToken, session.RefreshToken})
 	return profile
 }

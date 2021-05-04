@@ -74,20 +74,28 @@ func (c *client) AuthProfile() (AuthProfile, error) {
 }
 
 func (c *client) getAuthToken(options api.RequestOptions) (string, error) {
-	session := c.authService.Session()
+	requiresAccessToken := !options.NoAuth
+	requiresRefreshToken := options.RefreshAuth
 
-	if options.RefreshAuth {
-		if session.RefreshToken == "" {
+	if requiresAccessToken || requiresRefreshToken {
+		if c.profile == nil {
 			return "", ErrInvalidSession{}
 		}
-		return session.RefreshToken, nil
-	}
 
-	if !options.NoAuth {
-		if session.AccessToken == "" {
-			return "", ErrInvalidSession{}
+		session := c.profile.Session()
+		if requiresRefreshToken {
+			if session.RefreshToken == "" {
+				return "", ErrInvalidSession{}
+			}
+			return session.RefreshToken, nil
 		}
-		return session.AccessToken, nil
+
+		if requiresAccessToken {
+			if session.AccessToken == "" {
+				return "", ErrInvalidSession{}
+			}
+			return session.AccessToken, nil
+		}
 	}
 
 	return "", nil
@@ -112,11 +120,11 @@ func (c *client) refreshAuth() error {
 		return err
 	}
 
-	session := c.authService.Session()
+	session := c.profile.Session()
 	session.AccessToken = s.AccessToken
-	c.authService.SetSession(session)
+	c.profile.SetSession(session)
 
-	return c.authService.Save()
+	return c.profile.Save()
 }
 
 // AllGroupIDs returns all group ids associated with the user's profile
