@@ -57,7 +57,7 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("and should properly pass through the expected inputs")
-		assert.Equal(t, realm.AppFilter{"groupID", "appID"}, capturedFilter)
+		assert.Equal(t, realm.AppFilter{"groupID", "appID", nil}, capturedFilter)
 	})
 
 	t.Run("should return an error if the command fails to resolve group id", func(t *testing.T) {

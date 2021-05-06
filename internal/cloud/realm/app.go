@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"strings"
 
@@ -83,20 +84,30 @@ func (c *client) DeleteApp(groupID, appID string) error {
 
 // AppFilter represents the optional filter parameters available for lists of apps
 type AppFilter struct {
-	GroupID string
-	App     string // can be client app id or name
+	GroupID  string
+	App      string // can be client app id or name
+	Products []string
 }
+
+const (
+	productStandard = "standard"
+	productAtlas    = "atlas"
+)
+
+var (
+	defaultProducts = []string{productStandard, productAtlas}
+)
 
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
 	var apps []App
 	if filter.GroupID == "" {
-		arr, err := c.getAppsForUser()
+		arr, err := c.getAppsForUser(filter.Products)
 		if err != nil {
 			return nil, err
 		}
 		apps = arr
 	} else {
-		arr, err := c.getApps(filter.GroupID)
+		arr, err := c.getApps(filter.GroupID, filter.Products)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +127,7 @@ func (c *client) FindApps(filter AppFilter) ([]App, error) {
 	return filtered, nil
 }
 
-func (c *client) getAppsForUser() ([]App, error) {
+func (c *client) getAppsForUser(products []string) ([]App, error) {
 	profile, profileErr := c.AuthProfile()
 	if profileErr != nil {
 		return nil, profileErr
@@ -124,7 +135,7 @@ func (c *client) getAppsForUser() ([]App, error) {
 
 	var apps []App
 	for _, groupID := range profile.AllGroupIDs() {
-		projectApps, err := c.getApps(groupID)
+		projectApps, err := c.getApps(groupID, products)
 		if err != nil {
 			return nil, err
 		}
@@ -133,14 +144,45 @@ func (c *client) getAppsForUser() ([]App, error) {
 	return apps, nil
 }
 
-func (c *client) getApps(groupID string) ([]App, error) {
-	res, resErr := c.do(
-		http.MethodGet,
-		fmt.Sprintf(appsPathPattern, groupID),
-		api.RequestOptions{},
-	)
-	if resErr != nil {
-		return nil, resErr
+func (c *client) getApps(groupID string, products []string) ([]App, error) {
+	allProducts := resolveProducts(products)
+
+	var apps []App
+	for _, product := range allProducts {
+		productApps, err := c.getAppsForProduct(groupID, product)
+		if err != nil {
+			return nil, err
+		}
+		apps = append(apps, productApps...)
+	}
+	return apps, nil
+}
+
+func resolveProducts(products []string) []string {
+	allCap := math.Max(float64(len(defaultProducts)), float64(len(products)))
+
+	allProducts := make([]string, 0, int(allCap))
+	allProducts = append(allProducts, products...)
+
+	if len(allProducts) == 0 {
+		allProducts = append(allProducts, defaultProducts...)
+	}
+
+	return allProducts
+}
+
+func (c *client) getAppsForProduct(groupID, product string) ([]App, error) {
+	// TODO(REALMC-8886): add tests to verify correct url is being hit
+	url := fmt.Sprintf(appsPathPattern, groupID)
+	switch product {
+	case "", productStandard: // default/empty is considered standard
+	default:
+		url += "?product=" + product
+	}
+
+	res, err := c.do(http.MethodGet, url, api.RequestOptions{})
+	if err != nil {
+		return nil, err
 	}
 	if res.StatusCode == http.StatusNotFound {
 		return nil, errors.New("group could not be found")

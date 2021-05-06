@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
@@ -35,7 +36,7 @@ type datamodelsInputs struct {
 	nameSet   map[string]struct{}
 }
 
-func (i *datamodelsInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *datamodelsInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.Language == "" {
 		options, typesByOption := make([]string, len(allLanguages)), map[interface{}]language{}
 		for i, l := range allLanguages {

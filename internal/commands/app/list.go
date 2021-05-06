@@ -5,7 +5,6 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -23,7 +22,7 @@ func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	apps, err := clients.Realm.FindApps(realm.AppFilter{cmd.inputs.Project, cmd.inputs.App})
+	apps, err := clients.Realm.FindApps(cmd.inputs.Filter())
 	if err != nil {
 		return err
 	}

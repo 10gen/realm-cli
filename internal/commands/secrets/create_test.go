@@ -55,7 +55,7 @@ func TestSecretsCreateHandler(t *testing.T) {
 		assert.Equal(t, "Successfully created secret, id: secretID\n", out.String())
 
 		t.Log("and should properly pass through the expected inputs")
-		assert.Equal(t, realm.AppFilter{projectID, appID}, capturedFilter)
+		assert.Equal(t, realm.AppFilter{projectID, appID, nil}, capturedFilter)
 		assert.Equal(t, projectID, capturedGroupID)
 		assert.Equal(t, appID, capturedAppID)
 		assert.Equal(t, secretName, capturedName)

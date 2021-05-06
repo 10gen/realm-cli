@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -33,7 +34,7 @@ func (cmd *CommandDatamodels) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandDatamodels) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDatamodels) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
@@ -180,7 +181,7 @@ var (
 	}
 )
 
-func modelAlertTableRow(profile *cli.Profile, app realm.App, model realm.SchemaModel, alert realm.SchemaModelAlert) map[string]interface{} {
+func modelAlertTableRow(profile *user.Profile, app realm.App, model realm.SchemaModel, alert realm.SchemaModelAlert) map[string]interface{} {
 	return map[string]interface{}{
 		modelWarningsTableHeaderCollection: model.Namespace,
 		modelWarningsTableHeaderModelName:  model.Name,
