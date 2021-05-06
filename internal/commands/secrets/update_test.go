@@ -71,7 +71,7 @@ func TestSecretUpdateHandler(t *testing.T) {
 			}
 
 			cmd := &CommandUpdate{updateInputs{
-				cli.ProjectInputs{projectID, appID},
+				cli.ProjectInputs{projectID, appID, nil},
 				tc.testSecret,
 				tc.testName,
 				tc.testValue,

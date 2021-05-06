@@ -21,16 +21,20 @@ const (
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
+
+	flagProduct      = "product"
+	flagProductUsage = "the Realm app product (can be specified multiple times)"
 )
 
 // ProjectInputs are the project/app inputs for a command
 type ProjectInputs struct {
-	Project string
-	App     string
+	Project  string
+	App      string
+	Products []string
 }
 
 // Filter returns a realm.AppFlter based on the inputs
-func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App} }
+func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App, i.Products} }
 
 // Flags registers the project app input flags to the provided flag set
 func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
@@ -38,6 +42,9 @@ func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)
+
+	fs.StringSliceVar(&i.Products, flagProduct, []string{}, flagProductUsage)
+	flags.MarkHidden(fs, flagProduct)
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
