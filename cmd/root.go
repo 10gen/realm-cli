@@ -40,6 +40,7 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Whoami))
 	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Logs))
+	cmd.AddCommand(factory.Build(commands.Schema))
 
 	factory.Run(cmd)
 }

@@ -68,6 +68,8 @@ type Client interface {
 
 	Logs(groupID, appID string, opts LogsOptions) (Logs, error)
 
+	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
+
 	Status() error
 }
 
