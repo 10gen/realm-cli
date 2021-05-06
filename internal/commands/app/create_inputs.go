@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -60,7 +61,7 @@ type configDataLake struct {
 	DataLakeName string `json:"dataLakeName"`
 }
 
-func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.RemoteApp == "" {
 		if i.Name == "" {
 			if err := ui.AskOne(&i.Name, &survey.Input{Message: "App Name"}); err != nil {

@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/spf13/pflag"
@@ -11,7 +12,7 @@ type describeInputs struct {
 	cli.ProjectInputs
 }
 
-func (i *describeInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *describeInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
 }
 
@@ -31,7 +32,7 @@ func (cmd *CommandDescribe) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandDescribe) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDescribe) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err

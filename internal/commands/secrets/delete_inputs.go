@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -15,7 +16,7 @@ type deleteInputs struct {
 	secrets []string
 }
 
-func (i *deleteInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *deleteInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
 		return err
 	}

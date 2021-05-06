@@ -1,7 +1,7 @@
 package app
 
 import (
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -13,7 +13,7 @@ type initInputs struct {
 	newAppInputs
 }
 
-func (i *initInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *initInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	app, appErr := local.LoadAppConfig(profile.WorkingDirectory)
 	if appErr != nil {
 		return appErr

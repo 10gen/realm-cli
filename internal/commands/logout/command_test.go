@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -24,14 +24,14 @@ func TestLogoutHandler(t *testing.T) {
 
 		profile := mock.NewProfile(t)
 
-		profile.SetUser(auth.User{"username", "password"})
-		profile.SetSession(auth.Session{"accessToken", "refreshToken"})
+		profile.SetCredentials(user.Credentials{"username", "password"})
+		profile.SetSession(user.Session{"accessToken", "refreshToken"})
 		assert.Nil(t, profile.Save())
 
-		user := profile.User()
+		creds := profile.Credentials()
 		session := profile.Session()
-		assert.Equal(t, auth.User{"username", "password"}, user)
-		assert.Equal(t, auth.Session{"accessToken", "refreshToken"}, session)
+		assert.Equal(t, user.Credentials{"username", "password"}, creds)
+		assert.Equal(t, user.Session{"accessToken", "refreshToken"}, session)
 
 		out, err := ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
@@ -48,8 +48,8 @@ func TestLogoutHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
-		assert.Equal(t, auth.User{PublicAPIKey: "username"}, profile.User())
-		assert.Equal(t, auth.Session{}, profile.Session())
+		assert.Equal(t, user.Credentials{PublicAPIKey: "username"}, profile.Credentials())
+		assert.Equal(t, user.Session{}, profile.Session())
 
 		out, err = ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)

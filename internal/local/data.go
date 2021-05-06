@@ -51,10 +51,9 @@ const (
 	NameCustomResolvers = "custom_resolvers"
 
 	// hosting
-	NameHosting    = "hosting"
-	NameFiles      = "files"
-	NameMetadata   = "metadata"
-	NameAssetCache = ".asset-cache"
+	NameHosting  = "hosting"
+	NameFiles    = "files"
+	NameMetadata = "metadata"
 
 	// services
 	NameDataSources      = "data_sources"

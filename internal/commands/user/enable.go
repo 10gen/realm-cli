@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -33,7 +34,7 @@ func (cmd *CommandEnable) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandEnable) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ func (cmd *CommandEnable) Handler(profile *cli.Profile, ui terminal.UI, clients 
 	return nil
 }
 
-func (i *enableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *enableInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false)
 }
 

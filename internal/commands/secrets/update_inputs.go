@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -17,7 +18,7 @@ type updateInputs struct {
 	value  string
 }
 
-func (i *updateInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
 		return err
 	}

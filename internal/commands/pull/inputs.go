@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -51,7 +52,7 @@ type inputs struct {
 	DryRun              bool
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	wd := i.LocalPath
 	if wd == "" {
 		wd = profile.WorkingDirectory

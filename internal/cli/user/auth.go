@@ -1,18 +1,8 @@
-package auth
+package user
 
 import (
 	"strings"
 )
-
-// Service is an auth service
-type Service interface {
-	ClearSession()
-	Save() error
-	Session() Session
-	SetSession(session Session)
-	User() User
-	SetUser(user User)
-}
 
 // Session is the CLI profile session
 type Session struct {
@@ -20,19 +10,19 @@ type Session struct {
 	RefreshToken string
 }
 
-// User is the CLI profile user
-type User struct {
+// Credentials are the user credentials
+type Credentials struct {
 	PublicAPIKey  string
 	PrivateAPIKey string
 }
 
 // RedactedPrivateAPIKey returns the user's private API key with sensitive information redacted
-func (u User) RedactedPrivateAPIKey() string {
+func (creds Credentials) RedactedPrivateAPIKey() string {
 	redact := func(s string) string {
 		return strings.Repeat("*", len(s))
 	}
 
-	parts := strings.Split(u.PrivateAPIKey, "-")
+	parts := strings.Split(creds.PrivateAPIKey, "-")
 	switch len(parts) {
 	case 0:
 		return ""

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -43,7 +44,7 @@ func (cmd *Command) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
@@ -131,7 +132,7 @@ func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Cl
 	return nil
 }
 
-func (cmd *Command) doExport(profile *cli.Profile, realmClient realm.Client, groupID, appID string) (string, *zip.Reader, error) {
+func (cmd *Command) doExport(profile *user.Profile, realmClient realm.Client, groupID, appID string) (string, *zip.Reader, error) {
 	name, zipPkg, err := realmClient.Export(
 		groupID,
 		appID,

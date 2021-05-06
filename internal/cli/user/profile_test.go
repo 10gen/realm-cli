@@ -1,4 +1,4 @@
-package cli_test
+package user_test
 
 import (
 	"fmt"
@@ -6,8 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli"
-	"github.com/10gen/realm-cli/internal/local"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
@@ -20,12 +19,12 @@ func TestProfile(t *testing.T) {
 	_, teardownHomeDir := u.SetupHomeDir(tmpDir)
 	defer teardownHomeDir()
 
-	profile, profileErr := cli.NewDefaultProfile()
+	profile, profileErr := user.NewDefaultProfile()
 	assert.Nil(t, profileErr)
 
 	t.Run("Should initialize as an empty, default profile", func(t *testing.T) {
-		assert.Equal(t, cli.DefaultProfile, profile.Name)
-		assert.Equal(t, fmt.Sprintf("%s/%s", tmpDir, cli.DirProfile), profile.Dir())
+		assert.Equal(t, user.DefaultProfile, profile.Name)
+		assert.Equal(t, tmpDir+"/.config/realm-cli", profile.Dir())
 	})
 
 	t.Run("Should load a config that does not exist without error", func(t *testing.T) {
@@ -52,7 +51,7 @@ func TestProfile(t *testing.T) {
 	})
 
 	t.Run("Should provide a path the the hosting asset cache file", func(t *testing.T) {
-		cachePath := fmt.Sprintf("%s/%s/%s.json", profile.Dir(), local.NameAssetCache, profile.Name)
+		cachePath := fmt.Sprintf("%s/%s/%s.json", profile.Dir(), user.HostingAssetCacheDir, profile.Name)
 		assert.Equal(t, cachePath, profile.HostingAssetCachePath())
 	})
 }

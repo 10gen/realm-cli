@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
@@ -75,17 +75,17 @@ type Client interface {
 
 // NewClient creates a new Realm client
 func NewClient(baseURL string) Client {
-	return &client{baseURL, noopAuth{}}
+	return &client{baseURL, nil}
 }
 
 // NewAuthClient creates a new Realm client capable of managing the user's session
-func NewAuthClient(baseURL string, authService auth.Service) Client {
-	return &client{baseURL, authService}
+func NewAuthClient(baseURL string, profile *user.Profile) Client {
+	return &client{baseURL, profile}
 }
 
 type client struct {
-	baseURL     string
-	authService auth.Service
+	baseURL string
+	profile *user.Profile
 }
 
 func (c *client) doJSON(method, path string, payload interface{}, options api.RequestOptions) (*http.Response, error) {
@@ -140,8 +140,8 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	}
 
 	if refreshErr := c.refreshAuth(); refreshErr != nil {
-		c.authService.ClearSession()
-		if err := c.authService.Save(); err != nil {
+		c.profile.ClearSession()
+		if err := c.profile.Save(); err != nil {
 			return nil, ErrInvalidSession{}
 		}
 		return nil, ErrInvalidSession{}
@@ -151,19 +151,3 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 
 	return c.do(method, path, options)
 }
-
-type noopAuth struct{}
-
-func (sm noopAuth) ClearSession() {}
-
-func (sm noopAuth) ClearUser() {}
-
-func (sm noopAuth) Save() error { return nil }
-
-func (sm noopAuth) Session() auth.Session { return auth.Session{} }
-
-func (sm noopAuth) SetSession(session auth.Session) {}
-
-func (sm noopAuth) User() auth.User { return auth.User{} }
-
-func (sm noopAuth) SetUser(user auth.User) {}

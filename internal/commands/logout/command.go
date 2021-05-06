@@ -2,6 +2,7 @@ package logout
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 )
 
@@ -9,11 +10,11 @@ import (
 type Command struct{}
 
 // Handler is the command handler
-func (cmd *Command) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
-	user := profile.User()
+func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
+	user := profile.Credentials()
 	user.PrivateAPIKey = "" // ensures subsequent `login` commands prompt for password
 
-	profile.SetUser(user)
+	profile.SetCredentials(user)
 	profile.ClearSession()
 
 	if err := profile.Save(); err != nil {

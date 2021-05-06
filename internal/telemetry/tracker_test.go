@@ -41,19 +41,21 @@ const (
 
 var testTime = time.Date(2021, 1, 2, 3, 4, 5, 6, time.UTC)
 
-func TestNoopTracker(t *testing.T) {
-	t.Run("should create a noop tracker and should not do anything when track is called", func(t *testing.T) {
-		tracker := noopTracker{}
-		testEvent := createEvent(EventTypeCommandStart, nil, testCommand)
-		testTrackerOutput(t, &tracker, testEvent, "")
-	})
-}
-
 func TestStdoutTracker(t *testing.T) {
 	t.Run("should create an stdout tracker and should print the tracking information to stdout", func(t *testing.T) {
 		tracker := stdoutTracker{}
 		testEvent := createEvent(EventTypeCommandComplete, nil, testCommand)
-		testTrackerOutput(t, &tracker, testEvent, "command: COMMAND_COMPLETE[]\n")
+
+		r, w, resetStdout := mockStdoutSetup(t)
+		defer resetStdout()
+
+		tracker.Track(testEvent)
+
+		assert.Nil(t, w.Close())
+
+		out, err := ioutil.ReadAll(r)
+		assert.Nil(t, err)
+		assert.Equal(t, "command: COMMAND_COMPLETE[]\n", string(out))
 	})
 }
 
@@ -99,21 +101,6 @@ func TestSegmentTracker(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "", string(out))
 	})
-}
-
-func testTrackerOutput(t *testing.T, tracker Tracker, event event, expectedOutput string) {
-	t.Helper()
-
-	r, w, resetStdout := mockStdoutSetup(t)
-	defer resetStdout()
-
-	tracker.Track(event)
-
-	assert.Nil(t, w.Close())
-
-	out, err := ioutil.ReadAll(r)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedOutput, string(out))
 }
 
 func createEvent(eventType EventType, data []EventData, command string) event {

@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
@@ -28,7 +29,7 @@ func (cmd *CommandDisable) Inputs() cli.InputResolver {
 }
 
 // Handler is the command handler
-func (cmd *CommandDisable) Handler(profile *cli.Profile, ui terminal.UI, clients cli.Clients) error {
+func (cmd *CommandDisable) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
 		return err
@@ -81,7 +82,7 @@ type disableInputs struct {
 	multiUserInputs
 }
 
-func (i *disableInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *disableInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false)
 }
 

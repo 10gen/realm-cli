@@ -1,7 +1,7 @@
 package login
 
 import (
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -22,8 +22,8 @@ type inputs struct {
 	PrivateAPIKey string
 }
 
-func (i *inputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
-	user := profile.User()
+func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	user := profile.Credentials()
 	var questions []*survey.Question
 
 	if i.PublicAPIKey == "" {

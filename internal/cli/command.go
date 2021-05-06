@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -25,7 +26,7 @@ import (
 // At any point should an error occur, command execution will terminate
 // and the ensuing steps will not be run
 type Command interface {
-	Handler(profile *Profile, ui terminal.UI, clients Clients) error
+	Handler(profile *user.Profile, ui terminal.UI, clients Clients) error
 }
 
 // Clients are the CLI clients
@@ -47,7 +48,7 @@ type CommandInputs interface {
 
 // InputResolver provides access for command inputs to resolve missing data
 type InputResolver interface {
-	Resolve(profile *Profile, ui terminal.UI) error
+	Resolve(profile *user.Profile, ui terminal.UI) error
 }
 
 // CommandDefinition is a command's definition that the CommandFactory

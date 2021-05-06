@@ -2,6 +2,7 @@ package secrets
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 
 	"github.com/AlecAivazis/survey/v2"
@@ -18,7 +19,7 @@ type createInputs struct {
 	Value string
 }
 
-func (i *createInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	var questions []*survey.Question
 
 	if i.Name == "" {

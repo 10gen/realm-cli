@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -48,17 +48,17 @@ func TestLoginHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-		expectedUser := auth.User{"publicAPIKey", "privateAPIKey"}
-		expectedSession := auth.Session{"accessToken", "refreshToken"}
+		expectedUser := user.Credentials{"publicAPIKey", "privateAPIKey"}
+		expectedSession := user.Session{"accessToken", "refreshToken"}
 
-		assert.Equal(t, expectedUser, profile.User())
+		assert.Equal(t, expectedUser, profile.Credentials())
 		assert.Equal(t, expectedSession, profile.Session())
 
 		ensureProfileContents(t, profile, expectedUser, expectedSession)
 	})
 
 	t.Run("with existing credentials", func(t *testing.T) {
-		setup := func(t *testing.T) (*cli.Profile, realm.Client, func()) {
+		setup := func(t *testing.T) (*user.Profile, realm.Client, func()) {
 			tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
 			assert.Nil(t, tmpDirErr)
 
@@ -66,8 +66,8 @@ func TestLoginHandler(t *testing.T) {
 
 			profile := mock.NewProfile(t)
 
-			profile.SetUser(auth.User{"existingUser", "existing-password"})
-			profile.SetSession(auth.Session{"existingAccessToken", "existingRefreshToken"})
+			profile.SetCredentials(user.Credentials{"existingUser", "existing-password"})
+			profile.SetSession(user.Session{"existingAccessToken", "existingRefreshToken"})
 			assert.Nil(t, profile.Save())
 
 			realmClient := mock.RealmClient{}
@@ -97,10 +97,10 @@ func TestLoginHandler(t *testing.T) {
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-			expectedUser := auth.User{"existingUser", "existing-password"}
-			expectedSession := auth.Session{"newAccessToken", "newRefreshToken"}
+			expectedUser := user.Credentials{"existingUser", "existing-password"}
+			expectedSession := user.Session{"newAccessToken", "newRefreshToken"}
 
-			assert.Equal(t, expectedUser, profile.User())
+			assert.Equal(t, expectedUser, profile.Credentials())
 			assert.Equal(t, expectedSession, profile.Session())
 
 			ensureProfileContents(t, profile, expectedUser, expectedSession)
@@ -110,20 +110,20 @@ func TestLoginHandler(t *testing.T) {
 			for _, tc := range []struct {
 				description     string
 				confirmAnswer   string
-				expectedUser    auth.User
-				expectedSession auth.Session
+				expectedUser    user.Credentials
+				expectedSession user.Session
 			}{
 				{
 					description:     "And do nothing if the user does not want to proceed",
 					confirmAnswer:   "n",
-					expectedUser:    auth.User{"existingUser", "existing-password"},
-					expectedSession: auth.Session{"existingAccessToken", "existingRefreshToken"},
+					expectedUser:    user.Credentials{"existingUser", "existing-password"},
+					expectedSession: user.Session{"existingAccessToken", "existingRefreshToken"},
 				},
 				{
 					description:     "And save a new session if the user does want to proceed",
 					confirmAnswer:   "y",
-					expectedUser:    auth.User{"newUser", "new-password"},
-					expectedSession: auth.Session{"newAccessToken", "newRefreshToken"},
+					expectedUser:    user.Credentials{"newUser", "new-password"},
+					expectedSession: user.Session{"newAccessToken", "newRefreshToken"},
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestLoginHandler(t *testing.T) {
 					assert.Nil(t, console.Tty().Close())
 					<-doneCh
 
-					assert.Equal(t, tc.expectedUser, profile.User())
+					assert.Equal(t, tc.expectedUser, profile.Credentials())
 					assert.Equal(t, tc.expectedSession, profile.Session())
 					ensureProfileContents(t, profile, tc.expectedUser, tc.expectedSession)
 				})
@@ -180,7 +180,7 @@ func TestLoginFeedback(t *testing.T) {
 	})
 }
 
-func ensureProfileContents(t *testing.T, profile *cli.Profile, user auth.User, session auth.Session) {
+func ensureProfileContents(t *testing.T, profile *user.Profile, user user.Credentials, session user.Session) {
 	contents, err := ioutil.ReadFile(profile.Path())
 	assert.Nil(t, err)
 	assert.True(t, strings.Contains(string(contents), fmt.Sprintf(`%s:
@@ -192,7 +192,7 @@ func ensureProfileContents(t *testing.T, profile *cli.Profile, user auth.User, s
 }
 
 type testContext struct {
-	profile     *cli.Profile
+	profile     *user.Profile
 	realmClient realm.Client
 	teardown    func()
 }
@@ -207,8 +207,8 @@ func setup(t *testing.T) testContext {
 
 	profile := mock.NewProfile(t)
 
-	profile.SetUser(auth.User{"existingUser", "existing-password"})
-	profile.SetSession(auth.Session{"existingAccessToken", "existingRefreshToken"})
+	profile.SetCredentials(user.Credentials{"existingUser", "existing-password"})
+	profile.SetSession(user.Session{"existingAccessToken", "existingRefreshToken"})
 	assert.Nil(t, profile.Save())
 
 	realmClient := mock.RealmClient{}

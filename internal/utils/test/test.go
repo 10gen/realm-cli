@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -137,7 +137,7 @@ var SkipUnlessAtlasServerRunning = func() func(t *testing.T) {
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())
 			return
 		}
-		client := atlas.NewAuthClient(AtlasServerURL(), auth.User{CloudUsername(), CloudAPIKey()})
+		client := atlas.NewAuthClient(AtlasServerURL(), user.Credentials{CloudUsername(), CloudAPIKey()})
 		if err := client.Status(); err != nil {
 			atlasServerNotRunning = true
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())

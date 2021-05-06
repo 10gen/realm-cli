@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
@@ -38,7 +39,7 @@ type listInputs struct {
 	sigShutdown chan os.Signal
 }
 
-func (i *listInputs) Resolve(profile *cli.Profile, ui terminal.UI) error {
+func (i *listInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	i.sigShutdown = make(chan os.Signal, 1)
 	signal.Notify(i.sigShutdown, syscall.SIGTERM, syscall.SIGINT)
 

@@ -3,8 +3,7 @@ package login
 import (
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/auth"
-	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 	"github.com/Netflix/go-expect"
@@ -14,7 +13,7 @@ func TestLoginInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         inputs
-		prepareProfile func(p *cli.Profile)
+		prepareProfile func(p *user.Profile)
 		procedure      func(c *expect.Console)
 		test           func(t *testing.T, i inputs)
 	}{
@@ -23,7 +22,7 @@ func TestLoginInputs(t *testing.T) {
 			inputs: inputs{
 				PrivateAPIKey: "password",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key")
 				c.SendLine("username")
@@ -37,7 +36,7 @@ func TestLoginInputs(t *testing.T) {
 			inputs: inputs{
 				PublicAPIKey: "username",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Private API Key")
 				c.SendLine("password")
@@ -49,7 +48,7 @@ func TestLoginInputs(t *testing.T) {
 		},
 		{
 			description:    "Should prompt for both api keys when not provided",
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("API Key")
 				c.SendLine("username")
@@ -68,7 +67,7 @@ func TestLoginInputs(t *testing.T) {
 				PublicAPIKey:  "username",
 				PrivateAPIKey: "password",
 			},
-			prepareProfile: func(p *cli.Profile) {},
+			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
 				// c.ExpectEOF()
 			},
@@ -79,8 +78,8 @@ func TestLoginInputs(t *testing.T) {
 		},
 		{
 			description: "Should not prompt for inputs when profile provides the data",
-			prepareProfile: func(p *cli.Profile) {
-				p.SetUser(auth.User{"username", "password"})
+			prepareProfile: func(p *user.Profile) {
+				p.SetCredentials(user.Credentials{"username", "password"})
 			},
 			procedure: func(c *expect.Console) {
 				c.ExpectEOF()
