@@ -143,11 +143,11 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 		}
 
 		logs := []terminal.Log{terminal.NewErrorLog(err)}
-		if e, ok := err.(CommandSuggester); ok {
-			logs = append(logs, terminal.NewFollowupLog(terminal.MsgSuggestedCommands, e.SuggestedCommands()))
+		if e, ok := err.(Suggester); ok {
+			logs = append(logs, terminal.NewFollowupLog(terminal.MsgSuggestions, e.Suggestions()))
 		}
 		if e, ok := err.(LinkReferrer); ok {
-			logs = append(logs, terminal.NewFollowupLog(terminal.MsgSuggestedCommands, e.ReferenceLinks()))
+			logs = append(logs, terminal.NewFollowupLog(terminal.MsgReferenceLinks, e.ReferenceLinks()))
 		}
 
 		factory.ui.Print(logs...)
