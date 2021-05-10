@@ -22,16 +22,16 @@ type AppStructureV2 struct {
 	Environments          map[string]map[string]interface{} `json:"environments,omitempty"`
 	AllowedRequestOrigins []string                          `json:"allowed_request_origins,omitempty"`
 	Values                []map[string]interface{}          `json:"values,omitempty"`
-	Auth                  *AuthStructure                    `json:"auth,omitempty"`
-	Functions             *FunctionsStructure               `json:"functions,omitempty"`
+	Auth                  AuthStructure                     `json:"auth,omitempty"`
+	Functions             FunctionsStructure                `json:"functions,omitempty"`
 	Triggers              []map[string]interface{}          `json:"triggers,omitempty"`
 	DataSources           []DataSourceStructure             `json:"data_sources,omitempty"`
 	HTTPEndpoints         []HTTPEndpointStructure           `json:"http_endpoints,omitempty"`
 	Services              []ServiceStructure                `json:"services,omitempty"`
-	GraphQL               *GraphQLStructure                 `json:"graphql,omitempty"`
+	GraphQL               GraphQLStructure                  `json:"graphql,omitempty"`
 	Hosting               map[string]interface{}            `json:"hosting,omitempty"`
-	Sync                  *SyncStructure                    `json:"sync,omitempty"`
-	Secrets               *SecretsStructure                 `json:"secrets,omitempty"`
+	Sync                  SyncStructure                     `json:"sync,omitempty"`
+	Secrets               SecretsStructure                  `json:"secrets,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -142,7 +142,7 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	if err != nil {
 		return err
 	} else if ok {
-		a.GraphQL = &graphql
+		a.GraphQL = graphql
 	}
 
 	services, err := parseServices(rootDir)
@@ -166,42 +166,42 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	return nil
 }
 
-func parseAuth(rootDir string) (*AuthStructure, error) {
+func parseAuth(rootDir string) (AuthStructure, error) {
 	dir := filepath.Join(rootDir, NameAuth)
 
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return AuthStructure{}, nil
 		}
-		return nil, err
+		return AuthStructure{}, err
 	}
 
 	customUserData, err := parseJSON(filepath.Join(dir, FileCustomUserData.String()))
 	if err != nil {
-		return nil, err
+		return AuthStructure{}, err
 	}
 
 	providers, err := parseJSON(filepath.Join(dir, FileProviders.String()))
 	if err != nil {
-		return nil, err
+		return AuthStructure{}, err
 	}
 
-	return &AuthStructure{customUserData, providers}, nil
+	return AuthStructure{customUserData, providers}, nil
 }
 
-func parseFunctionsV2(rootDir string) (*FunctionsStructure, error) {
+func parseFunctionsV2(rootDir string) (FunctionsStructure, error) {
 	dir := filepath.Join(rootDir, NameFunctions)
 
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return FunctionsStructure{}, nil
 		}
-		return nil, err
+		return FunctionsStructure{}, err
 	}
 
 	configs, err := parseJSONArray(filepath.Join(dir, FileConfig.String()))
 	if err != nil {
-		return nil, err
+		return FunctionsStructure{}, err
 	}
 
 	sources := map[string]string{}
@@ -223,10 +223,10 @@ func parseFunctionsV2(rootDir string) (*FunctionsStructure, error) {
 		sources[pathRelative] = string(data)
 		return nil
 	}); err != nil {
-		return nil, err
+		return FunctionsStructure{}, err
 	}
 
-	return &FunctionsStructure{configs, sources}, nil
+	return FunctionsStructure{configs, sources}, nil
 }
 
 func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
@@ -330,21 +330,21 @@ func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
 	return out, nil
 }
 
-func parseSync(rootDir string) (*SyncStructure, error) {
+func parseSync(rootDir string) (SyncStructure, error) {
 	dir := filepath.Join(rootDir, NameSync)
 
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return SyncStructure{}, nil
 		}
-		return nil, err
+		return SyncStructure{}, err
 	}
 
 	config, err := parseJSON(filepath.Join(dir, FileConfig.String()))
 	if err != nil {
-		return nil, err
+		return SyncStructure{}, err
 	}
-	return &SyncStructure{config}, nil
+	return SyncStructure{config}, nil
 }
 
 // ConfigData marshals the config data out to JSON
@@ -380,12 +380,7 @@ func (a AppDataV2) WriteData(rootDir string) error {
 	if err := writeValues(rootDir, a.Values); err != nil {
 		return err
 	}
-	// TODO(REALMC-8395): Revisit the app structure v2 and decide which directories are always present
-	graphQL := a.GraphQL
-	if a.GraphQL == nil {
-		graphQL = &GraphQLStructure{}
-	}
-	if err := writeGraphQL(rootDir, *graphQL); err != nil {
+	if err := writeGraphQL(rootDir, a.GraphQL); err != nil {
 		return err
 	}
 	if err := writeServices(rootDir, a.Services); err != nil {
@@ -415,18 +410,13 @@ func (a AppDataV2) WriteData(rootDir string) error {
 	return nil
 }
 
-func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
-	var sources map[string]string
-	configs := []map[string]interface{}{}
-	if functions != nil {
-		configs = functions.Configs
-		sources = functions.Sources
-	}
+func writeFunctionsV2(rootDir string, functions FunctionsStructure) error {
 	dir := filepath.Join(rootDir, NameFunctions)
-	data, err := MarshalJSON(configs)
+	data, err := MarshalJSON(functions.Configs)
 	if err != nil {
 		return err
 	}
+
 	if err := WriteFile(
 		filepath.Join(dir, FileConfig.String()),
 		0666,
@@ -434,7 +424,8 @@ func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
 	); err != nil {
 		return err
 	}
-	for path, src := range sources {
+
+	for path, src := range functions.Sources {
 		if err := WriteFile(
 			filepath.Join(dir, path),
 			0666,
@@ -446,11 +437,9 @@ func writeFunctionsV2(rootDir string, functions *FunctionsStructure) error {
 	return nil
 }
 
-func writeAuth(rootDir string, auth *AuthStructure) error {
-	if auth == nil {
-		return nil
-	}
+func writeAuth(rootDir string, auth AuthStructure) error {
 	dir := filepath.Join(rootDir, NameAuth)
+
 	if auth.Providers != nil {
 		data, err := MarshalJSON(auth.Providers)
 		if err != nil {
@@ -464,6 +453,7 @@ func writeAuth(rootDir string, auth *AuthStructure) error {
 			return err
 		}
 	}
+
 	if auth.CustomUserData != nil {
 		data, err := MarshalJSON(auth.CustomUserData)
 		if err != nil {
@@ -477,25 +467,25 @@ func writeAuth(rootDir string, auth *AuthStructure) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
-func writeSync(rootDir string, sync *SyncStructure) error {
-	if sync == nil || sync.Config == nil {
+func writeSync(rootDir string, sync SyncStructure) error {
+	if sync.Config == nil {
 		return nil
 	}
+
 	data, err := MarshalJSON(sync.Config)
 	if err != nil {
 		return err
 	}
-	if err := WriteFile(
+
+	return WriteFile(
 		filepath.Join(rootDir, NameSync, FileConfig.String()),
 		0666,
 		bytes.NewReader(data),
-	); err != nil {
-		return err
-	}
-	return nil
+	)
 }
 
 func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {

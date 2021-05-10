@@ -175,26 +175,26 @@ func parseJSONFiles(rootDir string) ([]map[string]interface{}, error) {
 	return out, nil
 }
 
-func parseSecrets(rootDir string) (*SecretsStructure, error) {
+func parseSecrets(rootDir string) (SecretsStructure, error) {
 	path := filepath.Join(rootDir, FileSecrets.String())
 
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return SecretsStructure{}, nil
 		}
-		return nil, err
+		return SecretsStructure{}, err
 	}
 
 	data, dataErr := readFile(path)
 	if dataErr != nil {
-		return nil, dataErr
+		return SecretsStructure{}, dataErr
 	}
 
 	var secrets SecretsStructure
 	if err := json.Unmarshal(data, &secrets); err != nil {
-		return nil, err
+		return SecretsStructure{}, err
 	}
-	return &secrets, nil
+	return secrets, nil
 }
 
 func parseServices(rootDir string) ([]ServiceStructure, error) {
@@ -234,8 +234,8 @@ func parseServices(rootDir string) ([]ServiceStructure, error) {
 	return out, nil
 }
 
-func writeSecrets(rootDir string, secrets *SecretsStructure) error {
-	if secrets == nil {
+func writeSecrets(rootDir string, secrets SecretsStructure) error {
+	if len(secrets.AuthProviders) == 0 && len(secrets.Services) == 0 {
 		return nil
 	}
 	data, err := MarshalJSON(secrets)

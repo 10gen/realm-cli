@@ -196,8 +196,8 @@ func AddAuthProvider(appData AppData, name string, config map[string]interface{}
 	case *AppConfigJSON:
 		ad.AuthProviders = append(ad.AuthProviders, config)
 	case *AppRealmConfigJSON:
-		if ad.Auth == nil {
-			ad.Auth = &AuthStructure{Providers: map[string]interface{}{}}
+		if ad.Auth.Providers == nil {
+			ad.Auth.Providers = map[string]interface{}{}
 		}
 		ad.Auth.Providers[name] = config
 	}

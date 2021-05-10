@@ -30,6 +30,10 @@ type diffInputs struct {
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
+		return err
+	}
+
 	if i.LocalPath == "" {
 		i.LocalPath = profile.WorkingDirectory
 	}

@@ -86,7 +86,8 @@ func TestRealmHosting(t *testing.T) {
 
 	t.Run("should invalidate the cache for all files successfully with hosting enabled", func(t *testing.T) {
 		assert.Nil(t, client.Import(groupID, app.ID, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			Hosting: map[string]interface{}{"enabled": true},
+			ConfigVersion: realm.AppConfigVersion20210101,
+			Hosting:       map[string]interface{}{"enabled": true},
 		}}}))
 		assert.Nil(t, client.HostingCacheInvalidate(groupID, app.ID, "/*"))
 	})

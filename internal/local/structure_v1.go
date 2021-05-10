@@ -23,7 +23,7 @@ type AppStructureV1 struct {
 	Hosting              map[string]interface{}            `json:"hosting,omitempty"`
 	CustomUserDataConfig map[string]interface{}            `json:"custom_user_data_config"`
 	Sync                 map[string]interface{}            `json:"sync"`
-	Secrets              *SecretsStructure                 `json:"secrets,omitempty"`
+	Secrets              SecretsStructure                  `json:"secrets,omitempty"`
 	AuthProviders        []map[string]interface{}          `json:"auth_providers,omitempty"`
 	Functions            []map[string]interface{}          `json:"functions,omitempty"`
 	Triggers             []map[string]interface{}          `json:"triggers,omitempty"`

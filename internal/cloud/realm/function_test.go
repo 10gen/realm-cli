@@ -41,7 +41,7 @@ func TestFunctions(t *testing.T) {
 				Name:            app.Name,
 				Location:        app.Location,
 				DeploymentModel: app.DeploymentModel,
-				Functions: &local.FunctionsStructure{
+				Functions: local.FunctionsStructure{
 					Configs: []map[string]interface{}{
 						{"name": "test", "private": true},
 					},
@@ -87,7 +87,7 @@ func TestAppDebugExecuteFunction(t *testing.T) {
 			Name:            app.Name,
 			Location:        app.Location,
 			DeploymentModel: app.DeploymentModel,
-			Functions: &local.FunctionsStructure{
+			Functions: local.FunctionsStructure{
 				Configs: []map[string]interface{}{
 					{"name": "simple_test", "private": true},
 					{"name": "passed_args_test", "private": true},
