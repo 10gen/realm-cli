@@ -111,7 +111,7 @@ func TestRealmImport20210101(t *testing.T) {
 					},
 				},
 			},
-			Secrets: &local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
+			Secrets: local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
 		}}))
 
 		secrets, secretsErr := client.Secrets(groupID, app.ID)
@@ -176,7 +176,7 @@ func TestRealmImportLegacy(t *testing.T) {
 						},
 					},
 				},
-				Secrets: &local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
+				Secrets: local.SecretsStructure{Services: map[string]map[string]string{"twilio_svc": map[string]string{"auth_token": "my-secret-auth-token"}}},
 			}}))
 
 			secrets, secretsErr := client.Secrets(groupID, app.ID)
@@ -274,7 +274,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			"qa.json":             map[string]interface{}{"values": map[string]interface{}{"a": "3"}},
 			"production.json":     map[string]interface{}{"values": map[string]interface{}{"a": "4"}},
 		},
-		Auth: &local.AuthStructure{
+		Auth: local.AuthStructure{
 			CustomUserData: map[string]interface{}{"enabled": true, "mongo_service_name": "mdb", "database_name": "db", "collection_name": "coll", "user_id_field": "uid"},
 			Providers: map[string]interface{}{
 				realm.AuthProviderTypeAnonymous.String(): map[string]interface{}{
@@ -329,10 +329,10 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				}},
 			},
 		},
-		Sync: &local.SyncStructure{
+		Sync: local.SyncStructure{
 			Config: map[string]interface{}{"development_mode_enabled": true},
 		},
-		Functions: &local.FunctionsStructure{
+		Functions: local.FunctionsStructure{
 			Configs: []map[string]interface{}{
 				{"name": "test", "private": true},
 			},
@@ -368,7 +368,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				"disabled":      false,
 			},
 		},
-		GraphQL: &local.GraphQLStructure{
+		GraphQL: local.GraphQLStructure{
 			Config: map[string]interface{}{"use_natural_pluralization": true},
 			CustomResolvers: []map[string]interface{}{
 				{

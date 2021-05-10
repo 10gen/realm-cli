@@ -41,16 +41,16 @@ func TestNewApp(t *testing.T) {
 						"values": map[string]interface{}{},
 					},
 				},
-				Auth: &AuthStructure{
+				Auth: AuthStructure{
 					CustomUserData: map[string]interface{}{"enabled": false},
 					Providers:      map[string]interface{}{},
 				},
-				Sync: &SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-				Functions: &FunctionsStructure{
+				Sync: SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+				Functions: FunctionsStructure{
 					Configs: []map[string]interface{}{},
 					Sources: map[string]string{},
 				},
-				GraphQL: &GraphQLStructure{
+				GraphQL: GraphQLStructure{
 					Config: map[string]interface{}{
 						"use_natural_pluralization": true,
 					},

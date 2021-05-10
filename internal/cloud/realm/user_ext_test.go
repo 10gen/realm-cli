@@ -35,7 +35,7 @@ func TestRealmUsers(t *testing.T) {
 			Name:            app.Name,
 			Location:        app.Location,
 			DeploymentModel: app.DeploymentModel,
-			Auth: &local.AuthStructure{
+			Auth: local.AuthStructure{
 				Providers: map[string]interface{}{
 					"api-key": map[string]interface{}{"name": "api-key", "type": "api-key"},
 					"local-userpass": map[string]interface{}{"name": "local-userpass", "type": "local-userpass", "config": map[string]interface{}{

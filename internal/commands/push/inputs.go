@@ -70,7 +70,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	if i.RemoteApp == "" {
-		i.RemoteApp = app.Option()
+		i.RemoteApp = app.ID()
 	}
 
 	return nil

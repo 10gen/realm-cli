@@ -19,7 +19,7 @@ func TestParseFunctionsV2(t *testing.T) {
 	t.Run("should return the parsed functions directory with nested javascript files", func(t *testing.T) {
 		functions, err := parseFunctionsV2(testRoot)
 		assert.Nil(t, err)
-		assert.Equal(t, &FunctionsStructure{
+		assert.Equal(t, FunctionsStructure{
 			Configs: []map[string]interface{}{{
 				"name":    "bar",
 				"private": true,
@@ -84,7 +84,7 @@ func TestWriteFunctionsV2(t *testing.T) {
 	defer cleanupTmpDir()
 
 	t.Run("should write functions to disk", func(t *testing.T) {
-		data := &FunctionsStructure{
+		data := FunctionsStructure{
 			Configs: []map[string]interface{}{
 				{
 					"name":    "test",
@@ -121,7 +121,7 @@ func TestWriteAuth(t *testing.T) {
 	defer cleanupTmpDir()
 
 	t.Run("should write auth to disk", func(t *testing.T) {
-		data := &AuthStructure{
+		data := AuthStructure{
 			CustomUserData: map[string]interface{}{"enabled": false},
 			Providers: map[string]interface{}{
 				"api-key": map[string]interface{}{
@@ -158,7 +158,7 @@ func TestWriteSync(t *testing.T) {
 	defer cleanupTmpDir()
 
 	t.Run("should write sync to disk", func(t *testing.T) {
-		data := &SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}}
+		data := SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}}
 
 		writeSync(tmpDir, data)
 

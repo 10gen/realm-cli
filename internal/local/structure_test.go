@@ -15,7 +15,7 @@ func TestWriteSecrets(t *testing.T) {
 	defer cleanupTmpDir()
 
 	t.Run("should write secrets to disk", func(t *testing.T) {
-		data := &SecretsStructure{
+		data := SecretsStructure{
 			AuthProviders: map[string]map[string]string{
 				"provider": {"name": "super-secret", "value": "super-secret-value"},
 			},

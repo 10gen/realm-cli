@@ -80,7 +80,7 @@ func TestAppCreateHandler(t *testing.T) {
 					"values": map[string]interface{}{},
 				},
 			},
-			Auth: &local.AuthStructure{
+			Auth: local.AuthStructure{
 				CustomUserData: map[string]interface{}{"enabled": false},
 				Providers: map[string]interface{}{
 					"api-key": map[string]interface{}{
@@ -90,12 +90,12 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 			},
-			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: &local.FunctionsStructure{
+			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: local.FunctionsStructure{
 				Configs: []map[string]interface{}{},
 				Sources: map[string]string{},
 			},
-			GraphQL: &local.GraphQLStructure{
+			GraphQL: local.GraphQLStructure{
 				Config: map[string]interface{}{
 					"use_natural_pluralization": true,
 				},
@@ -273,7 +273,7 @@ func TestAppCreateHandler(t *testing.T) {
 					"values": map[string]interface{}{},
 				},
 			},
-			Auth: &local.AuthStructure{
+			Auth: local.AuthStructure{
 				CustomUserData: map[string]interface{}{"enabled": false},
 				Providers: map[string]interface{}{
 					"api-key": map[string]interface{}{
@@ -283,12 +283,12 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 			},
-			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: &local.FunctionsStructure{
+			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: local.FunctionsStructure{
 				Configs: []map[string]interface{}{},
 				Sources: map[string]string{},
 			},
-			GraphQL: &local.GraphQLStructure{
+			GraphQL: local.GraphQLStructure{
 				Config: map[string]interface{}{
 					"use_natural_pluralization": true,
 				},
@@ -363,16 +363,15 @@ func TestAppCreateHandler(t *testing.T) {
 			Name:            testApp.Name,
 			Location:        realm.LocationIreland,
 			DeploymentModel: realm.DeploymentModelGlobal,
-			Auth: &local.AuthStructure{
+			Auth: local.AuthStructure{
 				CustomUserData: map[string]interface{}{"enabled": false},
 				Providers:      map[string]interface{}{},
 			},
-			Sync: &local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: &local.FunctionsStructure{
-				Configs: []map[string]interface{}{},
+			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+			Functions: local.FunctionsStructure{
 				Sources: map[string]string{},
 			},
-			GraphQL: &local.GraphQLStructure{
+			GraphQL: local.GraphQLStructure{
 				CustomResolvers: []map[string]interface{}{},
 			},
 			Values: []map[string]interface{}{},

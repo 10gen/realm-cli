@@ -60,7 +60,7 @@ func TestAddAuthProvider(t *testing.T) {
 				"disabled": true,
 			},
 			appDataExpected: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-				Auth: &AuthStructure{
+				Auth: AuthStructure{
 					Providers: map[string]interface{}{
 						"api-key": map[string]interface{}{
 							"name":     "api-key",
@@ -74,7 +74,7 @@ func TestAddAuthProvider(t *testing.T) {
 		{
 			description: "should add an auth provider to app realm config json",
 			appData: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-				Auth: &AuthStructure{
+				Auth: AuthStructure{
 					Providers: map[string]interface{}{},
 				},
 			}}},
@@ -85,7 +85,7 @@ func TestAddAuthProvider(t *testing.T) {
 				"disabled": true,
 			},
 			appDataExpected: &AppRealmConfigJSON{AppDataV2{AppStructureV2{
-				Auth: &AuthStructure{
+				Auth: AuthStructure{
 					Providers: map[string]interface{}{
 						"api-key": map[string]interface{}{
 							"name":     "api-key",
