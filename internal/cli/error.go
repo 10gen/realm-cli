@@ -11,9 +11,9 @@ type errDisableUsage struct {
 
 func (err errDisableUsage) DisableUsage() struct{} { return struct{}{} }
 
-// CommandSuggester provides a list of suggested commands that will display to the user when an error occurs
-type CommandSuggester interface {
-	SuggestedCommands() []interface{}
+// Suggester provides a list of suggestions that will display to the user when an error occurs
+type Suggester interface {
+	Suggestions() []interface{}
 }
 
 // LinkReferrer provides a list of reference links that will display to the user when an error occurs

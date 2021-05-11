@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/10gen/realm-cli/internal/cli/user"
 )
 
 // set of known error codes
@@ -26,10 +28,10 @@ type ErrInvalidSession struct {
 
 func (err ErrInvalidSession) Error() string { return "invalid session" }
 
-// SuggestedCommands returns a list of commands to run to remedy an invalid session error
-func (err ErrInvalidSession) SuggestedCommands() []interface{} {
+// Suggestions returns a list of commands to run to remedy an invalid session error
+func (err ErrInvalidSession) Suggestions() []interface{} {
 	suggestion := "realm-cli login"
-	if err.profileName != "" {
+	if err.profileName != user.DefaultProfile {
 		suggestion += " --profile " + err.profileName
 	}
 	return []interface{}{suggestion}

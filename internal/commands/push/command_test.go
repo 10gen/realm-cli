@@ -628,7 +628,7 @@ Successfully pushed app up: eggcorn-abcde
 
 				assert.Equal(t, tc.groupsCalled, calledGroups)
 				assert.Equal(t, `This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
-Try running instead: realm-cli import --local testdata/project --remote appID
+Try instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 			})
 		}
@@ -704,7 +704,7 @@ The following reflects the proposed changes to your Realm app
 diff1
 diff2
 To push these changes, you must omit the 'dry-run' flag to proceed
-Try running instead: realm-cli import --local testdata/project --remote appID
+Try instead: realm-cli import --local testdata/project --remote appID
 `, out.String())
 	})
 
@@ -743,7 +743,7 @@ Removed Dependencies
 Modified Dependencies
   * underscore@1.9.1 -> underscore@1.9.2
 To push these changes, you must omit the 'dry-run' flag to proceed
-Try running instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
+Try instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
 `, out.String())
 	})
 

@@ -74,8 +74,8 @@ func NewFollowupLog(message string, items ...interface{}) Log {
 
 // set of common log messages
 const (
-	MsgReferenceLinks    string = "For more information"
-	MsgSuggestedCommands string = "Try running instead"
+	MsgReferenceLinks string = "For more information"
+	MsgSuggestions    string = "Try instead"
 )
 
 func newLog(level LogLevel, data LogData) Log {

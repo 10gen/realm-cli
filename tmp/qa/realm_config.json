@@ -1,7 +1,0 @@
-{
-    "app_id": "qa-clidu",
-    "config_version": 20210101,
-    "name": "qa",
-    "location": "US-VA",
-    "deployment_model": "GLOBAL"
-}

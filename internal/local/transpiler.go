@@ -22,8 +22,7 @@ func newDefaultTranspiler() (Transpiler, error) {
 
 func newTranspiler(cmd string) (Transpiler, error) {
 	if _, err := exec.LookPath(cmd); err != nil {
-		// TODO(REALMC-8127): should return an error here capable of instructing the user how to download/build the transpiler
-		return nil, err
+		return nil, errMissingTranspiler{}
 	}
 	return &externalTranspiler{cmd}, nil
 }
@@ -69,8 +68,8 @@ func (t *externalTranspiler) Transpile(ctx context.Context, sources ...string) (
 }
 
 type transpilationResult struct {
-	Sources []transpiledSource  `json:"results,omitempty"`
-	Errors  transpilationErrors `json:"errors,omitempty"`
+	Sources []transpiledSource     `json:"results,omitempty"`
+	Errors  errFailedTranspilation `json:"errors,omitempty"`
 }
 
 type transpiledSource struct {
@@ -78,9 +77,9 @@ type transpiledSource struct {
 	Map  json.RawMessage `json:"map"`
 }
 
-type transpilationErrors []transpilationError
+type errFailedTranspilation []errTranspilation
 
-func (err transpilationErrors) Error() string {
+func (err errFailedTranspilation) Error() string {
 	switch len(err) {
 	case 0:
 		return ""
@@ -91,13 +90,19 @@ func (err transpilationErrors) Error() string {
 	}
 }
 
-type transpilationError struct {
+type errTranspilation struct {
 	Index   int    `json:"index"`
 	Message string `json:"message"`
 	Line    int    `json:"line"`
 	Column  int    `json:"column"`
 }
 
-func (err transpilationError) Error() string {
+func (err errTranspilation) Error() string {
 	return err.Message
+}
+
+type errMissingTranspiler struct{}
+
+func (err errMissingTranspiler) Error() string {
+	return "the cli is unable to locate the 'transpiler' service, make sure you run 'npm install' prior to running commands"
 }
