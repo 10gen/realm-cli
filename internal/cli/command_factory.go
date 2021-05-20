@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -47,10 +48,17 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		display = command.Use
 	}
 
+	var aliasHelp string
+	if len(command.Aliases) == 1 {
+		aliasHelp = fmt.Sprintf(" (alias: %s)", command.Aliases[0])
+	} else if len(command.Aliases) > 1 {
+		aliasHelp = fmt.Sprintf(" (aliases: %s)", strings.Join(command.Aliases, ", "))
+	}
+
 	cmd := cobra.Command{
 		Use:     command.Use,
-		Short:   command.Description,
-		Long:    command.Help,
+		Short:   command.Description + aliasHelp,
+		Long:    command.Description + "\n\n" + command.HelpText,
 		Aliases: command.Aliases,
 	}
 

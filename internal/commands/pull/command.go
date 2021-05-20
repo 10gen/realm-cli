@@ -18,6 +18,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMeta is the command meta for the `pull` command
+var CommandMeta = cli.CommandMeta{
+	Use:         "pull",
+	Aliases:     []string{"export"},
+	Description: "Exports the latest version of your Realm app into your local directory",
+	HelpText: `Pulls changes from your remote Realm app into your local directory. If
+applicable, Hosting Files and/or Dependencies associated with your Realm app will be
+exported as well.`,
+}
+
 // Command is the `pull` command
 type Command struct {
 	inputs inputs

@@ -12,6 +12,29 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaDiff is the command meta
+var CommandMetaDiff = cli.CommandMeta{
+	Use:         "diff",
+	Aliases:     []string{},
+	Display:     "app diff",
+	Description: "Show differences between your local directory and your Realm app",
+	HelpText: `Displays file-by-file differences between your local directory and the latest
+version of your Realm app. If you have more than one Realm app, you will be
+prompted to select a Realm app to view.`,
+}
+
+// CommandDiff is the `app diff` command
+type CommandDiff struct {
+	inputs diffInputs
+}
+
+type diffInputs struct {
+	cli.ProjectInputs
+	LocalPath           string
+	IncludeDependencies bool
+	IncludeHosting      bool
+}
+
 const (
 	flagLocalPathDiff            = "local"
 	flagLocalPathDiffUsage       = "the local path to your Realm app"
@@ -22,29 +45,6 @@ const (
 	flagIncludeHostingShort      = "s"
 	flagIncludeHostingUsage      = "include to diff Realm app hosting changes as well"
 )
-
-type diffInputs struct {
-	LocalPath           string
-	IncludeDependencies bool
-	IncludeHosting      bool
-	cli.ProjectInputs
-}
-
-func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
-		return err
-	}
-
-	if i.LocalPath == "" {
-		i.LocalPath = profile.WorkingDirectory
-	}
-	return nil
-}
-
-// CommandDiff is the `app diff` command
-type CommandDiff struct {
-	inputs diffInputs
-}
 
 // Flags is the command flags
 func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
@@ -121,5 +121,16 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		strings.Join(diffs, "\n"),
 	))
 
+	return nil
+}
+
+func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
+		return err
+	}
+
+	if i.LocalPath == "" {
+		i.LocalPath = profile.WorkingDirectory
+	}
 	return nil
 }

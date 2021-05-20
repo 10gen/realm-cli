@@ -8,6 +8,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaUpdate is the command meta for the `secrets update` command
+var CommandMetaUpdate = cli.CommandMeta{
+	Use:         "update",
+	Display:     "secret update",
+	Description: "Update a Secret in your Realm app",
+	HelpText: `NOTE: The Name of the Secret cannot be modified. In order to do so, you will
+need to delete and re-create the Secret.`,
+}
+
 // CommandUpdate is the `secret update` command
 type CommandUpdate struct {
 	inputs updateInputs

@@ -10,6 +10,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaCreate is the command meta for the `user create` command
+var CommandMetaCreate = cli.CommandMeta{
+	Use:         "create",
+	Display:     "user create",
+	Description: "Create an application user for your Realm app",
+	HelpText: `Adds a new User to your Realm app. You can create a User for the following
+enabled Auth Providers: "Email/Password", or "API Key".`,
+}
+
 // CommandCreate is the `user create` command
 type CommandCreate struct {
 	inputs createInputs

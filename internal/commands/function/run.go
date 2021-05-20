@@ -15,6 +15,18 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaRun is the command meta for the `function run` command
+var CommandMetaRun = cli.CommandMeta{
+	Use:         "run",
+	Description: "Run a Function from your Realm app",
+	HelpText: `Realm Functions allow you to define and execute server-side logic for your Realm
+app. Once you select and run a Function for your Realm app, the following will
+be displayed:
+  - A list of logs, if present
+  - The function result as a document
+  - A list of error logs, if present`,
+}
+
 // CommandRun is the `function run` command
 type CommandRun struct {
 	inputs inputs

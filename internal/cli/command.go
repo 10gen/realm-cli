@@ -54,6 +54,8 @@ type InputResolver interface {
 // CommandDefinition is a command's definition that the CommandFactory
 // can build a *cobra.Command from
 type CommandDefinition struct {
+	CommandMeta
+
 	// Command is the command's implementation
 	// If present, this value is used to specify the cobra.Command execution phases
 	Command Command
@@ -61,15 +63,10 @@ type CommandDefinition struct {
 	// SubCommands are the command's sub commands
 	// This array is iteratively added to this Cobra command via (cobra.Command).AddCommand
 	SubCommands []CommandDefinition
+}
 
-	// Description is the short command description shown in the 'help' output
-	// This value maps 1:1 to Cobra's `Short` property
-	Description string
-
-	// Help is the long message shown in the 'help <this-command>' output
-	// This value maps 1:1 to Cobra's `Long` property
-	Help string
-
+// CommandMeta is the command metadata
+type CommandMeta struct {
 	// Use defines how the command is used
 	// This value maps 1:1 to Cobra's `Use` property
 	Use string
@@ -81,6 +78,13 @@ type CommandDefinition struct {
 	// Aliases is the list of supported aliases for the command
 	// This value maps 1:1 to Cobra's `Aliases` property
 	Aliases []string
+
+	// Description is the text shown in the 'help' output of the parent command
+	Description string
+
+	// HelpText is the text shown in the 'help' output of the actual command
+	// right below the command's description
+	HelpText string
 }
 
 // CommandDisplay returns the command display with the provided flags

@@ -8,6 +8,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMeta is the command meta for the `login` command
+var CommandMeta = cli.CommandMeta{
+	Use:         "login",
+	Description: "Log the CLI into Realm using a MongoDB Cloud API key",
+	HelpText: `Begins an authenticated session with Realm. To get a MongoDB Cloud API Key, open
+your Realm app in the Realm UI. Navigate to "Deployment" in the left navigation
+menu, and select the "Export App" tab. From there, create a programmatic API key
+to authenticate your realm-cli session.`,
+}
+
 // Command is the `login` command
 type Command struct {
 	inputs inputs

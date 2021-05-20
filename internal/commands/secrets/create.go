@@ -8,6 +8,14 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaCreate is the command meta for the `secrets create` command
+var CommandMetaCreate = cli.CommandMeta{
+	Use:         "create",
+	Display:     "secrets create",
+	Description: "Create a Secret for your Realm app",
+	HelpText:    `You will be prompted to name your Secret and define the value of your Secret.`,
+}
+
 // CommandCreate is the `secrets create` command
 type CommandCreate struct {
 	inputs createInputs

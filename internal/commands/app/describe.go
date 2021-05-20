@@ -8,17 +8,23 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type describeInputs struct {
-	cli.ProjectInputs
-}
-
-func (i *describeInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
+// CommandMetaDescribe is the command meta for the `app describe` command
+var CommandMetaDescribe = cli.CommandMeta{
+	Use:         "describe",
+	Display:     "app describe",
+	Description: "Displays information about your Realm app",
+	HelpText: `View all of the aspects of your Realm app to see what is configured and enabled
+(e.g. services, functions, etc.). If you have more than one Realm app, you will
+be prompted to select a Realm app to view.`,
 }
 
 // CommandDescribe is the `app describe` command
 type CommandDescribe struct {
 	inputs describeInputs
+}
+
+type describeInputs struct {
+	cli.ProjectInputs
 }
 
 // Flags is the command flags
@@ -45,4 +51,8 @@ func (cmd *CommandDescribe) Handler(profile *user.Profile, ui terminal.UI, clien
 
 	ui.Print(terminal.NewJSONLog("App description", appDesc))
 	return nil
+}
+
+func (i *describeInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
 }

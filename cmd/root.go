@@ -18,7 +18,7 @@ func Run() {
 		Version:       cli.Version,
 		Use:           cli.Name,
 		Short:         "CLI tool to manage your MongoDB Realm application",
-		Long:          fmt.Sprintf("Use %s command help for information on a specific command", cli.Name),
+		Long:          fmt.Sprintf(`Use "%s [command] --help" for information on a specific command`, cli.Name),
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
@@ -30,16 +30,16 @@ func Run() {
 	cmd.Flags().SortFlags = false // ensures CLI help text displays global flags unsorted
 	factory.SetGlobalFlags(cmd.PersistentFlags())
 
+	cmd.AddCommand(factory.Build(commands.Whoami))
 	cmd.AddCommand(factory.Build(commands.Login))
 	cmd.AddCommand(factory.Build(commands.Logout))
 	cmd.AddCommand(factory.Build(commands.Push))
 	cmd.AddCommand(factory.Build(commands.Pull))
 	cmd.AddCommand(factory.Build(commands.App))
-	cmd.AddCommand(factory.Build(commands.Secrets))
 	cmd.AddCommand(factory.Build(commands.User))
-	cmd.AddCommand(factory.Build(commands.Whoami))
-	cmd.AddCommand(factory.Build(commands.Function))
+	cmd.AddCommand(factory.Build(commands.Secrets))
 	cmd.AddCommand(factory.Build(commands.Logs))
+	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Schema))
 
 	factory.Run(cmd)
