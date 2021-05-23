@@ -136,6 +136,9 @@ functions:
           cd $ROOT_DIR/baas
           export PATH="$ROOT_DIR/baas/etc/transpiler/bin:$PATH"
           export LD_LIBRARY_PATH="$ROOT_DIR/baas/etc/dylib/lib"
+          export AWS_ACCESS_KEY_ID='${baas_test_aws_key}'
+          export AWS_SECRET_ACCESS_KEY='${baas_test_aws_secret}'
+          
           go run cmd/server/main.go --configFile $ROOT_DIR/baas/etc/configs/test_cli_config.json
     - command: shell.exec
       params:
