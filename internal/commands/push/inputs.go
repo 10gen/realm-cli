@@ -11,10 +11,10 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "specify the local path to a Realm app to import"
+	flagLocalPathUsage = "the local path to a Realm app to import"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "specify a remote Realm app (id or name) to push changes to"
+	flagRemoteUsage = "a remote Realm app (id or name) to push changes to"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"

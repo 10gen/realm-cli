@@ -2,14 +2,17 @@ package app
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/api"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 
+	"github.com/Netflix/go-expect"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -34,45 +37,45 @@ func TestAppDiffHandler(t *testing.T) {
 		appError           bool
 	}{
 		{
-			description:        "with no project nor app flag set should diff based on input",
+			description:        "no project nor app flag set should diff based on input",
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
-			description:        "with no project flag set and an app flag set should show the diff for the app",
-			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
+			description:        "no project flag set and an app flag set should show the diff for the app",
+			inputs:             diffInputs{RemoteApp: "app1"},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
-			description:        "with no diffs between local and remote app",
-			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{App: "app1"}},
+			description:        "no diffs between local and remote app",
+			inputs:             diffInputs{RemoteApp: "app1"},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiffOutput: "Deployed app is identical to proposed version\n",
 		},
 		{
-			description:        "with a project flag set and no app flag set should diff based on input",
-			inputs:             diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1}},
+			description:        "a project flag set and no app flag set should diff based on input",
+			inputs:             diffInputs{Project: groupID1},
 			expectedAppFilter:  realm.AppFilter{GroupID: groupID1},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
 		{
 			description:       "error on the diff",
-			inputs:            diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
+			inputs:            diffInputs{Project: groupID1, RemoteApp: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 		},
 		{
 			description:       "error on finding apps",
-			inputs:            diffInputs{LocalPath: "testdata/project", ProjectInputs: cli.ProjectInputs{Project: groupID1, App: "app1"}},
+			inputs:            diffInputs{Project: groupID1, RemoteApp: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 			appError:          true,
 		},
 	} {
-		t.Run(tc.description, func(t *testing.T) {
+		t.Run("with a local path that exists and "+tc.description, func(t *testing.T) {
 			out, ui := mock.NewUI()
 
 			realmClient := mock.RealmClient{}
@@ -89,12 +92,21 @@ func TestAppDiffHandler(t *testing.T) {
 				return tc.expectedDiff, tc.expectedErr
 			}
 
-			cmd := &CommandDiff{inputs: tc.inputs}
+			tc.inputs.LocalPath = "testdata/diff"
+			cmd := &CommandDiff{tc.inputs}
+
 			assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
 			assert.Equal(t, tc.expectedDiffOutput, out.String())
 		})
 	}
+
+	t.Run("should return an error if local path does not resolve to an app directory", func(t *testing.T) {
+		_, ui := mock.NewUI()
+
+		cmd := &CommandDiff{diffInputs{LocalPath: "./some/path"}}
+		assert.Equal(t, errors.New("no app directory found at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
+	})
 
 	t.Run("with include dependencies set should diff function dependencies", func(t *testing.T) {
 		out, ui := mock.NewUI()
@@ -187,4 +199,98 @@ Modified hosting files
   * /404.html
 `, out.String())
 	})
+}
+
+func TestAppDiffInputs(t *testing.T) {
+	for _, tc := range []struct {
+		description    string
+		inputs         diffInputs
+		prepareProfile func(p *user.Profile)
+		procedure      func(c *expect.Console)
+		test           func(t *testing.T, i diffInputs, p *user.Profile)
+	}{
+		{
+			description:    "should resolve empty inputs when outside an app directory by prompting for the local path which does not exist",
+			prepareProfile: func(p *user.Profile) {},
+			procedure: func(c *expect.Console) {
+				c.ExpectString("App filepath (local)")
+				c.SendLine("./some/path")
+			},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, "./some/path", i.LocalPath)
+				assert.Equal(t, "", i.RemoteApp)
+			},
+		},
+		{
+			description:    "should resolve empty inputs when outside an app directory by prompting for the local path which exists",
+			prepareProfile: func(p *user.Profile) {},
+			procedure: func(c *expect.Console) {
+				c.ExpectString("App filepath (local)")
+				c.SendLine("./testdata/diff")
+			},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, "./testdata/diff", i.LocalPath)
+				assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
+			},
+		},
+		{
+			description: "should resolve empty inputs when inside an app directory to the app details",
+			prepareProfile: func(p *user.Profile) {
+				p.WorkingDirectory = filepath.Join(p.WorkingDirectory, "testdata/diff/hosting")
+			},
+			procedure: func(c *expect.Console) {},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, filepath.Join(p.WorkingDirectory, ".."), i.LocalPath)
+				assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
+			},
+		},
+		{
+			description: "should not override app flag when run inside an app directory",
+			inputs:      diffInputs{RemoteApp: "different-app"},
+			prepareProfile: func(p *user.Profile) {
+				p.WorkingDirectory = filepath.Join(p.WorkingDirectory, "testdata/diff/hosting")
+			},
+			procedure: func(c *expect.Console) {},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, filepath.Join(p.WorkingDirectory, ".."), i.LocalPath)
+				assert.Equal(t, "different-app", i.RemoteApp)
+			},
+		},
+		{
+			description: "should not override app flag when local path exists",
+			inputs: diffInputs{
+				RemoteApp: "different-app",
+				LocalPath: "./testdata/diff",
+			},
+			prepareProfile: func(p *user.Profile) {},
+			procedure:      func(c *expect.Console) {},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, "./testdata/diff", i.LocalPath)
+				assert.Equal(t, "different-app", i.RemoteApp)
+			},
+		},
+	} {
+		t.Run(""+tc.description, func(t *testing.T) {
+			profile := mock.NewProfile(t)
+
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			tc.prepareProfile(profile)
+
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+				tc.procedure(console)
+			}()
+
+			assert.Nil(t, tc.inputs.Resolve(profile, ui))
+
+			console.Tty().Close() // flush the writers
+			<-doneCh              // wait for procedure to complete
+
+			tc.test(t, tc.inputs, profile)
+		})
+	}
 }

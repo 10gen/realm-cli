@@ -192,7 +192,7 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{flagName, i.Name})
 	}
 	if i.RemoteApp != "" {
-		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
+		args = append(args, flags.Arg{flagRemoteAppNew, i.RemoteApp})
 	}
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})

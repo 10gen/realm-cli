@@ -1,14 +1,18 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
+	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/pflag"
 )
 
@@ -29,30 +33,41 @@ type CommandDiff struct {
 }
 
 type diffInputs struct {
-	cli.ProjectInputs
 	LocalPath           string
+	RemoteApp           string
+	Project             string
 	IncludeDependencies bool
 	IncludeHosting      bool
 }
 
 const (
-	flagLocalPathDiff            = "local"
-	flagLocalPathDiffUsage       = "the local path to your Realm app"
+	flagLocalPathDiff      = "local"
+	flagLocalPathDiffUsage = "the local path to a Realm app to diff"
+
+	flagRemoteAppDiff      = "remote"
+	flagRemoteAppDiffUsage = "a remote Realm app (id or name) to diff changes from"
+
+	flagProjectDiff      = "project"
+	flagProjectDiffUsage = "the MongoDB cloud project id"
+
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
 	flagIncludeDependenciesUsage = "include to diff Realm app dependencies changes as well"
-	flagIncludeHosting           = "include-hosting"
-	flagIncludeHostingShort      = "s"
-	flagIncludeHostingUsage      = "include to diff Realm app hosting changes as well"
+
+	flagIncludeHosting      = "include-hosting"
+	flagIncludeHostingShort = "s"
+	flagIncludeHostingUsage = "include to diff Realm app hosting changes as well"
 )
 
 // Flags is the command flags
 func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
-
 	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathDiff, "", flagLocalPathDiffUsage)
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppDiff, "", flagRemoteAppDiffUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
+
+	fs.StringVar(&cmd.inputs.Project, flagProjectDiff, "", flagProjectDiffUsage)
+	flags.MarkHidden(fs, flagProjectDiff)
 }
 
 // Inputs is the command inputs
@@ -67,7 +82,11 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	appToDiff, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	if app.RootDir == "" {
+		return fmt.Errorf("no app directory found at %s", cmd.inputs.LocalPath)
+	}
+
+	appToDiff, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
 	if err != nil {
 		return err
 	}
@@ -125,12 +144,34 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
+	searchPath := i.LocalPath
+	if searchPath == "" {
+		searchPath = profile.WorkingDirectory
+	}
+
+	app, err := local.LoadAppConfig(searchPath)
+	if err != nil {
 		return err
 	}
 
 	if i.LocalPath == "" {
-		i.LocalPath = profile.WorkingDirectory
+		if app.RootDir != "" {
+			i.LocalPath = app.RootDir
+		} else {
+			if err := ui.AskOne(&i.LocalPath, &survey.Input{Message: "App filepath (local)"}); err != nil {
+				return err
+			}
+
+			app, err = local.LoadAppConfig(i.LocalPath)
+			if err != nil {
+				return nil
+			}
+		}
 	}
+
+	if i.RemoteApp == "" && app.RootDir != "" {
+		i.RemoteApp = app.Option()
+	}
+
 	return nil
 }
