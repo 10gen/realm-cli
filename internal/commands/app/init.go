@@ -38,6 +38,7 @@ func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
+	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)
@@ -78,6 +79,7 @@ func (cmd *CommandInit) writeAppFromScratch(wd string) error {
 		cmd.inputs.Name,
 		cmd.inputs.Location,
 		cmd.inputs.DeploymentModel,
+		cmd.inputs.Environment,
 		cmd.inputs.ConfigVersion,
 	)
 	local.AddAuthProvider(appLocal.AppData, "api-key", map[string]interface{}{

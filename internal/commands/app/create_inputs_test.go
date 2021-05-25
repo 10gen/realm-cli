@@ -17,7 +17,7 @@ import (
 )
 
 func TestAppCreateInputsResolve(t *testing.T) {
-	t.Run("with no flags set should prompt for just name and set location and deployment model to defaults", func(t *testing.T) {
+	t.Run("with no flags set should prompt for just name and set location deployment model and environment to defaults", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
@@ -45,8 +45,9 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, flagDeploymentModelDefault, inputs.DeploymentModel)
 		assert.Equal(t, flagLocationDefault, inputs.Location)
+		assert.Equal(t, realm.EnvironmentNone, inputs.Environment)
 	})
-	t.Run("with a name flag set should prompt for nothing else and set location and deployment model to defaults", func(t *testing.T) {
+	t.Run("with a name flag set should prompt for nothing else and set location deployment model and environment to defaults", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}}
@@ -55,20 +56,23 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, flagDeploymentModelDefault, inputs.DeploymentModel)
 		assert.Equal(t, flagLocationDefault, inputs.Location)
+		assert.Equal(t, realm.EnvironmentNone, inputs.Environment)
 	})
-	t.Run("with name location and deployment model flags set should prompt for nothing else", func(t *testing.T) {
+	t.Run("with name location deployment model and environment flags set should prompt for nothing else", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		inputs := createInputs{newAppInputs: newAppInputs{
 			Name:            "test-app",
 			DeploymentModel: realm.DeploymentModelLocal,
 			Location:        realm.LocationOregon,
+			Environment:     realm.EnvironmentDevelopment,
 		}}
 		assert.Nil(t, inputs.Resolve(profile, nil))
 
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
 		assert.Equal(t, realm.LocationOregon, inputs.Location)
+		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
 	})
 }
 
@@ -219,6 +223,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 			"test-app",
 			flagLocationDefault,
 			flagDeploymentModelDefault,
+			realm.EnvironmentNone,
 			realm.DefaultAppConfigVersion,
 		)
 		assert.Nil(t, appLocal.WriteConfig())

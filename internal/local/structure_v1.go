@@ -17,7 +17,7 @@ type AppStructureV1 struct {
 	Name                 string                            `json:"name"`
 	Location             realm.Location                    `json:"location"`
 	DeploymentModel      realm.DeploymentModel             `json:"deployment_model"`
-	Environment          string                            `json:"environment,omitempty"`
+	Environment          realm.Environment                 `json:"environment,omitempty"`
 	Environments         map[string]map[string]interface{} `json:"environments,omitempty"`
 	Security             map[string]interface{}            `json:"security"`
 	Hosting              map[string]interface{}            `json:"hosting,omitempty"`
@@ -60,6 +60,11 @@ func (a AppDataV1) Location() realm.Location {
 // DeploymentModel returns the local Realm app deployment model
 func (a AppDataV1) DeploymentModel() realm.DeploymentModel {
 	return a.AppStructureV1.DeploymentModel
+}
+
+// Environment returns the local Realm app environment
+func (a AppDataV1) Environment() realm.Environment {
+	return a.AppStructureV1.Environment
 }
 
 // LoadData will load the local Realm app data
@@ -123,7 +128,7 @@ func (a AppDataV1) ConfigData() ([]byte, error) {
 		Name                 string                 `json:"name"`
 		Location             realm.Location         `json:"location"`
 		DeploymentModel      realm.DeploymentModel  `json:"deployment_model"`
-		Environment          string                 `json:"environment,omitempty"`
+		Environment          realm.Environment      `json:"environment,omitempty"`
 		Security             map[string]interface{} `json:"security"`
 		Hosting              map[string]interface{} `json:"hosting,omitempty"`
 		CustomUserDataConfig map[string]interface{} `json:"custom_user_data_config"`
@@ -134,7 +139,7 @@ func (a AppDataV1) ConfigData() ([]byte, error) {
 		Name:                 a.Name(),
 		Location:             a.Location(),
 		DeploymentModel:      a.DeploymentModel(),
-		Environment:          a.Environment,
+		Environment:          a.Environment(),
 		Security:             a.Security,
 		CustomUserDataConfig: a.CustomUserDataConfig,
 		Sync:                 a.Sync,

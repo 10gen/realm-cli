@@ -79,10 +79,17 @@ var (
 		LocationMumbai.String(),
 		LocationSingapore.String(),
 	}
+	EnvironmentValues = []string{
+		EnvironmentDevelopment.String(),
+		EnvironmentTest.String(),
+		EnvironmentQA.String(),
+		EnvironmentProduction.String(),
+	}
 
-	errInvalidConfigVersion   = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(ConfigVersionValues, ", "))
-	errInvalidDeploymentModel = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(DeploymentModelValues, ", "))
-	errInvalidLocation        = fmt.Errorf("unsupported value, use one of [%s] instead", strings.Join(LocationValues, ", "))
+	errInvalidConfigVersion   = fmt.Errorf("unsupported config version, use one of [%s] instead", strings.Join(ConfigVersionValues, ", "))
+	errInvalidDeploymentModel = fmt.Errorf("unsupported deployment model, use one of [%s] instead", strings.Join(DeploymentModelValues, ", "))
+	errInvalidLocation        = fmt.Errorf("unsupported location, use one of [%s] instead", strings.Join(LocationValues, ", "))
+	errInvalidEnvironment     = fmt.Errorf("unsupported environment, use one of [%s] instead", strings.Join(EnvironmentValues, ", "))
 )
 
 // DeploymentModel is the Realm app deployment model
@@ -200,6 +207,65 @@ func isValidLocation(l Location) bool {
 		LocationSydney,
 		LocationMumbai,
 		LocationSingapore:
+		return true
+	}
+	return false
+}
+
+// Environment is the Realm app environment
+type Environment string
+
+// String returns the Environment display
+func (e Environment) String() string { return string(e) }
+
+// Type returns the Environment type
+func (e Environment) Type() string { return flags.TypeString }
+
+// Set validates and sets the Environment value
+func (e *Environment) Set(val string) error {
+	newEnvironment := Environment(strings.ToUpper(val))
+
+	if !isValidEnvironment(newEnvironment) {
+		return errInvalidEnvironment
+	}
+
+	*e = newEnvironment
+	return nil
+}
+
+// WriteAnswer validates and sets the Location value
+func (e *Environment) WriteAnswer(name string, value interface{}) error {
+	var newEnvironment Environment
+
+	switch v := value.(type) {
+	case core.OptionAnswer:
+		newEnvironment = Environment(v.Value)
+	}
+
+	if !isValidEnvironment(newEnvironment) {
+		return errInvalidEnvironment
+	}
+	*e = newEnvironment
+	return nil
+}
+
+// set of supported Realm app environments
+const (
+	EnvironmentNone        Environment = ""
+	EnvironmentDevelopment Environment = "development"
+	EnvironmentTest        Environment = "testing"
+	EnvironmentQA          Environment = "qa"
+	EnvironmentProduction  Environment = "production"
+)
+
+func isValidEnvironment(e Environment) bool {
+	switch e {
+	case
+		EnvironmentNone, // no Environment is default
+		EnvironmentDevelopment,
+		EnvironmentTest,
+		EnvironmentQA,
+		EnvironmentProduction:
 		return true
 	}
 	return false

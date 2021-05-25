@@ -35,7 +35,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		test        func(t *testing.T, i initInputs)
 	}{
 		{
-			description: "with no flags set should prompt for just name and set realm.Location and deployment model to defaults",
+			description: "with no flags set should prompt for just name and set location deployment model and environment to defaults",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Name")
 				c.SendLine("test-app")
@@ -45,30 +45,34 @@ func TestAppInitInputsResolve(t *testing.T) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
+				assert.Equal(t, realm.EnvironmentNone, i.Environment)
 			},
 		},
 		{
-			description: "with a name flag set should prompt for nothing else and set realm.Location and deployment model to defaults",
+			description: "with a name flag set should prompt for nothing else and set location deployment model and environment to defaults",
 			inputs:      initInputs{newAppInputs: newAppInputs{Name: "test-app"}},
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
+				assert.Equal(t, realm.EnvironmentNone, i.Environment)
 			},
 		},
 		{
-			description: "with name realm.Location and deployment model flags set should prompt for nothing else",
+			description: "with name location deployment model and environment flags set should prompt for nothing else",
 			inputs: initInputs{newAppInputs: newAppInputs{
 				Name:            "test-app",
 				DeploymentModel: realm.DeploymentModelLocal,
 				Location:        realm.LocationOregon,
+				Environment:     realm.EnvironmentDevelopment,
 			}},
 			procedure: func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, realm.DeploymentModelLocal, i.DeploymentModel)
 				assert.Equal(t, realm.LocationOregon, i.Location)
+				assert.Equal(t, realm.EnvironmentDevelopment, i.Environment)
 			},
 		},
 	} {
