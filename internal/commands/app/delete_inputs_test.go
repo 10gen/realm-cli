@@ -60,10 +60,16 @@ func TestResolveApps(t *testing.T) {
 				description: "should return no apps with no found apps nor input apps without prompting",
 			},
 			{
-				description:  "should return found apps without prompting based on inputs provided",
+				description:  "should return found apps without prompting based on app name inputs provided",
 				inputs:       deleteInputs{Apps: []string{"app2", "app3"}},
 				apps:         testApps,
 				expectedApps: []realm.App{app2, app3},
+			},
+			{
+				description:  "should return found apps without prompting based on app client ID inputs provided",
+				inputs:       deleteInputs{Apps: []string{"app1-abcde", "app2-hijkl"}},
+				apps:         testApps,
+				expectedApps: []realm.App{app1, app2},
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {

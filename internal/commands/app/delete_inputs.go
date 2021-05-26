@@ -35,20 +35,30 @@ func (inputs *deleteInputs) resolveApps(ui terminal.UI, client realm.Client) ([]
 	}
 
 	if len(inputs.Apps) > 0 {
+		appsByClientAppID := map[string]realm.App{}
 		appsByName := map[string]realm.App{}
 		for _, app := range apps {
 			appsByName[app.Name] = app
+			appsByClientAppID[app.ClientAppID] = app
 		}
 
 		missingApps := make([]string, 0)
 		appsFiltered := make([]realm.App, 0, len(inputs.Apps))
 		for _, inputApp := range inputs.Apps {
-			app, ok := appsByName[inputApp]
-			if !ok {
-				missingApps = append(missingApps, inputApp)
+
+			appByClientAppID, ok := appsByClientAppID[inputApp]
+			if ok {
+				appsFiltered = append(appsFiltered, appByClientAppID)
 				continue
 			}
-			appsFiltered = append(appsFiltered, app)
+
+			appByName, ok := appsByName[inputApp]
+			if ok {
+				appsFiltered = append(appsFiltered, appByName)
+				continue
+			}
+
+			missingApps = append(missingApps, inputApp)
 		}
 
 		if len(missingApps) > 0 {
