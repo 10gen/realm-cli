@@ -40,6 +40,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
+	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
 	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
 	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
@@ -120,7 +121,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return nil
 	}
 
-	appRealm, err := clients.Realm.CreateApp(groupID, cmd.inputs.Name, realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel})
+	appRealm, err := clients.Realm.CreateApp(
+		groupID,
+		cmd.inputs.Name,
+		realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel, cmd.inputs.Environment},
+	)
 	if err != nil {
 		return err
 	}
@@ -134,6 +139,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 			cmd.inputs.Name,
 			cmd.inputs.Location,
 			cmd.inputs.DeploymentModel,
+			cmd.inputs.Environment,
 			cmd.inputs.ConfigVersion,
 		)
 		local.AddAuthProvider(appLocal.AppData, "api-key", map[string]interface{}{

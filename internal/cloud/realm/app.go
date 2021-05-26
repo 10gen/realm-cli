@@ -20,6 +20,7 @@ const (
 type AppMeta struct {
 	Location        Location        `json:"location,omitempty"`
 	DeploymentModel DeploymentModel `json:"deployment_model,omitempty"`
+	Environment     Environment     `json:"environment,omitempty"`
 }
 
 // App is a Realm application

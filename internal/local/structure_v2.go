@@ -18,7 +18,7 @@ type AppStructureV2 struct {
 	Name                  string                            `json:"name,omitempty"`
 	Location              realm.Location                    `json:"location,omitempty"`
 	DeploymentModel       realm.DeploymentModel             `json:"deployment_model,omitempty"`
-	Environment           string                            `json:"environment,omitempty"`
+	Environment           realm.Environment                 `json:"environment,omitempty"`
 	Environments          map[string]map[string]interface{} `json:"environments,omitempty"`
 	AllowedRequestOrigins []string                          `json:"allowed_request_origins,omitempty"`
 	Values                []map[string]interface{}          `json:"values,omitempty"`
@@ -92,6 +92,11 @@ func (a AppDataV2) Location() realm.Location {
 // DeploymentModel returns the local Realm app deployment model
 func (a AppDataV2) DeploymentModel() realm.DeploymentModel {
 	return a.AppStructureV2.DeploymentModel
+}
+
+// Environment returns the local Realm app environment
+func (a AppDataV2) Environment() realm.Environment {
+	return a.AppStructureV2.Environment
 }
 
 // LoadData will load the local Realm app data
@@ -355,7 +360,7 @@ func (a AppDataV2) ConfigData() ([]byte, error) {
 		Name                  string                 `json:"name,omitempty"`
 		Location              realm.Location         `json:"location,omitempty"`
 		DeploymentModel       realm.DeploymentModel  `json:"deployment_model,omitempty"`
-		Environment           string                 `json:"environment,omitempty"`
+		Environment           realm.Environment      `json:"environment,omitempty"`
 		AllowedRequestOrigins []string               `json:"allowed_request_origins,omitempty"`
 	}{
 		ConfigVersion:         a.ConfigVersion(),
@@ -363,7 +368,7 @@ func (a AppDataV2) ConfigData() ([]byte, error) {
 		Name:                  a.Name(),
 		Location:              a.Location(),
 		DeploymentModel:       a.DeploymentModel(),
-		Environment:           a.Environment,
+		Environment:           a.Environment(),
 		AllowedRequestOrigins: a.AllowedRequestOrigins,
 	}
 	return MarshalJSON(temp)

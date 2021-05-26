@@ -254,6 +254,7 @@ func (cmd *Command) display(omitDryRun bool) string {
 type namer interface{ Name() string }
 type locationer interface{ Location() realm.Location }
 type deploymentModeler interface{ DeploymentModel() realm.DeploymentModel }
+type environmenter interface{ Environment() realm.Environment }
 
 func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupID string, appData interface{}) (realm.App, bool, error) {
 	if proceed, err := ui.Confirm("Do you wish to create a new app?"); err != nil {
@@ -262,7 +263,7 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		return realm.App{}, false, nil
 	}
 
-	var name, location, deploymentModel string
+	var name, location, deploymentModel, environment string
 	if appData != nil {
 		if n, ok := appData.(namer); ok {
 			name = n.Name()
@@ -274,6 +275,10 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 
 		if dm, ok := appData.(deploymentModeler); ok {
 			deploymentModel = dm.DeploymentModel().String()
+		}
+
+		if e, ok := appData.(environmenter); ok {
+			environment = e.Environment().String()
 		}
 	}
 
@@ -308,10 +313,26 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		}
 	}
 
+	if !ui.AutoConfirm() {
+		if err := ui.AskOne(
+			&environment,
+			&survey.Select{
+				Message: "App Environment",
+				Options: realm.EnvironmentValues,
+				Default: environment,
+			}); err != nil {
+			return realm.App{}, false, err
+		}
+	}
+
 	app, err := realmClient.CreateApp(
 		groupID,
 		name,
-		realm.AppMeta{Location: realm.Location(location), DeploymentModel: realm.DeploymentModel(deploymentModel)},
+		realm.AppMeta{
+			Location:        realm.Location(location),
+			DeploymentModel: realm.DeploymentModel(deploymentModel),
+			Environment:     realm.Environment(environment),
+		},
 	)
 	if err != nil {
 		return realm.App{}, false, err

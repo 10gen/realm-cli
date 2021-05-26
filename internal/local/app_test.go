@@ -24,6 +24,7 @@ func TestNewApp(t *testing.T) {
 				Name:            "testName",
 				Location:        realm.LocationOregon,
 				DeploymentModel: realm.DeploymentModelGlobal,
+				Environment:     realm.EnvironmentDevelopment,
 				Environments: map[string]map[string]interface{}{
 					"development.json": {
 						"values": map[string]interface{}{},
@@ -59,7 +60,7 @@ func TestNewApp(t *testing.T) {
 			}}},
 		}
 
-		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.DefaultAppConfigVersion)
+		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
 		assert.Equal(t, expectedApp, app)
 	})
 }
@@ -319,7 +320,7 @@ func TestAppWrite20180301(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20180301)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20180301)
 
 		assert.Nil(t, app.Write())
 
@@ -334,6 +335,7 @@ func TestAppWrite20180301(t *testing.T) {
 			Name:                 "test-app",
 			Location:             realm.LocationIreland,
 			DeploymentModel:      realm.DeploymentModelLocal,
+			Environment:          realm.EnvironmentDevelopment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
 			Sync:                 map[string]interface{}{"development_mode_enabled": false},
 		}}}, config)
@@ -380,7 +382,7 @@ func TestAppWrite20200603(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20180301)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20180301)
 
 		assert.Nil(t, app.Write())
 
@@ -395,6 +397,7 @@ func TestAppWrite20200603(t *testing.T) {
 			Name:                 "test-app",
 			Location:             realm.LocationIreland,
 			DeploymentModel:      realm.DeploymentModelLocal,
+			Environment:          realm.EnvironmentDevelopment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
 			Sync:                 map[string]interface{}{"development_mode_enabled": false},
 		}}}, config)
@@ -441,7 +444,7 @@ func TestAppWrite20210101(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.AppConfigVersion20210101)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20210101)
 
 		assert.Nil(t, app.Write())
 
@@ -456,6 +459,7 @@ func TestAppWrite20210101(t *testing.T) {
 			Name:            "test-app",
 			Location:        realm.LocationIreland,
 			DeploymentModel: realm.DeploymentModelLocal,
+			Environment:     realm.EnvironmentDevelopment,
 		}}}, config)
 
 		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {

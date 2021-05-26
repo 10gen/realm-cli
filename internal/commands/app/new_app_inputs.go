@@ -1,6 +1,9 @@
 package app
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -16,19 +19,26 @@ const (
 
 	flagDeploymentModel        = "deployment-model"
 	flagDeploymentModelShort   = "d"
-	flagDeploymentModelUsage   = `select the Realm app's deployment model, available options: ["GLOBAL", "LOCAL"]`
 	flagDeploymentModelDefault = realm.DeploymentModelGlobal
 
 	flagLocation        = "location"
 	flagLocationShort   = "l"
-	flagLocationUsage   = `select the Realm app's location, available options: ["US-VA", "local"]`
 	flagLocationDefault = realm.LocationVirginia
+
+	flagEnvironment      = "environment"
+	flagEnvironmentShort = "e"
 
 	flagProject      = "project"
 	flagProjectUsage = "the MongoDB cloud project id"
 
 	flagConfigVersion      = "config-version"
 	flagConfigVersionUsage = "the config version of the Realm app structure; defaults to latest stable config version"
+)
+
+var (
+	flagDeploymentModelUsage = fmt.Sprintf("select the Realm app's deployment model, available options: [%s]", strings.Join(realm.DeploymentModelValues, ", "))
+	flagLocationUsage        = fmt.Sprintf("select the Realm app's location, available options: [%s]", strings.Join(realm.LocationValues, ", "))
+	flagEnvironmentUsage     = fmt.Sprintf("select the Realm app's environment, available options: [%s]", strings.Join(realm.EnvironmentValues, ", "))
 )
 
 type appRemote struct {
@@ -46,6 +56,7 @@ type newAppInputs struct {
 	Name            string
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
+	Environment     realm.Environment
 	ConfigVersion   realm.AppConfigVersion
 }
 

@@ -203,6 +203,9 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.DeploymentModel != flagDeploymentModelDefault {
 		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})
 	}
+	if i.Environment != realm.EnvironmentNone {
+		args = append(args, flags.Arg{flagEnvironment, i.Environment.String()})
+	}
 	if i.Cluster != "" {
 		args = append(args, flags.Arg{flagCluster, i.Cluster})
 	}

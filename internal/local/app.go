@@ -38,13 +38,14 @@ func (a App) Option() string {
 }
 
 // NewApp returns a new local app
-func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel, configVersion realm.AppConfigVersion) App {
+func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel, environment realm.Environment, configVersion realm.AppConfigVersion) App {
 	return AsApp(rootDir, realm.App{
 		ClientAppID: clientAppID,
 		Name:        name,
 		AppMeta: realm.AppMeta{
 			Location:        location,
 			DeploymentModel: deploymentModel,
+			Environment:     environment,
 		},
 	}, configVersion)
 }
@@ -60,6 +61,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			Name:                 app.Name,
 			Location:             app.Location,
 			DeploymentModel:      app.DeploymentModel,
+			Environment:          app.Environment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
 			Sync:                 map[string]interface{}{"development_mode_enabled": false},
 			Environments: map[string]map[string]interface{}{
@@ -92,6 +94,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			Name:                 app.Name,
 			Location:             app.Location,
 			DeploymentModel:      app.DeploymentModel,
+			Environment:          app.Environment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
 			Sync:                 map[string]interface{}{"development_mode_enabled": false},
 			Environments: map[string]map[string]interface{}{
@@ -124,6 +127,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			Name:            app.Name,
 			Location:        app.Location,
 			DeploymentModel: app.DeploymentModel,
+			Environment:     app.Environment,
 			Environments: map[string]map[string]interface{}{
 				"development.json": {
 					"values": map[string]interface{}{},
