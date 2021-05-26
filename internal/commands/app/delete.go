@@ -11,6 +11,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaDelete is the command meta for the `app delete` command
+var CommandMetaDelete = cli.CommandMeta{
+	Use:         "delete",
+	Display:     "app delete",
+	Description: "Delete a Realm app",
+	HelpText: `If you have more than one Realm app, you will be prompted to select one or
+multiple app(s) that you would like to delete from a list of all your Realm apps.
+The list includes Realm apps from all projects associated with your user profile.`,
+}
+
 // CommandDelete is the `app delete` command
 type CommandDelete struct {
 	inputs deleteInputs

@@ -28,7 +28,7 @@ var (
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without writing any changes to the file system nor deploying any changes to the Realm servers"
+	flagDryRunUsage = "include to run without writing any changes to the file system nor deploying any changes to the Realm server"
 )
 
 type createInputs struct {

@@ -628,7 +628,7 @@ Successfully pushed app up: eggcorn-abcde
 
 				assert.Equal(t, tc.groupsCalled, calledGroups)
 				assert.Equal(t, `This is a new app. To create a new app, you must omit the 'dry-run' flag to proceed
-Try instead: realm-cli import --local testdata/project --remote appID
+Try instead: realm-cli push --local testdata/project --remote appID
 `, out.String())
 			})
 		}
@@ -704,7 +704,7 @@ The following reflects the proposed changes to your Realm app
 diff1
 diff2
 To push these changes, you must omit the 'dry-run' flag to proceed
-Try instead: realm-cli import --local testdata/project --remote appID
+Try instead: realm-cli push --local testdata/project --remote appID
 `, out.String())
 	})
 
@@ -743,7 +743,7 @@ Removed Dependencies
 Modified Dependencies
   * underscore@1.9.1 -> underscore@1.9.2
 To push these changes, you must omit the 'dry-run' flag to proceed
-Try instead: realm-cli import --local testdata/dependencies --remote appID --include-dependencies
+Try instead: realm-cli push --local testdata/dependencies --remote appID --include-dependencies
 `, out.String())
 	})
 
@@ -1419,18 +1419,18 @@ func TestPushCommandDisplay(t *testing.T) {
 	}{
 		{
 			description: "should print a minimal command string",
-			display:     "realm-cli import",
+			display:     "realm-cli push",
 		},
 		{
 			description: "should print a minimal dry run command string",
 			inputs:      inputs{DryRun: true},
-			display:     "realm-cli import --dry-run",
+			display:     "realm-cli push --dry-run",
 		},
 		{
 			description: "should print a minimal command string with dry run set but omitted",
 			inputs:      inputs{DryRun: true},
 			omitDryRun:  true,
-			display:     "realm-cli import",
+			display:     "realm-cli push",
 		},
 		{
 			description: "should print a complete command string",
@@ -1443,7 +1443,7 @@ func TestPushCommandDisplay(t *testing.T) {
 				ResetCDNCache:       true,
 				DryRun:              true,
 			},
-			display: "realm-cli import --project project --local directory --remote remote --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
+			display: "realm-cli push --project project --local directory --remote remote --include-dependencies --include-hosting --reset-cdn-cache --dry-run",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {

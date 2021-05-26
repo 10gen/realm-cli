@@ -12,6 +12,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaEnable is the command meta for the `user enable` command
+var CommandMetaEnable = cli.CommandMeta{
+	Use:         "enable",
+	Display:     "user enable",
+	Description: "Enable an application User of your Realm app",
+	HelpText: `Activates a User on your Realm app. A User that has been enabled will have no
+restrictions with logging in.`,
+}
+
 // CommandEnable is the `user enable` command
 type CommandEnable struct {
 	inputs enableInputs

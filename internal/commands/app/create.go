@@ -13,10 +13,20 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// set of supported `app create` command strings
-const (
-	CommandCreateDisplay = "app create"
-)
+// CommandMetaCreate is the command meta for the `app create` command
+var CommandMetaCreate = cli.CommandMeta{
+	Use:         "create",
+	Display:     "app create",
+	Description: "Create a new app from your current working directory and deploy it to the Realm server",
+	HelpText: `Creates a new Realm app by saving your configuration files in a local directory
+and deploying the new app to the Realm server. This command will create a new
+directory for your project.
+
+You can specify a "--remote" flag to create a Realm app from an existing app;
+if you do not specify a "--remote" flag, the CLI will create a default Realm app.
+
+NOTE: To create a Realm app without deploying it, use "app init".`,
+}
 
 // CommandCreate is the `app create` command
 type CommandCreate struct {
@@ -200,5 +210,5 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 }
 
 func (cmd *CommandCreate) display(omitDryRun bool) string {
-	return cli.CommandDisplay(CommandCreateDisplay, cmd.inputs.args(omitDryRun))
+	return cli.CommandDisplay(CommandMetaCreate.Display, cmd.inputs.args(omitDryRun))
 }

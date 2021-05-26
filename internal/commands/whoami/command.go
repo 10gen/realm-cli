@@ -6,6 +6,20 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 )
 
+// CommandMeta is the command meta for the `whoami` command
+var CommandMeta = cli.CommandMeta{
+	Use:         "whoami",
+	Description: "Display information about the current user",
+	// TODO(REALMC-8832): this is an example of where standardizing cli, comamnd and flag names
+	// into a shared package would be helpful, to reduce coupling the command packages to each other
+	// (since this HelptText creates a "whoami depends on login" package cycle)
+	HelpText: `Displays a table that includes your Public and redacted Private Atlas
+programmatic API Key (e.g. ********-****-****-****-3ba985aa367a). No session
+data will be surfaced if you are not logged in.
+
+NOTE: To log in and authenticate your session, use "realm-cli login"`,
+}
+
 // Command is the `whoami` command
 type Command struct{}
 

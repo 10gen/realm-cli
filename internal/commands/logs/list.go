@@ -22,6 +22,17 @@ var (
 	tailLookBehind = 5
 )
 
+// CommandMetaList is the command meta for the `logs list` command
+var CommandMetaList = cli.CommandMeta{
+	Use:         "list",
+	Aliases:     []string{"ls"},
+	Display:     "logs list",
+	Description: "Lists the Logs in your Realm app",
+	HelpText: `Displays a list of your Realm app’s Logs sorted by recentness, with most recent
+Logs appearing towards the bottom. You can specify a "--tail" flag to monitor
+your Logs and follow any newly created Logs in real-time.`,
+}
+
 // CommandList is the `logs list` command
 type CommandList struct {
 	inputs listInputs

@@ -17,15 +17,17 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// set of supported `push` command strings
-const (
-	CommandUse = "import"
-)
-
-// set of supported `push` command strings
-var (
-	CommandAliases = []string{"push"}
-)
+// CommandMeta is the command meta for the 'push' command
+var CommandMeta = cli.CommandMeta{
+	Use:         "push",
+	Aliases:     []string{"import"},
+	Description: "Imports and deploys changes from your local directory to your Realm app",
+	HelpText: `Updates a remote Realm app with your local directory. First, input a Realm app
+that you would like changes pushed to. This input can be either the application
+Client App ID of an existing Realm app you would like to update, or the Name of
+a new Realm app you would like to create. Changes pushed are automatically
+deployed.`,
+}
 
 // Command is the `push` command
 type Command struct {
@@ -246,7 +248,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 }
 
 func (cmd *Command) display(omitDryRun bool) string {
-	return cli.CommandDisplay(CommandUse, cmd.inputs.args(omitDryRun))
+	return cli.CommandDisplay(CommandMeta.Use, cmd.inputs.args(omitDryRun))
 }
 
 type namer interface{ Name() string }

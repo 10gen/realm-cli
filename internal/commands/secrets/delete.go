@@ -11,6 +11,16 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaDelete is the command meta
+var CommandMetaDelete = cli.CommandMeta{
+	Use:         "delete",
+	Display:     "secrets delete",
+	Description: "Delete a Secret from your Realm app",
+	HelpText: `With this command, you can:
+  - Remove multiple Secrets at once with "--secret" flags. You can specify these
+    Secrets using their ID or Name values`,
+}
+
 // CommandDelete for the secrets delete command
 type CommandDelete struct {
 	inputs deleteInputs

@@ -11,6 +11,22 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaInit is the command meta for the `app init` command
+var CommandMetaInit = cli.CommandMeta{
+	Use:         "init",
+	Aliases:     []string{"initialize"},
+	Display:     "app init",
+	Description: "Initialize a Realm app in your current working directory",
+	HelpText: `Initializes a new Realm app by saving your configuration files in your current
+working directory.
+
+You can specify a "--remote" flag to initialize a Realm app from an existing app;
+if you do not specify a "--remote" flag, the CLI will initialize a default
+Realm app.
+
+NOTE: To create a new Realm app and have it deployed, use "app create".`,
+}
+
 // CommandInit is the `app init` command
 type CommandInit struct {
 	inputs initInputs

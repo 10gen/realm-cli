@@ -14,6 +14,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaList is the command meta for the `user list` command
+var CommandMetaList = cli.CommandMeta{
+	Use:         "list",
+	Aliases:     []string{"ls"},
+	Description: "List the application users of your Realm app",
+	HelpText: `Displays a list of your Realm app's Users' details. The list is grouped by Auth
+Provider type and sorted by Last Authentication Date.`,
+}
+
 // CommandList is the `user list` command
 type CommandList struct {
 	inputs listInputs

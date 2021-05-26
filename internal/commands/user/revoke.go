@@ -13,6 +13,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaRevoke is the command meta for the `user revoke` command
+var CommandMetaRevoke = cli.CommandMeta{
+	Use:         "revoke",
+	Display:     "user revoke",
+	Description: "Revoke an application User’s sessions from your Realm app",
+	HelpText: `Logs a User out of your Realm app. A revoked User can log in again if they
+provide valid credentials.`,
+}
+
 // CommandRevoke is the `user revoke` command
 type CommandRevoke struct {
 	inputs revokeInputs

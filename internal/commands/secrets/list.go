@@ -11,6 +11,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaList is the command meta for the `secrets list` command
+var CommandMetaList = cli.CommandMeta{
+	Use:         "list",
+	Aliases:     []string{"ls"},
+	Display:     "secrets list",
+	Description: "List the Secrets in your Realm app",
+	HelpText:    `This will display the IDs and Names of the Secrets in your Realm app.`,
+}
+
 // CommandList is the `secrets list` command
 type CommandList struct {
 	inputs listInputs

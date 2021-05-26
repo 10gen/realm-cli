@@ -13,6 +13,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaDelete is the command meta for the `user delete` command
+var CommandMetaDelete = cli.CommandMeta{
+	Use:         "delete",
+	Display:     "user delete",
+	Description: "Delete an application user from your Realm app",
+	HelpText: `You can remove multiple Users at once with the "--user" flag. You can only
+specify these Users using their ID values.`,
+}
+
 // CommandDelete is the `user delete` command
 type CommandDelete struct {
 	inputs deleteInputs

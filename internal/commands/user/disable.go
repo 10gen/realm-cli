@@ -12,6 +12,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaDisable is the command meta for the `user disable` command
+var CommandMetaDisable = cli.CommandMeta{
+	Use:         "disable",
+	Display:     "user disable",
+	Description: "Disable an application User of your Realm app",
+	HelpText: `Deactivates a User on your Realm app. A User that has been disabled will not be
+allowed to log in, even if they provide valid credentials.`,
+}
+
 // CommandDisable is the `user disable` command
 type CommandDisable struct {
 	inputs disableInputs

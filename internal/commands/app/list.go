@@ -10,6 +10,15 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaList is the command meta for the `app list` command
+var CommandMetaList = cli.CommandMeta{
+	Use:         "list",
+	Aliases:     []string{"ls"},
+	Display:     "apps list",
+	Description: "List the Realm apps you have access to",
+	HelpText:    `Lists and filters your Realm apps.`,
+}
+
 // CommandList is the `app list` command
 type CommandList struct {
 	inputs cli.ProjectInputs
