@@ -71,6 +71,12 @@ func TestResolveApps(t *testing.T) {
 				apps:         testApps,
 				expectedApps: []realm.App{app1, app2},
 			},
+			{
+				description:  "should return found apps without prompting based on app client ID or name inputs provided",
+				inputs:       deleteInputs{Apps: []string{"app1-abcde", "app3"}},
+				apps:         testApps,
+				expectedApps: []realm.App{app1, app3},
+			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				realmClient := mock.RealmClient{}
