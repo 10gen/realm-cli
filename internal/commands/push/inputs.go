@@ -16,6 +16,9 @@ const (
 	flagRemote      = "remote"
 	flagRemoteUsage = "a remote Realm app (id or name) to push changes to"
 
+	flagProject      = "project"
+	flagProjectUsage = "the MongoDB cloud project id"
+
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
 	flagIncludeDependenciesUsage = "include to import Realm app dependencies changes as well"
@@ -31,9 +34,6 @@ const (
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
 	flagDryRunUsage = "include to run without pushing any changes to the Realm server"
-
-	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
 )
 
 type appRemote struct {
@@ -43,8 +43,8 @@ type appRemote struct {
 
 type inputs struct {
 	LocalPath           string
-	Project             string
 	RemoteApp           string
+	Project             string
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -52,14 +52,14 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	wd := i.LocalPath
-	if wd == "" {
-		wd = profile.WorkingDirectory
+	searchPath := i.LocalPath
+	if searchPath == "" {
+		searchPath = profile.WorkingDirectory
 	}
 
-	app, appErr := local.LoadAppConfig(wd)
-	if appErr != nil {
-		return appErr
+	app, err := local.LoadAppConfig(searchPath)
+	if err != nil {
+		return err
 	}
 
 	if i.LocalPath == "" {
@@ -88,6 +88,7 @@ func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote
 		if _, ok := err.(cli.ErrAppNotFound); !ok {
 			return appRemote{}, err
 		}
+		return r, nil
 	}
 
 	r.GroupID = app.GroupID
