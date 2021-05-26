@@ -148,7 +148,7 @@ func (p *Profile) ResolveFlags() error {
 
 	if p.Flags.RealmBaseURL == "" {
 		realmBaseURL := p.GetString(keyRealmBaseURL)
-		if FlagRealmBaseURL == "" {
+		if realmBaseURL == "" {
 			realmBaseURL = defaultRealmBaseURL
 		}
 		p.Flags.RealmBaseURL = realmBaseURL
@@ -157,7 +157,7 @@ func (p *Profile) ResolveFlags() error {
 
 	if p.Flags.AtlasBaseURL == "" {
 		atlasBaseURL := p.GetString(keyAtlasBaseURL)
-		if FlagAtlasBaseURL == "" {
+		if atlasBaseURL == "" {
 			atlasBaseURL = defaultAtlasBaseURL
 		}
 		p.Flags.AtlasBaseURL = atlasBaseURL
