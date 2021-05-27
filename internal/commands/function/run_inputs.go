@@ -23,39 +23,38 @@ const (
 	flagAsUserUsage = "specify the user to run the function as; defaults to system"
 )
 
-type inputs struct {
+type runInputs struct {
 	cli.ProjectInputs
 	Name string
 	Args []string
 	User string
 }
 
-func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if i.Name == "" {
-		if err := ui.AskOne(&i.Name, &survey.Input{Message: "Function Name"}); err != nil {
-			return err
-		}
-	}
-	return nil
+func (i *runInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
 }
 
-func (i *inputs) ResolveFunction(ui terminal.UI, client realm.Client, groupID, appID string) (realm.Function, error) {
+func (i *runInputs) resolveFunction(ui terminal.UI, client realm.Client, groupID, appID string) (realm.Function, error) {
 	functions, err := client.Functions(groupID, appID)
 	if err != nil {
 		return realm.Function{}, err
 	}
 
-	switch len(functions) {
-	case 0:
-		return realm.Function{}, errors.New("failed to find function")
-	case 1:
-		return functions[0], nil
+	if len(functions) == 0 {
+		return realm.Function{}, errors.New("no functions available to run")
 	}
 
-	for _, function := range functions {
-		if function.Name == i.Name {
-			return function, nil
+	if i.Name != "" {
+		for _, function := range functions {
+			if function.Name == i.Name {
+				return function, nil
+			}
 		}
+		return realm.Function{}, fmt.Errorf("failed to find function '%s'", i.Name)
+	}
+
+	if len(functions) == 1 {
+		return functions[0], nil
 	}
 
 	functionsByOption := make(map[string]realm.Function, len(functions))
