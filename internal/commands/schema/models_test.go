@@ -401,7 +401,7 @@ export const schemaThree = {}
 					Language:      languageJava,
 					ProjectInputs: cli.ProjectInputs{Project: "project", App: "test-app"},
 				}
-				assert.Nil(t, i.Resolve(nil, nil)) // sets empty nameSet
+				assert.Nil(t, i.Resolve(profile, ui)) // sets empty nameSet
 
 				cmd := &CommandDatamodels{i}
 
