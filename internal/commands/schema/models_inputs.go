@@ -37,6 +37,10 @@ type datamodelsInputs struct {
 }
 
 func (i *datamodelsInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
+		return err
+	}
+
 	if i.Language == "" {
 		options, typesByOption := make([]string, len(allLanguages)), map[interface{}]language{}
 		for i, l := range allLanguages {

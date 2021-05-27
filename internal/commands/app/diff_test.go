@@ -270,7 +270,7 @@ func TestAppDiffInputs(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(""+tc.description, func(t *testing.T) {
+		t.Run(tc.description, func(t *testing.T) {
 			profile := mock.NewProfile(t)
 
 			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
