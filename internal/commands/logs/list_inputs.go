@@ -43,7 +43,7 @@ func (i *listInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	i.sigShutdown = make(chan os.Signal, 1)
 	signal.Notify(i.sigShutdown, syscall.SIGTERM, syscall.SIGINT)
 
-	return nil
+	return i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true)
 }
 
 func (i *listInputs) logTypes() []string {
