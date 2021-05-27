@@ -20,6 +20,10 @@ type createInputs struct {
 }
 
 func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
+		return err
+	}
+
 	var questions []*survey.Question
 
 	if i.Name == "" {
