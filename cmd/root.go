@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/commands"
@@ -23,9 +25,12 @@ func Run() {
 		SilenceUsage:  true,
 	}
 
-	factory := cli.NewCommandFactory()
+	factory, err := cli.NewCommandFactory()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	cobra.OnInitialize(factory.Setup)
-	defer factory.Close()
 
 	cmd.Flags().SortFlags = false // ensures CLI help text displays global flags unsorted
 	factory.SetGlobalFlags(cmd.PersistentFlags())
@@ -42,5 +47,5 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Schema))
 
-	factory.Run(cmd)
+	os.Exit(factory.Run(cmd))
 }
