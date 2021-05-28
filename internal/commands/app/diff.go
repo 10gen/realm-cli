@@ -154,22 +154,22 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if i.LocalPath == "" {
-		if app.RootDir != "" {
-			i.LocalPath = app.RootDir
-		} else {
-			if err := ui.AskOne(&i.LocalPath, &survey.Input{Message: "App filepath (local)"}); err != nil {
-				return err
-			}
+	if i.LocalPath == "" && app.RootDir == "" {
+		if err := ui.AskOne(&i.LocalPath, &survey.Input{Message: "App filepath (local)"}); err != nil {
+			return err
+		}
 
-			app, err = local.LoadAppConfig(i.LocalPath)
-			if err != nil {
-				return nil
-			}
+		app, err = local.LoadAppConfig(i.LocalPath)
+		if err != nil {
+			return err
 		}
 	}
 
-	if i.RemoteApp == "" && app.RootDir != "" {
+	if app.RootDir != "" {
+		i.LocalPath = app.RootDir
+	}
+
+	if i.RemoteApp == "" {
 		i.RemoteApp = app.Option()
 	}
 

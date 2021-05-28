@@ -229,7 +229,7 @@ func TestAppDiffInputs(t *testing.T) {
 				c.SendLine("./testdata/diff")
 			},
 			test: func(t *testing.T, i diffInputs, p *user.Profile) {
-				assert.Equal(t, "./testdata/diff", i.LocalPath)
+				assert.Equal(t, filepath.Join(p.WorkingDirectory, "testdata/diff"), i.LocalPath)
 				assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
 			},
 		},
@@ -265,7 +265,7 @@ func TestAppDiffInputs(t *testing.T) {
 			prepareProfile: func(p *user.Profile) {},
 			procedure:      func(c *expect.Console) {},
 			test: func(t *testing.T, i diffInputs, p *user.Profile) {
-				assert.Equal(t, "./testdata/diff", i.LocalPath)
+				assert.Equal(t, filepath.Join(p.WorkingDirectory, "testdata/diff"), i.LocalPath)
 				assert.Equal(t, "different-app", i.RemoteApp)
 			},
 		},
