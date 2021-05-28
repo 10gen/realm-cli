@@ -223,7 +223,7 @@ func (e Environment) Type() string { return flags.TypeString }
 
 // Set validates and sets the Environment value
 func (e *Environment) Set(val string) error {
-	newEnvironment := Environment(strings.ToUpper(val))
+	newEnvironment := Environment(strings.ToLower(val))
 
 	if !isValidEnvironment(newEnvironment) {
 		return errInvalidEnvironment
