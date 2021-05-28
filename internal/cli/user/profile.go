@@ -190,6 +190,7 @@ const (
 	keyLastVersionCheck = "last_version_check"
 )
 
+// TelemetryMode gets the CLI profile telemetry mode
 func (p Profile) TelemetryMode() telemetry.Mode {
 	return telemetry.Mode(p.GetString(keyTelemetryMode))
 }
