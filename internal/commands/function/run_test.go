@@ -44,7 +44,7 @@ func TestFunctionHandler(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-		cmd := &CommandRun{inputs{
+		cmd := &CommandRun{runInputs{
 			ProjectInputs: cli.ProjectInputs{
 				Project: "test-project",
 				App:     "test-app",
@@ -105,7 +105,7 @@ func TestFunctionHandler(t *testing.T) {
 		out := new(bytes.Buffer)
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-		cmd := &CommandRun{inputs{
+		cmd := &CommandRun{runInputs{
 			ProjectInputs: cli.ProjectInputs{
 				Project: "test-project",
 				App:     "test-app",
@@ -187,7 +187,7 @@ func TestFunctionHandler(t *testing.T) {
 
 			clients := cli.Clients{Realm: tc.realmClient}
 
-			cmd := &CommandRun{inputs{
+			cmd := &CommandRun{runInputs{
 				ProjectInputs: cli.ProjectInputs{
 					Project: "test-project",
 					App:     "test-app",

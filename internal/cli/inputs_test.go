@@ -44,7 +44,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			description: "When outside a project directory should prompt for app when not flagged",
 			wd:          testRoot,
 			procedure: func(c *expect.Console) {
-				c.ExpectString("App Filter")
+				c.ExpectString("App ID or Name")
 				c.SendLine("some-app")
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {
@@ -55,7 +55,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			description: "When inside a project directory should prompt for app when not flagged and provide client app id as a default",
 			wd:          projectRoot,
 			procedure: func(c *expect.Console) {
-				c.ExpectString("App Filter")
+				c.ExpectString("App ID or Name")
 				c.SendLine("") // accept default
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {
@@ -66,7 +66,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			description: "When inside a project directory should prompt for app when not flagged and provide name as a default when client app id is not available",
 			wd:          localProjectRoot,
 			procedure: func(c *expect.Console) {
-				c.ExpectString("App Filter")
+				c.ExpectString("App ID or Name")
 				c.SendLine("") // accept default
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {

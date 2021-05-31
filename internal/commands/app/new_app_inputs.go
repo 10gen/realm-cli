@@ -14,8 +14,8 @@ const (
 	flagNameShort = "n"
 	flagNameUsage = "set the name of the new Realm app"
 
-	flagRemote      = "remote"
-	flagRemoteUsage = "choose an application to build the new Realm app from"
+	flagRemoteAppNew      = "remote"
+	flagRemoteAppNewUsage = "choose an application to build the new Realm app from"
 
 	flagDeploymentModel        = "deployment-model"
 	flagDeploymentModelShort   = "d"

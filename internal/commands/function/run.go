@@ -29,7 +29,7 @@ be displayed:
 
 // CommandRun is the `function run` command
 type CommandRun struct {
-	inputs inputs
+	inputs runInputs
 }
 
 // Flags is the command flags
@@ -79,7 +79,7 @@ func (cmd *CommandRun) Handler(profile *user.Profile, ui terminal.UI, clients cl
 		return err
 	}
 
-	function, err := cmd.inputs.ResolveFunction(ui, clients.Realm, app.GroupID, app.ID)
+	function, err := cmd.inputs.resolveFunction(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}

@@ -52,11 +52,16 @@ func (cmd *CommandUpdate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
+	name := cmd.inputs.name
+	if name == "" {
+		name = secret.Name // when admin api _says_ patch, but never means it...
+	}
+
 	if err := clients.Realm.UpdateSecret(
 		app.GroupID,
 		app.ID,
 		secret.ID,
-		cmd.inputs.name,
+		name,
 		cmd.inputs.value,
 	); err != nil {
 		return err

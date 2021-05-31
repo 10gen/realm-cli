@@ -7,26 +7,90 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-
-	"github.com/Netflix/go-expect"
+	"github.com/AlecAivazis/survey/v2/terminal"
 )
 
-func TestFunctionInputsResolve(t *testing.T) {
-	t.Run("should pass without interaction when function name is set", func(t *testing.T) {
-		profile := mock.NewProfile(t)
+func TestFunctionRunInputsResolveFunction(t *testing.T) {
+	t.Run("should return an error when finding functions fails", func(t *testing.T) {
+		var realmClient mock.RealmClient
 
-		i := inputs{Name: "test"}
-		assert.Nil(t, i.Resolve(profile, nil))
+		var capturedGroupID, capturedAppID string
+		realmClient.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
+			capturedGroupID = groupID
+			capturedAppID = appID
+			return nil, errors.New("something bad happened")
+		}
+
+		var i runInputs
+
+		_, err := i.resolveFunction(nil, realmClient, "groupID", "appID")
+		assert.Equal(t, errors.New("something bad happened"), err)
+
+		t.Log("and receive the expected args to the client functions call")
+		assert.Equal(t, "groupID", capturedGroupID)
+		assert.Equal(t, "appID", capturedAppID)
 	})
 
-	t.Run("should prompt for function name", func(t *testing.T) {
-		profile := mock.NewProfile(t)
+	t.Run("should return an error when no functions are found", func(t *testing.T) {
+		var realmClient mock.RealmClient
 
-		procedure := func(c *expect.Console) {
-			c.ExpectString("Function Name")
-			c.Send("test")
-			c.SendLine(" ")
-			c.ExpectEOF()
+		realmClient.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
+			return nil, nil
+		}
+
+		var i runInputs
+
+		_, err := i.resolveFunction(nil, realmClient, "groupID", "appID")
+		assert.Equal(t, errors.New("no functions available to run"), err)
+	})
+
+	t.Run("should return an error when no functions of the specified name are found", func(t *testing.T) {
+		var realmClient mock.RealmClient
+
+		realmClient.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
+			return []realm.Function{{Name: "fredFunc"}}, nil
+		}
+
+		i := runInputs{Name: "uptownFunc"}
+
+		_, err := i.resolveFunction(nil, realmClient, "groupID", "appID")
+		assert.Equal(t, errors.New("failed to find function 'uptownFunc'"), err)
+	})
+
+	for _, tc := range []struct {
+		description  string
+		appFunctions []realm.Function
+		inputs       runInputs
+		expectedFn   realm.Function
+	}{
+		{
+			description:  "should find a function by name",
+			appFunctions: []realm.Function{{Name: "func1"}, {Name: "func2"}, {Name: "func3"}},
+			inputs:       runInputs{Name: "func2"},
+			expectedFn:   realm.Function{Name: "func2"},
+		},
+		{
+			description:  "should return a function if only one found and name input is not set",
+			appFunctions: []realm.Function{{Name: "func1"}},
+			expectedFn:   realm.Function{Name: "func1"},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			var realmClient mock.RealmClient
+			realmClient.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
+				return tc.appFunctions, nil
+			}
+
+			fn, err := tc.inputs.resolveFunction(nil, realmClient, "groupID", "appID")
+			assert.Nil(t, err)
+			assert.Equal(t, tc.expectedFn, fn)
+		})
+	}
+
+	t.Run("should prompt the user to select from a list of available apps if no name input is set", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
+			return []realm.Function{{Name: "func1"}, {Name: "func2"}, {Name: "func3"}}, nil
 		}
 
 		_, console, _, ui, err := mock.NewVT10XConsole()
@@ -36,87 +100,21 @@ func TestFunctionInputsResolve(t *testing.T) {
 		doneCh := make(chan (struct{}))
 		go func() {
 			defer close(doneCh)
-			procedure(console)
+
+			console.ExpectString("Select Function")
+			console.Send(string(terminal.KeyArrowDown))
+			console.SendLine("")
+			console.ExpectEOF()
 		}()
 
-		i := inputs{Name: "test"}
-		assert.Nil(t, i.Resolve(profile, ui))
+		var i runInputs
 
-		console.Tty().Close() // flush the writers
-		<-doneCh              // wait for procedure to complete
-	})
-}
-
-func TestFunctionInputsResolveFunction(t *testing.T) {
-	t.Run("should confirm function name exists when function name is set", func(t *testing.T) {
-		var group, app string
-		rc := mock.RealmClient{}
-		rc.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
-			group = groupID
-			app = appID
-			return []realm.Function{{Name: "test"}}, nil
-		}
-
-		i := inputs{Name: "test"}
-		function, err := i.ResolveFunction(nil, rc, "test-project", "test-app")
-		assert.Nil(t, err)
-
-		assert.Equal(t, realm.Function{Name: "test"}, function)
-		assert.Equal(t, "test-project", group)
-		assert.Equal(t, "test-app", app)
-	})
-
-	t.Run("should select function name when multiple matches", func(t *testing.T) {
-		procedure := func(c *expect.Console) {
-			c.ExpectString("Select Function")
-			c.SendLine("foo")
-			c.ExpectEOF()
-		}
-
-		_, console, _, ui, err := mock.NewVT10XConsole()
-		assert.Nil(t, err)
-		defer console.Close()
-
-		doneCh := make(chan (struct{}))
-		go func() {
-			defer close(doneCh)
-			procedure(console)
-		}()
-
-		var group, app string
-		rc := mock.RealmClient{}
-		rc.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
-			group = groupID
-			app = appID
-			return []realm.Function{{Name: "foo"}, {Name: "bar"}}, nil
-		}
-
-		i := inputs{Name: "foo bar"}
-		function, err := i.ResolveFunction(ui, rc, "test-project", "test-app")
+		fn, err := i.resolveFunction(ui, realmClient, "groupID", "appID")
 		assert.Nil(t, err)
 
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		assert.Equal(t, realm.Function{Name: "foo"}, function)
-		assert.Equal(t, "test-project", group)
-		assert.Equal(t, "test-app", app)
-	})
-
-	t.Run("should error with function name set and no found functions", func(t *testing.T) {
-		var group, app string
-		rc := mock.RealmClient{}
-		rc.FunctionsFn = func(groupID, appID string) ([]realm.Function, error) {
-			group = groupID
-			app = appID
-			return []realm.Function{}, errors.New("realm client error")
-		}
-
-		i := inputs{Name: "test"}
-		function, err := i.ResolveFunction(nil, rc, "test-project", "test-app")
-		assert.Equal(t, errors.New("realm client error"), err)
-		assert.Equal(t, realm.Function{}, function)
-		assert.Equal(t, "test-project", group)
-		assert.Equal(t, "test-app", app)
+		assert.Equal(t, realm.Function{Name: "func2"}, fn)
 	})
 }

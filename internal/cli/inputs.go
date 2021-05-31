@@ -61,7 +61,7 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) e
 			appOption = app.Option()
 		} else {
 			if !skipAppPrompt {
-				if err := ui.AskOne(&appOption, &survey.Input{Message: "App Filter"}); err != nil {
+				if err := ui.AskOne(&appOption, &survey.Input{Message: "App ID or Name"}); err != nil {
 					return err
 				}
 			}
