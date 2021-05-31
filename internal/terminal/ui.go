@@ -90,7 +90,7 @@ func (ui *ui) Print(logs ...Log) {
 		}
 
 		if _, err := fmt.Fprintln(writer, output); err != nil {
-			log.Fatal(output) // log the original failure
+			log.Print(output) // log the original output
 		}
 	}
 }

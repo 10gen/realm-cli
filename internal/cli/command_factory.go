@@ -32,13 +32,13 @@ type CommandFactory struct {
 }
 
 // NewCommandFactory creates a new command factory
-func NewCommandFactory() *CommandFactory {
-	profile, profileErr := user.NewDefaultProfile()
-	if profileErr != nil {
-		log.Fatal(profileErr)
+func NewCommandFactory() (*CommandFactory, error) {
+	profile, err := user.NewDefaultProfile()
+	if err != nil {
+		return nil, err
 	}
 
-	return &CommandFactory{profile: profile}
+	return &CommandFactory{profile: profile}, nil
 }
 
 // Build builds a Cobra command from the specified CommandDefinition
@@ -130,26 +130,20 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 	return &cmd
 }
 
-// Close closes the command factory
-func (factory *CommandFactory) Close() {
-	if factory.telemetryService != nil {
-		factory.telemetryService.Close()
-	}
-
-	if factory.uiConfig.OutputTarget != "" {
-		factory.outWriter.Close()
-	}
-}
-
 // Run executes the command
-func (factory *CommandFactory) Run(cmd *cobra.Command) {
-	if err := cmd.Execute(); err != nil {
-		handleUsage(cmd, err)
+func (factory *CommandFactory) Run(cmd *cobra.Command) int {
+	defer factory.close()
 
-		if factory.ui == nil {
-			log.Fatal(err)
-		}
+	err := cmd.Execute()
+	if err == nil {
+		return 0
+	}
 
+	handleUsage(cmd, err)
+
+	if factory.ui == nil {
+		log.Print(err)
+	} else {
 		logs := []terminal.Log{terminal.NewErrorLog(err)}
 		if e, ok := err.(Suggester); ok {
 			logs = append(logs, terminal.NewFollowupLog(terminal.MsgSuggestions, e.Suggestions()))
@@ -159,8 +153,9 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) {
 		}
 
 		factory.ui.Print(logs...)
-		os.Exit(1)
 	}
+
+	return 1
 }
 
 // SetGlobalFlags sets the global flags
@@ -197,6 +192,16 @@ func (factory *CommandFactory) Setup() {
 			log.Fatal(fmt.Errorf("failed to open target file: %w", err))
 		}
 		factory.outWriter = f
+	}
+}
+
+func (factory *CommandFactory) close() {
+	if factory.telemetryService != nil {
+		factory.telemetryService.Close()
+	}
+
+	if factory.uiConfig.OutputTarget != "" {
+		factory.outWriter.Close()
 	}
 }
 
