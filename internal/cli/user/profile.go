@@ -141,14 +141,14 @@ func (p *Profile) Save() error {
 
 // ResolveFlags resolves the user profile flags
 func (p *Profile) ResolveFlags() error {
-	if p.TelemetryMode == telemetry.ModeEmpty {
-		p.TelemetryMode = telemetry.Mode(p.GetString(keyTelemetryMode))
+	if p.Flags.TelemetryMode == telemetry.ModeEmpty {
+		p.Flags.TelemetryMode = p.TelemetryMode()
 	}
-	p.SetString(keyTelemetryMode, string(p.TelemetryMode))
+	p.SetString(keyTelemetryMode, string(p.Flags.TelemetryMode))
 
 	if p.Flags.RealmBaseURL == "" {
-		realmBaseURL := p.GetString(keyRealmBaseURL)
-		if FlagRealmBaseURL == "" {
+		realmBaseURL := p.RealmBaseURL()
+		if realmBaseURL == "" {
 			realmBaseURL = defaultRealmBaseURL
 		}
 		p.Flags.RealmBaseURL = realmBaseURL
@@ -156,8 +156,8 @@ func (p *Profile) ResolveFlags() error {
 	p.SetRealmBaseURL(p.Flags.RealmBaseURL)
 
 	if p.Flags.AtlasBaseURL == "" {
-		atlasBaseURL := p.GetString(keyAtlasBaseURL)
-		if FlagAtlasBaseURL == "" {
+		atlasBaseURL := p.AtlasBaseURL()
+		if atlasBaseURL == "" {
 			atlasBaseURL = defaultAtlasBaseURL
 		}
 		p.Flags.AtlasBaseURL = atlasBaseURL
@@ -189,6 +189,11 @@ const (
 	keyTelemetryMode    = "telemetry_mode"
 	keyLastVersionCheck = "last_version_check"
 )
+
+// TelemetryMode gets the CLI profile telemetry mode
+func (p Profile) TelemetryMode() telemetry.Mode {
+	return telemetry.Mode(p.GetString(keyTelemetryMode))
+}
 
 // Credentials gets the CLI profile credentials
 func (p Profile) Credentials() Credentials {

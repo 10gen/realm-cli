@@ -1,57 +1,58 @@
-package user_test
+package user
 
 import (
-	"fmt"
-	"io/ioutil"
-	"strings"
 	"testing"
 
-	"github.com/10gen/realm-cli/internal/cli/user"
-	u "github.com/10gen/realm-cli/internal/utils/test"
+	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-func TestProfile(t *testing.T) {
-	tmpDir, teardownTmpDir, tmpDirErr := u.NewTempDir("home")
-	assert.Nil(t, tmpDirErr)
-	defer teardownTmpDir()
-
-	_, teardownHomeDir := u.SetupHomeDir(tmpDir)
-	defer teardownHomeDir()
-
-	profile, profileErr := user.NewDefaultProfile()
-	assert.Nil(t, profileErr)
-
-	t.Run("Should initialize as an empty, default profile", func(t *testing.T) {
-		assert.Equal(t, user.DefaultProfile, profile.Name)
-		assert.Equal(t, tmpDir+"/.config/realm-cli", profile.Dir())
-	})
-
-	t.Run("Should load a config that does not exist without error", func(t *testing.T) {
-		assert.Nil(t, profile.Load())
-	})
-
-	t.Run("Should set config values properly", func(t *testing.T) {
-		profile.SetString("a", "ayyy")
-		profile.SetString("b", "be")
-
-		assert.Equal(t, profile.GetString("a"), "ayyy")
-		assert.Equal(t, profile.GetString("b"), "be")
-	})
-
-	t.Run("Should save a config properly", func(t *testing.T) {
-		assert.Nil(t, profile.Save())
-
-		config, err := ioutil.ReadFile(profile.Path())
+func TestProfileResolveFlags(t *testing.T) {
+	t.Run("should provide defaults if flags are empty and set them in the profile", func(t *testing.T) {
+		profile, err := NewProfile(primitive.NewObjectID().Hex())
 		assert.Nil(t, err)
-		assert.True(t, strings.Contains(string(config), `default:
-  a: ayyy
-  b: be
-`), "config must contain the expected contents")
+
+		assert.Equal(t, telemetry.ModeEmpty, profile.Flags.TelemetryMode)
+		assert.Equal(t, "", profile.Flags.RealmBaseURL)
+		assert.Equal(t, "", profile.Flags.AtlasBaseURL)
+
+		assert.Nil(t, profile.ResolveFlags())
+
+		assert.Equal(t, telemetry.ModeEmpty, profile.Flags.TelemetryMode)
+		assert.Equal(t, telemetry.ModeEmpty, profile.TelemetryMode())
+
+		assert.Equal(t, defaultRealmBaseURL, profile.Flags.RealmBaseURL)
+		assert.Equal(t, defaultRealmBaseURL, profile.RealmBaseURL())
+
+		assert.Equal(t, defaultAtlasBaseURL, profile.Flags.AtlasBaseURL)
+		assert.Equal(t, defaultAtlasBaseURL, profile.AtlasBaseURL())
 	})
 
-	t.Run("Should provide a path the the hosting asset cache file", func(t *testing.T) {
-		cachePath := fmt.Sprintf("%s/%s/%s.json", profile.Dir(), user.HostingAssetCacheDir, profile.Name)
-		assert.Equal(t, cachePath, profile.HostingAssetCachePath())
+	t.Run("should use flags to set them in the profile", func(t *testing.T) {
+		profile, err := NewProfile(primitive.NewObjectID().Hex())
+		assert.Nil(t, err)
+
+		profile.Flags = Flags{
+			TelemetryMode: telemetry.ModeStdout,
+			RealmBaseURL:  "https://realm-dev.mongodb.com",
+			AtlasBaseURL:  "https://cloud-dev.mongodb.com",
+		}
+
+		assert.Equal(t, telemetry.ModeStdout, profile.Flags.TelemetryMode)
+		assert.Equal(t, "https://realm-dev.mongodb.com", profile.Flags.RealmBaseURL)
+		assert.Equal(t, "https://cloud-dev.mongodb.com", profile.Flags.AtlasBaseURL)
+
+		assert.Nil(t, profile.ResolveFlags())
+
+		assert.Equal(t, telemetry.ModeStdout, profile.Flags.TelemetryMode)
+		assert.Equal(t, telemetry.ModeStdout, profile.TelemetryMode())
+
+		assert.Equal(t, "https://realm-dev.mongodb.com", profile.Flags.RealmBaseURL)
+		assert.Equal(t, "https://realm-dev.mongodb.com", profile.RealmBaseURL())
+
+		assert.Equal(t, "https://cloud-dev.mongodb.com", profile.Flags.AtlasBaseURL)
+		assert.Equal(t, "https://cloud-dev.mongodb.com", profile.AtlasBaseURL())
 	})
 }
