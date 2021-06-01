@@ -21,7 +21,7 @@ const (
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to to export Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "include to export Realm app dependencies changes as well"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
