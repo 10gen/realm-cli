@@ -11,9 +11,9 @@ import (
 
 type updateInputs struct {
 	cli.ProjectInputs
-	IP      string
-	NewIP   string
-	Comment string
+	IPAddress    string
+	NewIPAddress string
+	Comment      string
 }
 
 func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -24,13 +24,13 @@ func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 }
 
 func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.AllowedIP) (realm.AllowedIP, error) {
-	if len(i.IP) > 0 {
+	if len(i.IPAddress) > 0 {
 		for _, allowedIP := range allowedIPs {
-			if allowedIP.IP == i.IP {
+			if allowedIP.IPAddress == i.IPAddress {
 				return allowedIP, nil
 			}
 		}
-		return realm.AllowedIP{}, fmt.Errorf("unable to find allowed IP: %s", i.IP)
+		return realm.AllowedIP{}, fmt.Errorf("unable to find allowed IP: %s", i.IPAddress)
 	}
 
 	return realm.AllowedIP{}, nil

@@ -62,9 +62,9 @@ type RealmClient struct {
 	SchemaModelsFn func(groupID, appID, language string) ([]realm.SchemaModel, error)
 
 	AllowedIPsFn      func(groupID, appID string) ([]realm.AllowedIP, error)
-	CreateAllowedIPFn func(groupID, appID, allowedIPAddress, comment string) (realm.AllowedIP, error)
-	DeleteAllowedIPFn func(groupID, appID, allowedIPID string) error
-	UpdateAllowedIPFn func(groupID, appID, allowedIPID, allowedIPAddress, coomment string) error
+	CreateAllowedIPFn func(groupID, appID, allowedIP, comment string) (realm.AllowedIP, error)
+	DeleteAllowedIPFn func(groupID, appID, allowedIP string) error
+	UpdateAllowedIPFn func(groupID, appID, allowedIP, newAllowedIP, coomment string) error
 
 	StatusFn func() error
 }

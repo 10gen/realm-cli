@@ -15,8 +15,8 @@ type CommandUpdate struct {
 // Flags is the command flags
 func (cmd *CommandUpdate) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
-	fs.StringVar(&cmd.inputs.IP, flagIP, "", flagIPUsageUpdate)
-	fs.StringVar(&cmd.inputs.NewIP, flagNewIP, "", flagNewIPUsageUpdate)
+	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageUpdate)
+	fs.StringVar(&cmd.inputs.NewIPAddress, flagNewIP, "", flagNewIPUsageUpdate)
 	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageUpdate)
 }
 
@@ -45,8 +45,8 @@ func (cmd *CommandUpdate) Handler(profile *user.Profile, ui terminal.UI, clients
 	if err := clients.Realm.UpdateAllowedIP(
 		app.GroupID,
 		app.ID,
-		allowedIP.IP,
-		cmd.inputs.NewIP,
+		allowedIP.ID,
+		cmd.inputs.NewIPAddress,
 		cmd.inputs.Comment,
 	); err != nil {
 		return err

@@ -37,6 +37,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully created allowed IP, IP: %s", allowedIP.IP))
+	ui.Print(terminal.NewTextLog("Successfully created allowed IP, id: %s", allowedIP.ID))
 	return nil
 }

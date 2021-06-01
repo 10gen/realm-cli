@@ -15,7 +15,7 @@ type CommandDelete struct {
 // Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
-	fs.StringVar(&cmd.inputs.IP, flagIP, "", flagIPUsageDelete)
+	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageDelete)
 }
 
 // Inputs is the command inputs
@@ -43,7 +43,7 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 	if err := clients.Realm.DeleteAllowedIP(
 		app.GroupID,
 		app.ID,
-		allowedIP.IP,
+		allowedIP.ID,
 	); err != nil {
 		return err
 	}

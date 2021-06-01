@@ -58,7 +58,7 @@ func tableRowsList(allowedIPs []realm.AllowedIP) []map[string]interface{} {
 	rows := make([]map[string]interface{}, 0, len(allowedIPs))
 	for _, allowedIP := range allowedIPs {
 		rows = append(rows, map[string]interface{}{
-			headerIP:      allowedIP.IP,
+			headerIP:      allowedIP.IPAddress,
 			headerComment: allowedIP.Comment,
 		})
 	}
