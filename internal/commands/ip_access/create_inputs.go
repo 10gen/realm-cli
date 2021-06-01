@@ -24,14 +24,14 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.IP == "" {
 		questions = append(questions, &survey.Question{
 			Name:   createInputFieldAllowedIP,
-			Prompt: &survey.Input{Message: "IP Address"},
+			Prompt: &survey.Input{Message: "Allowed IP"},
 		})
 	}
 
 	if i.Comment == "" {
 		questions = append(questions, &survey.Question{
 			Name:   createInputFieldAllowedIPComment,
-			Prompt: &survey.Input{Message: "IP Address comment"},
+			Prompt: &survey.Input{Message: "Comment"},
 		})
 	}
 

@@ -15,7 +15,8 @@ const (
 
 // AllowedIP is an IP Access address stored in a Realm app
 type AllowedIP struct {
-	ID string
+	IP      string
+	Comment string
 }
 
 func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {

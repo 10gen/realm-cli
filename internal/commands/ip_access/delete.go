@@ -7,20 +7,23 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandDelete for the ip access delete command
 type CommandDelete struct {
 	inputs deleteInputs
 }
 
-// Inputs function for the secrets delete command
-func (cmd *CommandDelete) Inputs() cli.InputResolver {
-	return &cmd.inputs
-}
-
+// Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringVar(&cmd.inputs.IP, flagIP, "", flagIPUsageDelete)
 }
 
+// Inputs is the command inputs
+func (cmd *CommandDelete) Inputs() cli.InputResolver {
+	return &cmd.inputs
+}
+
+// Handler is the command handler
 func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
 	if err != nil {
@@ -40,7 +43,7 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 	if err := clients.Realm.DeleteAllowedIP(
 		app.GroupID,
 		app.ID,
-		allowedIP.ID,
+		allowedIP.IP,
 	); err != nil {
 		return err
 	}

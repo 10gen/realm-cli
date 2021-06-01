@@ -7,10 +7,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandCreate is the ip access create command
 type CommandCreate struct {
 	inputs createInputs
 }
 
+// Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
@@ -18,6 +20,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageCreate)
 }
 
+// Inputs is the command inputs
 func (cmd *CommandCreate) Inputs() cli.InputResolver {
 	return &cmd.inputs
 }
@@ -34,6 +37,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully created allowed IP, id: %s", allowedIP.ID))
+	ui.Print(terminal.NewTextLog("Successfully created allowed IP, IP: %s", allowedIP.IP))
 	return nil
 }

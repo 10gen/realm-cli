@@ -26,7 +26,7 @@ func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.AllowedIP) (realm.AllowedIP, error) {
 	if len(i.IP) > 0 {
 		for _, allowedIP := range allowedIPs {
-			if allowedIP.ID == i.IP {
+			if allowedIP.IP == i.IP {
 				return allowedIP, nil
 			}
 		}

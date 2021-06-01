@@ -13,3 +13,7 @@ type allowedIPOutput struct {
 	allowedIP realm.AllowedIP
 	err       error
 }
+
+func tableHeaders(additionalHeaders ...string) []string {
+	return append([]string{headerIP, headerComment}, additionalHeaders...)
+}

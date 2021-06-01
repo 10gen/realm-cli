@@ -71,9 +71,9 @@ type Client interface {
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
 	AllowedIPs(groupID, appID string) ([]AllowedIP, error)
-	CreateAllowedIP(groupID, appID, allowedIPAddress, comment string) (AllowedIP, error)
-	DeleteAllowedIP(groupID, appID, allowedIPID string) error
-	UpdateAllowedIP(groupID, appID, allowedIPID, allowedIPAddress, comment string) error
+	CreateAllowedIP(groupID, appID, allowedIP, comment string) (AllowedIP, error)
+	DeleteAllowedIP(groupID, appID, allowedIP string) error
+	UpdateAllowedIP(groupID, appID, allowedIP, newAllowedIP, comment string) error
 
 	Status() error
 }
