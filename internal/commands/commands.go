@@ -4,6 +4,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/function"
+	"github.com/10gen/realm-cli/internal/commands/ip_access"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/logs"
@@ -174,6 +175,42 @@ var (
 			{
 				Command:     &schema.CommandDatamodels{},
 				CommandMeta: schema.CommandMetaDatamodels,
+			},
+		},
+	}
+
+	IPAccess = cli.CommandDefinition{
+		Use:         "IP access",
+		Description: "Manage IP access",
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &ip_access.CommandCreate{},
+				Use:         "create",
+				Display:     "allowed IP create",
+				Description: "Create an allowed IP in your Realm app",
+				Help:        "Adds a new IP access to your Realm app. You will need to provde an IP Address and an optional comment.",
+			},
+			{
+				Command:     &ip_access.CommandList{},
+				Use:         "list",
+				Aliases:     []string{"ls"},
+				Display:     "allowed IPs list",
+				Description: "List the allowed IPs in your Realm app",
+				Help:        "Displays a list of the allowed IPs in your Realm app.",
+			},
+			{
+				Command:     &ip_access.CommandUpdate{},
+				Use:         "update",
+				Display:     "allowed IP update",
+				Description: "Update an allowed IP in your Realm app",
+				Help:        "Modifies the value of an allowed IP in your Realm app.",
+			},
+			{
+				Command:     &ip_access.CommandDelete{},
+				Use:         "delete",
+				Display:     "allowed IP delete",
+				Description: "Delete an allowed IP from your Realm app",
+				Help:        "Removes an allowed IP from your Realm app.",
 			},
 		},
 	}
