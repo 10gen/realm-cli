@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path"
@@ -111,7 +112,8 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 				return []realm.App{testApp}, nil
 			}
 
-			err := tc.inputs.resolveName(nil, rc, tc.appRemote)
+			err := tc.inputs.resolveName(nil, rc, realm.AppFilter{
+				GroupID: tc.appRemote.GroupID, App: tc.appRemote.AppID})
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedName, tc.inputs.Name)
@@ -127,7 +129,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 			return nil, errors.New("realm client error")
 		}
 		inputs := createInputs{}
-		err := inputs.resolveName(nil, rc, appRemote{testApp.GroupID, testApp.ID})
+		err := inputs.resolveName(nil, rc, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID})
 
 		assert.Equal(t, errors.New("realm client error"), err)
 		assert.Equal(t, "", inputs.Name)
@@ -209,13 +211,52 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 
-	t.Run("should error when path specified is another realm app", func(t *testing.T) {
+	t.Run("should create default local directory name when FlagAutoConfirm is set", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
-		specifiedDir := "test-dir"
-		inputs := createInputs{LocalPath: specifiedDir}
+		console, _, ui, err := mock.NewVT10XConsoleWithOptions(
+			mock.UIOptions{AutoConfirm: true},
+			new(bytes.Buffer))
+		assert.Nil(t, err)
+		defer console.Close()
+
+		testAppName := "test-app"
+		newDefaultName := "test-app-1"
+		inputs := createInputs{newAppInputs: newAppInputs{Name: testAppName}}
+
+		err = os.Mkdir(path.Join(profile.WorkingDirectory, testAppName), os.ModePerm)
+		assert.Nil(t, err)
+
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, newDefaultName), dir)
+		assert.Equal(t, testAppName, inputs.LocalPath)
+	})
+
+	t.Run("should request new path when path specified is another realm app", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		specifiedDir := "test-app-dir"
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, LocalPath: specifiedDir}
 		fullDir := path.Join(profile.WorkingDirectory, specifiedDir)
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("Local path './test-app-dir' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './test-app-dir'? ('No' will prompt you to provide another destination)")
+			console.SendLine("no")
+			console.ExpectString("Local Path")
+			console.SendLine("new-app")
+			console.ExpectEOF()
+		}()
 
 		appLocal := local.NewApp(
 			fullDir,
@@ -228,10 +269,10 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		)
 		assert.Nil(t, appLocal.WriteConfig())
 
-		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
-
-		assert.Equal(t, "", dir)
-		assert.Equal(t, errProjectExists{fullDir}, err)
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
+		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 }
 

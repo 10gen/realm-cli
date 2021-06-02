@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -191,10 +192,17 @@ func TestResolveGroupID(t *testing.T) {
 		Name: "eggcorn",
 	}
 
+	testGroup2 := atlas.Group{
+		ID:   "some-other-id",
+		Name: "eggcorn2",
+	}
+
 	for _, tc := range []struct {
 		description     string
 		groups          []atlas.Group
 		procedure       func(c *expect.Console)
+		defaultGroupID  string
+		autoConfirm     bool
 		expectedGroupID string
 		expectedErr     error
 	}{
@@ -218,6 +226,14 @@ func TestResolveGroupID(t *testing.T) {
 			},
 			expectedGroupID: testGroup.ID,
 		},
+		{
+			description:     "Should select default group when FlagAutoConfirm is set",
+			groups:          []atlas.Group{testGroup, testGroup2},
+			procedure:       func(c *expect.Console) {},
+			autoConfirm:     true,
+			defaultGroupID:  testGroup2.ID,
+			expectedGroupID: testGroup2.ID,
+		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			atlasClient := mock.AtlasClient{}
@@ -225,7 +241,9 @@ func TestResolveGroupID(t *testing.T) {
 				return tc.groups, nil
 			}
 
-			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(
+				mock.UIOptions{AutoConfirm: tc.autoConfirm},
+				new(bytes.Buffer))
 			assert.Nil(t, consoleErr)
 			defer console.Close()
 
@@ -234,8 +252,7 @@ func TestResolveGroupID(t *testing.T) {
 				defer close(doneCh)
 				tc.procedure(console)
 			}()
-
-			groupID, err := cli.ResolveGroupID(ui, atlasClient)
+			groupID, err := cli.ResolveGroupID(ui, atlasClient, tc.defaultGroupID)
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
@@ -251,7 +268,7 @@ func TestResolveGroupID(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		_, err := cli.ResolveGroupID(nil, atlasClient)
+		_, err := cli.ResolveGroupID(nil, atlasClient, "")
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }

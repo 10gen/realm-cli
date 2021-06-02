@@ -65,7 +65,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if appRemote.GroupID == "" {
-		groupID, err := cli.ResolveGroupID(ui, clients.Atlas)
+		groupID, err := cli.ResolveGroupID(ui, clients.Atlas, "")
 		if err != nil {
 			return err
 		}

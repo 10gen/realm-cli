@@ -309,7 +309,7 @@ func TestAppCreateHandler(t *testing.T) {
 		}, createdApp)
 	})
 
-	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
+	t.Run("should create a new app with a structure based on the specified remote app and project", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -391,6 +391,76 @@ func TestAppCreateHandler(t *testing.T) {
 			"Check out your app: cd ./remote-app && realm-cli app describe",
 			"",
 		}, "\n"), out.String())
+	})
+
+	t.Run("should create a new app with a structure based on the specified remote app and prompt for project", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		newGroupID := "101112"
+		testApp := realm.App{
+			ID:          "789",
+			GroupID:     "123",
+			ClientAppID: "remote-app-abcde",
+			Name:        "remote-app",
+		}
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			console.ExpectString("Atlas Project")
+			console.Send(newGroupID)
+			console.SendLine(" ")
+			console.ExpectEOF()
+		}()
+
+		zipPkg, err := zip.OpenReader("testdata/project.zip")
+		assert.Nil(t, err)
+
+		var createdApp realm.App
+		client := mock.RealmClient{}
+		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{testApp}, nil
+		}
+		client.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "", &zipPkg.Reader, err
+		}
+		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			createdApp = realm.App{
+				GroupID:     groupID,
+				ID:          "456",
+				ClientAppID: name + "-fghij",
+				Name:        name,
+				AppMeta:     meta,
+			}
+			return createdApp, nil
+		}
+		client.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+
+		ac := mock.AtlasClient{}
+		ac.GroupsFn = func() ([]atlas.Group, error) {
+			return []atlas.Group{{ID: newGroupID}}, nil
+		}
+
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			RemoteApp: testApp.Name,
+		}}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client, Atlas: ac}))
+
+		assert.Equal(t, realm.App{
+			ID:          "456",
+			GroupID:     newGroupID,
+			Name:        testApp.Name,
+			ClientAppID: "remote-app-fghij",
+		}, createdApp)
 	})
 
 	for _, tc := range []struct {

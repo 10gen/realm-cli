@@ -123,7 +123,7 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 }
 
 // ResolveGroupID will use the provided MongoDB Cloud Atlas client to resolve the user's group id
-func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
+func ResolveGroupID(ui terminal.UI, client atlas.Client, defaultGroupID string) (string, error) {
 	groups, groupsErr := client.Groups()
 	if groupsErr != nil {
 		return "", groupsErr
@@ -136,6 +136,7 @@ func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
 		return groups[0].ID, nil
 	}
 
+	var defaultSelection string
 	groupIDsByOption := make(map[string]string, len(groups))
 	groupIDOptions := make([]string, len(groups))
 	for i, group := range groups {
@@ -143,12 +144,21 @@ func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
 
 		groupIDsByOption[option] = group.ID
 		groupIDOptions[i] = option
+
+		if group.ID == defaultGroupID {
+			defaultSelection = option
+		}
+	}
+
+	if ui.AutoConfirm() && defaultGroupID != "" {
+		return groupIDsByOption[defaultSelection], nil
 	}
 
 	var selection string
 	if err := ui.AskOne(&selection, &survey.Select{
 		Message: "Atlas Project",
 		Options: groupIDOptions,
+		Default: defaultSelection,
 	}); err != nil {
 		return "", fmt.Errorf("failed to select group id: %s", err)
 	}

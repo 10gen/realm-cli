@@ -65,19 +65,18 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	var groupID = cmd.inputs.Project
-	if appRemote.IsZero() {
-		if groupID == "" {
-			id, err := cli.ResolveGroupID(ui, clients.Atlas)
-			if err != nil {
-				return err
-			}
-			groupID = id
+
+	if groupID == "" {
+		id, err := cli.ResolveGroupID(ui, clients.Atlas, appRemote.GroupID)
+		if err != nil {
+			return err
 		}
-	} else {
-		groupID = appRemote.GroupID
+		groupID = id
 	}
 
-	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote)
+	err = cmd.inputs.resolveName(ui, clients.Realm, realm.AppFilter{
+		GroupID: appRemote.GroupID,
+		App:     cmd.inputs.RemoteApp})
 	if err != nil {
 		return err
 	}

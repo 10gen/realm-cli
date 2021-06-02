@@ -82,9 +82,9 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, r appRemote) error {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, filter realm.AppFilter) error {
 	if i.Name == "" {
-		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: r.GroupID, App: r.AppID})
+		app, err := cli.ResolveApp(ui, client, filter)
 		if err != nil {
 			return err
 		}
@@ -108,13 +108,16 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	_, appOK, err := local.FindApp(fullPath)
+	_, _, err = local.FindApp(fullPath)
 	if err != nil {
 		return "", err
 	}
-	if appOK {
-		return "", errProjectExists{fullPath}
+
+	if ui.AutoConfirm() {
+		fullPath = path.Join(wd, i.LocalPath+"-1")
+		return fullPath, nil
 	}
+
 	ui.Print(terminal.NewWarningLog("Local path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
 	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.LocalPath)
 	if err != nil {
