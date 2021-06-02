@@ -16,7 +16,7 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 
-	fs.StringVar(&cmd.inputs.IP, flagIP, "", flagIPUsageCreate)
+	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageCreate)
 	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageCreate)
 }
 
@@ -32,7 +32,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	allowedIP, err := clients.Realm.CreateAllowedIP(app.GroupID, app.ID, cmd.inputs.IP, cmd.inputs.Comment)
+	allowedIP, err := clients.Realm.CreateAllowedIP(app.GroupID, app.ID, cmd.inputs.IPAddress, cmd.inputs.Comment)
 	if err != nil {
 		return err
 	}

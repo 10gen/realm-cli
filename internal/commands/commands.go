@@ -186,6 +186,7 @@ var (
 			{
 				Command:     &ip_access.CommandCreate{},
 				Use:         "create",
+				Aliases:     []string{"add"},
 				Display:     "allowed IP create",
 				Description: "Create an allowed IP in your Realm app",
 				Help:        "Adds a new IP access to your Realm app. You will need to provde an IP Address and an optional comment.",

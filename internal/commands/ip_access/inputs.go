@@ -2,14 +2,23 @@ package ip_access
 
 const (
 	flagIP            = "ip"
-	flagIPUsageCreate = "the allowed IP"
-	flagIPUsageUpdate = "the new allowed IP"
-	flagIPUsageDelete = "delete the allowed IP"
+	flagIPUsageCreate = "the allowed IP address"
+	flagIPUsageUpdate = "the new allowed IP address"
+	flagIPUsageDelete = "delete the allowed IP address"
 
 	flagNewIP            = "new-ip"
-	flagNewIPUsageUpdate = "the new allowed IP"
+	flagNewIPUsageUpdate = "the new allowed IP address"
 
 	flagComment            = "comment"
-	flagCommentUsageCreate = "the comment of the allowd IP"
+	flagCommentUsageCreate = "the comment of the allowd IP address"
 	flagCommentUsageUpdate = "the new comment of the allowed IP"
+
+	flagUseCurrent            = "use-current"
+	flagUseCurrentUsageCreate = "use current IP address"
+
+	flagAllowAll            = "allow-all"
+	flagAllowAllUsageCreate = "allow access to Realm app from everywhere"
+
+	flagAll            = "all"
+	flagAllUsageDelete = "delete all allowed IP addresses"
 )
