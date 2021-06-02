@@ -16,6 +16,7 @@ type CommandDelete struct {
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageDelete)
+	fs.BoolVar(&cmd.inputs.All, flagAll, false, flagAllUsageDelete)
 }
 
 // Inputs is the command inputs
