@@ -1,4 +1,4 @@
-package ip_access
+package ipaccess
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"

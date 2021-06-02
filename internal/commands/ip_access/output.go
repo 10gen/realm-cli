@@ -1,7 +1,7 @@
-package ip_access
+package ipaccess
 
 const (
-	headerIP      = "IP"
+	headerIP      = "IP Address"
 	headerComment = "Comment"
 )
 

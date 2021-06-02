@@ -1,9 +1,9 @@
-package ip_access
+package ipaccess
 
 const (
 	flagIP            = "ip"
 	flagIPUsageCreate = "the allowed IP address"
-	flagIPUsageUpdate = "the new allowed IP address"
+	flagIPUsageUpdate = "the current allowed IP address"
 	flagIPUsageDelete = "delete the allowed IP address"
 
 	flagNewIP            = "new-ip"
