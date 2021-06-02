@@ -4,7 +4,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/function"
-	ipaccess "github.com/10gen/realm-cli/internal/commands/ip_access"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/logs"
@@ -175,30 +174,6 @@ var (
 			{
 				Command:     &schema.CommandDatamodels{},
 				CommandMeta: schema.CommandMetaDatamodels,
-			},
-		},
-	}
-
-	IPAccess = cli.CommandDefinition{
-		CommandMeta: cli.CommandMeta{
-			Use: "ip-access",
-		},
-		SubCommands: []cli.CommandDefinition{
-			{
-				Command:     &ipaccess.CommandCreate{},
-				CommandMeta: ipaccess.CommandMetaCreate,
-			},
-			{
-				Command:     &ipaccess.CommandList{},
-				CommandMeta: ipaccess.CommandMetaList,
-			},
-			{
-				Command:     &ipaccess.CommandUpdate{},
-				CommandMeta: ipaccess.CommandMetaUpdate,
-			},
-			{
-				Command:     &ipaccess.CommandDelete{},
-				CommandMeta: ipaccess.CommandMetaDelete,
 			},
 		},
 	}

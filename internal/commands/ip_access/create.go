@@ -8,11 +8,11 @@ import (
 )
 
 // CommandMetaCreate is the command meta for the `ip-access create` command
-var CommandMetaCreate = cli.CommandMeta{
-	Use:     "create",
-	Aliases: []string{"add"},
-	Display: "allowed IP create",
-}
+// var CommandMetaCreate = cli.CommandMeta{
+// 	Use:     "create",
+// 	Aliases: []string{"add"},
+// 	Display: "allowed IP create",
+// }
 
 // CommandCreate is the ip access create command
 type CommandCreate struct {

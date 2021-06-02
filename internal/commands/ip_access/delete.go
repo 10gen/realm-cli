@@ -8,10 +8,10 @@ import (
 )
 
 // CommandMetaDelete is the command meta for the `ip-access delete` command
-var CommandMetaDelete = cli.CommandMeta{
-	Use:     "delete",
-	Display: "allowed IP delete",
-}
+// var CommandMetaDelete = cli.CommandMeta{
+// 	Use:     "delete",
+// 	Display: "allowed IP delete",
+// }
 
 // CommandDelete for the ip access delete command
 type CommandDelete struct {
