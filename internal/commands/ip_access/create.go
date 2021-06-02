@@ -19,7 +19,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageCreate)
 	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageCreate)
 	fs.BoolVar(&cmd.inputs.UseCurrent, flagUseCurrent, false, flagUseCurrentUsageCreate)
-	fs.BoolVar(&cmd.inputs.AllowAll, flagAllUsageDelete, false, flagAllowAllUsageCreate)
+	fs.BoolVar(&cmd.inputs.AllowAll, flagAllowAll, false, flagAllowAllUsageCreate)
 }
 
 // Inputs is the command inputs
