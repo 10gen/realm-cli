@@ -7,6 +7,12 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaUpdate is the command meta for the `ip-access update` command
+var CommandMetaUpdate = cli.CommandMeta{
+	Use:     "update",
+	Display: "allowed IP update",
+}
+
 // CommandUpdate is the ip access update command
 type CommandUpdate struct {
 	inputs updateInputs

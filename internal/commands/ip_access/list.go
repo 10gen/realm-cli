@@ -10,6 +10,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
+// CommandMetaList is the command meta for the `ip-access list` command
+var CommandMetaList = cli.CommandMeta{
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Display: "allowed IPs list",
+}
+
 // CommandList is the ip access list command
 type CommandList struct {
 	inputs listInputs

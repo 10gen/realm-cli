@@ -180,38 +180,25 @@ var (
 	}
 
 	IPAccess = cli.CommandDefinition{
-		Use:         "IP access",
-		Description: "Manage IP access",
+		CommandMeta: cli.CommandMeta{
+			Use: "ip-access",
+		},
 		SubCommands: []cli.CommandDefinition{
 			{
 				Command:     &ipaccess.CommandCreate{},
-				Use:         "create",
-				Aliases:     []string{"add"},
-				Display:     "allowed IP create",
-				Description: "Create an allowed IP in your Realm app",
-				Help:        "Adds a new IP access to your Realm app. You will need to provde an IP Address and an optional comment.",
+				CommandMeta: ipaccess.CommandMetaCreate,
 			},
 			{
 				Command:     &ipaccess.CommandList{},
-				Use:         "list",
-				Aliases:     []string{"ls"},
-				Display:     "allowed IPs list",
-				Description: "List the allowed IPs in your Realm app",
-				Help:        "Displays a list of the allowed IPs in your Realm app.",
+				CommandMeta: ipaccess.CommandMetaList,
 			},
 			{
 				Command:     &ipaccess.CommandUpdate{},
-				Use:         "update",
-				Display:     "allowed IP update",
-				Description: "Update an allowed IP in your Realm app",
-				Help:        "Modifies the value of an allowed IP in your Realm app.",
+				CommandMeta: ipaccess.CommandMetaUpdate,
 			},
 			{
 				Command:     &ipaccess.CommandDelete{},
-				Use:         "delete",
-				Display:     "allowed IP delete",
-				Description: "Delete an allowed IP from your Realm app",
-				Help:        "Removes an allowed IP from your Realm app.",
+				CommandMeta: ipaccess.CommandMetaDelete,
 			},
 		},
 	}
