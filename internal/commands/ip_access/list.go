@@ -11,11 +11,12 @@ import (
 )
 
 // CommandMetaList is the command meta for the `ip-access list` command
-// var CommandMetaList = cli.CommandMeta{
-// 	Use:     "list",
-// 	Aliases: []string{"ls"},
-// 	Display: "allowed IPs list",
-// }
+var CommandMetaList = cli.CommandMeta{
+	Use:     "list",
+	Aliases: []string{"ls"},
+	Display: "allowed IPs list",
+	Hidden:  true,
+}
 
 // CommandList is the ip access list command
 type CommandList struct {

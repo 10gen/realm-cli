@@ -47,5 +47,8 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Schema))
 
+	// Uncomment once backend API and data models are complete
+	// cmd.AddCommand(factory.Build(commands.IPAccess))
+
 	os.Exit(factory.Run(cmd))
 }

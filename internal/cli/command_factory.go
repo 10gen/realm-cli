@@ -60,6 +60,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		Short:   command.Description + aliasHelp,
 		Long:    command.Description + "\n\n" + command.HelpText,
 		Aliases: command.Aliases,
+		Hidden:  command.Hidden,
 	}
 
 	cmd.InheritedFlags().SortFlags = false // ensures command usage text displays global flags unsorted

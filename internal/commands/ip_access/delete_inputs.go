@@ -12,7 +12,6 @@ import (
 type deleteInputs struct {
 	cli.ProjectInputs
 	IPAddress string
-	All       bool
 }
 
 func (i *deleteInputs) Resolve(profile *user.Profile, ui terminal.UI) error {

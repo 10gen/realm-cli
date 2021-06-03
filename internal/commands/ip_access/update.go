@@ -8,10 +8,11 @@ import (
 )
 
 // CommandMetaUpdate is the command meta for the `ip-access update` command
-// var CommandMetaUpdate = cli.CommandMeta{
-// 	Use:     "update",
-// 	Display: "allowed IP update",
-// }
+var CommandMetaUpdate = cli.CommandMeta{
+	Use:     "update",
+	Display: "allowed IP update",
+	Hidden:  true,
+}
 
 // CommandUpdate is the ip access update command
 type CommandUpdate struct {

@@ -8,10 +8,11 @@ import (
 )
 
 // CommandMetaDelete is the command meta for the `ip-access delete` command
-// var CommandMetaDelete = cli.CommandMeta{
-// 	Use:     "delete",
-// 	Display: "allowed IP delete",
-// }
+var CommandMetaDelete = cli.CommandMeta{
+	Use:     "delete",
+	Display: "allowed IP delete",
+	Hidden:  true,
+}
 
 // CommandDelete for the ip access delete command
 type CommandDelete struct {
@@ -22,7 +23,6 @@ type CommandDelete struct {
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs)
 	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageDelete)
-	fs.BoolVar(&cmd.inputs.All, flagAll, false, flagAllUsageDelete)
 }
 
 // Inputs is the command inputs
