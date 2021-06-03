@@ -65,7 +65,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	groupID := cmd.inputs.Project
-
 	if groupID == "" {
 		id, err := cli.ResolveGroupID(ui, clients.Atlas, appRemote.GroupID)
 		if err != nil {
@@ -73,6 +72,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 		groupID = id
 	}
+
 	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote.GroupID, appRemote.ClientAppID)
 	if err != nil {
 		return err
