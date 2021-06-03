@@ -55,12 +55,12 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
+	app, err := cmd.inputs.resolveRemoteApp(ui, clients)
 	if err != nil {
 		return err
 	}
 
-	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, appRemote.GroupID, appRemote.AppID)
+	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			s.Start()
 			defer s.Stop()
 
-			archiveName, archivePkg, err := clients.Realm.ExportDependencies(appRemote.GroupID, appRemote.AppID)
+			archiveName, archivePkg, err := clients.Realm.ExportDependencies(app.GroupID, app.ID)
 			if err != nil {
 				return err
 			}
@@ -124,12 +124,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			s.Start()
 			defer s.Stop()
 
-			appAssets, err := clients.Realm.HostingAssets(appRemote.GroupID, appRemote.AppID)
+			appAssets, err := clients.Realm.HostingAssets(app.GroupID, app.ID)
 			if err != nil {
 				return err
 			}
 
-			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, appRemote.GroupID, appRemote.AppID, appAssets)
+			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, app.GroupID, app.ID, appAssets)
 		}
 
 		if err := exportHostingAssets(); err != nil {

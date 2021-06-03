@@ -1,17 +1,18 @@
 package pull
 
 import (
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestPullInputsResolve(t *testing.T) {
@@ -80,35 +81,81 @@ func TestPullInputsResolve(t *testing.T) {
 	})
 }
 
-func TestPullInputsResolveFrom(t *testing.T) {
-	t.Run("should do nothing if to is not set", func(t *testing.T) {
-		var i inputs
-		tt, err := i.resolveRemoteApp(nil, nil)
+func TestPullInputsResolveRemoteApp(t *testing.T) {
+	t.Run("should not resolve group id if project is provided", func(t *testing.T) {
+		i := inputs{Project: "some-project", RemoteApp: "some-app"}
+
+		var realmClient mock.RealmClient
+
+		var appFilter realm.AppFilter
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			appFilter = filter
+			return []realm.App{{GroupID: "group-id", ID: "app-id"}}, nil
+		}
+
+		app, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
-		assert.Equal(t, appRemote{}, tt)
+		assert.Equal(t, realm.App{GroupID: "group-id", ID: "app-id"}, app)
+
+		assert.Equal(t, realm.AppFilter{GroupID: "some-project", App: "some-app"}, appFilter)
 	})
 
-	t.Run("should return the app id and group id of specified app if to is set to app", func(t *testing.T) {
+	t.Run("should resolve group id if project is not provided", func(t *testing.T) {
+		i := inputs{RemoteApp: "some-app"}
+
+		var atlasClient mock.AtlasClient
+		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			return []atlas.Group{{ID: "group-id", Name: "group-name"}}, nil
+		}
+
+		var realmClient mock.RealmClient
+
 		var appFilter realm.AppFilter
-		app := realm.App{
-			ID:          primitive.NewObjectID().Hex(),
-			GroupID:     primitive.NewObjectID().Hex(),
-			ClientAppID: "test-app-abcde",
-			Name:        "test-app",
-		}
-
-		client := mock.RealmClient{}
-		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			appFilter = filter
-			return []realm.App{app}, nil
+			return []realm.App{{GroupID: "group-id", ID: "app-id"}}, nil
 		}
 
-		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
-
-		f, err := i.resolveRemoteApp(nil, client)
+		app, err := i.resolveRemoteApp(nil, cli.Clients{Atlas: atlasClient, Realm: realmClient})
 		assert.Nil(t, err)
+		assert.Equal(t, realm.App{GroupID: "group-id", ID: "app-id"}, app)
 
-		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID}, f)
-		assert.Equal(t, realm.AppFilter{GroupID: app.GroupID, App: app.ClientAppID}, appFilter)
+		assert.Equal(t, realm.AppFilter{GroupID: "group-id", App: "some-app"}, appFilter)
+	})
+
+	t.Run("should return a project not found error if the app is not found", func(t *testing.T) {
+		i := inputs{Project: "some-project"}
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return nil, cli.ErrAppNotFound{}
+		}
+
+		_, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errProjectNotFound{}, err)
+	})
+
+	t.Run("should return an error when the atlas client fails to find groups", func(t *testing.T) {
+		var i inputs
+
+		var atlasClient mock.AtlasClient
+		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			return nil, errors.New("something bad happened")
+		}
+
+		_, err := i.resolveRemoteApp(nil, cli.Clients{Atlas: atlasClient})
+		assert.Equal(t, errors.New("something bad happened"), err)
+	})
+
+	t.Run("should return an error when the realm client fails to find an app", func(t *testing.T) {
+		i := inputs{Project: "some-project"}
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return nil, errors.New("something bad happened")
+		}
+
+		_, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }
