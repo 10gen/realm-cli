@@ -16,7 +16,7 @@ func TestAppNewAppInputsResolveFrom(t *testing.T) {
 		var i newAppInputs
 		r, err := i.resolveRemoteApp(nil, nil)
 		assert.Nil(t, err)
-		assert.Equal(t, appRemote{}, r)
+		assert.Equal(t, realm.App{}, r)
 	})
 
 	testApp := realm.App{
@@ -29,14 +29,14 @@ func TestAppNewAppInputsResolveFrom(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         newAppInputs
-		expectedRemote appRemote
+		expectedRemote realm.App
 		expectedFilter realm.AppFilter
 		expectedErr    error
 	}{
 		{
 			description:    "should return the app id and group id of specified app when from is set",
 			inputs:         newAppInputs{RemoteApp: testApp.ID},
-			expectedRemote: appRemote{GroupID: testApp.GroupID, AppID: testApp.ID},
+			expectedRemote: realm.App{GroupID: testApp.GroupID, ID: testApp.ID},
 			expectedFilter: realm.AppFilter{App: testApp.ID},
 		},
 		{

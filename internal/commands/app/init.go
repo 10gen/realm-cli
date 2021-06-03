@@ -64,7 +64,7 @@ func (cmd *CommandInit) Handler(profile *user.Profile, ui terminal.UI, clients c
 			return err
 		}
 	} else {
-		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.AppID); err != nil {
+		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.ID); err != nil {
 			return err
 		}
 	}

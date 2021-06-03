@@ -64,7 +64,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var groupID = cmd.inputs.Project
+	groupID := cmd.inputs.Project
 
 	if groupID == "" {
 		id, err := cli.ResolveGroupID(ui, clients.Atlas, appRemote.GroupID)
@@ -73,10 +73,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 		groupID = id
 	}
-
-	err = cmd.inputs.resolveName(ui, clients.Realm, realm.AppFilter{
-		GroupID: appRemote.GroupID,
-		App:     cmd.inputs.RemoteApp})
+	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote.GroupID, appRemote.ClientAppID)
 	if err != nil {
 		return err
 	}
@@ -149,7 +146,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	} else {
 		_, zipPkg, err := clients.Realm.Export(
 			appRemote.GroupID,
-			appRemote.AppID,
+			appRemote.ID,
 			realm.ExportRequest{},
 		)
 		if err != nil {

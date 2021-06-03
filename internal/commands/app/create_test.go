@@ -325,6 +325,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		zipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer zipPkg.Close()
 
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -396,7 +397,6 @@ func TestAppCreateHandler(t *testing.T) {
 	t.Run("should create a new app with a structure based on the specified remote app and prompt for project", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
 
 		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 		assert.Nil(t, consoleErr)
@@ -421,6 +421,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		zipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer zipPkg.Close()
 
 		var createdApp realm.App
 		client := mock.RealmClient{}

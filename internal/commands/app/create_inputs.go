@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path"
+	"strconv"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -82,9 +83,12 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, filter realm.AppFilter) error {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID string, appNameOrClientID string) error {
 	if i.Name == "" {
-		app, err := cli.ResolveApp(ui, client, filter)
+		app, err := cli.ResolveApp(ui, client, realm.AppFilter{
+			GroupID: groupID,
+			App:     appNameOrClientID,
+		})
 		if err != nil {
 			return err
 		}
@@ -113,8 +117,9 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 		return "", err
 	}
 
+	defaultLocalPath := getDefaultPath(wd, i.LocalPath)
 	if ui.AutoConfirm() {
-		fullPath = path.Join(wd, i.LocalPath+"-1")
+		fullPath = path.Join(wd, defaultLocalPath)
 		return fullPath, nil
 	}
 
@@ -125,9 +130,18 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	}
 	if !proceed {
 		var newDir string
-		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path"}); err != nil {
+		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path", Default: defaultLocalPath}); err != nil {
 			return "", err
 		}
+
+		_, appOK, err := local.FindApp(newDir)
+		if err != nil {
+			return "", err
+		}
+		if appOK {
+			return "", errProjectExists{newDir}
+		}
+
 		i.LocalPath = newDir
 		fullPath = path.Join(wd, i.LocalPath)
 	}
@@ -219,4 +233,18 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{Name: flagDryRun})
 	}
 	return args
+}
+
+func getDefaultPath(wd string, localPath string) string {
+	i := 1
+	for {
+		appPath := path.Join(wd, localPath) + "-" + strconv.Itoa(i)
+		_, found, _ := local.FindApp(appPath)
+
+		if found {
+			i++
+		} else {
+			return localPath + "-" + strconv.Itoa(i)
+		}
+	}
 }

@@ -33,7 +33,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 		test        func(t *testing.T, i cli.ProjectInputs)
 	}{
 		{
-			description: "Should not prompt for app when set by flag already",
+			description: "should not prompt for app when set by flag already",
 			inputs:      cli.ProjectInputs{App: "some-app"},
 			wd:          testRoot,
 			procedure:   func(c *expect.Console) {},
@@ -42,7 +42,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			},
 		},
 		{
-			description: "When outside a project directory should prompt for app when not flagged",
+			description: "when outside a project directory should prompt for app when not flagged",
 			wd:          testRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
@@ -53,7 +53,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			},
 		},
 		{
-			description: "When inside a project directory should prompt for app when not flagged and provide client app id as a default",
+			description: "when inside a project directory should prompt for app when not flagged and provide client app id as a default",
 			wd:          projectRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
@@ -64,7 +64,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			},
 		},
 		{
-			description: "When inside a project directory should prompt for app when not flagged and provide name as a default when client app id is not available",
+			description: "when inside a project directory should prompt for app when not flagged and provide name as a default when client app id is not available",
 			wd:          localProjectRoot,
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Filter")
@@ -115,25 +115,25 @@ func TestResolveApp(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			description: "Should return the single app found from the client call",
+			description: "should return the single app found from the client call",
 			appID:       "app",
 			apps:        []realm.App{app},
 			procedure:   func(c *expect.Console) {},
 			expectedApp: app,
 		},
 		{
-			description: "Should return an error when no apps are returned from the client call with no app id specified",
+			description: "should return an error when no apps are returned from the client call with no app id specified",
 			procedure:   func(c *expect.Console) {},
 			expectedErr: cli.ErrAppNotFound{},
 		},
 		{
-			description: "Should return an error when no apps are returned from the client call with an app id specified",
+			description: "should return an error when no apps are returned from the client call with an app id specified",
 			appID:       "app",
 			procedure:   func(c *expect.Console) {},
 			expectedErr: cli.ErrAppNotFound{"app"},
 		},
 		{
-			description: "Should prompt user to select an app when more than one is returned from the client call",
+			description: "should prompt user to select an app when more than one is returned from the client call",
 			appID:       "app",
 			apps:        []realm.App{app, app},
 			procedure: func(c *expect.Console) {
@@ -175,7 +175,7 @@ func TestResolveApp(t *testing.T) {
 		})
 	}
 
-	t.Run("Should return the client error if one occurs", func(t *testing.T) {
+	t.Run("should return the client error if one occurs", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return nil, errors.New("something bad happened")
@@ -207,18 +207,18 @@ func TestResolveGroupID(t *testing.T) {
 		expectedErr     error
 	}{
 		{
-			description:     "Should return the single group found from the client call",
+			description:     "should return the single group found from the client call",
 			groups:          []atlas.Group{testGroup},
 			procedure:       func(c *expect.Console) {},
 			expectedGroupID: testGroup.ID,
 		},
 		{
-			description: "Should return an error when no groups are returned from the client call",
+			description: "should return an error when no groups are returned from the client call",
 			procedure:   func(c *expect.Console) {},
 			expectedErr: cli.ErrGroupNotFound,
 		},
 		{
-			description: "Should prompt user to select a group when more than one is returned from the client call",
+			description: "should prompt user to select a group when more than one is returned from the client call",
 			groups:      []atlas.Group{testGroup, testGroup},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Atlas Project")
@@ -227,10 +227,18 @@ func TestResolveGroupID(t *testing.T) {
 			expectedGroupID: testGroup.ID,
 		},
 		{
-			description:     "Should select default group when FlagAutoConfirm is set",
+			description:     "should select default group when provided and ui is set to auto confirm",
 			groups:          []atlas.Group{testGroup, testGroup2},
 			procedure:       func(c *expect.Console) {},
 			autoConfirm:     true,
+			defaultGroupID:  testGroup2.ID,
+			expectedGroupID: testGroup2.ID,
+		},
+		{
+			description:     "should select default group when provided and ui is not set to auto confirm",
+			groups:          []atlas.Group{testGroup, testGroup2},
+			procedure:       func(c *expect.Console) {},
+			autoConfirm:     false,
 			defaultGroupID:  testGroup2.ID,
 			expectedGroupID: testGroup2.ID,
 		},
@@ -243,7 +251,8 @@ func TestResolveGroupID(t *testing.T) {
 
 			console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(
 				mock.UIOptions{AutoConfirm: tc.autoConfirm},
-				new(bytes.Buffer))
+				new(bytes.Buffer),
+			)
 			assert.Nil(t, consoleErr)
 			defer console.Close()
 
@@ -262,7 +271,7 @@ func TestResolveGroupID(t *testing.T) {
 		})
 	}
 
-	t.Run("Should return the client error if one occurs", func(t *testing.T) {
+	t.Run("should return the client error if one occurs", func(t *testing.T) {
 		atlasClient := mock.AtlasClient{}
 		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
 			return nil, errors.New("something bad happened")

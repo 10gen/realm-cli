@@ -41,15 +41,6 @@ var (
 	flagEnvironmentUsage     = fmt.Sprintf("select the Realm app's environment, available options: [%s]", strings.Join(realm.EnvironmentValues, ", "))
 )
 
-type appRemote struct {
-	GroupID string
-	AppID   string
-}
-
-func (r appRemote) IsZero() bool {
-	return r.GroupID == "" && r.AppID == ""
-}
-
 type newAppInputs struct {
 	Project         string
 	RemoteApp       string
@@ -60,15 +51,14 @@ type newAppInputs struct {
 	ConfigVersion   realm.AppConfigVersion
 }
 
-func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (appRemote, error) {
-	var r appRemote
+func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.App, error) {
+	var ra realm.App
 	if i.RemoteApp != "" {
 		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.RemoteApp})
 		if err != nil {
-			return appRemote{}, err
+			return realm.App{}, err
 		}
-		r.GroupID = app.GroupID
-		r.AppID = app.ID
+		ra = app
 	}
-	return r, nil
+	return ra, nil
 }

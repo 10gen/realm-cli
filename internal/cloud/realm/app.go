@@ -41,6 +41,10 @@ func (app App) Option() string {
 	return fmt.Sprintf("%s (%s)", app.ClientAppID, app.GroupID)
 }
 
+func (app App) IsZero() bool {
+	return app.GroupID == "" && app.ID == ""
+}
+
 type createAppRequest struct {
 	Name string `json:"name"`
 	AppMeta

@@ -88,7 +88,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         createInputs
-		appRemote      appRemote
+		appRemote      realm.App
 		expectedName   string
 		expectedFilter realm.AppFilter
 	}{
@@ -99,9 +99,9 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 		},
 		{
 			description:    "should use remote app for name if name is not set",
-			appRemote:      appRemote{testApp.GroupID, testApp.ID},
+			appRemote:      realm.App{GroupID: testApp.GroupID, ClientAppID: testApp.ClientAppID},
 			expectedName:   testApp.Name,
-			expectedFilter: realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID},
+			expectedFilter: realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ClientAppID},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -112,8 +112,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 				return []realm.App{testApp}, nil
 			}
 
-			err := tc.inputs.resolveName(nil, rc, realm.AppFilter{
-				GroupID: tc.appRemote.GroupID, App: tc.appRemote.AppID})
+			err := tc.inputs.resolveName(nil, rc, tc.appRemote.GroupID, tc.appRemote.ClientAppID)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedName, tc.inputs.Name)
@@ -129,11 +128,11 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 			return nil, errors.New("realm client error")
 		}
 		inputs := createInputs{}
-		err := inputs.resolveName(nil, rc, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID})
+		err := inputs.resolveName(nil, rc, testApp.GroupID, testApp.ClientAppID)
 
 		assert.Equal(t, errors.New("realm client error"), err)
 		assert.Equal(t, "", inputs.Name)
-		assert.Equal(t, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID}, appFilter)
+		assert.Equal(t, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ClientAppID}, appFilter)
 	})
 }
 
@@ -211,15 +210,14 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 
-	t.Run("should create default local directory name when FlagAutoConfirm is set", func(t *testing.T) {
+	t.Run("should create default local directory name when ui is set to auto confirm", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
-		console, _, ui, err := mock.NewVT10XConsoleWithOptions(
+		_, _, ui, err := mock.NewVT10XConsoleWithOptions(
 			mock.UIOptions{AutoConfirm: true},
 			new(bytes.Buffer))
 		assert.Nil(t, err)
-		defer console.Close()
 
 		testAppName := "test-app"
 		newDefaultName := "test-app-1"

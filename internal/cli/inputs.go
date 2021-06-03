@@ -150,7 +150,7 @@ func ResolveGroupID(ui terminal.UI, client atlas.Client, defaultGroupID string) 
 		}
 	}
 
-	if ui.AutoConfirm() && defaultGroupID != "" {
+	if defaultGroupID != "" {
 		return groupIDsByOption[defaultSelection], nil
 	}
 
