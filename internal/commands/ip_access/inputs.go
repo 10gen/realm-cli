@@ -18,7 +18,4 @@ const (
 
 	flagAllowAll            = "allow-all"
 	flagAllowAllUsageCreate = "allow access to Realm app from everywhere"
-
-	flagAll            = "all"
-	flagAllUsageDelete = "delete all allowed IP addresses"
 )
