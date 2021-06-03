@@ -41,6 +41,7 @@ func (app App) Option() string {
 	return fmt.Sprintf("%s (%s)", app.ClientAppID, app.GroupID)
 }
 
+//IsZero checks for app GroupID and ID
 func (app App) IsZero() bool {
 	return app.GroupID == "" && app.ID == ""
 }

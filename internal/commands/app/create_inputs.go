@@ -239,12 +239,10 @@ func getDefaultPath(wd string, localPath string) string {
 	i := 1
 	for {
 		appPath := path.Join(wd, localPath) + "-" + strconv.Itoa(i)
-		_, found, _ := local.FindApp(appPath)
-
-		if found {
-			i++
-		} else {
+		_, found, err := local.FindApp(appPath)
+		if err != nil || !found {
 			return localPath + "-" + strconv.Itoa(i)
 		}
+		i++
 	}
 }
