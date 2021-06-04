@@ -95,7 +95,11 @@ type logsResponse struct {
 func (c *client) Logs(groupID, appID string, opts LogsOptions) (Logs, error) {
 	query := map[string]string{}
 	if len(opts.Types) > 0 {
-		query[logsQueryType] = strings.Join(opts.Types, ",")
+		formattedTypes := make([]string, len(opts.Types))
+		for i, t := range opts.Types {
+			formattedTypes[i] = strings.ToUpper(t)
+		}
+		query[logsQueryType] = strings.Join(formattedTypes, ",")
 	}
 	if opts.ErrorsOnly {
 		query[logsQueryErrorsOnly] = trueVal
