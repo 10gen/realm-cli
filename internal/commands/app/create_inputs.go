@@ -112,9 +112,14 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	_, _, err = local.FindApp(fullPath)
+
+	//check if we are in an app directory already
+	_, appOK, err := local.FindApp(wd)
 	if err != nil {
 		return "", err
+	}
+	if appOK {
+		return "", errProjectExists{wd}
 	}
 
 	defaultLocalPath := getDefaultPath(wd, i.LocalPath)
@@ -132,6 +137,14 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 		var newDir string
 		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path", Default: defaultLocalPath}); err != nil {
 			return "", err
+		}
+
+		_, appOK, err := local.FindApp(newDir)
+		if err != nil {
+			return "", err
+		}
+		if appOK {
+			return "", errProjectExists{newDir}
 		}
 
 		i.LocalPath = newDir
