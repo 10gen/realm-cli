@@ -134,14 +134,6 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 			return "", err
 		}
 
-		_, appOK, err := local.FindApp(newDir)
-		if err != nil {
-			return "", err
-		}
-		if appOK {
-			return "", errProjectExists{newDir}
-		}
-
 		i.LocalPath = newDir
 		fullPath = path.Join(wd, i.LocalPath)
 	}
