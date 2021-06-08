@@ -101,7 +101,13 @@ func (c *client) doJSON(method, path string, payload interface{}, options api.Re
 }
 
 func (c *client) do(method, path string, options api.RequestOptions) (*http.Response, error) {
-	req, err := http.NewRequest(method, c.baseURL+path, options.Body)
+	var bodyCopy bytes.Buffer
+	var tee io.Reader
+	if options.Body != nil {
+		tee = io.TeeReader(options.Body, &bodyCopy)
+	}
+
+	req, err := http.NewRequest(method, c.baseURL+path, tee)
 	if err != nil {
 		return nil, err
 	}
@@ -148,6 +154,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	}
 
 	options.PreventRefresh = true
+	options.Body = &bodyCopy
 
 	return c.do(method, path, options)
 }
