@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -333,7 +335,6 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
-		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 }
 
@@ -446,5 +447,47 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		_, err := inputs.resolveDataLake(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
+	})
+}
+
+func TestGetDefaultPath(t *testing.T) {
+	t.Run("should return new incremented directory if provided directory already exists", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, ui := mock.NewUI()
+
+		client := mock.RealmClient{}
+		client.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{
+				GroupID:     groupID,
+				ID:          "456",
+				ClientAppID: name + "-abcde",
+				Name:        name,
+				AppMeta:     meta,
+			}, nil
+		}
+		client.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+
+		testAppName := "test-app"
+		for i := 1; i < 10; i++ {
+			defaultPath := getDefaultPath(profile.WorkingDirectory, testAppName)
+			localPath := testAppName + "-" + strconv.Itoa(i)
+
+			assert.Equal(t, localPath, defaultPath)
+
+			cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+				Name:    defaultPath,
+				Project: "123",
+			}}}
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+		}
+
+		//if file options 1-9 are exhausted, use hex
+		defaultPath := getDefaultPath(profile.WorkingDirectory, testAppName)
+		directoryID := strings.Trim(defaultPath, testAppName+"-")
+		assert.True(t, primitive.IsValidObjectID(directoryID), "should be primitive object id")
 	})
 }
