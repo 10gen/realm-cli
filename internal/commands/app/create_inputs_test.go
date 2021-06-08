@@ -5,8 +5,10 @@ import (
 	"errors"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -210,13 +212,75 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 
+	t.Run("should fail when realm app already exists", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		existingApp := realm.App{
+			ID:          primitive.NewObjectID().Hex(),
+			GroupID:     primitive.NewObjectID().Hex(),
+			ClientAppID: "existing-app-abcde",
+			Name:        "existing-app",
+		}
+
+		rc := mock.RealmClient{}
+		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return existingApp, nil
+		}
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		ac := mock.AtlasClient{}
+		ac.GroupsFn = func() ([]atlas.Group, error) {
+			return []atlas.Group{{ID: "123"}}, nil
+		}
+
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			Name: existingApp.Name,
+		}}}
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+
+		existingDir := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name)
+
+		t.Run("in current wd", func(t *testing.T) {
+			inputs := createInputs{newAppInputs: newAppInputs{Name: existingApp.Name}}
+			dir, err := inputs.resolveLocalPath(ui, existingDir)
+			assert.Equal(t, err, errProjectExists{existingDir})
+			assert.Equal(t, "", dir)
+		})
+
+		t.Run("in newly specified path", func(t *testing.T) {
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+
+				console.ExpectString("Local path './existing-app' already exists, writing app contents to that destination may result in file conflicts.")
+				console.ExpectString("Would you still like to write app contents to './existing-app'? ('No' will prompt you to provide another destination)")
+				console.SendLine("no")
+				console.ExpectString("Local Path")
+				console.SendLine("existing-app")
+				console.ExpectEOF()
+			}()
+
+			inputs := createInputs{newAppInputs: newAppInputs{Name: existingApp.Name}}
+			dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+			assert.Equal(t, err, errProjectExists{existingApp.Name})
+			assert.Equal(t, "", dir)
+		})
+	})
+
 	t.Run("should create default local directory name when ui is set to auto confirm", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
-		_, _, ui, err := mock.NewVT10XConsoleWithOptions(
+		_, ui, err := mock.NewConsoleWithOptions(
 			mock.UIOptions{AutoConfirm: true},
-			new(bytes.Buffer))
+			new(bytes.Buffer),
+		)
 		assert.Nil(t, err)
 
 		testAppName := "test-app"
@@ -229,7 +293,6 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
 		assert.Equal(t, path.Join(profile.WorkingDirectory, newDefaultName), dir)
-		assert.Equal(t, testAppName, inputs.LocalPath)
 	})
 
 	t.Run("should request new path when path specified is another realm app", func(t *testing.T) {

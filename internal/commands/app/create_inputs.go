@@ -13,6 +13,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -98,6 +99,16 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID 
 }
 
 func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
+
+	//check if we are in an app directory already
+	_, appOK, err := local.FindApp(wd)
+	if err != nil {
+		return "", err
+	}
+	if appOK {
+		return "", errProjectExists{wd}
+	}
+
 	if i.LocalPath == "" {
 		i.LocalPath = i.Name
 	}
@@ -113,19 +124,9 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 		return fullPath, nil
 	}
 
-	//check if we are in an app directory already
-	_, appOK, err := local.FindApp(wd)
-	if err != nil {
-		return "", err
-	}
-	if appOK {
-		return "", errProjectExists{wd}
-	}
-
 	defaultLocalPath := getDefaultPath(wd, i.LocalPath)
 	if ui.AutoConfirm() {
-		fullPath = path.Join(wd, defaultLocalPath)
-		return fullPath, nil
+		return path.Join(wd, defaultLocalPath), nil
 	}
 
 	ui.Print(terminal.NewWarningLog("Local path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
@@ -139,7 +140,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 			return "", err
 		}
 
-		_, appOK, err := local.FindApp(newDir)
+		_, appOK, err := local.FindApp(path.Join(wd, newDir))
 		if err != nil {
 			return "", err
 		}
@@ -241,13 +242,12 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 }
 
 func getDefaultPath(wd string, localPath string) string {
-	i := 1
-	for {
-		appPath := path.Join(wd, localPath) + "-" + strconv.Itoa(i)
-		_, found, err := local.FindApp(appPath)
-		if err != nil || !found {
-			return localPath + "-" + strconv.Itoa(i)
+	for i := 1; i < 10; i++ {
+		newPath := localPath + "-" + strconv.Itoa(i)
+		_, found, err := local.FindApp(path.Join(wd, newPath))
+		if err == nil && !found {
+			return newPath
 		}
-		i++
 	}
+	return localPath + "-" + primitive.NewObjectID().Hex()
 }
