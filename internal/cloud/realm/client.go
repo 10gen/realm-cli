@@ -70,6 +70,9 @@ type Client interface {
 
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
+	Templates() ([]Template, error)
+	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
+
 	Status() error
 }
 

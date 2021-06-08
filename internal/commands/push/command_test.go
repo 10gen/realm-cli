@@ -108,7 +108,11 @@ func TestPushHandler(t *testing.T) {
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "eggcorn", capturedName)
-		assert.Equal(t, realm.AppMeta{realm.LocationVirginia, realm.DeploymentModelGlobal, realm.EnvironmentNone}, capturedMeta)
+		assert.Equal(t, realm.AppMeta{
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+			Environment:     realm.EnvironmentNone,
+		}, capturedMeta)
 	})
 
 	t.Run("should return an error if the command fails to get the initial diff", func(t *testing.T) {
@@ -959,9 +963,13 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
 				},
 				{
-					description:     "should use the package name location deployment model and environment when present",
-					appData:         fullPkg,
-					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model"), realm.Environment("environment")},
+					description: "should use the package name location deployment model and environment when present",
+					appData:     fullPkg,
+					expectedAppMeta: realm.AppMeta{
+						Location:        realm.Location("location"),
+						DeploymentModel: realm.DeploymentModel("deployment_model"),
+						Environment:     realm.Environment("environment"),
+					},
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -991,9 +999,13 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 				expectedAppMeta realm.AppMeta
 			}{
 				{
-					description:     "should prompt for name if not present in the package",
-					appData:         local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), DeploymentModel: realm.DeploymentModel("deployment_model"), Environment: realm.Environment("environment")}}},
-					expectedAppMeta: realm.AppMeta{realm.Location("location"), realm.DeploymentModel("deployment_model"), realm.Environment("environment")},
+					description: "should prompt for name if not present in the package",
+					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), DeploymentModel: realm.DeploymentModel("deployment_model"), Environment: realm.Environment("environment")}}},
+					expectedAppMeta: realm.AppMeta{
+						Location:        realm.Location("location"),
+						DeploymentModel: realm.DeploymentModel("deployment_model"),
+						Environment:     realm.Environment("environment"),
+					},
 				},
 				{
 					description: "should not prompt for location deployment model and environment even if not present in the package",

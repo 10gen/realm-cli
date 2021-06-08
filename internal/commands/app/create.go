@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"path"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -10,7 +12,13 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
+)
+
+const (
+	backendPath  = "backend"
+	frontendPath = "frontend"
 )
 
 // CommandMetaCreate is the command meta for the `app create` command
@@ -43,6 +51,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
 	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
 	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
+	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
@@ -80,8 +89,12 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	dir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+	rootDir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 	if err != nil {
+		return err
+	}
+
+	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
 		return err
 	}
 
@@ -101,13 +114,29 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
+	// If using a template, we nest backendDir under rootDir and export the
+	// backend code there alongside a sibling directory containing the frontend
+	// code. Otherwise, all code is exported in rootDir
+	backendDir := rootDir
+	if cmd.inputs.Template != "" {
+		backendDir = path.Join(rootDir, backendPath)
+	}
+
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
+		var appCreatedText string
 		if appRemote.GroupID == "" && appRemote.ID == "" {
-			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
+			appCreatedText = fmt.Sprintf("A minimal Realm app would be created at %s", backendDir)
 		} else {
-			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
+			appCreatedText = fmt.Sprintf("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, backendDir)
 		}
+
+		if cmd.inputs.Template != "" {
+			appCreatedText = fmt.Sprintf("%s using the '%s' template", appCreatedText, cmd.inputs.Template)
+		}
+
+		logs = append(logs, terminal.NewTextLog(appCreatedText))
+
 		if dsCluster.Name != "" {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))
 		}
@@ -122,7 +151,12 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	appRealm, err := clients.Realm.CreateApp(
 		groupID,
 		cmd.inputs.Name,
-		realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel, cmd.inputs.Environment},
+		realm.AppMeta{
+			cmd.inputs.Location,
+			cmd.inputs.DeploymentModel,
+			cmd.inputs.Environment,
+			cmd.inputs.Template,
+		},
 	)
 	if err != nil {
 		return err
@@ -132,7 +166,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
-			dir,
+			backendDir,
 			appRealm.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
@@ -154,11 +188,42 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		if err != nil {
 			return err
 		}
-		if err := local.WriteZip(dir, zipPkg); err != nil {
+
+		if err := local.WriteZip(backendDir, zipPkg); err != nil {
 			return err
 		}
-		appLocal, err = local.LoadApp(dir)
+
+		appLocal, err = local.LoadApp(backendDir)
 		if err != nil {
+			return err
+		}
+	}
+
+	if cmd.inputs.Template != "" {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Downloading client template..."
+
+		downloadAndWriteClient := func() error {
+			s.Start()
+			defer s.Stop()
+
+			zipPkg, err := clients.Realm.ClientTemplate(
+				appRealm.GroupID,
+				appRealm.ID,
+				cmd.inputs.Template,
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := local.WriteZip(path.Join(rootDir, frontendPath), zipPkg); err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if err := downloadAndWriteClient(); err != nil {
 			return err
 		}
 	}
@@ -199,7 +264,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	headers := []string{"Info", "Details"}
 	rows := make([]map[string]interface{}, 0, 5)
 	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
-	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
+	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": backendDir})
 	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
 	if dsCluster.Name != "" {
 		rows = append(rows, map[string]interface{}{"Info": "Data Source (Cluster)", "Details": dsCluster.Name})
