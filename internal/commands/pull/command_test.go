@@ -28,7 +28,7 @@ func TestPullHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{RemoteApp: "somewhere"}}
+		cmd := &Command{inputs{Project: "elsewhere", RemoteApp: "somewhere"}}
 
 		err := cmd.Handler(nil, nil, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -45,7 +45,7 @@ func TestPullHandler(t *testing.T) {
 			return "", nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{RemoteApp: "somewhere"}}
+		cmd := &Command{inputs{Project: "elsewhere", RemoteApp: "somewhere"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -58,7 +58,7 @@ func TestPullHandler(t *testing.T) {
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -69,7 +69,7 @@ func TestPullHandler(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{DryRun: true, LocalPath: "app"}}
+			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
@@ -88,7 +88,7 @@ Contents would have been written to: app
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{LocalPath: "app"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			destination := filepath.Join(profile.WorkingDirectory, "app")
@@ -113,7 +113,7 @@ Successfully pulled app down: app
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -128,7 +128,7 @@ Successfully pulled app down: app
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{LocalPath: "app"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
@@ -143,7 +143,7 @@ Successfully pulled app down: app
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{LocalPath: "app", IncludeDependencies: true}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -166,7 +166,7 @@ Successfully pulled app down: app
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -175,7 +175,7 @@ Successfully pulled app down: app
 			return "node_modules.zip", depsPkg, nil
 		}
 
-		cmd := &Command{inputs{LocalPath: "app", IncludeDependencies: true}}
+		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk
@@ -194,7 +194,7 @@ Successfully pulled app down: app
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -209,7 +209,7 @@ Successfully pulled app down: app
 
 			out, ui := mock.NewUI()
 
-			cmd := &Command{inputs{LocalPath: "app"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
@@ -224,7 +224,7 @@ Successfully pulled app down: app
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeHosting: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -261,7 +261,7 @@ Successfully pulled app down: app
 
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return nil, nil
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -291,7 +291,7 @@ Successfully pulled app down: app
 
 		hostingAssetClient := mockHostingAssetClient{"<html><body>hello world!</body></html>"}
 
-		cmd := &Command{inputs{LocalPath: "app", IncludeHosting: true}}
+		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeHosting: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, HostingAsset: hostingAssetClient}))
 		assert.Equal(t, `Saved app to disk
