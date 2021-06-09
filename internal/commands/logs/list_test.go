@@ -388,7 +388,7 @@ func TestLogTypeDisplay(t *testing.T) {
 }
 
 func TestLogTypeFormat(t *testing.T) {
-	t.Run(fmt.Sprintf("should fail if log type %s is not formatted before passed to client", logTypeSchema), func(t *testing.T) {
+	t.Run("should query for all types of schema logs for log type schema", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{}}, nil
@@ -400,10 +400,11 @@ func TestLogTypeFormat(t *testing.T) {
 		}
 
 		typeInputs := listInputs{Types: []string{logTypeSchema}}
+		logTypes := []string{realm.LogTypeSchemaAdditiveChange, realm.LogTypeSchemaGeneration, realm.LogTypeSchemaValidation}
 
 		cmd := &CommandList{typeInputs}
 		assert.Nil(t, cmd.Handler(nil, nil, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, typeInputs.logTypes(), logsOpts.Types)
+		assert.Equal(t, logTypes, logsOpts.Types)
 	})
 }
