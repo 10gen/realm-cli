@@ -64,7 +64,7 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 	}
 
 	opts := realm.LogsOptions{
-		Types:      cmd.inputs.Types,
+		Types:      cmd.inputs.logTypes(),
 		ErrorsOnly: cmd.inputs.Errors,
 	}
 	if !cmd.inputs.Tail {

@@ -386,3 +386,25 @@ func TestLogTypeDisplay(t *testing.T) {
 	}
 	t.Logf("the max width for log type display is: %d", maxWidth)
 }
+
+func TestLogTypeFormat(t *testing.T) {
+	t.Run("should query for all types of schema logs for log type schema", func(t *testing.T) {
+		realmClient := mock.RealmClient{}
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{}}, nil
+		}
+		var logsOpts realm.LogsOptions
+		realmClient.LogsFn = func(groupID, appID string, opts realm.LogsOptions) (realm.Logs, error) {
+			logsOpts = opts
+			return realm.Logs{}, nil
+		}
+
+		typeInputs := listInputs{Types: []string{logTypeSchema}}
+		logTypes := []string{realm.LogTypeSchemaAdditiveChange, realm.LogTypeSchemaGeneration, realm.LogTypeSchemaValidation}
+
+		cmd := &CommandList{typeInputs}
+		assert.Nil(t, cmd.Handler(nil, nil, cli.Clients{Realm: realmClient}))
+
+		assert.Equal(t, logTypes, logsOpts.Types)
+	})
+}
