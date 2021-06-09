@@ -103,7 +103,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
-		if appRemote.IsZero() {
+		if appRemote.GroupID == "" && appRemote.ID == "" {
 			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
 		} else {
 			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
@@ -130,7 +130,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	var appLocal local.App
 
-	if appRemote.IsZero() {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
 			dir,
 			appRealm.ClientAppID,

@@ -13,9 +13,9 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/AlecAivazis/survey/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -84,7 +84,7 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID string, appNameOrClientID string) error {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID, appNameOrClientID string) error {
 	if i.Name == "" {
 		app, err := cli.ResolveApp(ui, client, realm.AppFilter{
 			GroupID: groupID,
@@ -99,7 +99,6 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID 
 }
 
 func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
-
 	//check if we are in an app directory already
 	_, appOK, err := local.FindApp(wd)
 	if err != nil {
@@ -124,7 +123,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 		return fullPath, nil
 	}
 
-	defaultLocalPath := getDefaultPath(wd, i.LocalPath)
+	defaultLocalPath := findDefaultPath(wd, i.LocalPath)
 	if ui.AutoConfirm() {
 		return path.Join(wd, defaultLocalPath), nil
 	}
@@ -241,7 +240,7 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	return args
 }
 
-func getDefaultPath(wd string, localPath string) string {
+func findDefaultPath(wd string, localPath string) string {
 	for i := 1; i < 10; i++ {
 		newPath := localPath + "-" + strconv.Itoa(i)
 		_, found, err := local.FindApp(path.Join(wd, newPath))
