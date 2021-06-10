@@ -244,18 +244,59 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Cluster: "test-cluster"}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster"}}
 
-		ds, err := inputs.resolveCluster(ac, "123")
+		ds, err := inputs.resolveClusters(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, dataSourceCluster{
-			Name: "mongodb-atlas",
-			Type: "mongodb-atlas",
-			Config: configCluster{
-				ClusterName:         "test-cluster",
-				ReadPreference:      "primary",
-				WireProtocolEnabled: false,
+		assert.Equal(t, []dataSourceCluster{
+			{
+				Name: "mongodb-atlas",
+				Type: "mongodb-atlas",
+				Config: configCluster{
+					ClusterName:         "test-cluster",
+					ReadPreference:      "primary",
+					WireProtocolEnabled: false,
+				},
+			},
+		}, ds)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should return data source configs of multiple provided clusters", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			expectedGroupID = groupID
+			return []atlas.Cluster{
+				{ID: "789", Name: "test-cluster-1"},
+				{ID: "1011", Name: "test-cluster-2"},
+			}, nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster-1", "test-cluster-2"}}
+
+		ds, err := inputs.resolveClusters(ac, "123")
+		assert.Nil(t, err)
+
+		assert.Equal(t, []dataSourceCluster{
+			{
+				Name: "mongodb-atlas",
+				Type: "mongodb-atlas",
+				Config: configCluster{
+					ClusterName:         "test-cluster-1",
+					ReadPreference:      "primary",
+					WireProtocolEnabled: false,
+				},
+			},
+			{
+				Name: "mongodb-atlas",
+				Type: "mongodb-atlas",
+				Config: configCluster{
+					ClusterName:         "test-cluster-2",
+					ReadPreference:      "primary",
+					WireProtocolEnabled: false,
+				},
 			},
 		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
@@ -269,9 +310,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return nil, nil
 		}
 
-		inputs := createInputs{Cluster: "test-cluster"}
+		inputs := createInputs{Clusters: []string{"test-cluster"}}
 
-		_, err := inputs.resolveCluster(ac, "123")
+		_, err := inputs.resolveClusters(ac, "123")
 		assert.Equal(t, errors.New("failed to find Atlas cluster"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
@@ -284,9 +325,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return nil, errors.New("client error")
 		}
 
-		inputs := createInputs{Cluster: "test-cluster"}
+		inputs := createInputs{Clusters: []string{"test-cluster"}}
 
-		_, err := inputs.resolveCluster(ac, "123")
+		_, err := inputs.resolveClusters(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
@@ -301,16 +342,53 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			return []atlas.DataLake{{Name: "test-datalake"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLake: "test-datalake"}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake"}}
 
-		ds, err := inputs.resolveDataLake(ac, "123")
+		ds, err := inputs.resolveDataLakes(ac, "123")
 		assert.Nil(t, err)
 
-		assert.Equal(t, dataSourceDataLake{
-			Name: "mongodb-datalake",
-			Type: "datalake",
-			Config: configDataLake{
-				DataLakeName: "test-datalake",
+		assert.Equal(t, []dataSourceDataLake{
+			{
+				Name: "mongodb-datalake",
+				Type: "datalake",
+				Config: configDataLake{
+					DataLakeName: "test-datalake",
+				},
+			},
+		}, ds)
+		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should return data source config of multiple provided data lakes", func(t *testing.T) {
+		var expectedGroupID string
+		ac := mock.AtlasClient{}
+		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
+			expectedGroupID = groupID
+			return []atlas.DataLake{
+				{Name: "test-datalake-1"},
+				{Name: "test-datalake-2"},
+			}, nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake-1", "test-datalake-2"}}
+
+		ds, err := inputs.resolveDataLakes(ac, "123")
+		assert.Nil(t, err)
+
+		assert.Equal(t, []dataSourceDataLake{
+			{
+				Name: "mongodb-datalake",
+				Type: "datalake",
+				Config: configDataLake{
+					DataLakeName: "test-datalake-1",
+				},
+			},
+			{
+				Name: "mongodb-datalake",
+				Type: "datalake",
+				Config: configDataLake{
+					DataLakeName: "test-datalake-2",
+				},
 			},
 		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
@@ -324,9 +402,9 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			return nil, nil
 		}
 
-		inputs := createInputs{DataLake: "test-datalake"}
+		inputs := createInputs{DataLakes: []string{"test-datalake"}}
 
-		_, err := inputs.resolveDataLake(ac, "123")
+		_, err := inputs.resolveDataLakes(ac, "123")
 		assert.Equal(t, errors.New("failed to find Atlas data lake"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
@@ -339,9 +417,9 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			return nil, errors.New("client error")
 		}
 
-		inputs := createInputs{DataLake: "test-datalake"}
+		inputs := createInputs{DataLakes: []string{"test-datalake"}}
 
-		_, err := inputs.resolveDataLake(ac, "123")
+		_, err := inputs.resolveDataLakes(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})

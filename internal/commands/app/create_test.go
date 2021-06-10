@@ -395,13 +395,13 @@ func TestAppCreateHandler(t *testing.T) {
 
 	for _, tc := range []struct {
 		description string
-		cluster     string
-		dataLake    string
+		clusters    []string
+		dataLakes   []string
 		atlasClient atlas.Client
 	}{
 		{
 			description: "should create minimal project with a cluster data source when cluster is set",
-			cluster:     "test-cluster",
+			clusters:    []string{"test-cluster"},
 			atlasClient: mock.AtlasClient{
 				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 					return []atlas.Cluster{{Name: "test-cluster"}}, nil
@@ -409,8 +409,17 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 		},
 		{
+			description: "should create minimal project with multiple cluster data sources when clusters are set",
+			clusters:    []string{"test-cluster", "test-cluster-2"},
+			atlasClient: mock.AtlasClient{
+				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+					return []atlas.Cluster{{Name: "test-cluster"}, {Name: "test-cluster-2"}}, nil
+				},
+			},
+		},
+		{
 			description: "should create minimal project with a data lake data source when data lake is set",
-			dataLake:    "test-datalake",
+			dataLakes:   []string{"test-datalake"},
 			atlasClient: mock.AtlasClient{
 				DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
 					return []atlas.DataLake{{Name: "test-datalake"}}, nil
@@ -419,8 +428,8 @@ func TestAppCreateHandler(t *testing.T) {
 		},
 		{
 			description: "should create minimal project with a data lake and cluster data source when data lake and cluster is set",
-			cluster:     "test-cluster",
-			dataLake:    "test-datalake",
+			clusters:    []string{"test-cluster"},
+			dataLakes:   []string{"test-datalake"},
 			atlasClient: mock.AtlasClient{
 				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 					return []atlas.Cluster{{Name: "test-cluster"}}, nil
@@ -465,8 +474,8 @@ func TestAppCreateHandler(t *testing.T) {
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
 					},
-					Cluster:  tc.cluster,
-					DataLake: tc.dataLake,
+					Clusters:  tc.clusters,
+					DataLakes: tc.dataLakes,
 				},
 			}
 
@@ -489,10 +498,10 @@ func TestAppCreateHandler(t *testing.T) {
 
 			// TODO(REALMC-8262): Investigate file path display options
 			dirLength := len(appLocal.RootDir)
-			fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+			fmtStr := fmt.Sprintf(" %%-%ds", dirLength)
 
 			var spaceBuffer, dashBuffer string
-			if tc.dataLake != "" {
+			if len(tc.dataLakes) > 0 {
 				spaceBuffer = "  "
 				dashBuffer = "--"
 			}
@@ -500,16 +509,16 @@ func TestAppCreateHandler(t *testing.T) {
 			display := make([]string, 0, 10)
 			display = append(display, "Successfully created app",
 				fmt.Sprintf("  Info                   "+spaceBuffer+fmtStr, "Details"),
-				"  ---------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
+				"  ----------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
 				fmt.Sprintf("  Client App ID          "+spaceBuffer+fmtStr, "test-app-abcde"),
-				"  Realm Directory        "+spaceBuffer+appLocal.RootDir,
+				"  Realm Directory         "+spaceBuffer+appLocal.RootDir,
 				fmt.Sprintf("  Realm UI               "+spaceBuffer+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
 			)
-			if tc.cluster != "" {
-				display = append(display, fmt.Sprintf("  Data Source (Cluster)  "+spaceBuffer+fmtStr, "mongodb-atlas"))
+			if len(tc.clusters) > 0 {
+				display = append(display, fmt.Sprintf("  Data Source (Clusters) "+spaceBuffer+fmtStr, strings.Join(tc.clusters, ", ")))
 			}
-			if tc.dataLake != "" {
-				display = append(display, fmt.Sprintf("  Data Source (Data Lake)  "+fmtStr, "mongodb-datalake"))
+			if len(tc.dataLakes) > 0 {
+				display = append(display, fmt.Sprintf("  Data Source (Data Lakes) "+fmtStr, strings.Join(tc.dataLakes, ", ")))
 			}
 			display = append(display, "Check out your app: cd ./test-app && realm-cli app describe", "")
 			assert.Equal(t, strings.Join(display, "\n"), out.String())
@@ -526,8 +535,8 @@ func TestAppCreateHandler(t *testing.T) {
 	for _, tc := range []struct {
 		description     string
 		appRemote       string
-		cluster         string
-		dataLake        string
+		clusters        []string
+		dataLakes       []string
 		datalake        string
 		clients         cli.Clients
 		displayExpected func(dir string, cmd *CommandCreate) string
@@ -562,7 +571,7 @@ func TestAppCreateHandler(t *testing.T) {
 		},
 		{
 			description: "should create a minimal project dry run with cluster set",
-			cluster:     "test-cluster",
+			clusters:    []string{"test-cluster"},
 			clients: cli.Clients{
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
@@ -581,7 +590,7 @@ func TestAppCreateHandler(t *testing.T) {
 		},
 		{
 			description: "should create a minimal project dry run with data lake set",
-			dataLake:    "test-datalake",
+			dataLakes:   []string{"test-datalake"},
 			clients: cli.Clients{
 				Atlas: mock.AtlasClient{
 					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
@@ -615,9 +624,9 @@ func TestAppCreateHandler(t *testing.T) {
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
 					},
-					Cluster:  tc.cluster,
-					DataLake: tc.dataLake,
-					DryRun:   true,
+					Clusters:  tc.clusters,
+					DataLakes: tc.dataLakes,
+					DryRun:    true,
 				},
 			}
 
@@ -632,8 +641,8 @@ func TestAppCreateHandler(t *testing.T) {
 		description string
 		appRemote   string
 		groupID     string
-		cluster     string
-		dataLake    string
+		clusters    []string
+		dataLakes   []string
 		clients     cli.Clients
 		expectedErr error
 	}{
@@ -651,7 +660,7 @@ func TestAppCreateHandler(t *testing.T) {
 		{
 			description: "should error when resolving clusters when cluster is set",
 			groupID:     "123",
-			cluster:     "test-cluster",
+			clusters:    []string{"test-cluster"},
 			clients: cli.Clients{
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
@@ -664,7 +673,7 @@ func TestAppCreateHandler(t *testing.T) {
 		{
 			description: "should error when resolving data lakes when data lake is set",
 			groupID:     "123",
-			dataLake:    "test-datalake",
+			dataLakes:   []string{"test-datalake"},
 			clients: cli.Clients{
 				Atlas: mock.AtlasClient{
 					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
@@ -698,8 +707,8 @@ func TestAppCreateHandler(t *testing.T) {
 					Location:        realm.LocationVirginia,
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
-				Cluster:  tc.cluster,
-				DataLake: tc.dataLake,
+				Clusters:  tc.clusters,
+				DataLakes: tc.dataLakes,
 			}}
 
 			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, nil, tc.clients))
@@ -733,13 +742,35 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
 				LocalPath: "realm-app",
-				Cluster:   "Cluster0",
-				DataLake:  "DataLake0",
+				Clusters:  []string{"Cluster0"},
+				DataLakes: []string{"DataLake0"},
 				DryRun:    true,
 			},
 		}
 		assert.Equal(t,
 			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
+			cmd.display(false),
+		)
+	})
+
+	t.Run("should create a command with multiple input clusters and datalakes", func(t *testing.T) {
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Name:            "test-app",
+					Project:         "123",
+					RemoteApp:       "remote-app",
+					Location:        realm.LocationIreland,
+					DeploymentModel: realm.DeploymentModelLocal,
+				},
+				LocalPath: "realm-app",
+				Clusters:  []string{"Cluster0", "Cluster1", "Cluster2"},
+				DataLakes: []string{"DataLake0", "DataLake1", "DataLake2"},
+				DryRun:    true,
+			},
+		}
+		assert.Equal(t,
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0,Cluster1,Cluster2 --data-lake DataLake0,DataLake1,DataLake2 --dry-run",
 			cmd.display(false),
 		)
 	})

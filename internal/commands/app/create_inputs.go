@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -34,8 +35,8 @@ var (
 type createInputs struct {
 	newAppInputs
 	LocalPath string
-	Cluster   string
-	DataLake  string
+	Clusters  []string
+	DataLakes []string
 	DryRun    bool
 }
 
@@ -131,56 +132,69 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveCluster(client atlas.Client, groupID string) (dataSourceCluster, error) {
+func (i *createInputs) resolveClusters(client atlas.Client, groupID string) ([]dataSourceCluster, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return dataSourceCluster{}, err
+		return []dataSourceCluster{}, err
 	}
-	var clusterName string
-	for _, cluster := range clusters {
-		if i.Cluster == cluster.Name {
-			clusterName = cluster.Name
-			break
+
+	existingClusters := map[string]atlas.Cluster{}
+	for _, c := range clusters {
+		existingClusters[c.Name] = c
+	}
+
+	var dsClusters []dataSourceCluster
+	for _, clusterName := range i.Clusters {
+		if _, ok := existingClusters[clusterName]; !ok {
+			continue
 		}
+		dsClusters = append(dsClusters,
+			dataSourceCluster{
+				Name: "mongodb-atlas",
+				Type: "mongodb-atlas",
+				Config: configCluster{
+					ClusterName:         clusterName,
+					ReadPreference:      "primary",
+					WireProtocolEnabled: false,
+				},
+			})
 	}
-	if clusterName == "" {
-		return dataSourceCluster{}, errors.New("failed to find Atlas cluster")
+	if len(dsClusters) == 0 {
+		return []dataSourceCluster{}, errors.New("failed to find Atlas cluster")
 	}
-	dsCluster := dataSourceCluster{
-		Name: "mongodb-atlas",
-		Type: "mongodb-atlas",
-		Config: configCluster{
-			ClusterName:         clusterName,
-			ReadPreference:      "primary",
-			WireProtocolEnabled: false,
-		},
-	}
-	return dsCluster, nil
+	return dsClusters, nil
 }
 
-func (i *createInputs) resolveDataLake(client atlas.Client, groupID string) (dataSourceDataLake, error) {
+func (i *createInputs) resolveDataLakes(client atlas.Client, groupID string) ([]dataSourceDataLake, error) {
 	dataLakes, err := client.DataLakes(groupID)
 	if err != nil {
-		return dataSourceDataLake{}, err
+		return []dataSourceDataLake{}, err
 	}
-	var dataLakeName string
-	for _, dataLake := range dataLakes {
-		if i.DataLake == dataLake.Name {
-			dataLakeName = dataLake.Name
-			break
+
+	existingDataLakes := map[string]atlas.DataLake{}
+	for _, d := range dataLakes {
+		existingDataLakes[d.Name] = d
+	}
+
+	var dsDataLakes []dataSourceDataLake
+	for _, dataLakeName := range i.DataLakes {
+		if _, ok := existingDataLakes[dataLakeName]; !ok {
+			continue
 		}
+
+		dsDataLakes = append(dsDataLakes,
+			dataSourceDataLake{
+				Name: "mongodb-datalake",
+				Type: "datalake",
+				Config: configDataLake{
+					DataLakeName: dataLakeName,
+				},
+			})
 	}
-	if dataLakeName == "" {
-		return dataSourceDataLake{}, errors.New("failed to find Atlas data lake")
+	if len(dsDataLakes) == 0 {
+		return []dataSourceDataLake{}, errors.New("failed to find Atlas data lake")
 	}
-	dsDataLake := dataSourceDataLake{
-		Name: "mongodb-datalake",
-		Type: "datalake",
-		Config: configDataLake{
-			DataLakeName: dataLakeName,
-		},
-	}
-	return dsDataLake, nil
+	return dsDataLakes, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {
@@ -206,11 +220,11 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.Environment != realm.EnvironmentNone {
 		args = append(args, flags.Arg{flagEnvironment, i.Environment.String()})
 	}
-	if i.Cluster != "" {
-		args = append(args, flags.Arg{flagCluster, i.Cluster})
+	if len(i.Clusters) > 0 {
+		args = append(args, flags.Arg{flagCluster, strings.Join(i.Clusters, ",")})
 	}
-	if i.DataLake != "" {
-		args = append(args, flags.Arg{flagDataLake, i.DataLake})
+	if len(i.DataLakes) > 0 {
+		args = append(args, flags.Arg{flagDataLake, strings.Join(i.DataLakes, ",")})
 	}
 	if i.DryRun && !omitDryRun {
 		args = append(args, flags.Arg{Name: flagDryRun})

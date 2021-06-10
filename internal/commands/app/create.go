@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -41,8 +42,8 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
-	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
+	fs.StringSliceVarP(&cmd.inputs.Clusters, flagCluster, "", []string{}, flagClusterUsage)
+	fs.StringSliceVarP(&cmd.inputs.DataLakes, flagDataLake, "", []string{}, flagDataLakeUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
@@ -87,17 +88,17 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var dsCluster dataSourceCluster
-	if cmd.inputs.Cluster != "" {
-		dsCluster, err = cmd.inputs.resolveCluster(clients.Atlas, groupID)
+	var dsClusters []dataSourceCluster
+	if len(cmd.inputs.Clusters) > 0 {
+		dsClusters, err = cmd.inputs.resolveClusters(clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
 	}
 
-	var dsDataLake dataSourceDataLake
-	if cmd.inputs.DataLake != "" {
-		dsDataLake, err = cmd.inputs.resolveDataLake(clients.Atlas, groupID)
+	var dsDataLakes []dataSourceDataLake
+	if len(cmd.inputs.DataLakes) > 0 {
+		dsDataLakes, err = cmd.inputs.resolveDataLakes(clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
@@ -110,11 +111,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		} else {
 			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
 		}
-		if dsCluster.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))
+		for i, cluster := range dsClusters {
+			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
 		}
-		if dsDataLake.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLake, dsDataLake.Name))
+		for i, dataLake := range dsDataLakes {
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLakes[i], dataLake.Name))
 		}
 		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)
@@ -165,25 +166,34 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	if dsCluster.Name != "" {
-		local.AddDataSource(appLocal.AppData, map[string]interface{}{
-			"name": dsCluster.Name,
-			"type": dsCluster.Type,
-			"config": map[string]interface{}{
-				"clusterName":         dsCluster.Config.ClusterName,
-				"readPreference":      dsCluster.Config.ReadPreference,
-				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
-			},
-		})
+	clusterNames := []string{}
+	for _, dsCluster := range dsClusters {
+		if dsCluster.Name != "" {
+			local.AddDataSource(appLocal.AppData, map[string]interface{}{
+				"name": dsCluster.Name,
+				"type": dsCluster.Type,
+				"config": map[string]interface{}{
+					"clusterName":         dsCluster.Config.ClusterName,
+					"readPreference":      dsCluster.Config.ReadPreference,
+					"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
+				},
+			})
+			clusterNames = append(clusterNames, dsCluster.Config.ClusterName)
+		}
 	}
-	if dsDataLake.Name != "" {
-		local.AddDataSource(appLocal.AppData, map[string]interface{}{
-			"name": dsDataLake.Name,
-			"type": dsDataLake.Type,
-			"config": map[string]interface{}{
-				"dataLakeName": dsDataLake.Config.DataLakeName,
-			},
-		})
+
+	dataLakeNames := []string{}
+	for _, dsDataLake := range dsDataLakes {
+		if dsDataLake.Name != "" {
+			local.AddDataSource(appLocal.AppData, map[string]interface{}{
+				"name": dsDataLake.Name,
+				"type": dsDataLake.Type,
+				"config": map[string]interface{}{
+					"dataLakeName": dsDataLake.Config.DataLakeName,
+				},
+			})
+			dataLakeNames = append(dataLakeNames, dsDataLake.Config.DataLakeName)
+		}
 	}
 
 	if err := appLocal.Write(); err != nil {
@@ -203,11 +213,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
 	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
 	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
-	if dsCluster.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Cluster)", "Details": dsCluster.Name})
+	if len(dsClusters) > 0 {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source (Clusters)", "Details": strings.Join(clusterNames[:], ", ")})
 	}
-	if dsDataLake.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lake)", "Details": dsDataLake.Name})
+	if len(dsDataLakes) > 0 {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lakes)", "Details": strings.Join(dataLakeNames[:], ", ")})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
