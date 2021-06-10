@@ -2,6 +2,7 @@ package app
 
 import (
 	"archive/zip"
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -314,7 +315,8 @@ func TestAppCreateHandler(t *testing.T) {
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		out, ui := mock.NewUI()
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
 		testApp := realm.App{
 			ID:          "789",
@@ -325,6 +327,7 @@ func TestAppCreateHandler(t *testing.T) {
 
 		zipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer zipPkg.Close()
 
 		client := mock.RealmClient{}
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -346,51 +349,75 @@ func TestAppCreateHandler(t *testing.T) {
 			return nil
 		}
 
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			RemoteApp:       testApp.Name,
-			Project:         testApp.GroupID,
-			Location:        realm.LocationIreland,
-			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}
-
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
-
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.RemoteApp))
-		assert.Nil(t, err)
-
-		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-			Name:            testApp.Name,
-			Location:        realm.LocationIreland,
-			DeploymentModel: realm.DeploymentModelGlobal,
-			Auth: local.AuthStructure{
-				CustomUserData: map[string]interface{}{"enabled": false},
-				Providers:      map[string]interface{}{},
+		for _, tc := range []struct {
+			description     string
+			groupID         string
+			localPath       string
+			expectedGroupID string
+		}{
+			{
+				description:     "with default remote project",
+				localPath:       testApp.Name,
+				expectedGroupID: testApp.GroupID,
 			},
-			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: local.FunctionsStructure{
-				Sources: map[string]string{},
+			{
+				description:     "with provided project",
+				groupID:         "1111111",
+				localPath:       testApp.Name + "-1",
+				expectedGroupID: "1111111",
 			},
-			GraphQL: local.GraphQLStructure{
-				CustomResolvers: []map[string]interface{}{},
-			},
-			Values: []map[string]interface{}{},
-		}}}, appLocal.AppData)
+		} {
+			t.Run(tc.description, func(t *testing.T) {
 
-		// TODO(REALMC-8262): Investigate file path display options
-		dirLength := len(appLocal.RootDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+				cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+					RemoteApp:       testApp.Name,
+					Project:         tc.groupID,
+					Location:        realm.LocationIreland,
+					DeploymentModel: realm.DeploymentModelGlobal,
+				}}}
 
-		assert.Equal(t, strings.Join([]string{
-			"Successfully created app",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "remote-app-abcde"),
-			"  Realm Directory  " + appLocal.RootDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"Check out your app: cd ./remote-app && realm-cli app describe",
-			"",
-		}, "\n"), out.String())
+				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+
+				appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, tc.localPath))
+				assert.Nil(t, err)
+
+				assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+					ConfigVersion:   realm.DefaultAppConfigVersion,
+					Name:            testApp.Name,
+					Location:        realm.LocationIreland,
+					DeploymentModel: realm.DeploymentModelGlobal,
+					Auth: local.AuthStructure{
+						CustomUserData: map[string]interface{}{"enabled": false},
+						Providers:      map[string]interface{}{},
+					},
+					Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+					Functions: local.FunctionsStructure{
+						Sources: map[string]string{},
+					},
+					GraphQL: local.GraphQLStructure{
+						CustomResolvers: []map[string]interface{}{},
+					},
+					Values: []map[string]interface{}{},
+				}}}, appLocal.AppData)
+
+				// TODO(REALMC-8262): Investigate file path display options
+				dirLength := len(appLocal.RootDir)
+				fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+
+				assert.Equal(t, strings.Join([]string{
+					"Successfully created app",
+					fmt.Sprintf("  Info             "+fmtStr, "Details"),
+					"  ---------------  " + strings.Repeat("-", dirLength),
+					fmt.Sprintf("  Client App ID    "+fmtStr, "remote-app-abcde"),
+					"  Realm Directory  " + appLocal.RootDir,
+					fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/"+tc.expectedGroupID+"/apps/456/dashboard"),
+					"Check out your app: cd ./remote-app && realm-cli app describe",
+					"",
+				}, "\n"), out.String())
+
+				out.Reset()
+			})
+		}
 	})
 
 	for _, tc := range []struct {

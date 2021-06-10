@@ -1,11 +1,17 @@
 package app
 
 import (
+	"bytes"
 	"errors"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
@@ -87,7 +93,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 	for _, tc := range []struct {
 		description    string
 		inputs         createInputs
-		appRemote      appRemote
+		appRemote      realm.App
 		expectedName   string
 		expectedFilter realm.AppFilter
 	}{
@@ -98,9 +104,9 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 		},
 		{
 			description:    "should use remote app for name if name is not set",
-			appRemote:      appRemote{testApp.GroupID, testApp.ID},
+			appRemote:      realm.App{GroupID: testApp.GroupID, ClientAppID: testApp.ClientAppID},
 			expectedName:   testApp.Name,
-			expectedFilter: realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID},
+			expectedFilter: realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ClientAppID},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -111,7 +117,7 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 				return []realm.App{testApp}, nil
 			}
 
-			err := tc.inputs.resolveName(nil, rc, tc.appRemote)
+			err := tc.inputs.resolveName(nil, rc, tc.appRemote.GroupID, tc.appRemote.ClientAppID)
 
 			assert.Nil(t, err)
 			assert.Equal(t, tc.expectedName, tc.inputs.Name)
@@ -127,11 +133,11 @@ func TestAppCreateInputsResolveName(t *testing.T) {
 			return nil, errors.New("realm client error")
 		}
 		inputs := createInputs{}
-		err := inputs.resolveName(nil, rc, appRemote{testApp.GroupID, testApp.ID})
+		err := inputs.resolveName(nil, rc, testApp.GroupID, testApp.ClientAppID)
 
 		assert.Equal(t, errors.New("realm client error"), err)
 		assert.Equal(t, "", inputs.Name)
-		assert.Equal(t, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ID}, appFilter)
+		assert.Equal(t, realm.AppFilter{GroupID: testApp.GroupID, App: testApp.ClientAppID}, appFilter)
 	})
 }
 
@@ -209,13 +215,137 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
 
-	t.Run("should error when path specified is another realm app", func(t *testing.T) {
+	t.Run("should fail when realm app already exists in current wd", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
-		specifiedDir := "test-dir"
-		inputs := createInputs{LocalPath: specifiedDir}
+		_, ui := mock.NewUI()
+
+		existingApp := realm.App{
+			ID:          primitive.NewObjectID().Hex(),
+			GroupID:     primitive.NewObjectID().Hex(),
+			ClientAppID: "existing-app-abcde",
+			Name:        "existing-app",
+		}
+
+		rc := mock.RealmClient{}
+		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return existingApp, nil
+		}
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{
+			Name:    existingApp.Name,
+			Project: existingApp.GroupID,
+		}}
+		cmd := &CommandCreate{inputs}
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
+
+		existingDir := filepath.Join(profile.WorkingDirectory, existingApp.Name)
+		dir, err := inputs.resolveLocalPath(ui, existingDir)
+
+		assert.Equal(t, errProjectExists{existingDir}, err)
+		assert.Equal(t, dir, "")
+	})
+
+	t.Run("should fail when realm app already exists in newly specified path", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		existingApp := realm.App{
+			ID:          primitive.NewObjectID().Hex(),
+			GroupID:     primitive.NewObjectID().Hex(),
+			ClientAppID: "existing-app-abcde",
+			Name:        "existing-app",
+		}
+
+		rc := mock.RealmClient{}
+		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return existingApp, nil
+		}
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+
+		inputs := createInputs{newAppInputs: newAppInputs{
+			Name:    existingApp.Name,
+			Project: existingApp.GroupID,
+		}}
+		cmd := &CommandCreate{inputs}
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			console.ExpectString("Local path './existing-app' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './existing-app'? ('No' will prompt you to provide another destination)")
+			console.SendLine("no")
+			console.ExpectString("Local Path")
+			console.SendLine("existing-app")
+			console.ExpectEOF()
+		}()
+
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		assert.Equal(t, errProjectExists{existingApp.Name}, err)
+		assert.Equal(t, dir, "")
+
+	})
+
+	t.Run("should create default local directory name when ui is set to auto confirm", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, ui, err := mock.NewConsoleWithOptions(
+			mock.UIOptions{AutoConfirm: true},
+			new(bytes.Buffer),
+		)
+		assert.Nil(t, err)
+
+		testAppName := "test-app"
+		newDefaultName := "test-app-1"
+		inputs := createInputs{newAppInputs: newAppInputs{Name: testAppName}}
+
+		err = os.Mkdir(path.Join(profile.WorkingDirectory, testAppName), os.ModePerm)
+		assert.Nil(t, err)
+
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, newDefaultName), dir)
+	})
+
+	t.Run("should request new path when path specified is another realm app", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		_, console, _, ui, err := mock.NewVT10XConsole()
+		assert.Nil(t, err)
+		defer console.Close()
+
+		specifiedDir := "test-app-dir"
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, LocalPath: specifiedDir}
 		fullDir := path.Join(profile.WorkingDirectory, specifiedDir)
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("Local path './test-app-dir' already exists, writing app contents to that destination may result in file conflicts.")
+			console.ExpectString("Would you still like to write app contents to './test-app-dir'? ('No' will prompt you to provide another destination)")
+			console.SendLine("no")
+			console.ExpectString("Local Path")
+			console.SendLine("new-app")
+			console.ExpectEOF()
+		}()
 
 		appLocal := local.NewApp(
 			fullDir,
@@ -228,10 +358,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		)
 		assert.Nil(t, appLocal.WriteConfig())
 
-		dir, err := inputs.resolveLocalPath(nil, profile.WorkingDirectory)
-
-		assert.Equal(t, "", dir)
-		assert.Equal(t, errProjectExists{fullDir}, err)
+		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+		assert.Nil(t, err)
+		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
 	})
 }
 
@@ -344,5 +473,31 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		_, err := inputs.resolveDataLake(ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
+	})
+}
+
+func TestFindDefaultPath(t *testing.T) {
+	t.Run("should return new incremented directory if provided directory already exists", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+
+		testAppName := "test-app"
+		for i := 1; i < 10; i++ {
+			defaultPath := findDefaultPath(profile.WorkingDirectory, testAppName)
+			localPath := testAppName + "-" + strconv.Itoa(i)
+
+			assert.Equal(t, localPath, defaultPath)
+
+			assert.Nil(t, ioutil.WriteFile(
+				filepath.Join(profile.WorkingDirectory, defaultPath),
+				[]byte(`{"config_version":20210101,"app_id":"test-app-abcde","name":"test-app"}`),
+				0666,
+			))
+		}
+
+		//if file options 1-9 are exhausted, use hex
+		defaultPath := findDefaultPath(profile.WorkingDirectory, testAppName)
+		directoryID := strings.Trim(defaultPath, testAppName+"-")
+		assert.True(t, primitive.IsValidObjectID(directoryID), "should be primitive object id")
 	})
 }
