@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	flagFunctionName      = "function"
-	flagFunctionNameUsage = "specify the function to run"
+	flagFunctionName      = "name"
+	flagFunctionNameUsage = "specify the name of the function to run"
 
 	flagFunctionArgs      = "args"
 	flagFunctionArgsUsage = "specify the args to pass to your function"
