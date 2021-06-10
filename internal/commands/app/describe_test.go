@@ -115,7 +115,7 @@ func TestAppDescribeHandler(t *testing.T) {
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{{ID: "456", ClientAppID: "test-app-abcde", GroupID: "123"}}, nil
+			return []realm.App{{ID: "456", ClientAppID: "todo-abcde", GroupID: "123"}}, nil
 		}
 		realmClient.AppDescriptionFn = func(groupID, appID string) (realm.AppDescription, error) {
 			return realm.AppDescription{
@@ -141,12 +141,19 @@ func TestAppDescribeHandler(t *testing.T) {
 				HTTPEndpoints: []realm.HTTPEndpointSummary{
 					{
 						Name: "http",
+						IncomingWebhooks: []realm.IncomingWebhookSummary{
+							{
+								Name: "webhook0",
+								URL:  "https://webhook-base.url/api/client/v2.0/app/todo-abcde/service/http/incoming_webhook/webhook0",
+							},
+						},
 					},
 				},
 				ServiceDescs: []realm.ServiceSummary{
 					{
-						Name: "tw1",
-						Type: "twilio",
+						Name:             "tw1",
+						Type:             "twilio",
+						IncomingWebhooks: []realm.IncomingWebhookSummary{},
 					},
 				},
 				AuthProviders: []realm.AuthProviderSummary{
@@ -210,7 +217,7 @@ func TestAppDescribeHandler(t *testing.T) {
 			}, nil
 		}
 
-		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "test-app-abcde"}}}
+		cmd := &CommandDescribe{inputs: describeInputs{cli.ProjectInputs{App: "todo-abcde"}}}
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		assert.Equal(t, `App description
@@ -237,13 +244,20 @@ func TestAppDescribeHandler(t *testing.T) {
   ],
   "http_endpoints": [
     {
-      "name": "http"
+      "name": "http",
+      "webhooks": [
+        {
+          "name": "webhook0",
+          "url": "https://webhook-base.url/api/client/v2.0/app/todo-abcde/service/http/incoming_webhook/webhook0"
+        }
+      ]
     }
   ],
   "services": [
     {
       "name": "tw1",
-      "type": "twilio"
+      "type": "twilio",
+      "webhooks": []
     }
   ],
   "auth_providers": [
