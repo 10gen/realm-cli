@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"strconv"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -15,6 +16,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var (
@@ -83,9 +85,12 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, r appRemote) error {
+func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID, appNameOrClientID string) error {
 	if i.Name == "" {
-		app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: r.GroupID, App: r.AppID})
+		app, err := cli.ResolveApp(ui, client, realm.AppFilter{
+			GroupID: groupID,
+			App:     appNameOrClientID,
+		})
 		if err != nil {
 			return err
 		}
@@ -95,6 +100,15 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, r appRem
 }
 
 func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
+	//check if we are in an app directory already
+	_, appOK, err := local.FindApp(wd)
+	if err != nil {
+		return "", err
+	}
+	if appOK {
+		return "", errProjectExists{wd}
+	}
+
 	if i.LocalPath == "" {
 		i.LocalPath = i.Name
 	}
@@ -109,13 +123,12 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	if !fi.Mode().IsDir() {
 		return fullPath, nil
 	}
-	_, appOK, err := local.FindApp(fullPath)
-	if err != nil {
-		return "", err
+
+	defaultLocalPath := findDefaultPath(wd, i.LocalPath)
+	if ui.AutoConfirm() {
+		return path.Join(wd, defaultLocalPath), nil
 	}
-	if appOK {
-		return "", errProjectExists{fullPath}
-	}
+
 	ui.Print(terminal.NewWarningLog("Local path './%s' already exists, writing app contents to that destination may result in file conflicts.", i.LocalPath))
 	proceed, err := ui.Confirm("Would you still like to write app contents to './%s'? ('No' will prompt you to provide another destination)", i.LocalPath)
 	if err != nil {
@@ -123,9 +136,18 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	}
 	if !proceed {
 		var newDir string
-		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path"}); err != nil {
+		if err := ui.AskOne(&newDir, &survey.Input{Message: "Local Path", Default: defaultLocalPath}); err != nil {
 			return "", err
 		}
+
+		_, appOK, err := local.FindApp(path.Join(wd, newDir))
+		if err != nil {
+			return "", err
+		}
+		if appOK {
+			return "", errProjectExists{newDir}
+		}
+
 		i.LocalPath = newDir
 		fullPath = path.Join(wd, i.LocalPath)
 	}
@@ -230,4 +252,15 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{Name: flagDryRun})
 	}
 	return args
+}
+
+func findDefaultPath(wd string, localPath string) string {
+	for i := 1; i < 10; i++ {
+		newPath := localPath + "-" + strconv.Itoa(i)
+		_, found, err := local.FindApp(path.Join(wd, newPath))
+		if err == nil && !found {
+			return newPath
+		}
+	}
+	return localPath + "-" + primitive.NewObjectID().Hex()
 }

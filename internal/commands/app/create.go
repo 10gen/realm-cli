@@ -65,20 +65,18 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var groupID = cmd.inputs.Project
-	if appRemote.IsZero() {
-		if groupID == "" {
-			id, err := cli.ResolveGroupID(ui, clients.Atlas)
-			if err != nil {
-				return err
-			}
-			groupID = id
-		}
-	} else {
+	groupID := cmd.inputs.Project
+	if groupID == "" {
 		groupID = appRemote.GroupID
 	}
+	if groupID == "" {
+		groupID, err = cli.ResolveGroupID(ui, clients.Atlas)
+		if err != nil {
+			return err
+		}
+	}
 
-	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote)
+	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote.GroupID, appRemote.ClientAppID)
 	if err != nil {
 		return err
 	}
@@ -106,7 +104,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
-		if appRemote.IsZero() {
+		if appRemote.GroupID == "" && appRemote.ID == "" {
 			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
 		} else {
 			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
@@ -133,7 +131,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	var appLocal local.App
 
-	if appRemote.IsZero() {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
 			dir,
 			appRealm.ClientAppID,
@@ -151,7 +149,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	} else {
 		_, zipPkg, err := clients.Realm.Export(
 			appRemote.GroupID,
-			appRemote.AppID,
+			appRemote.ID,
 			realm.ExportRequest{},
 		)
 		if err != nil {

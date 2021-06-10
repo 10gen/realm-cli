@@ -59,12 +59,12 @@ func (cmd *CommandInit) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if appRemote.IsZero() {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		if err := cmd.writeAppFromScratch(profile.WorkingDirectory); err != nil {
 			return err
 		}
 	} else {
-		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.AppID); err != nil {
+		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.ID); err != nil {
 			return err
 		}
 	}
