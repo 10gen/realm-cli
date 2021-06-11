@@ -4,8 +4,8 @@ import (
 	"errors"
 	"os"
 	"path"
-	"strings"
 	"strconv"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
