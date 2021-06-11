@@ -42,6 +42,9 @@ func TestAppCreateHandler(t *testing.T) {
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
+		client.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{}, nil
+		}
 
 		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
 			Name:            "test-app",
@@ -192,15 +195,136 @@ func TestAppCreateHandler(t *testing.T) {
 		})
 	})
 
-	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
+	// TODO REALMC-9228 Re-enable prompting for template selection
+	//	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
+	//		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+	//		defer teardown()
+	//		profile.SetRealmBaseURL("http://localhost:8080")
+	//
+	//		procedure := func(c *expect.Console) {
+	//			c.ExpectString("Atlas Project")
+	//			c.Send("123")
+	//			c.SendLine(" ")
+	//			c.ExpectEOF()
+	//		}
+	//
+	//		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
+	//		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+	//		assert.Nil(t, consoleErr)
+	//		defer console.Close()
+	//
+	//		doneCh := make(chan (struct{}))
+	//		go func() {
+	//			defer close(doneCh)
+	//			procedure(console)
+	//		}()
+	//
+	//		var createdApp realm.App
+	//		rc := mock.RealmClient{}
+	//		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+	//			createdApp = realm.App{
+	//				GroupID:     groupID,
+	//				ID:          "456",
+	//				ClientAppID: name + "-abcde",
+	//				Name:        name,
+	//				AppMeta:     meta,
+	//			}
+	//			return createdApp, nil
+	//		}
+	//		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+	//			return nil
+	//		}
+	//		rc.TemplatesFn = func() ([]realm.Template, error) {
+	//			return []realm.Template{}, nil
+	//		}
+	//		ac := mock.AtlasClient{}
+	//		ac.GroupsFn = func() ([]atlas.Group, error) {
+	//			return []atlas.Group{{ID: "123"}}, nil
+	//		}
+	//
+	//		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+	//			Name:            "test-app",
+	//			Project:         "123",
+	//			Location:        realm.LocationVirginia,
+	//			DeploymentModel: realm.DeploymentModelGlobal,
+	//			ConfigVersion:   realm.DefaultAppConfigVersion,
+	//		}}}
+	//
+	//		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+	//
+	//		console.Tty().Close() // flush the writers
+	//		<-doneCh              // wait for procedure to complete
+	//
+	//		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+	//		assert.Nil(t, err)
+	//
+	//		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+	//			ConfigVersion:   realm.DefaultAppConfigVersion,
+	//			ID:              "test-app-abcde",
+	//			Name:            "test-app",
+	//			Location:        realm.LocationVirginia,
+	//			DeploymentModel: realm.DeploymentModelGlobal,
+	//			Environments: map[string]map[string]interface{}{
+	//				"development.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"no-environment.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"production.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"qa.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"testing.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//			},
+	//			Auth: local.AuthStructure{
+	//				CustomUserData: map[string]interface{}{"enabled": false},
+	//				Providers: map[string]interface{}{
+	//					"api-key": map[string]interface{}{
+	//						"name":     "api-key",
+	//						"type":     "api-key",
+	//						"disabled": true,
+	//					},
+	//				},
+	//			},
+	//			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+	//			Functions: local.FunctionsStructure{
+	//				Configs: []map[string]interface{}{},
+	//				Sources: map[string]string{},
+	//			},
+	//			GraphQL: local.GraphQLStructure{
+	//				Config: map[string]interface{}{
+	//					"use_natural_pluralization": true,
+	//				},
+	//				CustomResolvers: []map[string]interface{}{},
+	//			},
+	//			Values: []map[string]interface{}{},
+	//		}}}, appLocal.AppData)
+	//
+	//		assert.Equal(t, realm.App{
+	//			ID:          "456",
+	//			GroupID:     "123",
+	//			Name:        "test-app",
+	//			ClientAppID: "test-app-abcde",
+	//			AppMeta: realm.AppMeta{
+	//				Location:        realm.LocationVirginia,
+	//				DeploymentModel: realm.DeploymentModelGlobal,
+	//			},
+	//		}, createdApp)
+	//	})
+
+	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
 
 		procedure := func(c *expect.Console) {
-			c.ExpectString("Atlas Project")
-			c.Send("123")
-			c.SendLine(" ")
+			c.ExpectString("Please select a template from the available options")
+			c.SendLine("palm-pilot.bitcoin-miner")
 			c.ExpectEOF()
 		}
 
@@ -230,14 +354,31 @@ func TestAppCreateHandler(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
+		rc.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{
+				{
+					ID:   "palm-pilot.bitcoin-miner",
+					Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
+				},
+				{
+					ID:   "blackberry.important-business-app",
+					Name: "Oh wow, a Blackberry... you must a very powerful, extravagant man.",
+				},
+			}, nil
+		}
+
+		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
+		assert.Nil(t, err)
+		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+			return &clientZipPkg.Reader, nil
+		}
 		ac := mock.AtlasClient{}
 		ac.GroupsFn = func() ([]atlas.Group, error) {
 			return []atlas.Group{{ID: "123"}}, nil
 		}
 
 		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Name:            "test-app",
-			Project:         "123",
+			Name:            "template-app",
 			Location:        realm.LocationVirginia,
 			DeploymentModel: realm.DeploymentModelGlobal,
 			ConfigVersion:   realm.DefaultAppConfigVersion,
@@ -248,66 +389,11 @@ func TestAppCreateHandler(t *testing.T) {
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
+		appLocal, err := local.LoadApp(path)
 		assert.Nil(t, err)
 
-		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-			ID:              "test-app-abcde",
-			Name:            "test-app",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-			Environments: map[string]map[string]interface{}{
-				"development.json": {
-					"values": map[string]interface{}{},
-				},
-				"no-environment.json": {
-					"values": map[string]interface{}{},
-				},
-				"production.json": {
-					"values": map[string]interface{}{},
-				},
-				"qa.json": {
-					"values": map[string]interface{}{},
-				},
-				"testing.json": {
-					"values": map[string]interface{}{},
-				},
-			},
-			Auth: local.AuthStructure{
-				CustomUserData: map[string]interface{}{"enabled": false},
-				Providers: map[string]interface{}{
-					"api-key": map[string]interface{}{
-						"name":     "api-key",
-						"type":     "api-key",
-						"disabled": true,
-					},
-				},
-			},
-			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: local.FunctionsStructure{
-				Configs: []map[string]interface{}{},
-				Sources: map[string]string{},
-			},
-			GraphQL: local.GraphQLStructure{
-				Config: map[string]interface{}{
-					"use_natural_pluralization": true,
-				},
-				CustomResolvers: []map[string]interface{}{},
-			},
-			Values: []map[string]interface{}{},
-		}}}, appLocal.AppData)
-
-		assert.Equal(t, realm.App{
-			ID:          "456",
-			GroupID:     "123",
-			Name:        "test-app",
-			ClientAppID: "test-app-abcde",
-			AppMeta: realm.AppMeta{
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			},
-		}, createdApp)
+		assert.Equal(t, appLocal.RootDir, path)
 	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
@@ -347,6 +433,9 @@ func TestAppCreateHandler(t *testing.T) {
 		}
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
+		}
+		client.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{}, nil
 		}
 
 		for _, tc := range []struct {
@@ -420,6 +509,95 @@ func TestAppCreateHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("should create a new app from a template", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		out, ui := mock.NewUI()
+
+		testApp := realm.App{
+			ID:          "789",
+			GroupID:     "123",
+			ClientAppID: "bitcoin-miner-abcde",
+			Name:        "bitcoin-miner",
+		}
+
+		backendZipPkg, err := zip.OpenReader("testdata/bitcoin-miner.zip")
+		assert.Nil(t, err)
+
+		client := mock.RealmClient{
+			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+				return []realm.App{}, nil
+			},
+			ExportFn: func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+				return "", &backendZipPkg.Reader, err
+			},
+			CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+				return realm.App{
+					GroupID:     groupID,
+					ID:          "456",
+					ClientAppID: name + "-abcde",
+					Name:        name,
+					AppMeta:     meta,
+				}, nil
+			},
+			ImportFn: func(groupID, appID string, appData interface{}) error {
+				return nil
+			},
+			TemplatesFn: func() ([]realm.Template, error) {
+				return []realm.Template{
+					{
+						ID:   "palm-pilot.bitcoin-miner",
+						Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
+					},
+				}, nil
+			},
+		}
+
+		frontendZipPkg, err := zip.OpenReader("testdata/react-native.zip")
+		assert.Nil(t, err)
+		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+			return &frontendZipPkg.Reader, err
+		}
+
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			Name:            "bitcoin-miner",
+			Project:         testApp.GroupID,
+			Template:        "palm-pilot.bitcoin-miner",
+			Location:        realm.LocationIreland,
+			DeploymentModel: realm.DeploymentModelGlobal,
+		}}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
+		assert.Nil(t, err)
+
+		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
+		assert.Nil(t, err)
+		assert.Equal(t, len(backendFileInfo), 10)
+
+		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath))
+		assert.Nil(t, err)
+		assert.Equal(t, len(frontendFileInfo), 1)
+		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
+
+		dirLength := len(appLocal.RootDir)
+		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
+
+		assert.Equal(t, strings.Join([]string{
+			"Successfully created app",
+			fmt.Sprintf("  Info             "+fmtStr, "Details"),
+			"  ---------------  " + strings.Repeat("-", dirLength),
+			fmt.Sprintf("  Client App ID    "+fmtStr, "bitcoin-miner-abcde"),
+			"  Realm Directory  " + appLocal.RootDir,
+			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
+			"Check out your app: cd ./bitcoin-miner && realm-cli app describe",
+			"",
+		}, "\n"), out.String())
+	})
+
 	for _, tc := range []struct {
 		description string
 		cluster     string
@@ -482,6 +660,9 @@ func TestAppCreateHandler(t *testing.T) {
 			rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 				importAppData = appData
 				return nil
+			}
+			rc.TemplatesFn = func() ([]realm.Template, error) {
+				return []realm.Template{}, nil
 			}
 
 			cmd := &CommandCreate{
@@ -557,10 +738,18 @@ func TestAppCreateHandler(t *testing.T) {
 		dataLake        string
 		datalake        string
 		clients         cli.Clients
+		template        string
 		displayExpected func(dir string, cmd *CommandCreate) string
 	}{
 		{
 			description: "should create a minimal project dry run",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
+			},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
 					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
@@ -574,6 +763,9 @@ func TestAppCreateHandler(t *testing.T) {
 			appRemote:   "remote-app",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
 					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
 						return []realm.App{testApp}, nil
 					},
@@ -591,6 +783,11 @@ func TestAppCreateHandler(t *testing.T) {
 			description: "should create a minimal project dry run with cluster set",
 			cluster:     "test-cluster",
 			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 						return []atlas.Cluster{{Name: "test-cluster"}}, nil
@@ -610,6 +807,11 @@ func TestAppCreateHandler(t *testing.T) {
 			description: "should create a minimal project dry run with data lake set",
 			dataLake:    "test-datalake",
 			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
 				Atlas: mock.AtlasClient{
 					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
 						return []atlas.DataLake{{Name: "test-datalake"}}, nil
@@ -620,6 +822,29 @@ func TestAppCreateHandler(t *testing.T) {
 				return strings.Join([]string{
 					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
 					"The data lake 'test-datalake' would be linked as data source 'mongodb-datalake'",
+					"To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
+		},
+		{
+			description: "should create a minimal project dry run when using a template",
+			template:    "palm-pilot.bitcoin-miner",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{
+							{
+								ID:   "palm-pilot.bitcoin-miner",
+								Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
+							},
+						}, nil
+					},
+				},
+			},
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("A minimal Realm app would be created at %s/backend using the 'palm-pilot.bitcoin-miner' template", dir),
 					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
@@ -639,6 +864,7 @@ func TestAppCreateHandler(t *testing.T) {
 						RemoteApp:       tc.appRemote,
 						Name:            "test-app",
 						Project:         "123",
+						Template:        tc.template,
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
 					},
@@ -661,7 +887,9 @@ func TestAppCreateHandler(t *testing.T) {
 		groupID     string
 		cluster     string
 		dataLake    string
+		template    string
 		clients     cli.Clients
+		uiOptions   mock.UIOptions
 		expectedErr error
 	}{
 		{
@@ -680,6 +908,11 @@ func TestAppCreateHandler(t *testing.T) {
 			groupID:     "123",
 			cluster:     "test-cluster",
 			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 						return nil, errors.New("atlas client error")
@@ -693,6 +926,11 @@ func TestAppCreateHandler(t *testing.T) {
 			groupID:     "123",
 			dataLake:    "test-datalake",
 			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
 				Atlas: mock.AtlasClient{
 					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
 						return nil, errors.New("atlas client error")
@@ -713,15 +951,101 @@ func TestAppCreateHandler(t *testing.T) {
 			},
 			expectedErr: errors.New("realm client error"),
 		},
+		{
+			description: "should error when fetching templates fails",
+			groupID:     "123",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return nil, errors.New("unable to find available templates")
+					},
+				},
+				Atlas: mock.AtlasClient{
+					GroupsFn: func() ([]atlas.Group, error) {
+						return []atlas.Group{{ID: "123"}}, nil
+					},
+				},
+			},
+			expectedErr: errors.New("unable to find available templates"),
+		},
+		{
+			description: "should error when the requested template is not available",
+			template:    "palm-pilot.bitcoin-miner",
+			groupID:     "123",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
+			},
+			expectedErr: errors.New("unable to find template 'palm-pilot.bitcoin-miner'"),
+		},
+		{
+			description: "should not error when no templates are available and a template id has not been provided",
+			groupID:     "123",
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+					CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+						return realm.App{
+							GroupID:     "123",
+							ID:          "456",
+							ClientAppID: "app-abcde",
+							Name:        "app",
+						}, nil
+					},
+					ImportFn: func(groupID, appID string, appData interface{}) error {
+						return nil
+					},
+				},
+			},
+			expectedErr: nil,
+		},
+		{
+			description: "should not error when using auto confirm and no template id has been provided",
+			groupID:     "123",
+			uiOptions: mock.UIOptions{
+				AutoConfirm: true,
+			},
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					TemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{
+							{
+								ID:   "palm-pilot.bitcoin-miner",
+								Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
+							},
+						}, nil
+					},
+					CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+						return realm.App{
+							GroupID:     "123",
+							ID:          "456",
+							ClientAppID: "app-abcde",
+							Name:        "app",
+						}, nil
+					},
+					ImportFn: func(groupID, appID string, appData interface{}) error {
+						return nil
+					},
+				},
+			},
+			expectedErr: nil,
+		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			profile := mock.NewProfileFromWd(t)
+			profile, teardown := mock.NewProfileFromTmpDir(t, "test-app-errors")
+			defer teardown()
 
 			cmd := &CommandCreate{createInputs{
 				newAppInputs: newAppInputs{
 					RemoteApp:       tc.appRemote,
 					Project:         tc.groupID,
 					Name:            "test-app",
+					Template:        tc.template,
 					Location:        realm.LocationVirginia,
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
@@ -729,7 +1053,10 @@ func TestAppCreateHandler(t *testing.T) {
 				DataLake: tc.dataLake,
 			}}
 
-			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, nil, tc.clients))
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(tc.uiOptions, out)
+
+			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, ui, tc.clients))
 		})
 	}
 }
@@ -756,6 +1083,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					Name:            "test-app",
 					Project:         "123",
 					RemoteApp:       "remote-app",
+					Template:        "palm-pilot.bitcoin-miner",
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
@@ -766,7 +1094,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --data-lake DataLake0 --dry-run",
 			cmd.display(false),
 		)
 	})
