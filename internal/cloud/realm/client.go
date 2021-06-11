@@ -70,10 +70,10 @@ type Client interface {
 
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
-	AllowedIPs(groupID, appID string) ([]AllowedIP, error)
-	CreateAllowedIP(groupID, appID, IPAddress, comment string) (AllowedIP, error)
-	DeleteAllowedIP(groupID, appID, allowedIPID string) error
-	UpdateAllowedIP(groupID, appID, allowedIPID, newIPAddress, comment string) error
+	AllowedIPs(groupID, appID string) (AccessList, error)
+	AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent, allowAll bool) (AllowedIP, error)
+	AllowedIPDelete(groupID, appID, allowedIPID string) error
+	AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment string) error
 
 	Status() error
 }

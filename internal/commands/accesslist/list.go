@@ -1,4 +1,4 @@
-package ipaccess
+package accesslist
 
 import (
 	"fmt"
@@ -10,11 +10,11 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// CommandMetaList is the command meta for the `ip-access list` command
+// CommandMetaList is the command meta for the `accesslist list` command
 var CommandMetaList = cli.CommandMeta{
 	Use:     "list",
 	Aliases: []string{"ls"},
-	Display: "allowed IPs list",
+	Display: "accesslist list",
 	Hidden:  true,
 }
 
@@ -44,20 +44,20 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return appErr
 	}
 
-	allowedIPs, allowedIPsErr := clients.Realm.AllowedIPs(app.GroupID, app.ID)
-	if allowedIPsErr != nil {
-		return allowedIPsErr
+	accessList, accessListErr := clients.Realm.AllowedIPs(app.GroupID, app.ID)
+	if accessListErr != nil {
+		return accessListErr
 	}
 
-	if len(allowedIPs) == 0 {
+	if len(accessList.AllowedIPs) == 0 {
 		ui.Print(terminal.NewTextLog("No available allowed IPs to show"))
 		return nil
 	}
 
 	ui.Print(terminal.NewTableLog(
-		fmt.Sprintf("Found %d allowed IPs", len(allowedIPs)),
-		tableHeaders(),
-		tableRowsList(allowedIPs)...,
+		fmt.Sprintf("Found %d allowed IPs", len(accessList.AllowedIPs)),
+		tableHeaders,
+		tableRowsList(accessList.AllowedIPs)...,
 	))
 	return nil
 }

@@ -86,7 +86,7 @@ type CommandMeta struct {
 	// right below the command's description
 	HelpText string
 
-	// Hidden defines, if this command is hidden and should NOT show up in the list of available commands.
+	// Hidden controls if this command shows up in the list of available commands
 	// This value maps 1:1 to Cobra's `Hidden` property
 	Hidden bool
 }

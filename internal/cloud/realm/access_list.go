@@ -13,43 +13,59 @@ const (
 	allowedIPPathPattern  = allowedIPsPathPattern + "/%s"
 )
 
-// AllowedIP is an IP Access address stored in a Realm app
-type AllowedIP struct {
-	ID        string
-	IPAddress string
-	Comment   string
+type AccessList struct {
+	AllowedIPs []AllowedIP `json:"allowed_ips"`
+	CurrentIP  string      `json:"current_ip"`
 }
 
-func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {
+// AllowedIP is an IP Access address stored in a Realm app
+type AllowedIP struct {
+	ID                string `json:"_id"`
+	IPAddress         string `json:"ip_address"`
+	Comment           string `json:"comment"`
+	IncludesCurrentIP bool   `json:"includes_current_ip"`
+}
+
+func (c *client) AllowedIPs(groupID, appID string) (AccessList, error) {
 	res, resErr := c.do(
 		http.MethodGet,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
 		api.RequestOptions{},
 	)
 	if resErr != nil {
-		return nil, resErr
+		return AccessList{}, resErr
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"allowed ips", res.StatusCode}
+		return AccessList{}, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
 	}
 
 	defer res.Body.Close()
 
-	var allowedIPs []AllowedIP
-	if err := json.NewDecoder(res.Body).Decode(&allowedIPs); err != nil {
-		return nil, err
+	var accessList AccessList
+	if err := json.NewDecoder(res.Body).Decode(&accessList); err != nil {
+		return AccessList{}, err
 	}
-	return allowedIPs, nil
+	return accessList, nil
 }
 
-type allowedIPsPayload struct{}
+type allowedIPsPayload struct {
+	IPAddress  string `json:"ip_address"`
+	Comment    string `json:"comment"`
+	UseCurrent bool   `json:"use_current"`
+	AllowAll   bool   `json:"allow_all"`
+}
 
-func (c *client) CreateAllowedIP(groupID, appID, allowedIPAddress, comment string) (AllowedIP, error) {
+func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent, allowAll bool) (AllowedIP, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
-		allowedIPsPayload{},
+		allowedIPsPayload{
+			ipAddress,
+			comment,
+			useCurrent,
+			allowAll,
+		},
 		api.RequestOptions{},
 	)
 	if resErr != nil {
@@ -69,7 +85,7 @@ func (c *client) CreateAllowedIP(groupID, appID, allowedIPAddress, comment strin
 	return allowedIP, nil
 }
 
-func (c *client) DeleteAllowedIP(groupID, appID, allowedIPID string) error {
+func (c *client) AllowedIPDelete(groupID, appID, allowedIPID string) error {
 	res, err := c.do(
 		http.MethodDelete,
 		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
@@ -86,11 +102,16 @@ func (c *client) DeleteAllowedIP(groupID, appID, allowedIPID string) error {
 	return nil
 }
 
-func (c *client) UpdateAllowedIP(groupID, appID, allowedIPID, allowedIPAddress, comment string) error {
+func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment string) error {
 	res, err := c.doJSON(
 		http.MethodPut,
 		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
-		allowedIPsPayload{},
+		allowedIPsPayload{
+			newIPAddress,
+			comment,
+			false,
+			false,
+		},
 		api.RequestOptions{},
 	)
 	if err != nil {

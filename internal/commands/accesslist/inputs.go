@@ -1,4 +1,4 @@
-package ipaccess
+package accesslist
 
 const (
 	flagIP            = "ip"

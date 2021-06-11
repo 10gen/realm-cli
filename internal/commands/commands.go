@@ -2,9 +2,9 @@ package commands
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/commands/accesslist"
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/function"
-	ipaccess "github.com/10gen/realm-cli/internal/commands/ip_access"
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/logs"
@@ -179,28 +179,29 @@ var (
 		},
 	}
 
-	IPAccess = cli.CommandDefinition{
+	AccessList = cli.CommandDefinition{
 		CommandMeta: cli.CommandMeta{
-			Use:         "ip-access",
-			Description: "Manage the IP access of your Realm app",
+			Use:         "accesslist",
+			Aliases:     []string{"accessList"},
+			Description: "Manage the Access List of your Realm app",
 			Hidden:      true,
 		},
 		SubCommands: []cli.CommandDefinition{
 			{
-				Command:     &ipaccess.CommandCreate{},
-				CommandMeta: ipaccess.CommandMetaCreate,
+				Command:     &accesslist.CommandCreate{},
+				CommandMeta: accesslist.CommandMetaCreate,
 			},
 			{
-				Command:     &ipaccess.CommandList{},
-				CommandMeta: ipaccess.CommandMetaList,
+				Command:     &accesslist.CommandList{},
+				CommandMeta: accesslist.CommandMetaList,
 			},
 			{
-				Command:     &ipaccess.CommandUpdate{},
-				CommandMeta: ipaccess.CommandMetaUpdate,
+				Command:     &accesslist.CommandUpdate{},
+				CommandMeta: accesslist.CommandMetaUpdate,
 			},
 			{
-				Command:     &ipaccess.CommandDelete{},
-				CommandMeta: ipaccess.CommandMetaDelete,
+				Command:     &accesslist.CommandDelete{},
+				CommandMeta: accesslist.CommandMetaDelete,
 			},
 		},
 	}

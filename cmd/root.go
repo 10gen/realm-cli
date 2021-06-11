@@ -47,8 +47,9 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Schema))
 
-	// Uncomment once backend API and data models are complete
-	// cmd.AddCommand(factory.Build(commands.IPAccess))
+	// TODO(REALMC-9164): Set 'Hidden' to false
+	commands.AccessList.Hidden = true
+	cmd.AddCommand(factory.Build(commands.AccessList))
 
 	os.Exit(factory.Run(cmd))
 }
