@@ -195,126 +195,127 @@ func TestAppCreateHandler(t *testing.T) {
 		})
 	})
 
-	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-		defer teardown()
-		profile.SetRealmBaseURL("http://localhost:8080")
-
-		procedure := func(c *expect.Console) {
-			c.ExpectString("Atlas Project")
-			c.Send("123")
-			c.SendLine(" ")
-			c.ExpectEOF()
-		}
-
-		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
-		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-		assert.Nil(t, consoleErr)
-		defer console.Close()
-
-		doneCh := make(chan (struct{}))
-		go func() {
-			defer close(doneCh)
-			procedure(console)
-		}()
-
-		var createdApp realm.App
-		rc := mock.RealmClient{}
-		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			createdApp = realm.App{
-				GroupID:     groupID,
-				ID:          "456",
-				ClientAppID: name + "-abcde",
-				Name:        name,
-				AppMeta:     meta,
-			}
-			return createdApp, nil
-		}
-		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
-			return nil
-		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
-			return []realm.Template{}, nil
-		}
-		ac := mock.AtlasClient{}
-		ac.GroupsFn = func() ([]atlas.Group, error) {
-			return []atlas.Group{{ID: "123"}}, nil
-		}
-
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Name:            "test-app",
-			Project:         "123",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-		}}}
-
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
-
-		console.Tty().Close() // flush the writers
-		<-doneCh              // wait for procedure to complete
-
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
-		assert.Nil(t, err)
-
-		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-			ID:              "test-app-abcde",
-			Name:            "test-app",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-			Environments: map[string]map[string]interface{}{
-				"development.json": {
-					"values": map[string]interface{}{},
-				},
-				"no-environment.json": {
-					"values": map[string]interface{}{},
-				},
-				"production.json": {
-					"values": map[string]interface{}{},
-				},
-				"qa.json": {
-					"values": map[string]interface{}{},
-				},
-				"testing.json": {
-					"values": map[string]interface{}{},
-				},
-			},
-			Auth: local.AuthStructure{
-				CustomUserData: map[string]interface{}{"enabled": false},
-				Providers: map[string]interface{}{
-					"api-key": map[string]interface{}{
-						"name":     "api-key",
-						"type":     "api-key",
-						"disabled": true,
-					},
-				},
-			},
-			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
-			Functions: local.FunctionsStructure{
-				Configs: []map[string]interface{}{},
-				Sources: map[string]string{},
-			},
-			GraphQL: local.GraphQLStructure{
-				Config: map[string]interface{}{
-					"use_natural_pluralization": true,
-				},
-				CustomResolvers: []map[string]interface{}{},
-			},
-			Values: []map[string]interface{}{},
-		}}}, appLocal.AppData)
-
-		assert.Equal(t, realm.App{
-			ID:          "456",
-			GroupID:     "123",
-			Name:        "test-app",
-			ClientAppID: "test-app-abcde",
-			AppMeta: realm.AppMeta{
-				Location:        realm.LocationVirginia,
-				DeploymentModel: realm.DeploymentModelGlobal,
-			},
-		}, createdApp)
-	})
+	// TODO REALMC-9228 Re-enable prompting for template selection
+	//	t.Run("when remote and project are not set should create minimal project and prompt for project", func(t *testing.T) {
+	//		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+	//		defer teardown()
+	//		profile.SetRealmBaseURL("http://localhost:8080")
+	//
+	//		procedure := func(c *expect.Console) {
+	//			c.ExpectString("Atlas Project")
+	//			c.Send("123")
+	//			c.SendLine(" ")
+	//			c.ExpectEOF()
+	//		}
+	//
+	//		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
+	//		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+	//		assert.Nil(t, consoleErr)
+	//		defer console.Close()
+	//
+	//		doneCh := make(chan (struct{}))
+	//		go func() {
+	//			defer close(doneCh)
+	//			procedure(console)
+	//		}()
+	//
+	//		var createdApp realm.App
+	//		rc := mock.RealmClient{}
+	//		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+	//			createdApp = realm.App{
+	//				GroupID:     groupID,
+	//				ID:          "456",
+	//				ClientAppID: name + "-abcde",
+	//				Name:        name,
+	//				AppMeta:     meta,
+	//			}
+	//			return createdApp, nil
+	//		}
+	//		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+	//			return nil
+	//		}
+	//		rc.TemplatesFn = func() ([]realm.Template, error) {
+	//			return []realm.Template{}, nil
+	//		}
+	//		ac := mock.AtlasClient{}
+	//		ac.GroupsFn = func() ([]atlas.Group, error) {
+	//			return []atlas.Group{{ID: "123"}}, nil
+	//		}
+	//
+	//		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+	//			Name:            "test-app",
+	//			Project:         "123",
+	//			Location:        realm.LocationVirginia,
+	//			DeploymentModel: realm.DeploymentModelGlobal,
+	//			ConfigVersion:   realm.DefaultAppConfigVersion,
+	//		}}}
+	//
+	//		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+	//
+	//		console.Tty().Close() // flush the writers
+	//		<-doneCh              // wait for procedure to complete
+	//
+	//		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+	//		assert.Nil(t, err)
+	//
+	//		assert.Equal(t, &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+	//			ConfigVersion:   realm.DefaultAppConfigVersion,
+	//			ID:              "test-app-abcde",
+	//			Name:            "test-app",
+	//			Location:        realm.LocationVirginia,
+	//			DeploymentModel: realm.DeploymentModelGlobal,
+	//			Environments: map[string]map[string]interface{}{
+	//				"development.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"no-environment.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"production.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"qa.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//				"testing.json": {
+	//					"values": map[string]interface{}{},
+	//				},
+	//			},
+	//			Auth: local.AuthStructure{
+	//				CustomUserData: map[string]interface{}{"enabled": false},
+	//				Providers: map[string]interface{}{
+	//					"api-key": map[string]interface{}{
+	//						"name":     "api-key",
+	//						"type":     "api-key",
+	//						"disabled": true,
+	//					},
+	//				},
+	//			},
+	//			Sync: local.SyncStructure{Config: map[string]interface{}{"development_mode_enabled": false}},
+	//			Functions: local.FunctionsStructure{
+	//				Configs: []map[string]interface{}{},
+	//				Sources: map[string]string{},
+	//			},
+	//			GraphQL: local.GraphQLStructure{
+	//				Config: map[string]interface{}{
+	//					"use_natural_pluralization": true,
+	//				},
+	//				CustomResolvers: []map[string]interface{}{},
+	//			},
+	//			Values: []map[string]interface{}{},
+	//		}}}, appLocal.AppData)
+	//
+	//		assert.Equal(t, realm.App{
+	//			ID:          "456",
+	//			GroupID:     "123",
+	//			Name:        "test-app",
+	//			ClientAppID: "test-app-abcde",
+	//			AppMeta: realm.AppMeta{
+	//				Location:        realm.LocationVirginia,
+	//				DeploymentModel: realm.DeploymentModelGlobal,
+	//			},
+	//		}, createdApp)
+	//	})
 
 	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
