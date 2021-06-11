@@ -42,8 +42,8 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-	fs.StringSliceVarP(&cmd.inputs.Clusters, flagCluster, "", []string{}, flagClusterUsage)
-	fs.StringSliceVarP(&cmd.inputs.DataLakes, flagDataLake, "", []string{}, flagDataLakeUsage)
+	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
+	fs.StringSliceVar(&cmd.inputs.DataLakes, flagDataLake, []string{}, flagDataLakeUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
@@ -88,7 +88,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	var dsClusters []dataSourceCluster
 	if len(cmd.inputs.Clusters) > 0 {
-		dsClusters, err = cmd.inputs.resolveClusters(clients.Atlas, groupID)
+		dsClusters, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	var dsDataLakes []dataSourceDataLake
 	if len(cmd.inputs.DataLakes) > 0 {
-		dsDataLakes, err = cmd.inputs.resolveDataLakes(clients.Atlas, groupID)
+		dsDataLakes, err = cmd.inputs.resolveDataLakes(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	clusterNames := []string{}
+	clusterNames := make([]string, 0, len(dsClusters))
 	for _, dsCluster := range dsClusters {
 		if dsCluster.Name != "" {
 			local.AddDataSource(appLocal.AppData, map[string]interface{}{
@@ -180,7 +180,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	dataLakeNames := []string{}
+	dataLakeNames := make([]string, 0, len(dsDataLakes))
 	for _, dsDataLake := range dsDataLakes {
 		if dsDataLake.Name != "" {
 			local.AddDataSource(appLocal.AppData, map[string]interface{}{

@@ -154,26 +154,28 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveClusters(client atlas.Client, groupID string) ([]dataSourceCluster, error) {
+func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return []dataSourceCluster{}, err
+		return nil, err
 	}
 
 	existingClusters := map[string]atlas.Cluster{}
 	for _, c := range clusters {
 		existingClusters[c.Name] = c
 	}
+	nonExistingClusters := make([]string, 0, len(i.Clusters))
 
-	var dsClusters []dataSourceCluster
+	dsClusters := make([]dataSourceCluster, 0, len(i.Clusters))
 	for _, clusterName := range i.Clusters {
 		if _, ok := existingClusters[clusterName]; !ok {
+			nonExistingClusters = append(nonExistingClusters, clusterName)
 			continue
 		}
 		dsClusters = append(dsClusters,
 			dataSourceCluster{
 				Name: "mongodb-atlas",
-				Type: "mongodb-atlas",
+				Type: realm.ClusterType,
 				Config: configCluster{
 					ClusterName:         clusterName,
 					ReadPreference:      "primary",
@@ -182,39 +184,67 @@ func (i *createInputs) resolveClusters(client atlas.Client, groupID string) ([]d
 			})
 	}
 	if len(dsClusters) == 0 {
-		return []dataSourceCluster{}, errors.New("failed to find Atlas cluster")
+		return nil, errors.New("failed to find Atlas cluster")
+	}
+	if len(nonExistingClusters) > 0 {
+		ui.Print(terminal.NewWarningLog("Please note, the data sources '%s' were not linked because Atlas clusters were not found", strings.Join(nonExistingClusters[:], ", ")))
+
+		if !ui.AutoConfirm() {
+			proceed, err := ui.Confirm("Would you still like to create the app?")
+			if err != nil {
+				return nil, err
+			}
+			if !proceed {
+				return nil, errors.New("failed to find Atlas cluster")
+			}
+		}
 	}
 	return dsClusters, nil
 }
 
-func (i *createInputs) resolveDataLakes(client atlas.Client, groupID string) ([]dataSourceDataLake, error) {
+func (i *createInputs) resolveDataLakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDataLake, error) {
 	dataLakes, err := client.DataLakes(groupID)
 	if err != nil {
-		return []dataSourceDataLake{}, err
+		return nil, err
 	}
 
 	existingDataLakes := map[string]atlas.DataLake{}
 	for _, d := range dataLakes {
 		existingDataLakes[d.Name] = d
 	}
+	nonExistingDataLakes := make([]string, 0, len(i.DataLakes))
 
-	var dsDataLakes []dataSourceDataLake
+	dsDataLakes := make([]dataSourceDataLake, 0, len(i.DataLakes))
 	for _, dataLakeName := range i.DataLakes {
 		if _, ok := existingDataLakes[dataLakeName]; !ok {
+			nonExistingDataLakes = append(nonExistingDataLakes, dataLakeName)
 			continue
 		}
 
 		dsDataLakes = append(dsDataLakes,
 			dataSourceDataLake{
 				Name: "mongodb-datalake",
-				Type: "datalake",
+				Type: realm.DataLakeType,
 				Config: configDataLake{
 					DataLakeName: dataLakeName,
 				},
 			})
 	}
 	if len(dsDataLakes) == 0 {
-		return []dataSourceDataLake{}, errors.New("failed to find Atlas data lake")
+		return nil, errors.New("failed to find Atlas data lake")
+	}
+	if len(nonExistingDataLakes) > 0 {
+		ui.Print(terminal.NewWarningLog("Please note, the data sources '%s' were not linked because Atlas data lakes were not found", strings.Join(nonExistingDataLakes[:], ", ")))
+
+		if !ui.AutoConfirm() {
+			proceed, err := ui.Confirm("Would you still like to create the app?")
+			if err != nil {
+				return nil, err
+			}
+			if !proceed {
+				return nil, errors.New("failed to find Atlas data lake")
+			}
+		}
 	}
 	return dsDataLakes, nil
 }
