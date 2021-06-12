@@ -121,6 +121,6 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 	//	}
 	//
 	//	i.Template = templateIDs[selectedIndex]
-
-	return nil
+	//
+	//	return nil
 }
