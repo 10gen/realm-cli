@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"strings"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -138,7 +138,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 		logs = append(logs, terminal.NewTextLog(appCreatedText))
 
-    for i, cluster := range dsClusters {
+		for i, cluster := range dsClusters {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
 		}
 		for i, dataLake := range dsDataLakes {
