@@ -29,6 +29,9 @@ var (
 	flagDataLake      = "data-lake"
 	flagDataLakeUsage = "include to link an Atlas data lake to your Realm app"
 
+	flagTemplate      = "template"
+	flagTemplateUsage = "create your app from an available template"
+
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
 	flagDryRunUsage = "include to run without writing any changes to the file system nor deploying any changes to the Realm server"
@@ -262,6 +265,9 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
+	}
+	if i.Template != "" {
+		args = append(args, flags.Arg{flagTemplate, i.Template})
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})

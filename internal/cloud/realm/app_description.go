@@ -19,15 +19,23 @@ type DataSourceSummary struct {
 	DataSource string `json:"data_source"`
 }
 
+// IncomingWebhookSummary is a short summary for a webhook model
+type IncomingWebhookSummary struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
 // HTTPEndpointSummary is a short summary for a http endpoint model
 type HTTPEndpointSummary struct {
-	Name string `json:"name"`
+	Name             string                   `json:"name"`
+	IncomingWebhooks []IncomingWebhookSummary `json:"webhooks"`
 }
 
 // ServiceSummary is a short summary for a service desc model
 type ServiceSummary struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name             string                   `json:"name"`
+	Type             string                   `json:"type"`
+	IncomingWebhooks []IncomingWebhookSummary `json:"webhooks"`
 }
 
 // AuthProviderSummary is a short summary for a auth provider config model

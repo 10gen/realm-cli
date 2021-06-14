@@ -236,6 +236,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
+		rc.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{}, nil
+		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
 			Name:    existingApp.Name,
@@ -272,6 +275,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
+		}
+		rc.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{}, nil
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
