@@ -252,7 +252,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	clusterNames := make([]string, 0, len(dsClusters))
 	for _, dsCluster := range dsClusters {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsCluster.Name,
@@ -263,11 +262,9 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
 			},
 		})
-		clusterNames = append(clusterNames, dsCluster.Config.ClusterName)
 
 	}
 
-	datalakeNames := make([]string, 0, len(dsDatalakes))
 	for _, dsDatalake := range dsDatalakes {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsDatalake.Name,
@@ -276,7 +273,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 				"dataLakeName": dsDatalake.Config.DatalakeName,
 			},
 		})
-		datalakeNames = append(datalakeNames, dsDatalake.Config.DatalakeName)
 	}
 
 	if err := appLocal.Write(); err != nil {
@@ -291,19 +287,21 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	headers := []string{"Info", "Details"}
-	rows := make([]map[string]interface{}, 0, 5)
-	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
-	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": backendDir})
-	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
-	if len(dsClusters) > 0 {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Clusters)", "Details": strings.Join(clusterNames[:], ", ")})
-	}
-	if len(dsDatalakes) > 0 {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lakes)", "Details": strings.Join(datalakeNames[:], ", ")})
+	output := newAppOutputs{
+		AppID:    appRealm.ClientAppID,
+		Filepath: backendDir,
+		URL:      fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
 	}
 
-	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
+	for _, dsCluster := range dsClusters {
+		output.Clusters = append(output.Clusters, dataSourceOutputs{dsCluster.Name})
+	}
+
+	for _, dsDatalake := range dsDatalakes {
+		output.Datalakes = append(output.Datalakes, dataSourceOutputs{dsDatalake.Name})
+	}
+
+	ui.Print(terminal.NewJSONLog("Successfully created app", output))
 	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
 	return nil
 }

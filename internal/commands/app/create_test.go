@@ -109,20 +109,14 @@ func TestAppCreateHandler(t *testing.T) {
 			Values: []map[string]interface{}{},
 		}}}, appLocal.AppData)
 
-		// TODO(REALMC-8262): Investigate file path display options
-		dirLength := len(appLocal.RootDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
-		assert.Equal(t, strings.Join([]string{
-			"Successfully created app",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "test-app-abcde"),
-			"  Realm Directory  " + appLocal.RootDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"Check out your app: cd ./test-app && realm-cli app describe",
-			"",
-		}, "\n"), out.String())
+		assert.Equal(t, fmt.Sprintf(`Successfully created app
+{
+  "client_app_id": "test-app-abcde",
+  "filepath": %q,
+  "url": "http://localhost:8080/groups/123/apps/456/dashboard"
+}
+Check out your app: cd ./test-app && realm-cli app describe
+`, appLocal.RootDir), out.String())
 
 		t.Run("should have the expected contents in the auth custom user data file", func(t *testing.T) {
 			config, err := ioutil.ReadFile(filepath.Join(fullDir, local.NameAuth, local.FileCustomUserData.String()))
@@ -490,20 +484,14 @@ func TestAppCreateHandler(t *testing.T) {
 					Values: []map[string]interface{}{},
 				}}}, appLocal.AppData)
 
-				// TODO(REALMC-8262): Investigate file path display options
-				dirLength := len(appLocal.RootDir)
-				fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
-				assert.Equal(t, strings.Join([]string{
-					"Successfully created app",
-					fmt.Sprintf("  Info             "+fmtStr, "Details"),
-					"  ---------------  " + strings.Repeat("-", dirLength),
-					fmt.Sprintf("  Client App ID    "+fmtStr, "remote-app-abcde"),
-					"  Realm Directory  " + appLocal.RootDir,
-					fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/"+tc.expectedGroupID+"/apps/456/dashboard"),
-					"Check out your app: cd ./remote-app && realm-cli app describe",
-					"",
-				}, "\n"), out.String())
+				assert.Equal(t, fmt.Sprintf(`Successfully created app
+{
+  "client_app_id": "remote-app-abcde",
+  "filepath": %q,
+  "url": "http://localhost:8080/groups/%s/apps/456/dashboard"
+}
+Check out your app: cd ./remote-app && realm-cli app describe
+`, appLocal.RootDir, tc.expectedGroupID), out.String())
 
 				out.Reset()
 			})
@@ -584,19 +572,14 @@ func TestAppCreateHandler(t *testing.T) {
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
 
-		dirLength := len(appLocal.RootDir)
-		fmtStr := fmt.Sprintf("%%-%ds", dirLength)
-
-		assert.Equal(t, strings.Join([]string{
-			"Successfully created app",
-			fmt.Sprintf("  Info             "+fmtStr, "Details"),
-			"  ---------------  " + strings.Repeat("-", dirLength),
-			fmt.Sprintf("  Client App ID    "+fmtStr, "bitcoin-miner-abcde"),
-			"  Realm Directory  " + appLocal.RootDir,
-			fmt.Sprintf("  Realm UI         "+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			"Check out your app: cd ./bitcoin-miner && realm-cli app describe",
-			"",
-		}, "\n"), out.String())
+		assert.Equal(t, fmt.Sprintf(`Successfully created app
+{
+  "client_app_id": "bitcoin-miner-abcde",
+  "filepath": %q,
+  "url": "http://localhost:8080/groups/123/apps/456/dashboard"
+}
+Check out your app: cd ./bitcoin-miner && realm-cli app describe
+`, appLocal.RootDir), out.String())
 	})
 
 	for _, tc := range []struct {
@@ -606,6 +589,7 @@ func TestAppCreateHandler(t *testing.T) {
 		datalakes            []string
 		datalakeServiceNames []string
 		atlasClient          atlas.Client
+		dataSourceOutput     string
 	}{
 		{
 			description:         "should create minimal project with a cluster data source when cluster is set",
@@ -616,6 +600,11 @@ func TestAppCreateHandler(t *testing.T) {
 					return []atlas.Cluster{{Name: "test-cluster"}}, nil
 				},
 			},
+			dataSourceOutput: `"clusters": [
+    {
+      "name": "mongodb-atlas"
+    }
+  ]`,
 		},
 		{
 			description:         "should create minimal project with multiple cluster data sources when clusters are set",
@@ -626,6 +615,14 @@ func TestAppCreateHandler(t *testing.T) {
 					return []atlas.Cluster{{Name: "test-cluster"}, {Name: "test-cluster-2"}}, nil
 				},
 			},
+			dataSourceOutput: `"clusters": [
+    {
+      "name": "mongodb-atlas-1"
+    },
+    {
+      "name": "mongodb-atlas-2"
+    }
+  ]`,
 		},
 		{
 			description:          "should create minimal project with a data lake data source when data lake is set",
@@ -636,6 +633,11 @@ func TestAppCreateHandler(t *testing.T) {
 					return []atlas.Datalake{{Name: "test-datalake"}}, nil
 				},
 			},
+			dataSourceOutput: `"datalakes": [
+    {
+      "name": "mongodb-datalake"
+    }
+  ]`,
 		},
 		{
 			description:          "should create minimal project with a data lake and cluster data source when data lake and cluster is set",
@@ -651,6 +653,16 @@ func TestAppCreateHandler(t *testing.T) {
 					return []atlas.Datalake{{Name: "test-datalake"}}, nil
 				},
 			},
+			dataSourceOutput: `"clusters": [
+    {
+      "name": "mongodb-atlas"
+    }
+  ],
+  "datalakes": [
+    {
+      "name": "mongodb-datalake"
+    }
+  ]`,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -714,32 +726,15 @@ func TestAppCreateHandler(t *testing.T) {
 				},
 			}, createdApp)
 
-			// TODO(REALMC-8262): Investigate file path display options
-			dirLength := len(appLocal.RootDir)
-			fmtStr := fmt.Sprintf(" %%-%ds", dirLength)
-
-			var spaceBuffer, dashBuffer string
-			if len(tc.datalakes) > 0 {
-				spaceBuffer = "  "
-				dashBuffer = "--"
-			}
-
-			display := make([]string, 0, 10)
-			display = append(display, "Successfully created app",
-				fmt.Sprintf("  Info                   "+spaceBuffer+fmtStr, "Details"),
-				"  ----------------------"+dashBuffer+"  "+strings.Repeat("-", dirLength),
-				fmt.Sprintf("  Client App ID          "+spaceBuffer+fmtStr, "test-app-abcde"),
-				"  Realm Directory         "+spaceBuffer+appLocal.RootDir,
-				fmt.Sprintf("  Realm UI               "+spaceBuffer+fmtStr, "http://localhost:8080/groups/123/apps/456/dashboard"),
-			)
-			if len(tc.clusters) > 0 {
-				display = append(display, fmt.Sprintf("  Data Source (Clusters) "+spaceBuffer+fmtStr, strings.Join(tc.clusters, ", ")))
-			}
-			if len(tc.datalakes) > 0 {
-				display = append(display, fmt.Sprintf("  Data Source (Data Lakes) "+fmtStr, strings.Join(tc.datalakes, ", ")))
-			}
-			display = append(display, "Check out your app: cd ./test-app && realm-cli app describe", "")
-			assert.Equal(t, strings.Join(display, "\n"), out.String())
+			assert.Equal(t, fmt.Sprintf(`Successfully created app
+{
+  "client_app_id": "test-app-abcde",
+  "filepath": %q,
+  "url": "http://localhost:8080/groups/123/apps/456/dashboard",
+  %s
+}
+Check out your app: cd ./test-app && realm-cli app describe
+`, appLocal.RootDir, tc.dataSourceOutput), out.String())
 		})
 	}
 

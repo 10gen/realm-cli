@@ -13,3 +13,15 @@ const (
 	headerDeleted = "Deleted"
 	headerDetails = "Details"
 )
+
+type newAppOutputs struct {
+	AppID     string              `json:"client_app_id"`
+	Filepath  string              `json:"filepath"`
+	URL       string              `json:"url,omitempty"`
+	Clusters  []dataSourceOutputs `json:"clusters,omitempty"`
+	Datalakes []dataSourceOutputs `json:"datalakes,omitempty"`
+}
+
+type dataSourceOutputs struct {
+	Name string `json:"name"`
+}
