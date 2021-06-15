@@ -26,7 +26,7 @@ type CommandCreate struct {
 
 // Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to create its users")
 
 	fs.Var(&cmd.inputs.UserType, flagUserType, flagUserTypeUsage)
 	fs.StringVar(&cmd.inputs.APIKeyName, flagAPIKeyName, "", flagAPIKeyNameUsage)

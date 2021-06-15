@@ -28,7 +28,7 @@ type CommandDelete struct {
 
 // Flags function for the secrets delete command
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to delete its secrets")
 	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsageDelete)
 }
 

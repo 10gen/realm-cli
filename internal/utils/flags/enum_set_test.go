@@ -106,7 +106,7 @@ func TestEnumSetValueType(t *testing.T) {
 	t.Run("should have type of string slice", func(t *testing.T) {
 		values := []string{}
 		enumSetValue := NewEnumSet(&values, validValues)
-		assert.Equal(t, "enumSet", enumSetValue.Type())
+		assert.Equal(t, "Set", enumSetValue.Type())
 	})
 }
 

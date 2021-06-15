@@ -28,7 +28,7 @@ type CommandDelete struct {
 
 // Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	fs.StringSliceVarP(&cmd.inputs.Apps, flagApp, flagAppShort, []string{}, flagAppUsage)
+	fs.StringSliceVarP(&cmd.inputs.Apps, flagDeleteApp, flagDeleteAppShort, []string{}, flagDeleteAppUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)

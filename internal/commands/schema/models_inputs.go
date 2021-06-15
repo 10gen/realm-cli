@@ -14,17 +14,17 @@ import (
 
 const (
 	flagModelsFlat      = "flat"
-	flagModelsFlatUsage = "the generated data models will be grouped (with their imports) in one code block"
+	flagModelsFlatUsage = "View generated data models (and associated imports) as a single code block"
 
 	flagModelsLanguage      = "language"
 	flagModelsLanguageShort = "l"
-	flagModelsLanguageUsage = "specify the language to generate schema data models for"
+	flagModelsLanguageUsage = `Specify the language to generate schema data models in (Default value: <none>; Allowed values: <none>, "c_sharp", "java", "javascript", "kotlin", "objective_c", "swift", "typescript")`
 
 	flagModelsNoImports      = "no-imports"
-	flagModelsNoImportsUsage = "include to omit import statements from the generated data model code"
+	flagModelsNoImportsUsage = "View generated data models without imports"
 
 	flagModelsName      = "name"
-	flagModelsNameUsage = "use (as an array or csv flag) to filter for matched schema object names"
+	flagModelsNameUsage = "Filter generated data models by name(s)"
 )
 
 type datamodelsInputs struct {

@@ -29,7 +29,7 @@ type CommandDelete struct {
 
 // Flags is the command flags
 func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to delete its users")
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserDeleteUsage)
 	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
 	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)

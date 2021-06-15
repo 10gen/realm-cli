@@ -17,13 +17,13 @@ import (
 const (
 	flagApp      = "app"
 	flagAppShort = "a"
-	flagAppUsage = "the remote Realm app name or id"
+	flagAppUsage = "Specify the name or ID of a Realm app"
 
 	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagProjectUsage = "Specify the ID of a MongoDB Atlas project"
 
 	flagProduct      = "product"
-	flagProductUsage = "the Realm app product (can be specified multiple times)"
+	flagProductUsage = `Specify the Realm app product(s) (Allowed values: "standard", "atlas")`
 )
 
 // ProjectInputs are the project/app inputs for a command
@@ -37,8 +37,13 @@ type ProjectInputs struct {
 func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App, i.Products} }
 
 // Flags registers the project app input flags to the provided flag set
-func (i *ProjectInputs) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&i.App, flagApp, flagAppShort, "", flagAppUsage)
+func (i *ProjectInputs) Flags(fs *pflag.FlagSet, appFlagContext string) {
+	appUsage := flagAppUsage
+	if appFlagContext != "" {
+		appUsage += " " + appFlagContext
+	}
+
+	fs.StringVarP(&i.App, flagApp, flagAppShort, "", appUsage)
 
 	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)

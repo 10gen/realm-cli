@@ -1,6 +1,8 @@
 package flags
 
-import "github.com/spf13/pflag"
+import (
+	"github.com/spf13/pflag"
+)
 
 // MarkHidden marks the specified flag as hidden from the provided flag set
 // TODO(REALMC-8369): this method should go away if/when we can get

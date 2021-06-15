@@ -29,7 +29,7 @@ type CommandRevoke struct {
 
 // Flags is the command flags
 func (cmd *CommandRevoke) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to revoke its users' sessions")
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserRevokeUsage)
 	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
 	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)

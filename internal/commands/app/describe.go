@@ -29,7 +29,7 @@ type describeInputs struct {
 
 // Flags is the command flags
 func (cmd *CommandDescribe) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to describe")
 }
 
 // Inputs is the command inputs

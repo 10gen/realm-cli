@@ -40,7 +40,7 @@ type CommandList struct {
 
 // Flags is the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to list its logs")
 
 	fs.Var(flags.NewEnumSet(&cmd.inputs.Types, allLogTypes), flagType, flagTypeUsage)
 	fs.BoolVar(&cmd.inputs.Errors, flagErrors, false, flagErrorsUsage)
