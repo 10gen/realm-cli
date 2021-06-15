@@ -53,7 +53,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
 	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
 	fs.StringSliceVar(&cmd.inputs.DataLakes, flagDataLake, []string{}, flagDataLakeUsage)
-	fs.StringSliceVar(&cmd.inputs.DataLakeServiceNames, flagClusterServiceName, []string{}, flagDataLakeServiceNameUsage)
+	fs.StringSliceVar(&cmd.inputs.DataLakeServiceNames, flagDataLakeServiceName, []string{}, flagDataLakeServiceNameUsage)
 	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
