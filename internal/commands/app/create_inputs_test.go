@@ -486,9 +486,10 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster-1"}}, nil
 		}
 		dummyClusters := []string{"test-cluster-dummy-1", "test-cluster-dummy-2"}
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"},
+		inputs := createInputs{
+			newAppInputs:        newAppInputs{Name: "test-app"},
 			Clusters:            []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
-			ClusterServiceNames: []string{"mongodb-atlas", "mongodb-atlas"},
+			ClusterServiceNames: []string{"mongodb-atlas"},
 		}
 
 		for _, tc := range []struct {
@@ -671,7 +672,11 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			return []atlas.DataLake{{Name: "test-datalake"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake"}}
+		inputs := createInputs{
+			newAppInputs:         newAppInputs{Name: "test-app"},
+			DataLakes:            []string{"test-datalake"},
+			DataLakeServiceNames: []string{"mongodb-datalake"},
+		}
 
 		ds, err := inputs.resolveDataLakes(ui, ac, "123")
 		assert.Nil(t, err)
@@ -700,7 +705,11 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake-1", "test-datalake-2"}}
+		inputs := createInputs{
+			newAppInputs:         newAppInputs{Name: "test-app"},
+			DataLakes:            []string{"test-datalake-1", "test-datalake-2"},
+			DataLakeServiceNames: []string{"mongodb-datalake", "another-data-source"},
+		}
 
 		ds, err := inputs.resolveDataLakes(ui, ac, "123")
 		assert.Nil(t, err)
@@ -714,7 +723,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 				},
 			},
 			{
-				Name: "mongodb-datalake",
+				Name: "another-data-source",
 				Type: realm.DataLakeType,
 				Config: configDataLake{
 					DataLakeName: "test-datalake-2",
@@ -736,7 +745,11 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		}
 
 		dummyDataLakes := []string{"test-dummy-lake-1", "test-dummy-lake-2"}
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake-1", dummyDataLakes[0], dummyDataLakes[1]}}
+		inputs := createInputs{
+			newAppInputs:         newAppInputs{Name: "test-app"},
+			DataLakes:            []string{"test-datalake-1", dummyDataLakes[0], dummyDataLakes[1]},
+			DataLakeServiceNames: []string{"mongodb-datalake"},
+		}
 
 		ds, err := inputs.resolveDataLakes(ui, ac, "123")
 		assert.Nil(t, err)
@@ -763,7 +776,11 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		}
 
 		dummyDataLakes := []string{"test-dummy-lake-1", "test-dummy-lake-2"}
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, DataLakes: []string{"test-datalake-1", dummyDataLakes[0], dummyDataLakes[1]}}
+		inputs := createInputs{
+			newAppInputs:         newAppInputs{Name: "test-app"},
+			DataLakes:            []string{"test-datalake-1", dummyDataLakes[0], dummyDataLakes[1]},
+			DataLakeServiceNames: []string{"mongodb-datalake"},
+		}
 
 		for _, tc := range []struct {
 			description       string
@@ -775,7 +792,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			{
 				description:       "and error if not confirmed",
 				response:          "no",
-				expectedErr:       errors.New("failed to find Atlas data lake"),
+				expectedErr:       errors.New("failed to find Atlas datalake"),
 				expectedDataLakes: nil,
 			},
 			{
@@ -814,20 +831,103 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 		}
 	})
 
-	t.Run("should not be able to find specified data lake", func(t *testing.T) {
-		_, ui := mock.NewUI()
-		var expectedGroupID string
+	t.Run("should return data source configs of datalakes with datalake service names", func(t *testing.T) {
+		dataLakeNames := []string{"DataLake0", "DataLake1"}
+		dataLakeServiceNames := []string{"mongodb-datalake", "another-data-source"}
+
 		ac := mock.AtlasClient{}
 		ac.DataLakesFn = func(groupID string) ([]atlas.DataLake, error) {
-			expectedGroupID = groupID
-			return nil, nil
+			return []atlas.DataLake{
+				{Name: dataLakeNames[0]},
+				{Name: dataLakeNames[1]},
+			}, nil
 		}
 
-		inputs := createInputs{DataLakes: []string{"test-datalake"}}
+		for _, tc := range []struct {
+			description                  string
+			dataLakeNames                []string
+			dataLakeServiceNames         []string
+			procedure                    func(c *expect.Console)
+			autoConfirm                  bool
+			expectedDataLakeServiceNames []string
+		}{
+			{
+				description:                  "use datalake names provided",
+				dataLakeNames:                dataLakeNames,
+				dataLakeServiceNames:         dataLakeServiceNames,
+				procedure:                    func(c *expect.Console) {},
+				autoConfirm:                  false,
+				expectedDataLakeServiceNames: dataLakeServiceNames,
+			},
+			{
+				description:   "prompt user if no datalake service names are provided",
+				dataLakeNames: dataLakeNames,
+				procedure: func(c *expect.Console) {
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for DataLake '%s'", dataLakeNames[0]))
+					c.SendLine(dataLakeServiceNames[0])
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for DataLake '%s'", dataLakeNames[1]))
+					c.SendLine(dataLakeServiceNames[1])
+					c.ExpectEOF()
+				},
+				autoConfirm:                  false,
+				expectedDataLakeServiceNames: dataLakeServiceNames,
+			},
+			{
+				description:          "prompt user if any datalake service name is not provided",
+				dataLakeNames:        dataLakeNames,
+				dataLakeServiceNames: []string{dataLakeServiceNames[0]},
+				procedure: func(c *expect.Console) {
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for DataLake '%s'", dataLakeNames[1]))
+					c.SendLine(dataLakeServiceNames[1])
+					c.ExpectEOF()
+				},
+				autoConfirm:                  false,
+				expectedDataLakeServiceNames: dataLakeServiceNames,
+			},
+			{
+				description:                  "default datalake service names to datalake names if not provided and auto confirm is set",
+				dataLakeNames:                dataLakeNames,
+				procedure:                    func(c *expect.Console) {},
+				autoConfirm:                  true,
+				expectedDataLakeServiceNames: dataLakeNames,
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				console, _, ui, err := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: tc.autoConfirm})
+				assert.Nil(t, err)
+				defer console.Close()
 
-		_, err := inputs.resolveDataLakes(ui, ac, "123")
-		assert.Equal(t, errors.New("failed to find Atlas data lake"), err)
-		assert.Equal(t, "123", expectedGroupID)
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					tc.procedure(console)
+				}()
+
+				inputs := createInputs{
+					newAppInputs:         newAppInputs{Name: "test-app"},
+					DataLakes:            tc.dataLakeNames,
+					DataLakeServiceNames: tc.dataLakeServiceNames,
+				}
+
+				ds, _ := inputs.resolveDataLakes(ui, ac, "123")
+				assert.Equal(t, []dataSourceDataLake{
+					{
+						Name: tc.expectedDataLakeServiceNames[0],
+						Type: realm.DataLakeType,
+						Config: configDataLake{
+							DataLakeName: tc.dataLakeNames[0],
+						},
+					},
+					{
+						Name: tc.expectedDataLakeServiceNames[1],
+						Type: realm.DataLakeType,
+						Config: configDataLake{
+							DataLakeName: tc.dataLakeNames[1],
+						},
+					},
+				}, ds)
+			})
+		}
 	})
 
 	t.Run("should error from client", func(t *testing.T) {
