@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"strconv"
@@ -167,7 +168,7 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 		return nil, err
 	}
 
-	existingClusters := map[string]atlas.Cluster{}
+	existingClusters := map[string]interface{}{}
 	for _, c := range clusters {
 		existingClusters[c.Name] = c
 	}
@@ -180,16 +181,12 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			continue
 		}
 
-		defaultServiceName := "mongodb-atlas"
-		var serviceName string
+		serviceName := clusterName
 		if len(i.ClusterServiceNames) > idx {
 			serviceName = i.ClusterServiceNames[idx]
 		} else {
-			if ui.AutoConfirm() {
-				serviceName = defaultServiceName
-			} else {
-				ui.Print(terminal.NewWarningLog("The cluster '%s' was not linked to a service.", clusterName))
-				if err := ui.AskOne(&serviceName, &survey.Input{Message: "Cluster Service Name", Default: defaultServiceName}); err != nil {
+			if !ui.AutoConfirm() {
+				if err := ui.AskOne(&serviceName, &survey.Input{Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName), Default: serviceName}); err != nil {
 					return nil, err
 				}
 			}
@@ -206,11 +203,9 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 				},
 			})
 	}
-	if len(dsClusters) == 0 {
-		return nil, errors.New("failed to find Atlas cluster")
-	}
+
 	if len(nonExistingClusters) > 0 {
-		ui.Print(terminal.NewWarningLog("Please note, the data sources '%s' were not linked because Atlas clusters were not found", strings.Join(nonExistingClusters[:], ", ")))
+		ui.Print(terminal.NewWarningLog("Please note, the following Atlas clusters '%s' were not linked because they could not be found", strings.Join(nonExistingClusters[:], ", ")))
 
 		if !ui.AutoConfirm() {
 			proceed, err := ui.Confirm("Would you still like to create the app?")
@@ -257,7 +252,7 @@ func (i *createInputs) resolveDataLakes(ui terminal.UI, client atlas.Client, gro
 		return nil, errors.New("failed to find Atlas data lake")
 	}
 	if len(nonExistingDataLakes) > 0 {
-		ui.Print(terminal.NewWarningLog("Please note, the data sources '%s' were not linked because Atlas data lakes were not found", strings.Join(nonExistingDataLakes[:], ", ")))
+		ui.Print(terminal.NewWarningLog("Please note, the following Atlas datalakes '%s' were not linked because they could not be found", strings.Join(nonExistingDataLakes[:], ", ")))
 
 		if !ui.AutoConfirm() {
 			proceed, err := ui.Confirm("Would you still like to create the app?")

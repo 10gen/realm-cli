@@ -373,7 +373,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 func TestAppCreateInputsResolveCluster(t *testing.T) {
 	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
-		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, new(bytes.Buffer))
+		_, ui := mock.NewUI()
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
 		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
@@ -381,7 +381,11 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster"}}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster"}}
+		inputs := createInputs{
+			newAppInputs:        newAppInputs{Name: "test-app"},
+			Clusters:            []string{"test-cluster"},
+			ClusterServiceNames: []string{"mongodb-atlas"},
+		}
 
 		ds, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Nil(t, err)
@@ -401,7 +405,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 	})
 
 	t.Run("should return data source configs of multiple provided clusters", func(t *testing.T) {
-		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, new(bytes.Buffer))
+		_, ui := mock.NewUI()
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
 		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
@@ -412,7 +416,11 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			}, nil
 		}
 
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster-1", "test-cluster-2"}}
+		inputs := createInputs{
+			newAppInputs:        newAppInputs{Name: "test-app"},
+			Clusters:            []string{"test-cluster-1", "test-cluster-2"},
+			ClusterServiceNames: []string{"mongodb-atlas", "another-data-source"},
+		}
 
 		ds, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Nil(t, err)
@@ -428,7 +436,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				},
 			},
 			{
-				Name: "mongodb-atlas",
+				Name: "another-data-source",
 				Type: realm.ClusterType,
 				Config: configCluster{
 					ClusterName:         "test-cluster-2",
@@ -437,22 +445,6 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				},
 			},
 		}, ds)
-		assert.Equal(t, "123", expectedGroupID)
-	})
-
-	t.Run("should not be able to find specified cluster", func(t *testing.T) {
-		_, ui := mock.NewUI()
-		var expectedGroupID string
-		ac := mock.AtlasClient{}
-		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
-			expectedGroupID = groupID
-			return nil, nil
-		}
-
-		inputs := createInputs{Clusters: []string{"test-cluster"}}
-
-		_, err := inputs.resolveClusters(ui, ac, "123")
-		assert.Equal(t, errors.New("failed to find Atlas cluster"), err)
 		assert.Equal(t, "123", expectedGroupID)
 	})
 
@@ -465,7 +457,11 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster-1"}}, nil
 		}
 		dummyClusters := []string{"test-cluster-dummy-1", "test-cluster-dummy-2"}
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]}}
+		inputs := createInputs{
+			newAppInputs:        newAppInputs{Name: "test-app"},
+			Clusters:            []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
+			ClusterServiceNames: []string{"mongodb-atlas"},
+		}
 
 		ds, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Nil(t, err)
@@ -481,7 +477,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				},
 			},
 		}, ds)
-		assert.Equal(t, fmt.Sprintf("Please note, the data sources '%s' were not linked because Atlas clusters were not found\n", strings.Join(dummyClusters[:], ", ")), out.String())
+		assert.Equal(t, fmt.Sprintf("Please note, the following Atlas clusters '%s' were not linked because they could not be found\n", strings.Join(dummyClusters[:], ", ")), out.String())
 	})
 
 	t.Run("should prompt user for confirmation if clusters are not found", func(t *testing.T) {
@@ -533,7 +529,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString(fmt.Sprintf("Please note, the data sources '%s' were not linked because Atlas clusters were not found", strings.Join(dummyClusters[:], ", ")))
+					console.ExpectString(fmt.Sprintf("Please note, the following Atlas clusters '%s' were not linked because they could not be found", strings.Join(dummyClusters[:], ", ")))
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
@@ -575,14 +571,12 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				expectedClusterServiceNames: clusterServiceNames,
 			},
 			{
-				description:  "prompt user if no cluster service names are not provided",
+				description:  "prompt user if no cluster service names are provided",
 				clusterNames: clusterNames,
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[0]))
-					c.ExpectString("Cluster Service Name")
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[0]))
 					c.SendLine(clusterServiceNames[0])
-					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[1]))
-					c.ExpectString("Cluster Service Name")
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[1]))
 					c.SendLine(clusterServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -594,8 +588,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				clusterNames:        clusterNames,
 				clusterServiceNames: []string{clusterServiceNames[0]},
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[1]))
-					c.ExpectString("Cluster Service Name")
+					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[1]))
 					c.SendLine(clusterServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -603,11 +596,11 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				expectedClusterServiceNames: clusterServiceNames,
 			},
 			{
-				description:                 "default cluster service names to 'mongodb-atlas' if not provided and auto confirm is set",
+				description:                 "default cluster service names to cluster names if not provided and auto confirm is set",
 				clusterNames:                clusterNames,
 				procedure:                   func(c *expect.Console) {},
 				autoConfirm:                 true,
-				expectedClusterServiceNames: []string{"mongodb-atlas", "mongodb-atlas"},
+				expectedClusterServiceNames: clusterNames,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
@@ -758,7 +751,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 			},
 		}, ds)
 
-		assert.Equal(t, fmt.Sprintf("Please note, the data sources '%s' were not linked because Atlas data lakes were not found\n", strings.Join(dummyDataLakes[:], ", ")), out.String())
+		assert.Equal(t, fmt.Sprintf("Please note, the following Atlas datalakes '%s' were not linked because they could not be found\n", strings.Join(dummyDataLakes[:], ", ")), out.String())
 	})
 
 	t.Run("should prompt user for confirmation if datalakes are not found", func(t *testing.T) {
@@ -808,7 +801,7 @@ func TestAppCreateInputsResolveDataLake(t *testing.T) {
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString(fmt.Sprintf("Please note, the data sources '%s' were not linked because Atlas data lakes were not found", strings.Join(dummyDataLakes[:], ", ")))
+					console.ExpectString(fmt.Sprintf("Please note, the following Atlas datalakes '%s' were not linked because they could not be found", strings.Join(dummyDataLakes[:], ", ")))
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
