@@ -51,6 +51,7 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
 	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
+	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
 	fs.StringSliceVar(&cmd.inputs.DataLakes, flagDataLake, []string{}, flagDataLakeUsage)
 	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)

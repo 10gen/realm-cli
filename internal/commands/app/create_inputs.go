@@ -26,7 +26,10 @@ var (
 	flagCluster      = "cluster"
 	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
 
-	flagDataLake      = "data-lake"
+	flagClusterServiceName      = "cluster-service-name"
+	flagClusterServiceNameUsage = "include service name to reference your Atlas cluster"
+
+	flagDataLake      = "datalake"
 	flagDataLakeUsage = "include to link an Atlas data lake to your Realm app"
 
 	flagTemplate      = "template"
@@ -39,10 +42,11 @@ var (
 
 type createInputs struct {
 	newAppInputs
-	LocalPath string
-	Clusters  []string
-	DataLakes []string
-	DryRun    bool
+	LocalPath           string
+	Clusters            []string
+	ClusterServiceNames []string
+	DataLakes           []string
+	DryRun              bool
 }
 
 type dataSourceCluster struct {
@@ -170,14 +174,30 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 	nonExistingClusters := make([]string, 0, len(i.Clusters))
 
 	dsClusters := make([]dataSourceCluster, 0, len(i.Clusters))
-	for _, clusterName := range i.Clusters {
+	for idx, clusterName := range i.Clusters {
 		if _, ok := existingClusters[clusterName]; !ok {
 			nonExistingClusters = append(nonExistingClusters, clusterName)
 			continue
 		}
+
+		defaultServiceName := "mongodb-atlas"
+		var serviceName string
+		if len(i.ClusterServiceNames) > idx {
+			serviceName = i.ClusterServiceNames[idx]
+		} else {
+			if ui.AutoConfirm() {
+				serviceName = defaultServiceName
+			} else {
+				ui.Print(terminal.NewWarningLog("The cluster '%s' was not linked to a service.", clusterName))
+				if err := ui.AskOne(&serviceName, &survey.Input{Message: "Cluster Service Name", Default: defaultServiceName}); err != nil {
+					return nil, err
+				}
+			}
+		}
+
 		dsClusters = append(dsClusters,
 			dataSourceCluster{
-				Name: "mongodb-atlas",
+				Name: serviceName,
 				Type: realm.ClusterType,
 				Config: configCluster{
 					ClusterName:         clusterName,
@@ -278,8 +298,11 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.Environment != realm.EnvironmentNone {
 		args = append(args, flags.Arg{flagEnvironment, i.Environment.String()})
 	}
-	if len(i.Clusters) > 0 {
-		args = append(args, flags.Arg{flagCluster, strings.Join(i.Clusters, ",")})
+	for idx, clusterName := range i.Clusters {
+		args = append(args, flags.Arg{flagCluster, clusterName})
+		if len(i.ClusterServiceNames) > idx {
+			args = append(args, flags.Arg{flagClusterServiceName, i.ClusterServiceNames[idx]})
+		}
 	}
 	if len(i.DataLakes) > 0 {
 		args = append(args, flags.Arg{flagDataLake, strings.Join(i.DataLakes, ",")})

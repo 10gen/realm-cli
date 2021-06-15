@@ -373,7 +373,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 func TestAppCreateInputsResolveCluster(t *testing.T) {
 	t.Run("should return data source config of a provided cluster", func(t *testing.T) {
-		_, ui := mock.NewUI()
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, new(bytes.Buffer))
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
 		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
@@ -401,7 +401,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 	})
 
 	t.Run("should return data source configs of multiple provided clusters", func(t *testing.T) {
-		_, ui := mock.NewUI()
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, new(bytes.Buffer))
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
 		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
@@ -490,7 +490,10 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			return []atlas.Cluster{{ID: "789", Name: "test-cluster-1"}}, nil
 		}
 		dummyClusters := []string{"test-cluster-dummy-1", "test-cluster-dummy-2"}
-		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}, Clusters: []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]}}
+		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"},
+			Clusters:            []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
+			ClusterServiceNames: []string{"mongodb-atlas", "mongodb-atlas"},
+		}
 
 		for _, tc := range []struct {
 			description      string
@@ -539,6 +542,111 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				ds, err := inputs.resolveClusters(ui, ac, "123")
 				assert.Equal(t, tc.expectedErr, err)
 				assert.Equal(t, tc.expectedClusters, ds)
+			})
+		}
+	})
+
+	t.Run("should return data source configs of clusters with cluster service names", func(t *testing.T) {
+		clusterNames := []string{"Cluster0", "Cluster1"}
+		clusterServiceNames := []string{"mongodb-atlas", "another-data-source"}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{
+				{ID: "456", Name: clusterNames[0]},
+				{ID: "789", Name: clusterNames[1]},
+			}, nil
+		}
+
+		for _, tc := range []struct {
+			description                 string
+			clusterNames                []string
+			clusterServiceNames         []string
+			procedure                   func(c *expect.Console)
+			autoConfirm                 bool
+			expectedClusterServiceNames []string
+		}{
+			{
+				description:                 "use cluster service names provided",
+				clusterNames:                clusterNames,
+				clusterServiceNames:         clusterServiceNames,
+				procedure:                   func(c *expect.Console) {},
+				autoConfirm:                 false,
+				expectedClusterServiceNames: clusterServiceNames,
+			},
+			{
+				description:  "prompt user if no cluster service names are not provided",
+				clusterNames: clusterNames,
+				procedure: func(c *expect.Console) {
+					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[0]))
+					c.ExpectString("Cluster Service Name")
+					c.SendLine(clusterServiceNames[0])
+					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[1]))
+					c.ExpectString("Cluster Service Name")
+					c.SendLine(clusterServiceNames[1])
+					c.ExpectEOF()
+				},
+				autoConfirm:                 false,
+				expectedClusterServiceNames: clusterServiceNames,
+			},
+			{
+				description:         "prompt user if any cluster service name is not provided",
+				clusterNames:        clusterNames,
+				clusterServiceNames: []string{clusterServiceNames[0]},
+				procedure: func(c *expect.Console) {
+					c.ExpectString(fmt.Sprintf("The cluster '%s' was not linked to a service.", clusterNames[1]))
+					c.ExpectString("Cluster Service Name")
+					c.SendLine(clusterServiceNames[1])
+					c.ExpectEOF()
+				},
+				autoConfirm:                 false,
+				expectedClusterServiceNames: clusterServiceNames,
+			},
+			{
+				description:                 "default cluster service names to 'mongodb-atlas' if not provided and auto confirm is set",
+				clusterNames:                clusterNames,
+				procedure:                   func(c *expect.Console) {},
+				autoConfirm:                 true,
+				expectedClusterServiceNames: []string{"mongodb-atlas", "mongodb-atlas"},
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				console, _, ui, err := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: tc.autoConfirm})
+				assert.Nil(t, err)
+				defer console.Close()
+
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					tc.procedure(console)
+				}()
+
+				inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"},
+					Clusters:            tc.clusterNames,
+					ClusterServiceNames: tc.clusterServiceNames,
+				}
+
+				ds, _ := inputs.resolveClusters(ui, ac, "123")
+				assert.Equal(t, []dataSourceCluster{
+					{
+						Name: tc.expectedClusterServiceNames[0],
+						Type: realm.ClusterType,
+						Config: configCluster{
+							ClusterName:         clusterNames[0],
+							ReadPreference:      "primary",
+							WireProtocolEnabled: false,
+						},
+					},
+					{
+						Name: tc.expectedClusterServiceNames[1],
+						Type: realm.ClusterType,
+						Config: configCluster{
+							ClusterName:         clusterNames[1],
+							ReadPreference:      "primary",
+							WireProtocolEnabled: false,
+						},
+					},
+				}, ds)
 			})
 		}
 	})
