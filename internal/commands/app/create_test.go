@@ -17,6 +17,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/Netflix/go-expect"
 )
@@ -1083,6 +1084,92 @@ func TestAppCreateHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedErr, cmd.Handler(profile, ui, tc.clients))
 		})
 	}
+
+	t.Run("should prompt user for confirmation if input data sources are not found", func(t *testing.T) {
+		testApp := realm.App{
+			ID:          primitive.NewObjectID().Hex(),
+			GroupID:     primitive.NewObjectID().Hex(),
+			ClientAppID: "test-app-abcde",
+			Name:        "test-app",
+		}
+
+		rc := mock.RealmClient{}
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		rc.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{}, nil
+		}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{
+				{ID: "789", Name: "test-cluster-1"},
+			}, nil
+		}
+		ac.DatalakesFn = func(groupID string) ([]atlas.Datalake, error) {
+			return []atlas.Datalake{
+				{Name: "test-datalake-1"},
+			}, nil
+		}
+
+		dummyDatalakes := []string{"test-dummy-lake-1", "test-dummy-lake-2"}
+		dummyClusters := []string{"test-cluster-dummy-1", "test-cluster-dummy-2"}
+
+		inputs := createInputs{
+			newAppInputs:         newAppInputs{Name: testApp.Name, Project: testApp.GroupID},
+			Clusters:             []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
+			ClusterServiceNames:  []string{"mongodb-atlas"},
+			Datalakes:            []string{"test-datalake-1", dummyDatalakes[0], dummyDatalakes[1]},
+			DatalakeServiceNames: []string{"mongodb-datalake"},
+		}
+
+		for _, tc := range []struct {
+			description string
+			response    string
+			appCreated  bool
+		}{
+			{
+				description: "and quit if not confirmed",
+				response:    "no",
+				appCreated:  false,
+			},
+			{
+				description: "and continue to create app if confirmed",
+				response:    "yes",
+				appCreated:  true,
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+				defer teardown()
+
+				_, console, _, ui, err := mock.NewVT10XConsole()
+				assert.Nil(t, err)
+				defer console.Close()
+
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s, %s, %s, %s",
+						dummyClusters[0], dummyClusters[1], dummyDatalakes[0], dummyDatalakes[1]))
+					console.ExpectString("Would you still like to create the app?")
+					console.SendLine(tc.response)
+					console.ExpectEOF()
+				}()
+
+				appCreated := false
+				rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+					appCreated = true
+					return testApp, nil
+				}
+
+				cmd := &CommandCreate{inputs}
+				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+				assert.Equal(t, tc.appCreated, appCreated)
+			})
+		}
+	})
 }
 
 func TestAppCreateCommandDisplay(t *testing.T) {
