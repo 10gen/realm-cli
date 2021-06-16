@@ -27,7 +27,7 @@ var CommandMeta = cli.CommandMeta{
 applicable, Hosting Files and/or Dependencies associated with your Realm app will be
 exported as well.`,
 }
-
+const defaultNoTemplate = "defaultNoTemplate"
 // Command is the `pull` command
 type Command struct {
 	inputs inputs
@@ -40,6 +40,7 @@ func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+	fs.StringVarP(&cmd.inputs.TemplateID, flagTemplate, flagTemplateShort,"", flagTemplateUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)
@@ -55,6 +56,16 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
+
+	if cmd.inputs.TemplateID == ""{
+		// prompt user to ask if they are ?
+		// if yes then export with template, if not then quit
+		println("sdfkjndsfkjdsnf no template")
+	} else {
+		// check for compatible templates
+		println("template id", cmd.inputs.TemplateID)
+	}
+
 	app, err := cmd.inputs.resolveRemoteApp(ui, clients)
 	if err != nil {
 		return err

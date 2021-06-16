@@ -36,6 +36,10 @@ const (
 
 	flagConfigVersion      = "config-version"
 	flagConfigVersionUsage = "Specify the app config version to export as"
+
+	flagTemplate      = "template"
+	flagTemplateShort = "t"
+	flagTemplateUsage = "specify the template ID that is used for this app"
 )
 
 var (
@@ -50,6 +54,7 @@ type inputs struct {
 	IncludeDependencies bool
 	IncludeHosting      bool
 	DryRun              bool
+	TemplateID          string
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
