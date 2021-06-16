@@ -1,12 +1,10 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -166,15 +164,15 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 	return fullPath, nil
 }
 
-func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, error) {
+func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	existingClusters := map[string]interface{}{}
+	existingClusters := map[string]struct{}{}
 	for _, c := range clusters {
-		existingClusters[c.Name] = c
+		existingClusters[c.Name] = struct{}{}
 	}
 	nonExistingClusters := make([]string, 0, len(i.Clusters))
 
@@ -190,8 +188,11 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			serviceName = i.ClusterServiceNames[idx]
 		} else {
 			if !ui.AutoConfirm() {
-				if err := ui.AskOne(&serviceName, &survey.Input{Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName), Default: serviceName}); err != nil {
-					return nil, err
+				if err := ui.AskOne(&serviceName, &survey.Input{
+					Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName),
+					Default: serviceName,
+				}); err != nil {
+					return nil, nil, err
 				}
 			}
 		}
@@ -208,31 +209,18 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			})
 	}
 
-	if len(nonExistingClusters) > 0 {
-		ui.Print(terminal.NewWarningLog("Please note, the following Atlas clusters '%s' were not linked because they could not be found", strings.Join(nonExistingClusters[:], ", ")))
-
-		if !ui.AutoConfirm() {
-			proceed, err := ui.Confirm("Would you still like to create the app?")
-			if err != nil {
-				return nil, err
-			}
-			if !proceed {
-				return nil, errors.New("failed to find Atlas cluster")
-			}
-		}
-	}
-	return dsClusters, nil
+	return dsClusters, nonExistingClusters, nil
 }
 
-func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, error) {
+func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, []string, error) {
 	datalakes, err := client.Datalakes(groupID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	existingDatalakes := map[string]interface{}{}
+	existingDatalakes := map[string]struct{}{}
 	for _, d := range datalakes {
-		existingDatalakes[d.Name] = d
+		existingDatalakes[d.Name] = struct{}{}
 	}
 	nonExistingDatalakes := make([]string, 0, len(i.Datalakes))
 
@@ -248,8 +236,11 @@ func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, gro
 			serviceName = i.DatalakeServiceNames[idx]
 		} else {
 			if !ui.AutoConfirm() {
-				if err := ui.AskOne(&serviceName, &survey.Input{Message: fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeName), Default: serviceName}); err != nil {
-					return nil, err
+				if err := ui.AskOne(&serviceName, &survey.Input{
+					Message: fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeName),
+					Default: serviceName,
+				}); err != nil {
+					return nil, nil, err
 				}
 			}
 		}
@@ -263,20 +254,7 @@ func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, gro
 			})
 	}
 
-	if len(nonExistingDatalakes) > 0 {
-		ui.Print(terminal.NewWarningLog("Please note, the following Atlas data lakes '%s' were not linked because they could not be found", strings.Join(nonExistingDatalakes[:], ", ")))
-
-		if !ui.AutoConfirm() {
-			proceed, err := ui.Confirm("Would you still like to create the app?")
-			if err != nil {
-				return nil, err
-			}
-			if !proceed {
-				return nil, errors.New("failed to find Atlas data lake")
-			}
-		}
-	}
-	return dsDatalakes, nil
+	return dsDatalakes, nonExistingDatalakes, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {

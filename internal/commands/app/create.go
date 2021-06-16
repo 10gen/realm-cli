@@ -102,18 +102,34 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	var dsClusters []dataSourceCluster
+	var nonExistingClusters []string
 	if len(cmd.inputs.Clusters) > 0 {
-		dsClusters, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
+		dsClusters, nonExistingClusters, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
 	}
 
 	var dsDatalakes []dataSourceDatalake
+	var nonExistingDatalakes []string
 	if len(cmd.inputs.Datalakes) > 0 {
-		dsDatalakes, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
+		dsDatalakes, nonExistingDatalakes, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
+		}
+	}
+
+	if len(nonExistingClusters) > 0 || len(nonExistingDatalakes) > 0 {
+		nonExistingDataSources := strings.Join(nonExistingClusters[:], ", ") + strings.Join(nonExistingDatalakes[:], ", ")
+		ui.Print(terminal.NewWarningLog("Note: The following data sources were not linked because they could not be found: %s", nonExistingDataSources))
+		if !ui.AutoConfirm() {
+			proceed, err := ui.Confirm("Would you still like to create the app?")
+			if err != nil {
+				return err
+			}
+			if !proceed {
+				return nil
+			}
 		}
 	}
 
@@ -233,32 +249,29 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	clusterNames := make([]string, 0, len(dsClusters))
 	for _, dsCluster := range dsClusters {
-		if dsCluster.Name != "" {
-			local.AddDataSource(appLocal.AppData, map[string]interface{}{
-				"name": dsCluster.Name,
-				"type": dsCluster.Type,
-				"config": map[string]interface{}{
-					"clusterName":         dsCluster.Config.ClusterName,
-					"readPreference":      dsCluster.Config.ReadPreference,
-					"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
-				},
-			})
-			clusterNames = append(clusterNames, dsCluster.Config.ClusterName)
-		}
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsCluster.Name,
+			"type": dsCluster.Type,
+			"config": map[string]interface{}{
+				"clusterName":         dsCluster.Config.ClusterName,
+				"readPreference":      dsCluster.Config.ReadPreference,
+				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
+			},
+		})
+		clusterNames = append(clusterNames, dsCluster.Config.ClusterName)
+
 	}
 
 	datalakeNames := make([]string, 0, len(dsDatalakes))
 	for _, dsDatalake := range dsDatalakes {
-		if dsDatalake.Name != "" {
-			local.AddDataSource(appLocal.AppData, map[string]interface{}{
-				"name": dsDatalake.Name,
-				"type": dsDatalake.Type,
-				"config": map[string]interface{}{
-					"dataLakeName": dsDatalake.Config.DatalakeName,
-				},
-			})
-			datalakeNames = append(datalakeNames, dsDatalake.Config.DatalakeName)
-		}
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsDatalake.Name,
+			"type": dsDatalake.Type,
+			"config": map[string]interface{}{
+				"dataLakeName": dsDatalake.Config.DatalakeName,
+			},
+		})
+		datalakeNames = append(datalakeNames, dsDatalake.Config.DatalakeName)
 	}
 
 	if err := appLocal.Write(); err != nil {
