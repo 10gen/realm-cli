@@ -7,7 +7,7 @@ type AtlasClient struct {
 	atlas.Client
 	GroupsFn    func() ([]atlas.Group, error)
 	ClustersFn  func(groupID string) ([]atlas.Cluster, error)
-	DataLakesFn func(groupID string) ([]atlas.DataLake, error)
+	DatalakesFn func(groupID string) ([]atlas.Datalake, error)
 }
 
 // Groups calls the mocked Groups implementation if provided,
@@ -30,12 +30,12 @@ func (ac AtlasClient) Clusters(groupID string) ([]atlas.Cluster, error) {
 	return ac.Client.Clusters(groupID)
 }
 
-// DataLakes calls the mocked DataLakes implementation if provided,
+// Datalakes calls the mocked Datalakes implementation if provided,
 // otherwise the call falls back to the underlying atlas.Client implementation.
 // NOTE: this may panic if the underlying atlas.Client is left undefined
-func (ac AtlasClient) DataLakes(groupID string) ([]atlas.DataLake, error) {
-	if ac.DataLakesFn != nil {
-		return ac.DataLakesFn(groupID)
+func (ac AtlasClient) Datalakes(groupID string) ([]atlas.Datalake, error) {
+	if ac.DatalakesFn != nil {
+		return ac.DatalakesFn(groupID)
 	}
-	return ac.Client.DataLakes(groupID)
+	return ac.Client.Datalakes(groupID)
 }

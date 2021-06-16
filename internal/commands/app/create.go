@@ -52,8 +52,8 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
 	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
 	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
-	fs.StringSliceVar(&cmd.inputs.DataLakes, flagDataLake, []string{}, flagDataLakeUsage)
-	fs.StringSliceVar(&cmd.inputs.DataLakeServiceNames, flagDataLakeServiceName, []string{}, flagDataLakeServiceNameUsage)
+	fs.StringSliceVar(&cmd.inputs.Datalakes, flagDatalake, []string{}, flagDatalakeUsage)
+	fs.StringSliceVar(&cmd.inputs.DatalakeServiceNames, flagDatalakeServiceName, []string{}, flagDatalakeServiceNameUsage)
 	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
@@ -109,9 +109,9 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	var dsDataLakes []dataSourceDataLake
-	if len(cmd.inputs.DataLakes) > 0 {
-		dsDataLakes, err = cmd.inputs.resolveDataLakes(ui, clients.Atlas, groupID)
+	var dsDatalakes []dataSourceDatalake
+	if len(cmd.inputs.Datalakes) > 0 {
+		dsDatalakes, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
@@ -143,8 +143,8 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		for i, cluster := range dsClusters {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
 		}
-		for i, dataLake := range dsDataLakes {
-			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLakes[i], dataLake.Name))
+		for i, datalake := range dsDatalakes {
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.Datalakes[i], datalake.Name))
 		}
 		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)
@@ -247,17 +247,17 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	dataLakeNames := make([]string, 0, len(dsDataLakes))
-	for _, dsDataLake := range dsDataLakes {
-		if dsDataLake.Name != "" {
+	datalakeNames := make([]string, 0, len(dsDatalakes))
+	for _, dsDatalake := range dsDatalakes {
+		if dsDatalake.Name != "" {
 			local.AddDataSource(appLocal.AppData, map[string]interface{}{
-				"name": dsDataLake.Name,
-				"type": dsDataLake.Type,
+				"name": dsDatalake.Name,
+				"type": dsDatalake.Type,
 				"config": map[string]interface{}{
-					"dataLakeName": dsDataLake.Config.DataLakeName,
+					"dataLakeName": dsDatalake.Config.DatalakeName,
 				},
 			})
-			dataLakeNames = append(dataLakeNames, dsDataLake.Config.DataLakeName)
+			datalakeNames = append(datalakeNames, dsDatalake.Config.DatalakeName)
 		}
 	}
 
@@ -281,8 +281,8 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	if len(dsClusters) > 0 {
 		rows = append(rows, map[string]interface{}{"Info": "Data Source (Clusters)", "Details": strings.Join(clusterNames[:], ", ")})
 	}
-	if len(dsDataLakes) > 0 {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lakes)", "Details": strings.Join(dataLakeNames[:], ", ")})
+	if len(dsDatalakes) > 0 {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lakes)", "Details": strings.Join(datalakeNames[:], ", ")})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))

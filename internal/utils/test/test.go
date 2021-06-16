@@ -24,7 +24,7 @@ const (
 	defaultAtlasServerURL     = "https://cloud-dev.mongodb.com"
 	defaultRealmServerURL     = "http://localhost:8080"
 	defaultAtlasClusterCount  = 3
-	defaultAtlasDataLakeCount = 1
+	defaultAtlasDatalakeCount = 1
 )
 
 var realmServerRunning = false
@@ -83,8 +83,8 @@ func CloudAtlasClusterCount() int {
 	return defaultAtlasClusterCount
 }
 
-// CloudAtlasDataLakeCount returns the count of clusters to use for testing
-func CloudAtlasDataLakeCount() int {
+// CloudAtlasDatalakeCount returns the count of clusters to use for testing
+func CloudAtlasDatalakeCount() int {
 	if count := os.Getenv("BAAS_MONGODB_CLOUD_ATLAS_DATA_LAKE_COUNT"); count != "" {
 		c, err := strconv.Atoi(count)
 		if err != nil {
@@ -92,7 +92,7 @@ func CloudAtlasDataLakeCount() int {
 		}
 		return c
 	}
-	return defaultAtlasDataLakeCount
+	return defaultAtlasDatalakeCount
 }
 
 // AtlasServerURL returns the Atlas server url to use for testing

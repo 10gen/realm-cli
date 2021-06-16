@@ -602,8 +602,8 @@ func TestAppCreateHandler(t *testing.T) {
 		description          string
 		clusters             []string
 		clusterServiceNames  []string
-		dataLakes            []string
-		dataLakeServiceNames []string
+		datalakes            []string
+		datalakeServiceNames []string
 		atlasClient          atlas.Client
 	}{
 		{
@@ -628,11 +628,11 @@ func TestAppCreateHandler(t *testing.T) {
 		},
 		{
 			description:          "should create minimal project with a data lake data source when data lake is set",
-			dataLakes:            []string{"test-datalake"},
-			dataLakeServiceNames: []string{"mongodb-datalake"},
+			datalakes:            []string{"test-datalake"},
+			datalakeServiceNames: []string{"mongodb-datalake"},
 			atlasClient: mock.AtlasClient{
-				DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
-					return []atlas.DataLake{{Name: "test-datalake"}}, nil
+				DatalakesFn: func(groupID string) ([]atlas.Datalake, error) {
+					return []atlas.Datalake{{Name: "test-datalake"}}, nil
 				},
 			},
 		},
@@ -640,14 +640,14 @@ func TestAppCreateHandler(t *testing.T) {
 			description:          "should create minimal project with a data lake and cluster data source when data lake and cluster is set",
 			clusters:             []string{"test-cluster"},
 			clusterServiceNames:  []string{"mongodb-atlas"},
-			dataLakes:            []string{"test-datalake"},
-			dataLakeServiceNames: []string{"mongodb-datalake"},
+			datalakes:            []string{"test-datalake"},
+			datalakeServiceNames: []string{"mongodb-datalake"},
 			atlasClient: mock.AtlasClient{
 				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 					return []atlas.Cluster{{Name: "test-cluster"}}, nil
 				},
-				DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
-					return []atlas.DataLake{{Name: "test-datalake"}}, nil
+				DatalakesFn: func(groupID string) ([]atlas.Datalake, error) {
+					return []atlas.Datalake{{Name: "test-datalake"}}, nil
 				},
 			},
 		},
@@ -691,8 +691,8 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 					Clusters:             tc.clusters,
 					ClusterServiceNames:  tc.clusterServiceNames,
-					DataLakes:            tc.dataLakes,
-					DataLakeServiceNames: tc.dataLakeServiceNames,
+					Datalakes:            tc.datalakes,
+					DatalakeServiceNames: tc.datalakeServiceNames,
 				},
 			}
 
@@ -718,7 +718,7 @@ func TestAppCreateHandler(t *testing.T) {
 			fmtStr := fmt.Sprintf(" %%-%ds", dirLength)
 
 			var spaceBuffer, dashBuffer string
-			if len(tc.dataLakes) > 0 {
+			if len(tc.datalakes) > 0 {
 				spaceBuffer = "  "
 				dashBuffer = "--"
 			}
@@ -734,8 +734,8 @@ func TestAppCreateHandler(t *testing.T) {
 			if len(tc.clusters) > 0 {
 				display = append(display, fmt.Sprintf("  Data Source (Clusters) "+spaceBuffer+fmtStr, strings.Join(tc.clusters, ", ")))
 			}
-			if len(tc.dataLakes) > 0 {
-				display = append(display, fmt.Sprintf("  Data Source (Data Lakes) "+fmtStr, strings.Join(tc.dataLakes, ", ")))
+			if len(tc.datalakes) > 0 {
+				display = append(display, fmt.Sprintf("  Data Source (Data Lakes) "+fmtStr, strings.Join(tc.datalakes, ", ")))
 			}
 			display = append(display, "Check out your app: cd ./test-app && realm-cli app describe", "")
 			assert.Equal(t, strings.Join(display, "\n"), out.String())
@@ -754,8 +754,8 @@ func TestAppCreateHandler(t *testing.T) {
 		appRemote            string
 		clusters             []string
 		clusterServiceNames  []string
-		dataLakes            []string
-		dataLakeServiceNames []string
+		datalakes            []string
+		datalakeServiceNames []string
 		datalake             string
 		clients              cli.Clients
 		template             string
@@ -826,8 +826,8 @@ func TestAppCreateHandler(t *testing.T) {
 		},
 		{
 			description:          "should create a minimal project dry run with data lake set",
-			dataLakes:            []string{"test-datalake"},
-			dataLakeServiceNames: []string{"mongodb-datalake"},
+			datalakes:            []string{"test-datalake"},
+			datalakeServiceNames: []string{"mongodb-datalake"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
 					TemplatesFn: func() ([]realm.Template, error) {
@@ -835,8 +835,8 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 				Atlas: mock.AtlasClient{
-					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
-						return []atlas.DataLake{{Name: "test-datalake"}}, nil
+					DatalakesFn: func(groupID string) ([]atlas.Datalake, error) {
+						return []atlas.Datalake{{Name: "test-datalake"}}, nil
 					},
 				},
 			},
@@ -892,8 +892,8 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 					Clusters:             tc.clusters,
 					ClusterServiceNames:  tc.clusterServiceNames,
-					DataLakes:            tc.dataLakes,
-					DataLakeServiceNames: tc.dataLakeServiceNames,
+					Datalakes:            tc.datalakes,
+					DatalakeServiceNames: tc.datalakeServiceNames,
 					DryRun:               true,
 				},
 			}
@@ -910,7 +910,7 @@ func TestAppCreateHandler(t *testing.T) {
 		appRemote   string
 		groupID     string
 		clusters    []string
-		dataLakes   []string
+		datalakes   []string
 		template    string
 		clients     cli.Clients
 		uiOptions   mock.UIOptions
@@ -948,7 +948,7 @@ func TestAppCreateHandler(t *testing.T) {
 		{
 			description: "should error when resolving data lakes when data lake is set",
 			groupID:     "123",
-			dataLakes:   []string{"test-datalake"},
+			datalakes:   []string{"test-datalake"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
 					TemplatesFn: func() ([]realm.Template, error) {
@@ -956,7 +956,7 @@ func TestAppCreateHandler(t *testing.T) {
 					},
 				},
 				Atlas: mock.AtlasClient{
-					DataLakesFn: func(groupID string) ([]atlas.DataLake, error) {
+					DatalakesFn: func(groupID string) ([]atlas.Datalake, error) {
 						return nil, errors.New("atlas client error")
 					},
 				},
@@ -1074,7 +1074,7 @@ func TestAppCreateHandler(t *testing.T) {
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
 				Clusters:  tc.clusters,
-				DataLakes: tc.dataLakes,
+				Datalakes: tc.datalakes,
 			}}
 
 			out := new(bytes.Buffer)
@@ -1114,18 +1114,18 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 				LocalPath:            "realm-app",
 				Clusters:             []string{"Cluster0"},
 				ClusterServiceNames:  []string{"mongodb-atlas"},
-				DataLakes:            []string{"DataLake0"},
-				DataLakeServiceNames: []string{"mongodb-datalake"},
+				Datalakes:            []string{"Datalake0"},
+				DatalakeServiceNames: []string{"mongodb-datalake"},
 				DryRun:               true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --datalake DataLake0 --datalake-service-name mongodb-datalake --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
 			cmd.display(false),
 		)
 	})
 
-	t.Run("should create a command with multiple input clusters and datalakes", func(t *testing.T) {
+	t.Run("should create a command with multiple input clusters and data lakes", func(t *testing.T) {
 		cmd := &CommandCreate{
 			inputs: createInputs{
 				newAppInputs: newAppInputs{
@@ -1138,13 +1138,13 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 				LocalPath:            "realm-app",
 				Clusters:             []string{"Cluster0", "Cluster1", "Cluster2"},
 				ClusterServiceNames:  []string{"mongodb-atlas-0", "mongodb-atlas-1", "mongodb-atlas-2"},
-				DataLakes:            []string{"DataLake0", "DataLake1", "DataLake2"},
-				DataLakeServiceNames: []string{"mongodb-datalake-0", "mongodb-datalake-1", "mongodb-datalake-2"},
+				Datalakes:            []string{"Datalake0", "Datalake1", "Datalake2"},
+				DatalakeServiceNames: []string{"mongodb-datalake-0", "mongodb-datalake-1", "mongodb-datalake-2"},
 				DryRun:               true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --datalake DataLake0 --datalake-service-name mongodb-datalake-0 --datalake DataLake1 --datalake-service-name mongodb-datalake-1 --datalake DataLake2 --datalake-service-name mongodb-datalake-2 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
 			cmd.display(false),
 		)
 	})

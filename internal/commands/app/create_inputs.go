@@ -30,11 +30,11 @@ var (
 	flagClusterServiceName      = "cluster-service-name"
 	flagClusterServiceNameUsage = "include service name to reference your Atlas cluster"
 
-	flagDataLake      = "datalake"
-	flagDataLakeUsage = "include to link an Atlas data lake to your Realm app"
+	flagDatalake      = "datalake"
+	flagDatalakeUsage = "include to link an Atlas data lake to your Realm app"
 
-	flagDataLakeServiceName      = "datalake-service-name"
-	flagDataLakeServiceNameUsage = "include service name to reference your Atlas datalake"
+	flagDatalakeServiceName      = "datalake-service-name"
+	flagDatalakeServiceNameUsage = "include service name to reference your Atlas data lake"
 
 	flagTemplate      = "template"
 	flagTemplateUsage = "create your app from an available template"
@@ -49,8 +49,8 @@ type createInputs struct {
 	LocalPath            string
 	Clusters             []string
 	ClusterServiceNames  []string
-	DataLakes            []string
-	DataLakeServiceNames []string
+	Datalakes            []string
+	DatalakeServiceNames []string
 	DryRun               bool
 }
 
@@ -66,14 +66,14 @@ type configCluster struct {
 	WireProtocolEnabled bool   `json:"wireProtocolEnabled"`
 }
 
-type dataSourceDataLake struct {
+type dataSourceDatalake struct {
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`
-	Config configDataLake `json:"config"`
+	Config configDatalake `json:"config"`
 }
 
-type configDataLake struct {
-	DataLakeName string `json:"dataLakeName"`
+type configDatalake struct {
+	DatalakeName string `json:"dataLakeName"`
 }
 
 func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -199,7 +199,7 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 		dsClusters = append(dsClusters,
 			dataSourceCluster{
 				Name: serviceName,
-				Type: realm.ClusterType,
+				Type: realm.ServiceTypeCluster,
 				Config: configCluster{
 					ClusterName:         clusterName,
 					ReadPreference:      "primary",
@@ -224,47 +224,47 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 	return dsClusters, nil
 }
 
-func (i *createInputs) resolveDataLakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDataLake, error) {
-	dataLakes, err := client.DataLakes(groupID)
+func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, error) {
+	datalakes, err := client.Datalakes(groupID)
 	if err != nil {
 		return nil, err
 	}
 
-	existingDataLakes := map[string]interface{}{}
-	for _, d := range dataLakes {
-		existingDataLakes[d.Name] = d
+	existingDatalakes := map[string]interface{}{}
+	for _, d := range datalakes {
+		existingDatalakes[d.Name] = d
 	}
-	nonExistingDataLakes := make([]string, 0, len(i.DataLakes))
+	nonExistingDatalakes := make([]string, 0, len(i.Datalakes))
 
-	dsDataLakes := make([]dataSourceDataLake, 0, len(i.DataLakes))
-	for idx, dataLakeName := range i.DataLakes {
-		if _, ok := existingDataLakes[dataLakeName]; !ok {
-			nonExistingDataLakes = append(nonExistingDataLakes, dataLakeName)
+	dsDatalakes := make([]dataSourceDatalake, 0, len(i.Datalakes))
+	for idx, datalakeName := range i.Datalakes {
+		if _, ok := existingDatalakes[datalakeName]; !ok {
+			nonExistingDatalakes = append(nonExistingDatalakes, datalakeName)
 			continue
 		}
 
-		serviceName := dataLakeName
-		if len(i.DataLakeServiceNames) > idx {
-			serviceName = i.DataLakeServiceNames[idx]
+		serviceName := datalakeName
+		if len(i.DatalakeServiceNames) > idx {
+			serviceName = i.DatalakeServiceNames[idx]
 		} else {
 			if !ui.AutoConfirm() {
-				if err := ui.AskOne(&serviceName, &survey.Input{Message: fmt.Sprintf("Enter a Service Name for DataLake '%s'", dataLakeName), Default: serviceName}); err != nil {
+				if err := ui.AskOne(&serviceName, &survey.Input{Message: fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeName), Default: serviceName}); err != nil {
 					return nil, err
 				}
 			}
 		}
-		dsDataLakes = append(dsDataLakes,
-			dataSourceDataLake{
+		dsDatalakes = append(dsDatalakes,
+			dataSourceDatalake{
 				Name: serviceName,
-				Type: realm.DataLakeType,
-				Config: configDataLake{
-					DataLakeName: dataLakeName,
+				Type: realm.ServiceTypeDatalake,
+				Config: configDatalake{
+					DatalakeName: datalakeName,
 				},
 			})
 	}
 
-	if len(nonExistingDataLakes) > 0 {
-		ui.Print(terminal.NewWarningLog("Please note, the following Atlas datalakes '%s' were not linked because they could not be found", strings.Join(nonExistingDataLakes[:], ", ")))
+	if len(nonExistingDatalakes) > 0 {
+		ui.Print(terminal.NewWarningLog("Please note, the following Atlas data lakes '%s' were not linked because they could not be found", strings.Join(nonExistingDatalakes[:], ", ")))
 
 		if !ui.AutoConfirm() {
 			proceed, err := ui.Confirm("Would you still like to create the app?")
@@ -272,11 +272,11 @@ func (i *createInputs) resolveDataLakes(ui terminal.UI, client atlas.Client, gro
 				return nil, err
 			}
 			if !proceed {
-				return nil, errors.New("failed to find Atlas datalake")
+				return nil, errors.New("failed to find Atlas data lake")
 			}
 		}
 	}
-	return dsDataLakes, nil
+	return dsDatalakes, nil
 }
 
 func (i createInputs) args(omitDryRun bool) []flags.Arg {
@@ -311,10 +311,10 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 			args = append(args, flags.Arg{flagClusterServiceName, i.ClusterServiceNames[idx]})
 		}
 	}
-	for idx, dataLakeName := range i.DataLakes {
-		args = append(args, flags.Arg{flagDataLake, dataLakeName})
-		if len(i.DataLakeServiceNames) > idx {
-			args = append(args, flags.Arg{flagDataLakeServiceName, i.DataLakeServiceNames[idx]})
+	for idx, datalakeName := range i.Datalakes {
+		args = append(args, flags.Arg{flagDatalake, datalakeName})
+		if len(i.DatalakeServiceNames) > idx {
+			args = append(args, flags.Arg{flagDatalakeServiceName, i.DatalakeServiceNames[idx]})
 		}
 	}
 	if i.DryRun && !omitDryRun {
