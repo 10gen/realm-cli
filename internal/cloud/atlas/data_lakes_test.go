@@ -9,7 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestDataLakes(t *testing.T) {
+func TestDatalakes(t *testing.T) {
 	u.SkipUnlessAtlasServerRunning(t)
 
 	for _, tc := range []struct {
@@ -29,7 +29,7 @@ func TestDataLakes(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := tc.client.DataLakes(u.CloudGroupID())
+			_, err := tc.client.Datalakes(u.CloudGroupID())
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
@@ -37,8 +37,8 @@ func TestDataLakes(t *testing.T) {
 	t.Run("with an authenticated client should return the list of atlas data lakes", func(t *testing.T) {
 		client := newAuthClient(t)
 
-		dataLakes, err := client.DataLakes(u.CloudGroupID())
+		datalakes, err := client.Datalakes(u.CloudGroupID())
 		assert.Nil(t, err)
-		assert.Equal(t, u.CloudAtlasDataLakeCount(), len(dataLakes))
+		assert.Equal(t, u.CloudAtlasDatalakeCount(), len(datalakes))
 	})
 }

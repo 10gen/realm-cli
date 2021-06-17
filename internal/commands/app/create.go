@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -49,8 +50,10 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
-	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
+	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
+	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
+	fs.StringSliceVar(&cmd.inputs.Datalakes, flagDatalake, []string{}, flagDatalakeUsage)
+	fs.StringSliceVar(&cmd.inputs.DatalakeServiceNames, flagDatalakeServiceName, []string{}, flagDatalakeServiceNameUsage)
 	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
@@ -98,19 +101,40 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var dsCluster dataSourceCluster
-	if cmd.inputs.Cluster != "" {
-		dsCluster, err = cmd.inputs.resolveCluster(clients.Atlas, groupID)
+	var dsClusters []dataSourceCluster
+	var dsClustersMissing []string
+	if len(cmd.inputs.Clusters) > 0 {
+		dsClusters, dsClustersMissing, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
 	}
 
-	var dsDataLake dataSourceDataLake
-	if cmd.inputs.DataLake != "" {
-		dsDataLake, err = cmd.inputs.resolveDataLake(clients.Atlas, groupID)
+	var dsDatalakes []dataSourceDatalake
+	var dsDatalakesMissing []string
+	if len(cmd.inputs.Datalakes) > 0 {
+		dsDatalakes, dsDatalakesMissing, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
+		}
+	}
+
+	nonExistingDataSources := make([]string, 0, len(dsClustersMissing)+len(dsDatalakesMissing))
+	for _, missingCluster := range dsClustersMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingCluster))
+	}
+	for _, missingDatalake := range dsDatalakesMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
+	}
+
+	if len(nonExistingDataSources) > 0 {
+		ui.Print(terminal.NewWarningLog("Note: The following data sources were not linked because they could not be found: %s", strings.Join(nonExistingDataSources, ", ")))
+		proceed, err := ui.Confirm("Would you still like to create the app?")
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return nil
 		}
 	}
 
@@ -137,11 +161,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 		logs = append(logs, terminal.NewTextLog(appCreatedText))
 
-		if dsCluster.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))
+		for i, cluster := range dsClusters {
+			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
 		}
-		if dsDataLake.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLake, dsDataLake.Name))
+		for i, datalake := range dsDatalakes {
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.Datalakes[i], datalake.Name))
 		}
 		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)
@@ -228,7 +252,8 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	if dsCluster.Name != "" {
+	clusterNames := make([]string, 0, len(dsClusters))
+	for _, dsCluster := range dsClusters {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsCluster.Name,
 			"type": dsCluster.Type,
@@ -238,15 +263,20 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
 			},
 		})
+		clusterNames = append(clusterNames, dsCluster.Config.ClusterName)
+
 	}
-	if dsDataLake.Name != "" {
+
+	datalakeNames := make([]string, 0, len(dsDatalakes))
+	for _, dsDatalake := range dsDatalakes {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
-			"name": dsDataLake.Name,
-			"type": dsDataLake.Type,
+			"name": dsDatalake.Name,
+			"type": dsDatalake.Type,
 			"config": map[string]interface{}{
-				"dataLakeName": dsDataLake.Config.DataLakeName,
+				"dataLakeName": dsDatalake.Config.DatalakeName,
 			},
 		})
+		datalakeNames = append(datalakeNames, dsDatalake.Config.DatalakeName)
 	}
 
 	if err := appLocal.Write(); err != nil {
@@ -266,11 +296,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
 	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": backendDir})
 	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
-	if dsCluster.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Cluster)", "Details": dsCluster.Name})
+	if len(dsClusters) > 0 {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source (Clusters)", "Details": strings.Join(clusterNames[:], ", ")})
 	}
-	if dsDataLake.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lake)", "Details": dsDataLake.Name})
+	if len(dsDatalakes) > 0 {
+		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lakes)", "Details": strings.Join(datalakeNames[:], ", ")})
 	}
 
 	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
