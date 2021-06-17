@@ -488,7 +488,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		doneCh := make(chan (struct{}))
 		go func() {
 			defer close(doneCh)
-			console.ExpectString(("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2'"))
+			console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2'")
 			console.ExpectEOF()
 		}()
 
@@ -992,7 +992,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 					DatalakeServiceNames: tc.datalakeServiceNames,
 				}
 
-				ds, _, _ := inputs.resolveDatalakes(ui, ac, "123")
+				ds, _, err := inputs.resolveDatalakes(ui, ac, "123")
 				assert.Nil(t, err)
 
 				assert.Equal(t, []dataSourceDatalake{
