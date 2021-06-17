@@ -20,26 +20,26 @@ import (
 
 var (
 	flagLocalPathCreate      = "local"
-	flagLocalPathCreateUsage = "the local path to create your new Realm app in, defaults to the Realm app name"
+	flagLocalPathCreateUsage = "Specify the local filepath of a Realm app to be created"
 
 	flagCluster      = "cluster"
-	flagClusterUsage = "include to link an Atlas cluster to your Realm app"
+	flagClusterUsage = "Link Atlas cluster(s) to your Realm app"
 
 	flagClusterServiceName      = "cluster-service-name"
-	flagClusterServiceNameUsage = "include service name to reference your Atlas cluster"
+	flagClusterServiceNameUsage = "Specify the Realm app Service name to reference your Atlas cluster"
 
 	flagDatalake      = "datalake"
-	flagDatalakeUsage = "include to link an Atlas data lake to your Realm app"
+	flagDatalakeUsage = "Link Atlas data lake(s) to your Realm app"
 
 	flagDatalakeServiceName      = "datalake-service-name"
-	flagDatalakeServiceNameUsage = "include service name to reference your Atlas data lake"
+	flagDatalakeServiceNameUsage = "Specify the Realm app Service name to reference your Atlas data lake"
 
 	flagTemplate      = "template"
-	flagTemplateUsage = "create your app from an available template"
+	flagTemplateUsage = "Create your Realm app from an available template"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without writing any changes to the file system nor deploying any changes to the Realm server"
+	flagDryRunUsage = "Run without writing any changes to the local filepath or pushing any changes to the Realm server"
 )
 
 type createInputs struct {

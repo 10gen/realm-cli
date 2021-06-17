@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/pflag"
 )
@@ -19,6 +20,19 @@ var CommandMetaList = cli.CommandMeta{
 	HelpText:    `Lists and filters your Realm apps.`,
 }
 
+// TODO(REALMC-9256): this should not be duplicated (with cli.ProjectInputs)
+const (
+	flagListApp      = "app"
+	flagListAppShort = "a"
+	flagListAppUsage = "Filter the list of Realm apps by name"
+
+	flagListProject      = "project"
+	flagListProjectUsage = "Specify the ID of a MongoDB Atlas project"
+
+	flagListProduct      = "product"
+	flagListProductUsage = `Specify the Realm app product(s) (Allowed values: "standard", "atlas")`
+)
+
 // CommandList is the `app list` command
 type CommandList struct {
 	inputs cli.ProjectInputs
@@ -26,7 +40,13 @@ type CommandList struct {
 
 // Flags is the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	fs.StringVarP(&cmd.inputs.App, flagListApp, flagListAppShort, "", flagListAppUsage)
+
+	fs.StringVar(&cmd.inputs.Project, flagListProject, "", flagListProjectUsage)
+	flags.MarkHidden(fs, flagProject)
+
+	fs.StringSliceVar(&cmd.inputs.Products, flagListProduct, []string{}, flagListProductUsage)
+	flags.MarkHidden(fs, flagListProduct)
 }
 
 // Handler is the command handler

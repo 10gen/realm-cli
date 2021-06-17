@@ -14,28 +14,28 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "specify the local path to export a Realm app to"
+	flagLocalPathUsage = "Specify a local filepath to export a Realm app to"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "specify the remote app to pull changes down from"
+	flagRemoteUsage = "Specify the name or ID of a remote Realm app to export"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to to export Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "Export and include Realm app dependencies"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to export Realm app hosting changes as well"
+	flagIncludeHostingUsage = "Export and include Realm app hosting files"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without writing any changes to the file system"
+	flagDryRunUsage = "Run without writing any changes to the local filepath"
 
 	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagProjectUsage = "Specify the MongoDB Cloud project ID"
 
 	flagConfigVersion      = "config-version"
-	flagConfigVersionUsage = "specify the app config version to export as"
+	flagConfigVersionUsage = "Specify the app config version to export as"
 )
 
 var (

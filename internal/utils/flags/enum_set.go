@@ -11,8 +11,8 @@ import (
 
 // set of known flag types
 const (
-	TypeInt    = "int"
-	TypeString = "string"
+	TypeInt    = "Integer"
+	TypeString = "String"
 )
 
 var setMember struct{}
@@ -55,7 +55,7 @@ func (esv *EnumSetValue) Set(val string) error {
 
 // Type returns the type string of EnumSetValue
 func (esv *EnumSetValue) Type() string {
-	return "enumSet"
+	return "Set"
 }
 
 // String returns a string representation of an EnumSetValue

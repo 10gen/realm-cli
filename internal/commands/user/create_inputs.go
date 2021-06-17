@@ -15,16 +15,16 @@ import (
 
 const (
 	flagUserType      = "type"
-	flagUserTypeUsage = `select the type of user to create, available options: ["api-key", "email"]`
+	flagUserTypeUsage = `Select the type of user to create (Default value: <none>; Allowed values: <none>, "api-key", "email")`
 
 	flagEmail      = "email"
-	flagEmailUsage = "sets the email of the user to be created"
+	flagEmailUsage = "Specify the email of the new user"
 
 	flagPassword      = "password"
-	flagPasswordUsage = "sets the password of the user to be created"
+	flagPasswordUsage = "Specify the password of the new user"
 
 	flagAPIKeyName      = "name"
-	flagAPIKeyNameUsage = "sets the name of the api key to be created"
+	flagAPIKeyNameUsage = "Specify the name of the API Key"
 )
 
 // input field names, per survey

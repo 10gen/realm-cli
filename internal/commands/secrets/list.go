@@ -31,7 +31,7 @@ type listInputs struct {
 
 // Flags are the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to list its secrets")
 }
 
 // Inputs are the command inputs

@@ -26,7 +26,7 @@ type Date struct {
 
 // Type returns the date flag type
 func (d Date) Type() string {
-	return "date"
+	return "Date"
 }
 
 func (d Date) String() string {

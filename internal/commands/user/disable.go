@@ -28,7 +28,7 @@ type CommandDisable struct {
 
 // Flags is the command flags
 func (cmd *CommandDisable) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to disable its users")
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserDisableUsage)
 }
 

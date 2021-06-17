@@ -23,7 +23,7 @@ type CommandCreate struct {
 
 // Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to create its secrets")
 
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsageCreate)
 	fs.StringVarP(&cmd.inputs.Value, flagValue, flagValueShort, "", flagValueUsageCreate)

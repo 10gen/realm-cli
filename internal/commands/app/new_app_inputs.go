@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -13,35 +12,32 @@ import (
 )
 
 const (
+	flagRemoteAppNew      = "remote"
+	flagRemoteAppNewUsage = "Specify the name or ID of a remote Realm app to clone"
+
 	flagName      = "name"
 	flagNameShort = "n"
-	flagNameUsage = "set the name of the new Realm app"
-
-	flagRemoteAppNew      = "remote"
-	flagRemoteAppNewUsage = "choose an application to build the new Realm app from"
+	flagNameUsage = "Name your new Realm app"
 
 	flagDeploymentModel        = "deployment-model"
 	flagDeploymentModelShort   = "d"
+	flagDeploymentModelUsage   = `Select the Realm app's deployment model (Default value: <none>; Allowed values: <none>, "GLOBAL", "LOCAL")`
 	flagDeploymentModelDefault = realm.DeploymentModelGlobal
 
 	flagLocation        = "location"
 	flagLocationShort   = "l"
+	flagLocationUsage   = `Select the Realm app's location (Default value: <none>; Allowed values: <none>, "US-VA", "US-OR", "DE-FF", "IE", "AU", "IN-MB", "SG")`
 	flagLocationDefault = realm.LocationVirginia
 
 	flagEnvironment      = "environment"
 	flagEnvironmentShort = "e"
+	flagEnvironmentUsage = `Select the Realm app's environment (Default value: <none>; Allowed values: <none>, "development", "testing", "qa", "production")`
 
 	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagProjectUsage = "Specify the ID of a MongoDB Atlas project"
 
 	flagConfigVersion      = "config-version"
-	flagConfigVersionUsage = "the config version of the Realm app structure; defaults to latest stable config version"
-)
-
-var (
-	flagDeploymentModelUsage = fmt.Sprintf("select the Realm app's deployment model, available options: [%s]", strings.Join(realm.DeploymentModelValues, ", "))
-	flagLocationUsage        = fmt.Sprintf("select the Realm app's location, available options: [%s]", strings.Join(realm.LocationValues, ", "))
-	flagEnvironmentUsage     = fmt.Sprintf("select the Realm app's environment, available options: [%s]", strings.Join(realm.EnvironmentValues, ", "))
+	flagConfigVersionUsage = "Specify the app config version to export as"
 )
 
 type newAppInputs struct {

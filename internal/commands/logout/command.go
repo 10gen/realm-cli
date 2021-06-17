@@ -19,10 +19,7 @@ type Command struct{}
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	user := profile.Credentials()
-	user.PrivateAPIKey = "" // ensures subsequent `login` commands prompt for password
-
-	profile.SetCredentials(user)
+	profile.ClearCredentials()
 	profile.ClearSession()
 
 	if err := profile.Save(); err != nil {

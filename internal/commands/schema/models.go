@@ -39,7 +39,7 @@ type CommandDatamodels struct {
 
 // Flags is the command flags
 func (cmd *CommandDatamodels) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to generate its data models")
 
 	fs.VarP(&cmd.inputs.Language, flagModelsLanguage, flagModelsLanguageShort, flagModelsLanguageUsage)
 	fs.BoolVar(&cmd.inputs.Flat, flagModelsFlat, false, flagModelsFlatUsage)

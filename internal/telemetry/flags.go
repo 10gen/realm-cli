@@ -10,7 +10,7 @@ import (
 // set of supported telemetry flags
 const (
 	FlagMode      = "telemetry"
-	FlagModeUsage = `enable or disable telemetry (this setting is remembered), available options: ["off", "on"]`
+	FlagModeUsage = `Enable/Disable CLI usage tracking for your current profile (Default value: "on"; Allowed values: "on", "off")`
 )
 
 // Mode is the Telemetry Mode

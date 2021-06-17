@@ -48,7 +48,7 @@ func TestLogoutHandler(t *testing.T) {
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{}))
 
-		assert.Equal(t, user.Credentials{PublicAPIKey: "username"}, profile.Credentials())
+		assert.Equal(t, user.Credentials{}, profile.Credentials())
 		assert.Equal(t, user.Session{}, profile.Session())
 
 		out, err = ioutil.ReadFile(profile.Path())
@@ -56,7 +56,7 @@ func TestLogoutHandler(t *testing.T) {
 		assert.True(t, strings.Contains(string(out), fmt.Sprintf(`%s:
   access_token: ""
   private_api_key: ""
-  public_api_key: username
+  public_api_key: ""
   refresh_token: ""
 `, profile.Name)), "profile must contain the expected contents")
 	})
