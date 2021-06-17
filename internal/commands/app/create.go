@@ -101,38 +101,40 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var nonExistingDataSources []string
-
 	var dsClusters []dataSourceCluster
+	var dsClustersMissing []string
 	if len(cmd.inputs.Clusters) > 0 {
-		var nonExistingClusters []string
-		dsClusters, nonExistingClusters, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
+		dsClusters, dsClustersMissing, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
-		nonExistingDataSources = append(nonExistingDataSources, nonExistingClusters...)
 	}
 
 	var dsDatalakes []dataSourceDatalake
+	var dsDatalakesMissing []string
 	if len(cmd.inputs.Datalakes) > 0 {
-		var nonExistingDatalakes []string
-		dsDatalakes, nonExistingDatalakes, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
+		dsDatalakes, dsDatalakesMissing, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
-		nonExistingDataSources = append(nonExistingDataSources, nonExistingDatalakes...)
+	}
+
+	nonExistingDataSources := make([]string, 0, len(dsClustersMissing)+len(dsDatalakesMissing))
+	for _, missingCluster := range dsClustersMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingCluster))
+	}
+	for _, missingDatalake := range dsDatalakesMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
 	}
 
 	if len(nonExistingDataSources) > 0 {
-		ui.Print(terminal.NewWarningLog("Note: The following data sources were not linked because they could not be found: %s", strings.Join(nonExistingDataSources[:], ", ")))
-		if !ui.AutoConfirm() {
-			proceed, err := ui.Confirm("Would you still like to create the app?")
-			if err != nil {
-				return err
-			}
-			if !proceed {
-				return nil
-			}
+		ui.Print(terminal.NewWarningLog("Note: The following data sources were not linked because they could not be found: %s", strings.Join(nonExistingDataSources, ", ")))
+		proceed, err := ui.Confirm("Would you still like to create the app?")
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return nil
 		}
 	}
 

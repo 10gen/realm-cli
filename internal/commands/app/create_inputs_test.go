@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -489,7 +488,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		doneCh := make(chan (struct{}))
 		go func() {
 			defer close(doneCh)
-			console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s", strings.Join(dummyClusters[:], ", ")))
+			console.ExpectString(("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2'"))
 			console.ExpectEOF()
 		}()
 
@@ -547,7 +546,6 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			{
 				description: "and quit if not confirmed",
 				response:    "no",
-				appCreated:  false,
 			},
 			{
 				description: "and continue to create app if confirmed",
@@ -566,13 +564,13 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s", strings.Join(dummyClusters[:], ", ")))
+					console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2'")
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
 				}()
 
-				appCreated := false
+				var appCreated bool
 				rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 					appCreated = true
 					return testApp, nil
@@ -617,9 +615,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				description:  "prompt user if no cluster service names are provided",
 				clusterNames: clusterNames,
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[0]))
+					c.ExpectString("Enter a Service Name for Cluster 'Cluster0'")
 					c.SendLine(clusterServiceNames[0])
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[1]))
+					c.ExpectString("Enter a Service Name for Cluster 'Cluster1'")
 					c.SendLine(clusterServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -631,7 +629,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				clusterNames:        clusterNames,
 				clusterServiceNames: []string{clusterServiceNames[0]},
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterNames[1]))
+					c.ExpectString("Enter a Service Name for Cluster 'Cluster1'")
 					c.SendLine(clusterServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -662,7 +660,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 					ClusterServiceNames: tc.clusterServiceNames,
 				}
 
-				ds, _, _ := inputs.resolveClusters(ui, ac, "123")
+				ds, _, err := inputs.resolveClusters(ui, ac, "123")
+				assert.Nil(t, err)
+
 				assert.Equal(t, []dataSourceCluster{
 					{
 						Name: tc.expectedClusterServiceNames[0],
@@ -818,7 +818,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		doneCh := make(chan (struct{}))
 		go func() {
 			defer close(doneCh)
-			console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s", strings.Join(dummyDatalakes[:], ", ")))
+			console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-dummy-lake-1', 'test-dummy-lake-2'")
 			console.ExpectEOF()
 		}()
 
@@ -877,7 +877,6 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 			{
 				description: "and quit if not confirmed",
 				response:    "no",
-				appCreated:  false,
 			},
 			{
 				description: "and continue to create app if confirmed",
@@ -896,13 +895,13 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s", strings.Join(dummyDatalakes[:], ", ")))
+					console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-dummy-lake-1', 'test-dummy-lake-2'")
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
 				}()
 
-				appCreated := false
+				var appCreated bool
 				rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 					appCreated = true
 					return testApp, nil
@@ -947,9 +946,9 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 				description:   "prompt user if no data lake service names are provided",
 				datalakeNames: datalakeNames,
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeNames[0]))
+					c.ExpectString("Enter a Service Name for Data Lake 'Datalake0'")
 					c.SendLine(datalakeServiceNames[0])
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeNames[1]))
+					c.ExpectString("Enter a Service Name for Data Lake 'Datalake1'")
 					c.SendLine(datalakeServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -961,7 +960,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 				datalakeNames:        datalakeNames,
 				datalakeServiceNames: []string{datalakeServiceNames[0]},
 				procedure: func(c *expect.Console) {
-					c.ExpectString(fmt.Sprintf("Enter a Service Name for Data Lake '%s'", datalakeNames[1]))
+					c.ExpectString("Enter a Service Name for Data Lake 'Datalake1'")
 					c.SendLine(datalakeServiceNames[1])
 					c.ExpectEOF()
 				},
@@ -994,6 +993,8 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 				}
 
 				ds, _, _ := inputs.resolveDatalakes(ui, ac, "123")
+				assert.Nil(t, err)
+
 				assert.Equal(t, []dataSourceDatalake{
 					{
 						Name: tc.expectedDatalakeServiceNames[0],

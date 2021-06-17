@@ -17,9 +17,9 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/Netflix/go-expect"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestAppCreateHandler(t *testing.T) {
@@ -620,7 +620,7 @@ func TestAppCreateHandler(t *testing.T) {
 		{
 			description:         "should create minimal project with multiple cluster data sources when clusters are set",
 			clusters:            []string{"test-cluster", "test-cluster-2"},
-			clusterServiceNames: []string{"mongodb-atlas", "mongodb-atlas"},
+			clusterServiceNames: []string{"mongodb-atlas-1", "mongodb-atlas-2"},
 			atlasClient: mock.AtlasClient{
 				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 					return []atlas.Cluster{{Name: "test-cluster"}, {Name: "test-cluster-2"}}, nil
@@ -1132,7 +1132,6 @@ func TestAppCreateHandler(t *testing.T) {
 			{
 				description: "and quit if not confirmed",
 				response:    "no",
-				appCreated:  false,
 			},
 			{
 				description: "and continue to create app if confirmed",
@@ -1151,14 +1150,13 @@ func TestAppCreateHandler(t *testing.T) {
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString(fmt.Sprintf("Note: The following data sources were not linked because they could not be found: %s, %s, %s, %s",
-						dummyClusters[0], dummyClusters[1], dummyDatalakes[0], dummyDatalakes[1]))
+					console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2', 'test-dummy-lake-1', 'test-dummy-lake-2'")
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
 				}()
 
-				appCreated := false
+				var appCreated bool
 				rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 					appCreated = true
 					return testApp, nil
