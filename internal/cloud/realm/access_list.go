@@ -22,7 +22,7 @@ type AccessList struct {
 type AllowedIP struct {
 	ID                string `json:"_id"`
 	IPAddress         string `json:"ip_address"`
-	Comment           string `json:"comment"`
+	Comment           string `json:"comment,omitempty"`
 	IncludesCurrentIP bool   `json:"includes_current_ip"`
 }
 
@@ -51,12 +51,11 @@ func (c *client) AllowedIPs(groupID, appID string) (AccessList, error) {
 
 type allowedIPsPayload struct {
 	IPAddress  string `json:"ip_address"`
-	Comment    string `json:"comment"`
-	UseCurrent bool   `json:"use_current"`
-	AllowAll   bool   `json:"allow_all"`
+	Comment    string `json:"comment,omitempty"`
+	UseCurrent bool   `json:"use_current,omitempty"`
 }
 
-func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent, allowAll bool) (AllowedIP, error) {
+func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
@@ -64,7 +63,6 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 			ipAddress,
 			comment,
 			useCurrent,
-			allowAll,
 		},
 		api.RequestOptions{},
 	)
@@ -109,7 +107,6 @@ func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comm
 		allowedIPsPayload{
 			newIPAddress,
 			comment,
-			false,
 			false,
 		},
 		api.RequestOptions{},

@@ -62,7 +62,7 @@ type RealmClient struct {
 	SchemaModelsFn func(groupID, appID, language string) ([]realm.SchemaModel, error)
 
 	AllowedIPsFn      func(groupID, appID string) (realm.AccessList, error)
-	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent, allowAll bool) (realm.AllowedIP, error)
+	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error)
 	AllowedIPDeleteFn func(groupID, appID, allowedIPID string) error
 	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newIPAddress, comment string) error
 
@@ -462,11 +462,11 @@ func (rc RealmClient) AllowedIPs(groupID, appID string) (realm.AccessList, error
 // AllowedIPCreate calls the mocked AllowedIPs implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent, allowAll bool) (realm.AllowedIP, error) {
+func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error) {
 	if rc.AllowedIPCreateFn != nil {
-		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent, allowAll)
+		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent)
 	}
-	return rc.Client.AllowedIPCreate(groupID, appID, ipAddress, comment, useCurrent, allowAll)
+	return rc.Client.AllowedIPCreate(groupID, appID, ipAddress, comment, useCurrent)
 }
 
 // AllowedIPDelete calls the mocked AllowedIPs implementation if provided,

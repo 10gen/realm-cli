@@ -52,7 +52,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	allowedIP, err := clients.Realm.AllowedIPCreate(app.GroupID, app.ID, cmd.inputs.IPAddress, cmd.inputs.Comment, cmd.inputs.UseCurrent, cmd.inputs.AllowAll)
+	if cmd.inputs.AllowAll {
+		cmd.inputs.IPAddress = "0.0.0.0"
+	}
+
+	allowedIP, err := clients.Realm.AllowedIPCreate(app.GroupID, app.ID, cmd.inputs.IPAddress, cmd.inputs.Comment, cmd.inputs.UseCurrent)
 	if err != nil {
 		return err
 	}
