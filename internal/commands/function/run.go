@@ -34,7 +34,7 @@ type CommandRun struct {
 
 // Flags is the command flags
 func (cmd *CommandRun) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to run its function")
 
 	fs.StringVar(&cmd.inputs.Name, flagFunctionName, "", flagFunctionNameUsage)
 	fs.StringArrayVar(&cmd.inputs.Args, flagFunctionArgs, nil, flagFunctionArgsUsage)

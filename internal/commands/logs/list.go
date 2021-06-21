@@ -40,7 +40,7 @@ type CommandList struct {
 
 // Flags is the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to list its logs")
 
 	fs.Var(flags.NewEnumSet(&cmd.inputs.Types, allLogTypes), flagType, flagTypeUsage)
 	fs.BoolVar(&cmd.inputs.Errors, flagErrors, false, flagErrorsUsage)
@@ -64,7 +64,7 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 	}
 
 	opts := realm.LogsOptions{
-		Types:      cmd.inputs.Types,
+		Types:      cmd.inputs.logTypes(),
 		ErrorsOnly: cmd.inputs.Errors,
 	}
 	if !cmd.inputs.Tail {

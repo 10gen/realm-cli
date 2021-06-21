@@ -8,10 +8,10 @@ import (
 
 const (
 	flagPublicAPIKey      = "api-key"
-	flagPublicAPIKeyUsage = "the public key of your programmatic API Key"
+	flagPublicAPIKeyUsage = "Specify the public portion of your Atlas programmatic API Key"
 
 	flagPrivateAPIKey      = "private-api-key"
-	flagPrivateAPIKeyUsage = "the private key of your programmatic API Key"
+	flagPrivateAPIKeyUsage = "Specify the private portion of your Atlas programmatic API Key"
 
 	inputFieldPublicAPIKey  = "publicAPIKey"
 	inputFieldPrivateAPIKey = "privateAPIKey"
@@ -30,7 +30,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		if user.PublicAPIKey == "" {
 			questions = append(questions, &survey.Question{
 				Name:   inputFieldPublicAPIKey,
-				Prompt: &survey.Input{Message: "API Key", Default: user.PublicAPIKey},
+				Prompt: &survey.Input{Message: "Public API Key", Default: user.PublicAPIKey},
 			})
 		} else {
 			i.PublicAPIKey = user.PublicAPIKey

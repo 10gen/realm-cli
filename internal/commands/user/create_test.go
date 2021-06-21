@@ -3,7 +3,6 @@ package user
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -44,13 +43,14 @@ func TestUserCreateHandler(t *testing.T) {
 		cmd := &CommandCreate{createInputs{UserType: userTypeEmailPassword}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, strings.Join([]string{
-			"Successfully created user",
-			"  ID                        Enabled  Email            Type  ",
-			"  ------------------------  -------  ---------------  ------",
-			fmt.Sprintf("  %s  true     user@domain.com  normal", id),
-			"",
-		}, "\n"), out.String())
+		assert.Equal(t, fmt.Sprintf(`Successfully created user
+{
+  "id": %q,
+  "enabled": true,
+  "email": "user@domain.com",
+  "type": "normal"
+}
+`, id), out.String())
 	})
 
 	t.Run("should create an api key when apiKey type is set", func(t *testing.T) {
@@ -67,13 +67,14 @@ func TestUserCreateHandler(t *testing.T) {
 		cmd := &CommandCreate{createInputs{UserType: userTypeAPIKey}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, strings.Join([]string{
-			"Successfully created api key",
-			"  ID                        Enabled  Name  API Key",
-			"  ------------------------  -------  ----  -------",
-			fmt.Sprintf("  %s  true     name  key    ", id),
-			"",
-		}, "\n"), out.String())
+		assert.Equal(t, fmt.Sprintf(`Successfully created api key
+{
+  "id": %q,
+  "enabled": true,
+  "name": "name",
+  "key": "key"
+}
+`, id), out.String())
 	})
 
 	t.Run("should return an error", func(t *testing.T) {

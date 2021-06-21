@@ -5,7 +5,6 @@ import (
 )
 
 const (
-	headerAPIKey                 = "API Key"
 	headerEmail                  = "Email"
 	headerEnabled                = "Enabled"
 	headerID                     = "ID"
@@ -16,6 +15,23 @@ const (
 	headerDetails                = "Details"
 	headerRevoked                = "Session Revoked"
 )
+
+type newUserOutputs struct {
+	ID      string `json:"id"`
+	Enabled bool   `json:"enabled"`
+}
+
+type newUserAPIKeyOutputs struct {
+	newUserOutputs
+	Name string `json:"name"`
+	Key  string `json:"key"`
+}
+
+type newUserEmailOutputs struct {
+	newUserOutputs
+	Email interface{} `json:"email"`
+	Type  string      `json:"type"`
+}
 
 type userOutputs []userOutput
 

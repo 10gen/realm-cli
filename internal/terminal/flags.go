@@ -11,18 +11,18 @@ import (
 const (
 	FlagAutoConfirm      = "yes"
 	FlagAutoConfirmShort = "y"
-	FlagAutoConfirmUsage = "set to automatically proceed through command confirmations"
+	FlagAutoConfirmUsage = "Automatically proceed through CLI commands by agreeing to any required user prompts"
 
 	FlagDisableColors      = "disable-colors"
-	FlagDisableColorsUsage = "disable output styling"
+	FlagDisableColorsUsage = "Disable all CLI output styling (e.g. colors, font styles, etc.)"
 
 	FlagOutputFormat      = "output-format"
 	FlagOutputFormatShort = "f"
-	FlagOutputFormatUsage = "set the output format, available options: [json]"
+	FlagOutputFormatUsage = `Set the CLI output format (Default value: <blank>; Allowed values: <blank>, "json")`
 
 	FlagOutputTarget      = "output-target"
 	FlagOutputTargetShort = "o"
-	FlagOutputTargetUsage = "write output to the specified filepath"
+	FlagOutputTargetUsage = "Write CLI output to the specified filepath"
 )
 
 // DelimiterInline is the preferred inline delimiter when presenting information

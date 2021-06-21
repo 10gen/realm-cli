@@ -2,6 +2,9 @@ package app
 
 import (
 	"fmt"
+	"path"
+	"strings"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -10,7 +13,13 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
+	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
+)
+
+const (
+	backendPath  = "backend"
+	frontendPath = "frontend"
 )
 
 // CommandMetaCreate is the command meta for the `app create` command
@@ -35,14 +44,17 @@ type CommandCreate struct {
 
 // Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
+	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppNew, "", flagRemoteAppNewUsage)
 	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathCreate, "", flagLocalPathCreateUsage)
 	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppNew, "", flagRemoteAppNewUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-	fs.StringVar(&cmd.inputs.Cluster, flagCluster, "", flagClusterUsage)
-	fs.StringVar(&cmd.inputs.DataLake, flagDataLake, "", flagDataLakeUsage)
+	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
+	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
+	fs.StringSliceVar(&cmd.inputs.Datalakes, flagDatalake, []string{}, flagDatalakeUsage)
+	fs.StringSliceVar(&cmd.inputs.DatalakeServiceNames, flagDatalakeServiceName, []string{}, flagDatalakeServiceNameUsage)
+	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
@@ -64,57 +76,96 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	var groupID = cmd.inputs.Project
-	if appRemote.IsZero() {
-		if groupID == "" {
-			id, err := cli.ResolveGroupID(ui, clients.Atlas)
-			if err != nil {
-				return err
-			}
-			groupID = id
-		}
-	} else {
+	groupID := cmd.inputs.Project
+	if groupID == "" {
 		groupID = appRemote.GroupID
 	}
-
-	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote)
-	if err != nil {
-		return err
-	}
-
-	dir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
-	if err != nil {
-		return err
-	}
-
-	var dsCluster dataSourceCluster
-	if cmd.inputs.Cluster != "" {
-		dsCluster, err = cmd.inputs.resolveCluster(clients.Atlas, groupID)
+	if groupID == "" {
+		groupID, err = cli.ResolveGroupID(ui, clients.Atlas)
 		if err != nil {
 			return err
 		}
 	}
 
-	var dsDataLake dataSourceDataLake
-	if cmd.inputs.DataLake != "" {
-		dsDataLake, err = cmd.inputs.resolveDataLake(clients.Atlas, groupID)
+	err = cmd.inputs.resolveName(ui, clients.Realm, appRemote.GroupID, appRemote.ClientAppID)
+	if err != nil {
+		return err
+	}
+
+	rootDir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
+		return err
+	}
+
+	var dsClusters []dataSourceCluster
+	var dsClustersMissing []string
+	if len(cmd.inputs.Clusters) > 0 {
+		dsClusters, dsClustersMissing, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 		if err != nil {
 			return err
 		}
+	}
+
+	var dsDatalakes []dataSourceDatalake
+	var dsDatalakesMissing []string
+	if len(cmd.inputs.Datalakes) > 0 {
+		dsDatalakes, dsDatalakesMissing, err = cmd.inputs.resolveDatalakes(ui, clients.Atlas, groupID)
+		if err != nil {
+			return err
+		}
+	}
+
+	nonExistingDataSources := make([]string, 0, len(dsClustersMissing)+len(dsDatalakesMissing))
+	for _, missingCluster := range dsClustersMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingCluster))
+	}
+	for _, missingDatalake := range dsDatalakesMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
+	}
+
+	if len(nonExistingDataSources) > 0 {
+		ui.Print(terminal.NewWarningLog("Note: The following data sources were not linked because they could not be found: %s", strings.Join(nonExistingDataSources, ", ")))
+		proceed, err := ui.Confirm("Would you still like to create the app?")
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return nil
+		}
+	}
+
+	// If using a template, we nest backendDir under rootDir and export the
+	// backend code there alongside a sibling directory containing the frontend
+	// code. Otherwise, all code is exported in rootDir
+	backendDir := rootDir
+	if cmd.inputs.Template != "" {
+		backendDir = path.Join(rootDir, backendPath)
 	}
 
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
-		if appRemote.IsZero() {
-			logs = append(logs, terminal.NewTextLog("A minimal Realm app would be created at %s", dir))
+		var appCreatedText string
+		if appRemote.GroupID == "" && appRemote.ID == "" {
+			appCreatedText = fmt.Sprintf("A minimal Realm app would be created at %s", backendDir)
 		} else {
-			logs = append(logs, terminal.NewTextLog("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, dir))
+			appCreatedText = fmt.Sprintf("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, backendDir)
 		}
-		if dsCluster.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Cluster, dsCluster.Name))
+
+		if cmd.inputs.Template != "" {
+			appCreatedText = fmt.Sprintf("%s using the '%s' template", appCreatedText, cmd.inputs.Template)
 		}
-		if dsDataLake.Name != "" {
-			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.DataLake, dsDataLake.Name))
+
+		logs = append(logs, terminal.NewTextLog(appCreatedText))
+
+		for i, cluster := range dsClusters {
+			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
+		}
+		for i, datalake := range dsDatalakes {
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.Datalakes[i], datalake.Name))
 		}
 		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
 		ui.Print(logs...)
@@ -124,7 +175,12 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	appRealm, err := clients.Realm.CreateApp(
 		groupID,
 		cmd.inputs.Name,
-		realm.AppMeta{cmd.inputs.Location, cmd.inputs.DeploymentModel, cmd.inputs.Environment},
+		realm.AppMeta{
+			cmd.inputs.Location,
+			cmd.inputs.DeploymentModel,
+			cmd.inputs.Environment,
+			cmd.inputs.Template,
+		},
 	)
 	if err != nil {
 		return err
@@ -132,9 +188,9 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	var appLocal local.App
 
-	if appRemote.IsZero() {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
-			dir,
+			backendDir,
 			appRealm.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
@@ -150,22 +206,53 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	} else {
 		_, zipPkg, err := clients.Realm.Export(
 			appRemote.GroupID,
-			appRemote.AppID,
+			appRemote.ID,
 			realm.ExportRequest{},
 		)
 		if err != nil {
 			return err
 		}
-		if err := local.WriteZip(dir, zipPkg); err != nil {
+
+		if err := local.WriteZip(backendDir, zipPkg); err != nil {
 			return err
 		}
-		appLocal, err = local.LoadApp(dir)
+
+		appLocal, err = local.LoadApp(backendDir)
 		if err != nil {
 			return err
 		}
 	}
 
-	if dsCluster.Name != "" {
+	if cmd.inputs.Template != "" {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Downloading client template..."
+
+		downloadAndWriteClient := func() error {
+			s.Start()
+			defer s.Stop()
+
+			zipPkg, err := clients.Realm.ClientTemplate(
+				appRealm.GroupID,
+				appRealm.ID,
+				cmd.inputs.Template,
+			)
+			if err != nil {
+				return err
+			}
+
+			if err := local.WriteZip(path.Join(rootDir, frontendPath), zipPkg); err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if err := downloadAndWriteClient(); err != nil {
+			return err
+		}
+	}
+
+	for _, dsCluster := range dsClusters {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsCluster.Name,
 			"type": dsCluster.Type,
@@ -175,13 +262,15 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
 			},
 		})
+
 	}
-	if dsDataLake.Name != "" {
+
+	for _, dsDatalake := range dsDatalakes {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
-			"name": dsDataLake.Name,
-			"type": dsDataLake.Type,
+			"name": dsDatalake.Name,
+			"type": dsDatalake.Type,
 			"config": map[string]interface{}{
-				"dataLakeName": dsDataLake.Config.DataLakeName,
+				"dataLakeName": dsDatalake.Config.DatalakeName,
 			},
 		})
 	}
@@ -198,19 +287,21 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	headers := []string{"Info", "Details"}
-	rows := make([]map[string]interface{}, 0, 5)
-	rows = append(rows, map[string]interface{}{"Info": "Client App ID", "Details": appRealm.ClientAppID})
-	rows = append(rows, map[string]interface{}{"Info": "Realm Directory", "Details": dir})
-	rows = append(rows, map[string]interface{}{"Info": "Realm UI", "Details": fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID)})
-	if dsCluster.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Cluster)", "Details": dsCluster.Name})
-	}
-	if dsDataLake.Name != "" {
-		rows = append(rows, map[string]interface{}{"Info": "Data Source (Data Lake)", "Details": dsDataLake.Name})
+	output := newAppOutputs{
+		AppID:    appRealm.ClientAppID,
+		Filepath: backendDir,
+		URL:      fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
 	}
 
-	ui.Print(terminal.NewTableLog("Successfully created app", headers, rows...))
+	for _, dsCluster := range dsClusters {
+		output.Clusters = append(output.Clusters, dataSourceOutputs{dsCluster.Name})
+	}
+
+	for _, dsDatalake := range dsDatalakes {
+		output.Datalakes = append(output.Datalakes, dataSourceOutputs{dsDatalake.Name})
+	}
+
+	ui.Print(terminal.NewJSONLog("Successfully created app", output))
 	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
 	return nil
 }

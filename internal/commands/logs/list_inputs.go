@@ -14,19 +14,19 @@ import (
 
 const (
 	flagType      = "type"
-	flagTypeUsage = "specify the type(s) of logs to list, available options: [auth, function, push, service, trigger, graphql, sync, schema]"
+	flagTypeUsage = `Specify the type(s) of logs to list (Default value: <none>; Allowed values: "auth", "function", "push", "service", "trigger", "graphql", "sync", "schema")`
 
 	flagErrors      = "errors"
-	flagErrorsUsage = "specify to view only error logs"
+	flagErrorsUsage = "View your Realm app's error logs"
 
 	flagStartDate      = "start"
-	flagStartDateUsage = "specify the start date to begin listing logs from"
+	flagStartDateUsage = `Specify when to begin listing logs (Allowed format: "2006-01-02[T15:04:05.000-0700]") [Learn more: https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range]`
 
 	flagEndDate      = "end"
-	flagEndDateUsage = "specify the end date to finish listing logs from"
+	flagEndDateUsage = `Specify when to finish listing logs (Allowed format: "2006-01-02[T15:04:05.000-0700]") [Learn more: https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range]`
 
 	flagTail      = "tail"
-	flagTailUsage = "specify to view logs in real-time (note: start and end dates are ignored here)"
+	flagTailUsage = `View your Realm app's logs in real-time (Note: "--start" and "--end" flags do not apply here)`
 )
 
 type listInputs struct {

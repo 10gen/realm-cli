@@ -66,6 +66,9 @@ type RealmClient struct {
 	AllowedIPDeleteFn func(groupID, appID, allowedIPID string) error
 	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newIPAddress, comment string) error
 
+	TemplatesFn      func() ([]realm.Template, error)
+	ClientTemplateFn func(groupID, appID, templateID string) (*zip.Reader, error)
+
 	StatusFn func() error
 }
 
@@ -487,6 +490,25 @@ func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress,
 		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newIPAddress, comment)
 	}
 	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment)
+
+// Templates calls the mocked Templates implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) Templates() ([]realm.Template, error) {
+	if rc.TemplatesFn != nil {
+		return rc.TemplatesFn()
+	}
+	return rc.Client.Templates()
+}
+
+// ClientTemplate calls the mocked ClientTemplate implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error) {
+	if rc.ClientTemplateFn != nil {
+		return rc.ClientTemplateFn(groupID, appID, templateID)
+	}
+	return rc.Client.ClientTemplate(groupID, appID, templateID)
 }
 
 // Status calls the mocked Status implementation if provided,

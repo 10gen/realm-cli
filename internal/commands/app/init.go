@@ -34,8 +34,8 @@ type CommandInit struct {
 
 // Flags is the command flags
 func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
-	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppNew, "", flagRemoteAppNewUsage)
+	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
 	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
 	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
 	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
@@ -59,12 +59,12 @@ func (cmd *CommandInit) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if appRemote.IsZero() {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		if err := cmd.writeAppFromScratch(profile.WorkingDirectory); err != nil {
 			return err
 		}
 	} else {
-		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.AppID); err != nil {
+		if err := cmd.writeAppFromExisting(profile.WorkingDirectory, clients.Realm, appRemote.GroupID, appRemote.ID); err != nil {
 			return err
 		}
 	}

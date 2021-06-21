@@ -21,6 +21,7 @@ type AppMeta struct {
 	Location        Location        `json:"location,omitempty"`
 	DeploymentModel DeploymentModel `json:"deployment_model,omitempty"`
 	Environment     Environment     `json:"environment,omitempty"`
+	Template        string          `json:"template_id,omitempty"`
 }
 
 // App is a Realm application

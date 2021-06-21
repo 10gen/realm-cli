@@ -29,7 +29,7 @@ func (cmd *CommandUpdate) Inputs() cli.InputResolver {
 
 // Flags function for the secrets update command
 func (cmd *CommandUpdate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to update its secrets")
 	fs.StringVarP(&cmd.inputs.secret, flagSecret, flagSecretShort, "", flagSecretUsageUpdate)
 	fs.StringVarP(&cmd.inputs.name, flagName, flagNameShort, "", flagNameUsageUpdate)
 	fs.StringVarP(&cmd.inputs.value, flagValue, flagValueShort, "", flagValueUsageUpdate)

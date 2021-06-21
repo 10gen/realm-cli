@@ -26,7 +26,7 @@ type CommandCreate struct {
 
 // Flags is the command flags
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to create its users")
 
 	fs.Var(&cmd.inputs.UserType, flagUserType, flagUserTypeUsage)
 	fs.StringVar(&cmd.inputs.APIKeyName, flagAPIKeyName, "", flagAPIKeyNameUsage)
@@ -53,14 +53,15 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 			return fmt.Errorf("failed to create api key: %s", err)
 		}
 
-		ui.Print(terminal.NewTableLog(
+		ui.Print(terminal.NewJSONLog(
 			"Successfully created api key",
-			[]string{headerID, headerEnabled, headerName, headerAPIKey},
-			map[string]interface{}{
-				headerID:      apiKey.ID,
-				headerEnabled: !apiKey.Disabled,
-				headerName:    apiKey.Name,
-				headerAPIKey:  apiKey.Key,
+			newUserAPIKeyOutputs{
+				newUserOutputs: newUserOutputs{
+					ID:      apiKey.ID,
+					Enabled: !apiKey.Disabled,
+				},
+				Name: apiKey.Name,
+				Key:  apiKey.Key,
 			},
 		))
 	case userTypeEmailPassword:
@@ -69,14 +70,15 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 			return fmt.Errorf("failed to create user: %s", err)
 		}
 
-		ui.Print(terminal.NewTableLog(
+		ui.Print(terminal.NewJSONLog(
 			"Successfully created user",
-			[]string{headerID, headerEnabled, headerEmail, headerType},
-			map[string]interface{}{
-				headerID:      user.ID,
-				headerEnabled: !user.Disabled,
-				headerEmail:   user.Data["email"],
-				headerType:    user.Type,
+			newUserEmailOutputs{
+				newUserOutputs: newUserOutputs{
+					ID:      user.ID,
+					Enabled: !user.Disabled,
+				},
+				Email: user.Data["email"],
+				Type:  user.Type,
 			},
 		))
 	}

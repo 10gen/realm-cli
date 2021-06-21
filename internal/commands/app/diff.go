@@ -42,21 +42,21 @@ type diffInputs struct {
 
 const (
 	flagLocalPathDiff      = "local"
-	flagLocalPathDiffUsage = "the local path to a Realm app to diff"
+	flagLocalPathDiffUsage = "Specify the local filepath of a Realm app to diff"
 
 	flagRemoteAppDiff      = "remote"
-	flagRemoteAppDiffUsage = "a remote Realm app (id or name) to diff changes from"
+	flagRemoteAppDiffUsage = "Specify the name or ID of a Realm app to diff"
 
 	flagProjectDiff      = "project"
-	flagProjectDiffUsage = "the MongoDB cloud project id"
+	flagProjectDiffUsage = "Specify the ID of a MongoDB Atlas project"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to diff Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "Include Realm app dependencies in the diff"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to diff Realm app hosting changes as well"
+	flagIncludeHostingUsage = "Include Realm app hosting files in the diff"
 )
 
 // Flags is the command flags

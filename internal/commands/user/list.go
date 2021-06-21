@@ -35,7 +35,7 @@ type listInputs struct {
 
 // Flags is the command flags
 func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to list its users")
 
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserListUsage)
 	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)

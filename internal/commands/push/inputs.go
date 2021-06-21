@@ -11,29 +11,29 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "the local path to a Realm app to import"
+	flagLocalPathUsage = "Specify the local filepath of a Realm app to be imported"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "a remote Realm app (id or name) to push changes to"
+	flagRemoteUsage = "Specify the name or ID of a remote Realm app to edit"
 
 	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagProjectUsage = "Specify the MongoDB Cloud project ID"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to import Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "Import and include Realm app dependencies"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to import Realm app hosting changes as well"
+	flagIncludeHostingUsage = "Import and include Realm app hosting files"
 
 	flagResetCDNCache      = "reset-cdn-cache"
 	flagResetCDNCacheShort = "c"
-	flagResetCDNCacheUsage = "include to reset the Realm app hosting CDN cache"
+	flagResetCDNCacheUsage = "Reset the hosting CDN cache of a Realm app"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without pushing any changes to the Realm server"
+	flagDryRunUsage = "Run without pushing any changes to the Realm server"
 )
 
 type appRemote struct {

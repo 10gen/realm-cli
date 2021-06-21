@@ -22,7 +22,7 @@ func TestMode(t *testing.T) {
 	}
 
 	t.Run("Should have the correct type representation", func(t *testing.T) {
-		assert.Equal(t, "string", ModeOn.Type())
+		assert.Equal(t, "String", ModeOn.Type())
 	})
 
 	t.Run("Should set its value correctly with a valid output format", func(t *testing.T) {

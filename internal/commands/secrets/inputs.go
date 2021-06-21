@@ -4,16 +4,16 @@ package secrets
 const (
 	flagName            = "name"
 	flagNameShort       = "n"
-	flagNameUsageCreate = "the name of the secret"
-	flagNameUsageUpdate = "the new name of the secret"
+	flagNameUsageCreate = "Name the secret"
+	flagNameUsageUpdate = "Re-name the secret"
 
 	flagValue            = "value"
 	flagValueShort       = "v"
-	flagValueUsageCreate = "the value of the secret"
-	flagValueUsageUpdate = "the new value of the secret"
+	flagValueUsageCreate = "Specify the secret value"
+	flagValueUsageUpdate = "Specify the new secret value"
 
 	flagSecret            = "secret"
 	flagSecretShort       = "s"
-	flagSecretUsageUpdate = "the name or id of the secret to update"
-	flagSecretUsageDelete = "the name or id of the secret to delete"
+	flagSecretUsageUpdate = "Specify the name or ID of the secret to update"
+	flagSecretUsageDelete = "Speicfy the name or ID of the secret to delete"
 )

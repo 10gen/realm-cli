@@ -27,8 +27,9 @@ const (
 
 // set of supported CLI user profile flags
 const (
-	FlagProfile      = "profile"
-	FlagProfileUsage = "specify the profile name to use"
+	FlagProfile = "profile"
+	// TODO(REALMC-9249): add "[Learn more: http://docs.link]"
+	FlagProfileUsage = `Specify your profile (Default value: "default")`
 
 	FlagAtlasBaseURL      = "atlas-url"
 	FlagAtlasBaseURLUsage = "specify the base Atlas server URL"
@@ -207,6 +208,12 @@ func (p Profile) Credentials() Credentials {
 func (p Profile) SetCredentials(creds Credentials) {
 	p.SetString(keyPublicAPIKey, creds.PublicAPIKey)
 	p.SetString(keyPrivateAPIKey, creds.PrivateAPIKey)
+}
+
+// ClearCredentials clears the CLI profile credentials
+func (p Profile) ClearCredentials() {
+	p.Clear(keyPublicAPIKey)
+	p.Clear(keyPrivateAPIKey)
 }
 
 // Session gets the CLI profile session

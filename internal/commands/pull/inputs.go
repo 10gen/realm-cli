@@ -14,28 +14,28 @@ import (
 
 const (
 	flagLocalPath      = "local"
-	flagLocalPathUsage = "specify the local path to export a Realm app to"
+	flagLocalPathUsage = "Specify a local filepath to export a Realm app to"
 
 	flagRemote      = "remote"
-	flagRemoteUsage = "specify the remote app to pull changes down from"
+	flagRemoteUsage = "Specify the name or ID of a remote Realm app to export"
 
 	flagIncludeDependencies      = "include-dependencies"
 	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "include to to export Realm app dependencies changes as well"
+	flagIncludeDependenciesUsage = "Export and include Realm app dependencies"
 
 	flagIncludeHosting      = "include-hosting"
 	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "include to export Realm app hosting changes as well"
+	flagIncludeHostingUsage = "Export and include Realm app hosting files"
 
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
-	flagDryRunUsage = "include to run without writing any changes to the file system"
+	flagDryRunUsage = "Run without writing any changes to the local filepath"
 
 	flagProject      = "project"
-	flagProjectUsage = "the MongoDB cloud project id"
+	flagProjectUsage = "Specify the MongoDB Cloud project ID"
 
 	flagConfigVersion      = "config-version"
-	flagConfigVersionUsage = "specify the app config version to export as"
+	flagConfigVersionUsage = "Specify the app config version to export as"
 )
 
 var (
@@ -90,26 +90,22 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-type appRemote struct {
-	GroupID string
-	AppID   string
-}
-
-func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
-	r := appRemote{GroupID: i.Project}
-	if i.RemoteApp == "" {
-		return r, nil
+func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.App, error) {
+	if i.Project == "" {
+		groupID, err := cli.ResolveGroupID(ui, clients.Atlas)
+		if err != nil {
+			return realm.App{}, err
+		}
+		i.Project = groupID
 	}
 
-	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
+	app, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); ok {
-			return appRemote{}, errProjectNotFound{}
+			return realm.App{}, errProjectNotFound{}
 		}
-		return appRemote{}, err
+		return realm.App{}, err
 	}
 
-	r.GroupID = app.GroupID
-	r.AppID = app.ID
-	return r, nil
+	return app, nil
 }

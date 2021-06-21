@@ -33,7 +33,7 @@ type enableInputs struct {
 
 // Flags is the command flags
 func (cmd *CommandEnable) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs)
+	cmd.inputs.Flags(fs, "to enable its users")
 	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserEnableUsage)
 }
 
