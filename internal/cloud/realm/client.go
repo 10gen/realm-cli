@@ -72,6 +72,7 @@ type Client interface {
 
 	Templates() ([]Template, error)
 	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
+	CompatibleTemplates(groupID, appID string) ([]Template, error)
 
 	Status() error
 }

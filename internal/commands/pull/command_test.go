@@ -317,6 +317,112 @@ Successfully pulled app down: app
 		assert.Nil(t, err)
 		assert.Equal(t, "<html><body>hello world!</body></html>", string(modifiedData))
 	})
+
+	t.Run("with a template ID to export with", func(t *testing.T) {
+		// Needs to have a successful export for templates
+		zipPkg, err := zip.OpenReader("testdata/test.zip")
+		assert.Nil(t, err)
+		defer zipPkg.Close()
+
+		var realmClient mock.RealmClient
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
+		}
+		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "app_20210101", &zipPkg.Reader, nil
+		}
+
+		templateZipPkg, err := zip.OpenReader("testdata/template.zip")
+		assert.Nil(t, err)
+		defer templateZipPkg.Close()
+
+		for _, tc := range []struct {
+			pathDescription string
+			paths           []string
+		}{
+			{
+				pathDescription: "with frontend path selected",
+				paths:           []string{frontendPath},
+			},
+			{
+				pathDescription: "with backend path selected",
+				paths:           []string{backendPath},
+			},
+			{
+				pathDescription: "with both paths selected",
+				paths:           []string{frontendPath, backendPath},
+			},
+		} {
+			t.Run(tc.pathDescription, func(t *testing.T) {
+				t.Run("should successfully save the template to the destination and display a message", func(t *testing.T) {
+					realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+						return []realm.Template{
+							{"some-template-id", "some name"},
+							{"some-other-template-id", "some other name"},
+						}, nil
+					}
+					realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+						return &templateZipPkg.Reader, nil
+					}
+
+					profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_with_template_test")
+					defer teardown()
+
+					_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+					assert.Nil(t, consoleErr)
+					defer console.Close()
+
+					doneCh := make(chan struct{})
+					go func() {
+						defer close(doneCh)
+						console.ExpectString("Where would you like to export the template?")
+						for _, path := range tc.paths {
+							console.Send(path)
+							console.Send(" ")
+						}
+						console.SendLine("")
+						console.ExpectEOF()
+					}()
+
+					cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+					assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+
+					for _, path := range tc.paths {
+						destination := filepath.Join(profile.WorkingDirectory, "app", path)
+
+						_, err := os.Stat(destination)
+						assert.Nil(t, err)
+
+						testData, readErr := ioutil.ReadFile(filepath.Join(destination, "template.json"))
+						assert.Nil(t, readErr)
+						assert.Equal(t, `{
+  "egg": "over easy",
+  "pancake": "blueberry",
+  "toast": "french"
+}`, string(testData))
+					}
+				})
+			})
+		}
+
+		t.Run("should return an error if resolving the template returns an error", func(t *testing.T) {
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+				return nil, errors.New("some kind of error")
+			}
+
+			profile, teardown := mock.NewProfileFromTmpDir(t, "should_fail")
+			defer teardown()
+
+			out := new(bytes.Buffer)
+			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+
+			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+			assert.Equal(t, "some kind of error", err.Error())
+		})
+	})
 }
 
 func TestPullCommandDoExport(t *testing.T) {
@@ -397,7 +503,7 @@ func TestPullCommandCheckAppDestination(t *testing.T) {
 	t.Run("should return true early if auto confirm is on", func(*testing.T) {
 		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, new(bytes.Buffer))
 
-		ok, err := checkAppDestination(ui, "")
+		ok, err := checkPathDestination(ui, "")
 		assert.Nil(t, err)
 		assert.True(t, ok, "should be ok")
 	})
@@ -405,7 +511,7 @@ func TestPullCommandCheckAppDestination(t *testing.T) {
 	t.Run("should return true early if the path does not exist", func(t *testing.T) {
 		_, ui := mock.NewUI()
 
-		ok, err := checkAppDestination(ui, "./not_a_directory")
+		ok, err := checkPathDestination(ui, "./not_a_directory")
 		assert.Nil(t, err)
 		assert.True(t, ok, "should be ok")
 	})
@@ -421,7 +527,7 @@ func TestPullCommandCheckAppDestination(t *testing.T) {
 
 		_, ui := mock.NewUI()
 
-		ok, err := checkAppDestination(ui, filepath.Join(tmpDir, "project"))
+		ok, err := checkPathDestination(ui, filepath.Join(tmpDir, "project"))
 		assert.Nil(t, err)
 		assert.True(t, ok, "should be ok")
 	})
@@ -456,7 +562,7 @@ func TestPullCommandCheckAppDestination(t *testing.T) {
 					console.ExpectEOF()
 				}()
 
-				ok, err := checkAppDestination(ui, dir)
+				ok, err := checkPathDestination(ui, dir)
 				assert.Nil(t, err)
 				assert.Equal(t, tc.answer, ok)
 			})

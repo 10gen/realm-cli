@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,8 +19,9 @@ type Template struct {
 }
 
 const (
-	templatesPath             = adminAPI + "/templates"
-	clientTemplatePathPattern = appPathPattern + "/templates/%s/client"
+	templatesPath                  = adminAPI + "/templates"
+	clientTemplatePathPattern      = appPathPattern + "/templates/%s/client"
+	compatibleTemplatesPathPattern = appPathPattern + "/templates"
 )
 
 func (c *client) Templates() ([]Template, error) {
@@ -48,6 +50,10 @@ func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader,
 	if resErr != nil {
 		return nil, resErr
 	}
+	if res.StatusCode == http.StatusNoContent {
+		// No client exists for this template so there is nothing to return
+		return nil, nil
+	}
 	if res.StatusCode != http.StatusOK {
 		return nil, api.ErrUnexpectedStatusCode{"get client template", res.StatusCode}
 	}
@@ -64,4 +70,24 @@ func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader,
 	}
 
 	return zipPkg, nil
+}
+
+func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, error) {
+	res, resErr := c.do(http.MethodGet, fmt.Sprintf(compatibleTemplatesPathPattern, groupID, appID), api.RequestOptions{})
+	if resErr != nil {
+		return nil, resErr
+	}
+	if res.StatusCode == http.StatusBadRequest {
+		return nil, errors.New("app is not created with a template")
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}
+	}
+	defer res.Body.Close()
+
+	var templates []Template
+	if err := json.NewDecoder(res.Body).Decode(&templates); err != nil {
+		return nil, err
+	}
+	return templates, nil
 }

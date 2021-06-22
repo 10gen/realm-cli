@@ -3,6 +3,7 @@ package pull
 import (
 	"archive/zip"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,7 +28,13 @@ var CommandMeta = cli.CommandMeta{
 applicable, Hosting Files and/or Dependencies associated with your Realm app will be
 exported as well.`,
 }
-const defaultNoTemplate = "defaultNoTemplate"
+
+// paths that are the same as app create for templates
+const (
+	backendPath  = "backend"
+	frontendPath = "frontend"
+)
+
 // Command is the `pull` command
 type Command struct {
 	inputs inputs
@@ -40,7 +47,7 @@ func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
-	fs.StringVarP(&cmd.inputs.TemplateID, flagTemplate, flagTemplateShort,"", flagTemplateUsage)
+	fs.StringVarP(&cmd.inputs.TemplateID, flagTemplate, flagTemplateShort, "", flagTemplateUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)
@@ -56,17 +63,12 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-
-	if cmd.inputs.TemplateID == ""{
-		// prompt user to ask if they are ?
-		// if yes then export with template, if not then quit
-		println("sdfkjndsfkjdsnf no template")
-	} else {
-		// check for compatible templates
-		println("template id", cmd.inputs.TemplateID)
+	app, err := cmd.inputs.resolveRemoteApp(ui, clients)
+	if err != nil {
+		return err
 	}
 
-	app, err := cmd.inputs.resolveRemoteApp(ui, clients)
+	templateZipPkg, templatePathTypes, err := cmd.inputs.resolveTemplate(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -76,12 +78,26 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
+	var templatePathTargets []string
+	if templateZipPkg != nil {
+		for _, templatePathType := range templatePathTypes {
+			templatePathTarget := path.Join(pathTarget, templatePathType)
+			if proceed, err := checkPathDestination(ui, templatePathTarget); err != nil {
+				return err
+			} else if !proceed {
+				return nil
+			} else {
+				templatePathTargets = append(templatePathTargets, templatePathTarget)
+			}
+		}
+	}
+
 	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
 	if err != nil {
 		return err
 	}
 
-	proceed, err := checkAppDestination(ui, pathTarget)
+	proceed, err := checkPathDestination(ui, pathTarget)
 	if err != nil {
 		return err
 	} else if !proceed {
@@ -100,6 +116,15 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
+
+	if templateZipPkg != nil {
+		for _, templatePathTarget := range templatePathTargets {
+			if err := local.WriteZip(templatePathTarget, templateZipPkg); err != nil {
+				return err
+			}
+			ui.Print(terminal.NewTextLog("Saved template to disk"))
+		}
+	}
 
 	if cmd.inputs.IncludeDependencies {
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
@@ -183,7 +208,7 @@ func (cmd *Command) doExport(profile *user.Profile, realmClient realm.Client, gr
 	return target, zipPkg, nil
 }
 
-func checkAppDestination(ui terminal.UI, path string) (bool, error) {
+func checkPathDestination(ui terminal.UI, path string) (bool, error) {
 	if ui.AutoConfirm() {
 		return true, nil
 	}

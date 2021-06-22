@@ -1,7 +1,11 @@
 package pull
 
 import (
+	"archive/zip"
 	"errors"
+	"fmt"
+
+	"github.com/AlecAivazis/survey/v2"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -113,4 +117,47 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	}
 
 	return app, nil
+}
+
+func (i *inputs) resolveTemplate(ui terminal.UI, realmClient realm.Client, groupID, appID string) (*zip.Reader, []string,  error) {
+	if i.TemplateID == "" {
+		return nil, nil, nil
+	}
+
+	var paths []string
+	if !ui.AutoConfirm() {
+		selectablePaths := []string{
+			frontendPath,
+			backendPath,
+		}
+		if err := ui.AskOne(
+			&paths,
+			&survey.MultiSelect{
+				Message: "Where would you like to export the template?",
+				Options: selectablePaths,
+			}); err != nil {
+			return nil, nil, err
+		}
+	} else {
+		paths = append(paths, frontendPath)
+	}
+
+	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, template := range compatibleTemplates {
+		// This is the ID that they selected
+		if template.ID == i.TemplateID {
+			// Fetch the template
+			templateZip, err := realmClient.ClientTemplate(groupID, appID, template.ID)
+			if err != nil {
+				return nil, nil, err
+			}
+			return templateZip, paths, nil
+		}
+	}
+
+	return nil, nil, fmt.Errorf("templateID %s is not compatible with this app", i.TemplateID)
 }
