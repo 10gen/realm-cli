@@ -8,22 +8,8 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/spf13/pflag"
-)
-
-const (
-	flagApp      = "app"
-	flagAppShort = "a"
-	flagAppUsage = "Specify the name or ID of a Realm app"
-
-	flagProject      = "project"
-	flagProjectUsage = "Specify the ID of a MongoDB Atlas project"
-
-	flagProduct      = "product"
-	flagProductUsage = `Specify the Realm app product(s) (Allowed values: "standard", "atlas")`
 )
 
 // ProjectInputs are the project/app inputs for a command
@@ -34,22 +20,8 @@ type ProjectInputs struct {
 }
 
 // Filter returns a realm.AppFlter based on the inputs
-func (i ProjectInputs) Filter() realm.AppFilter { return realm.AppFilter{i.Project, i.App, i.Products} }
-
-// Flags registers the project app input flags to the provided flag set
-func (i *ProjectInputs) Flags(fs *pflag.FlagSet, appFlagContext string) {
-	appUsage := flagAppUsage
-	if appFlagContext != "" {
-		appUsage += " " + appFlagContext
-	}
-
-	fs.StringVarP(&i.App, flagApp, flagAppShort, "", appUsage)
-
-	fs.StringVar(&i.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
-
-	fs.StringSliceVar(&i.Products, flagProduct, []string{}, flagProductUsage)
-	flags.MarkHidden(fs, flagProduct)
+func (i ProjectInputs) Filter() realm.AppFilter {
+	return realm.AppFilter{i.Project, i.App, i.Products}
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed

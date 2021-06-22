@@ -16,7 +16,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/briandowns/spinner"
-	"github.com/spf13/pflag"
 )
 
 // CommandMeta is the command meta for the `pull` command
@@ -35,19 +34,69 @@ type Command struct {
 }
 
 // Flags is the command flags
-func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
-	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
-	fs.StringVarP(&cmd.inputs.TemplateID, flagTemplate, flagTemplateShort, "", flagTemplateUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
-
-	fs.Var(&cmd.inputs.AppVersion, flagConfigVersion, flagConfigVersionUsage)
-	flags.MarkHidden(fs, flagConfigVersion)
+func (cmd *Command) Flags() []flags.Flag {
+	return []flags.Flag{
+		flags.StringFlag{
+			Value: &cmd.inputs.LocalPath,
+			Meta: flags.Meta{
+				Name: "local",
+				Usage: flags.Usage{
+					Description: "Specify a local filepath to export a Realm app to",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.RemoteApp,
+			Meta: flags.Meta{
+				Name: "remote",
+				Usage: flags.Usage{
+					Description: "Specify the name or ID of a remote Realm app to export",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeDependencies,
+			Meta: flags.Meta{
+				Name:      "include-dependencies",
+				Shorthand: "d",
+				Usage: flags.Usage{
+					Description: "Export and include Realm app dependencies",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeHosting,
+			Meta: flags.Meta{
+				Name:      "include-hosting",
+				Shorthand: "h",
+				Usage: flags.Usage{
+					Description: "Export and include Realm app hosting files",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.DryRun,
+			Meta: flags.Meta{
+				Name:      "dry-run",
+				Shorthand: "x",
+				Usage: flags.Usage{
+					Description: "Run without writing any changes to the local filepath",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.TemplateID,
+			Meta: flags.Meta{
+				Name:      "template",
+				Shorthand: "t",
+				Usage: flags.Usage{
+					Description: "Specify the Template ID that is used for this Realm app",
+				},
+			},
+		},
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ConfigVersionFlag(&cmd.inputs.AppVersion, "Specify the app config version to export as"),
+	}
 }
 
 // Inputs is the command inputs

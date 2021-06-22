@@ -12,21 +12,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-const (
-	flagModelsFlat      = "flat"
-	flagModelsFlatUsage = "View generated data models (and associated imports) as a single code block"
-
-	flagModelsLanguage      = "language"
-	flagModelsLanguageShort = "l"
-	flagModelsLanguageUsage = `Specify the language to generate schema data models in (Default value: <none>; Allowed values: <none>, "c_sharp", "java", "javascript", "kotlin", "objective_c", "swift", "typescript")`
-
-	flagModelsNoImports      = "no-imports"
-	flagModelsNoImportsUsage = "View generated data models without imports"
-
-	flagModelsName      = "name"
-	flagModelsNameUsage = "Filter generated data models by name(s)"
-)
-
 type datamodelsInputs struct {
 	cli.ProjectInputs
 	Flat      bool

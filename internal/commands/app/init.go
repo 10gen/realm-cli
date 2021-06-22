@@ -7,8 +7,6 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaInit is the command meta for the `app init` command
@@ -33,18 +31,16 @@ type CommandInit struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandInit) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppNew, "", flagRemoteAppNewUsage)
-	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
-	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
-	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
-	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
-
-	fs.Var(&cmd.inputs.ConfigVersion, flagConfigVersion, flagConfigVersionUsage)
-	flags.MarkHidden(fs, flagConfigVersion)
+func (cmd *CommandInit) Flags() []flags.Flag {
+	return []flags.Flag{
+		remoteAppFlag(&cmd.inputs.RemoteApp),
+		nameFlag(&cmd.inputs.Name),
+		locationFlag(&cmd.inputs.Location),
+		deploymentModelFlag(&cmd.inputs.DeploymentModel),
+		environmentFlag(&cmd.inputs.Environment),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ConfigVersionFlag(&cmd.inputs.ConfigVersion, flagConfigVersionDescription),
+	}
 }
 
 // Inputs is the command inputs

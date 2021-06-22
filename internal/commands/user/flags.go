@@ -1,20 +1,69 @@
 package user
 
-const (
-	flagState      = "state"
-	flagStateUsage = `Filter the Realm app's users by state (Default value: <none>; Allowed values: <none>, "enabled", "disabled")`
-
-	flagPending      = "pending"
-	flagPendingUsage = `View the Realm app's pending users`
-
-	flagProvider      = "provider"
-	flagProviderUsage = `Filter the Realm app's users by provider type (Default value: <none>; Allowed values: <none>, "anon-user", "api-key", "local-userpass", "oauth2-google", "oauth2-apple", "oauth2-facebook", "custom-token", "custom-function")`
-
-	flagUser             = "user"
-	flagUserShort        = "u"
-	flagUserListUsage    = "Filter the Realm app's users by ID(s)"
-	flagUserDeleteUsage  = "Specify the Realm app's users' ID(s) to delete"
-	flagUserDisableUsage = "Specify the Realm app's users' ID(s) to disable"
-	flagUserEnableUsage  = "Specify the Realm app's users' ID(s) to enable"
-	flagUserRevokeUsage  = "Specify the Realm app's users' ID(s) to revoke sessions for"
+import (
+	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
+
+func providersFlag(value *[]string) flags.CustomFlag {
+	return flags.NewStringSetFlag(
+		value,
+		flags.StringSetOptions{
+			ValidValues: []string{
+				string(realm.AuthProviderTypeUserPassword),
+				string(realm.AuthProviderTypeAPIKey),
+				string(realm.AuthProviderTypeFacebook),
+				string(realm.AuthProviderTypeGoogle),
+				string(realm.AuthProviderTypeAnonymous),
+				string(realm.AuthProviderTypeCustomToken),
+				string(realm.AuthProviderTypeApple),
+				string(realm.AuthProviderTypeCustomFunction),
+			},
+			Meta: flags.Meta{
+				Name: "provider",
+				Usage: flags.Usage{
+					Description: "Filter the Realm app's users by provider type",
+				},
+			},
+		},
+	)
+}
+
+func pendingFlag(value *bool) flags.BoolFlag {
+	return flags.BoolFlag{
+		Value: value,
+		Meta: flags.Meta{
+			Name: "pending",
+			Usage: flags.Usage{
+				Description: "View the Realm app's pending users",
+			},
+		},
+	}
+}
+
+func stateFlag(value *realm.UserState) flags.CustomFlag { //nolint: interfacer
+	return flags.CustomFlag{
+		Value: value,
+		Meta: flags.Meta{
+			Name: "state",
+			Usage: flags.Usage{
+				Description:   "Filter the Realm app's users by state",
+				DefaultValue:  "<none>",
+				AllowedValues: []string{"enabled", "disabled"},
+			},
+		},
+	}
+}
+
+func usersFlag(value *[]string, description string) flags.StringSliceFlag {
+	return flags.StringSliceFlag{
+		Value: value,
+		Meta: flags.Meta{
+			Name:      "user",
+			Shorthand: "u",
+			Usage: flags.Usage{
+				Description: description,
+			},
+		},
+	}
+}

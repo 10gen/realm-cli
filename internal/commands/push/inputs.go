@@ -10,30 +10,12 @@ import (
 )
 
 const (
-	flagLocalPath      = "local"
-	flagLocalPathUsage = "Specify the local filepath of a Realm app to be imported"
-
-	flagRemote      = "remote"
-	flagRemoteUsage = "Specify the name or ID of a remote Realm app to edit"
-
-	flagProject      = "project"
-	flagProjectUsage = "Specify the MongoDB Cloud project ID"
-
-	flagIncludeDependencies      = "include-dependencies"
-	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "Import and include Realm app dependencies"
-
+	flagLocalPath           = "local"
+	flagRemote              = "remote"
+	flagIncludeDependencies = "include-dependencies"
 	flagIncludeHosting      = "include-hosting"
-	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "Import and include Realm app hosting files"
-
-	flagResetCDNCache      = "reset-cdn-cache"
-	flagResetCDNCacheShort = "c"
-	flagResetCDNCacheUsage = "Reset the hosting CDN cache of a Realm app"
-
-	flagDryRun      = "dry-run"
-	flagDryRunShort = "x"
-	flagDryRunUsage = "Run without pushing any changes to the Realm server"
+	flagResetCDNCache       = "reset-cdn-cache"
+	flagDryRun              = "dry-run"
 )
 
 type appRemote struct {
@@ -99,7 +81,7 @@ func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote
 func (i inputs) args(omitDryRun bool) []flags.Arg {
 	args := make([]flags.Arg, 0, 7)
 	if i.Project != "" {
-		args = append(args, flags.Arg{flagProject, i.Project})
+		args = append(args, flags.Arg{cli.ProjectFlagName, i.Project})
 	}
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})

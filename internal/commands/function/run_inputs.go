@@ -12,17 +12,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-const (
-	flagFunctionName      = "name"
-	flagFunctionNameUsage = "Specify the name of the function to run"
-
-	flagFunctionArgs      = "args"
-	flagFunctionArgsUsage = "Specify the args to pass to your function [Learn more: https://docs.mongodb.com/realm/functions/call-a-function/#call-from-realm-cli]"
-
-	flagAsUser      = "user"
-	flagAsUserUsage = `Specify which user to run the function as (Default value: <none>; Allowed values: <none>, <userID>) (Note: Using <none> will run as the System user)`
-)
-
 type runInputs struct {
 	cli.ProjectInputs
 	Name string

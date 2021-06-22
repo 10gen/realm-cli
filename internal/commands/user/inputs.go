@@ -23,14 +23,6 @@ type multiUserInputs struct {
 	Users         []string
 }
 
-func validAuthProviderTypes() []interface{} {
-	apts := make([]interface{}, 0, len(realm.ValidAuthProviderTypes))
-	for _, apt := range realm.ValidAuthProviderTypes {
-		apts = append(apts, apt)
-	}
-	return apts
-}
-
 func displayUser(apt realm.AuthProviderType, user realm.User) string {
 	var sb strings.Builder
 	sb.WriteString(apt.Display() + terminal.DelimiterInline)

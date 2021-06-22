@@ -15,36 +15,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-const (
-	flagLocalPath      = "local"
-	flagLocalPathUsage = "Specify a local filepath to export a Realm app to"
-
-	flagRemote      = "remote"
-	flagRemoteUsage = "Specify the name or ID of a remote Realm app to export"
-
-	flagIncludeDependencies      = "include-dependencies"
-	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "Export and include Realm app dependencies"
-
-	flagIncludeHosting      = "include-hosting"
-	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "Export and include Realm app hosting files"
-
-	flagDryRun      = "dry-run"
-	flagDryRunShort = "x"
-	flagDryRunUsage = "Run without writing any changes to the local filepath"
-
-	flagProject      = "project"
-	flagProjectUsage = "Specify the MongoDB Cloud project ID"
-
-	flagConfigVersion      = "config-version"
-	flagConfigVersionUsage = "Specify the app config version to export as"
-
-	flagTemplate      = "template"
-	flagTemplateShort = "t"
-	flagTemplateUsage = "Specify the Template ID that is used for this Realm app"
-)
-
 var (
 	errConfigVersionMismatch = errors.New("must export an app with the same config version as found in the current project directory")
 )

@@ -7,12 +7,6 @@ import (
 )
 
 const (
-	flagPublicAPIKey      = "api-key"
-	flagPublicAPIKeyUsage = "Specify the public portion of your Atlas programmatic API Key"
-
-	flagPrivateAPIKey      = "private-api-key"
-	flagPrivateAPIKeyUsage = "Specify the private portion of your Atlas programmatic API Key"
-
 	inputFieldPublicAPIKey  = "publicAPIKey"
 	inputFieldPrivateAPIKey = "privateAPIKey"
 )

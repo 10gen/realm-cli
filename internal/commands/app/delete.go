@@ -7,8 +7,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaDelete is the command meta for the `app delete` command
@@ -27,11 +25,20 @@ type CommandDelete struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	fs.StringSliceVarP(&cmd.inputs.Apps, flagDeleteApp, flagDeleteAppShort, []string{}, flagDeleteAppUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
+func (cmd *CommandDelete) Flags() []flags.Flag {
+	return []flags.Flag{
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.Apps,
+			Meta: flags.Meta{
+				Name:      "app",
+				Shorthand: "a",
+				Usage: flags.Usage{
+					Description: "Specify the name(s) or ID(s) of Realm apps to delete",
+				},
+			},
+		},
+		cli.ProjectFlag(&cmd.inputs.Project),
+	}
 }
 
 // Handler is the command handler

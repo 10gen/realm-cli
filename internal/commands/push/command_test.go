@@ -888,7 +888,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						AppMeta: realm.AppMeta{
 							Location:        realm.LocationOregon,
 							DeploymentModel: realm.DeploymentModelLocal,
-							Environment:     realm.EnvironmentTest,
+							Environment:     realm.EnvironmentTesting,
 						},
 					},
 					expectedProceed: true,

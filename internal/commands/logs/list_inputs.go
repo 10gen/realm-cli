@@ -12,21 +12,16 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
+// set of supported log type flags
 const (
-	flagType      = "type"
-	flagTypeUsage = `Specify the type(s) of logs to list (Default value: <none>; Allowed values: "auth", "function", "push", "service", "trigger", "graphql", "sync", "schema")`
-
-	flagErrors      = "errors"
-	flagErrorsUsage = "View your Realm app's error logs"
-
-	flagStartDate      = "start"
-	flagStartDateUsage = `Specify when to begin listing logs (Allowed format: "2006-01-02[T15:04:05.000-0700]") [Learn more: https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range]`
-
-	flagEndDate      = "end"
-	flagEndDateUsage = `Specify when to finish listing logs (Allowed format: "2006-01-02[T15:04:05.000-0700]") [Learn more: https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range]`
-
-	flagTail      = "tail"
-	flagTailUsage = `View your Realm app's logs in real-time (Note: "--start" and "--end" flags do not apply here)`
+	logTypeAuth     = "auth"
+	logTypeFunction = "function"
+	logTypePush     = "push"
+	logTypeService  = "service"
+	logTypeTrigger  = "trigger"
+	logTypeGraphQL  = "graphql"
+	logTypeSync     = "sync"
+	logTypeSchema   = "schema"
 )
 
 type listInputs struct {
@@ -70,27 +65,3 @@ func (i *listInputs) logTypes() []string {
 	}
 	return types
 }
-
-const (
-	logTypeAuth     = "auth"
-	logTypeFunction = "function"
-	logTypePush     = "push"
-	logTypeService  = "service"
-	logTypeTrigger  = "trigger"
-	logTypeGraphQL  = "graphql"
-	logTypeSync     = "sync"
-	logTypeSchema   = "schema"
-)
-
-var (
-	allLogTypes = []interface{}{
-		logTypeAuth,
-		logTypeFunction,
-		logTypePush,
-		logTypeService,
-		logTypeTrigger,
-		logTypeGraphQL,
-		logTypeSync,
-		logTypeSchema,
-	}
-)

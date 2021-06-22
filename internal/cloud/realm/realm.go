@@ -81,7 +81,7 @@ var (
 	}
 	EnvironmentValues = []string{
 		EnvironmentDevelopment.String(),
-		EnvironmentTest.String(),
+		EnvironmentTesting.String(),
 		EnvironmentQA.String(),
 		EnvironmentProduction.String(),
 	}
@@ -253,7 +253,7 @@ func (e *Environment) WriteAnswer(name string, value interface{}) error {
 const (
 	EnvironmentNone        Environment = ""
 	EnvironmentDevelopment Environment = "development"
-	EnvironmentTest        Environment = "testing"
+	EnvironmentTesting     Environment = "testing"
 	EnvironmentQA          Environment = "qa"
 	EnvironmentProduction  Environment = "production"
 )
@@ -263,7 +263,7 @@ func isValidEnvironment(e Environment) bool {
 	case
 		EnvironmentNone, // no Environment is default
 		EnvironmentDevelopment,
-		EnvironmentTest,
+		EnvironmentTesting,
 		EnvironmentQA,
 		EnvironmentProduction:
 		return true

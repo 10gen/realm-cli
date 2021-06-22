@@ -12,32 +12,8 @@ import (
 )
 
 const (
-	flagRemoteAppNew      = "remote"
-	flagRemoteAppNewUsage = "Specify the name or ID of a remote Realm app to clone"
-
-	flagName      = "name"
-	flagNameShort = "n"
-	flagNameUsage = "Name your new Realm app"
-
-	flagDeploymentModel        = "deployment-model"
-	flagDeploymentModelShort   = "d"
-	flagDeploymentModelUsage   = `Select the Realm app's deployment model (Default value: <none>; Allowed values: <none>, "GLOBAL", "LOCAL")`
 	flagDeploymentModelDefault = realm.DeploymentModelGlobal
-
-	flagLocation        = "location"
-	flagLocationShort   = "l"
-	flagLocationUsage   = `Select the Realm app's location (Default value: <none>; Allowed values: <none>, "US-VA", "US-OR", "DE-FF", "IE", "AU", "IN-MB", "SG")`
-	flagLocationDefault = realm.LocationVirginia
-
-	flagEnvironment      = "environment"
-	flagEnvironmentShort = "e"
-	flagEnvironmentUsage = `Select the Realm app's environment (Default value: <none>; Allowed values: <none>, "development", "testing", "qa", "production")`
-
-	flagProject      = "project"
-	flagProjectUsage = "Specify the ID of a MongoDB Atlas project"
-
-	flagConfigVersion      = "config-version"
-	flagConfigVersionUsage = "Specify the app config version to export as"
+	flagLocationDefault        = realm.LocationVirginia
 )
 
 type newAppInputs struct {

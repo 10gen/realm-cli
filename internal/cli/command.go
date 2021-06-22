@@ -10,8 +10,6 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 // Command is an executable CLI command
@@ -38,7 +36,7 @@ type Clients struct {
 
 // CommandFlags provides access for commands to register local flags
 type CommandFlags interface {
-	Flags(fs *pflag.FlagSet)
+	Flags() []flags.Flag
 }
 
 // CommandInputs returns the command inputs

@@ -4,8 +4,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMeta is the command meta for the `login` command
@@ -24,9 +23,27 @@ type Command struct {
 }
 
 // Flags is the command flags
-func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.PublicAPIKey, flagPublicAPIKey, "", flagPublicAPIKeyUsage)
-	fs.StringVar(&cmd.inputs.PrivateAPIKey, flagPrivateAPIKey, "", flagPrivateAPIKeyUsage)
+func (cmd *Command) Flags() []flags.Flag {
+	return []flags.Flag{
+		flags.StringFlag{
+			Value: &cmd.inputs.PublicAPIKey,
+			Meta: flags.Meta{
+				Name: "api-key",
+				Usage: flags.Usage{
+					Description: "Specify the public portion of your Atlas programmatic API Key",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.PrivateAPIKey,
+			Meta: flags.Meta{
+				Name: "private-api-key",
+				Usage: flags.Usage{
+					Description: "Specify the private portion of your Atlas programmatic API Key",
+				},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs
