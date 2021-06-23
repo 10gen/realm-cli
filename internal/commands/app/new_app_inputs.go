@@ -7,8 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 
-	// TODO REALMC-9228 Re-enable prompting for template selection
-	_ "github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2"
 )
 
 const (
@@ -94,29 +93,27 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 		return fmt.Errorf("template '%s' not found", i.Template)
 	}
 
-	// TODO REALMC-9228 Re-enable prompting for template selection
-	return fmt.Errorf("template '%s' not found", i.Template)
-	//	options := make([]string, 0, len(templates)+1)
-	//	templateIDs := make([]string, 0, len(templates)+1)
-	//	options = append(options, "[No Template]: Do Not Use A Template")
-	//	templateIDs = append(templateIDs, "")
-	//	for _, template := range templates {
-	//		options = append(options, fmt.Sprintf("[%s]: %s", template.ID, template.Name))
-	//		templateIDs = append(templateIDs, template.ID)
-	//	}
-	//
-	//	var selectedIndex int
-	//	if err := ui.AskOne(
-	//		&selectedIndex,
-	//		&survey.Select{
-	//			Message: "Please select a template from the available options",
-	//			Options: options,
-	//		},
-	//	); err != nil {
-	//		return err
-	//	}
-	//
-	//	i.Template = templateIDs[selectedIndex]
-	//
-	//	return nil
+	options := make([]string, 0, len(templates)+1)
+	templateIDs := make([]string, 0, len(templates)+1)
+	options = append(options, "[No Template]: Do Not Use A Template")
+	templateIDs = append(templateIDs, "")
+	for _, template := range templates {
+		options = append(options, fmt.Sprintf("[%s]: %s", template.ID, template.Name))
+		templateIDs = append(templateIDs, template.ID)
+	}
+
+	var selectedIndex int
+	if err := ui.AskOne(
+		&selectedIndex,
+		&survey.Select{
+			Message: "Please select a template from the available options",
+			Options: options,
+		},
+	); err != nil {
+		return err
+	}
+
+	i.Template = templateIDs[selectedIndex]
+
+	return nil
 }

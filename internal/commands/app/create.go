@@ -187,8 +187,12 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	var appLocal local.App
-
-	if appRemote.GroupID == "" && appRemote.ID == "" {
+	if cmd.inputs.Template != "" {
+		appLocal, err = createFromTemplate(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, backendDir, rootDir)
+		if err != nil {
+			return err
+		}
+	} else if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
 			backendDir,
 			appRealm.ClientAppID,
@@ -219,35 +223,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 		appLocal, err = local.LoadApp(backendDir)
 		if err != nil {
-			return err
-		}
-	}
-
-	if cmd.inputs.Template != "" {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Downloading client template..."
-
-		downloadAndWriteClient := func() error {
-			s.Start()
-			defer s.Stop()
-
-			zipPkg, err := clients.Realm.ClientTemplate(
-				appRealm.GroupID,
-				appRealm.ID,
-				cmd.inputs.Template,
-			)
-			if err != nil {
-				return err
-			}
-
-			if err := local.WriteZip(path.Join(rootDir, frontendPath), zipPkg); err != nil {
-				return err
-			}
-
-			return nil
-		}
-
-		if err := downloadAndWriteClient(); err != nil {
 			return err
 		}
 	}
@@ -308,4 +283,53 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 func (cmd *CommandCreate) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMetaCreate.Display, cmd.inputs.args(omitDryRun))
+}
+
+func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, backendDir, rootDir string) (local.App, error) {
+	_, zipPkg, err := realmClient.Export(
+		groupID,
+		appID,
+		realm.ExportRequest{},
+	)
+	if err != nil {
+		return local.App{}, err
+	}
+
+	if err := local.WriteZip(backendDir, zipPkg); err != nil {
+		return local.App{}, err
+	}
+
+	appLocal, err := local.LoadApp(backendDir)
+	if err != nil {
+		return local.App{}, err
+	}
+
+	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+	s.Suffix = " Downloading client template..."
+
+	downloadAndWriteClient := func() error {
+		s.Start()
+		defer s.Stop()
+
+		zipPkg, err := realmClient.ClientTemplate(
+			groupID,
+			appID,
+			templateID,
+		)
+		if err != nil {
+			return err
+		}
+
+		if err := local.WriteZip(path.Join(rootDir, frontendPath), zipPkg); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := downloadAndWriteClient(); err != nil {
+		return local.App{}, err
+	}
+
+	return appLocal, nil
 }

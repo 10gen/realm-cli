@@ -311,85 +311,92 @@ Check out your app: cd ./test-app && realm-cli app describe
 		}, createdApp)
 	})
 
-	// TODO REALMC-9228 Re-enable prompting for template selection
-	//	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
-	//		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
-	//		defer teardown()
-	//		profile.SetRealmBaseURL("http://localhost:8080")
-	//
-	//		procedure := func(c *expect.Console) {
-	//			c.ExpectString("Please select a template from the available options")
-	//			c.SendLine("palm-pilot.bitcoin-miner")
-	//			c.ExpectEOF()
-	//		}
-	//
-	//		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
-	//		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-	//		assert.Nil(t, consoleErr)
-	//		defer console.Close()
-	//
-	//		doneCh := make(chan (struct{}))
-	//		go func() {
-	//			defer close(doneCh)
-	//			procedure(console)
-	//		}()
-	//
-	//		var createdApp realm.App
-	//		rc := mock.RealmClient{}
-	//		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-	//			createdApp = realm.App{
-	//				GroupID:     groupID,
-	//				ID:          "456",
-	//				ClientAppID: name + "-abcde",
-	//				Name:        name,
-	//				AppMeta:     meta,
-	//			}
-	//			return createdApp, nil
-	//		}
-	//		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
-	//			return nil
-	//		}
-	//		rc.TemplatesFn = func() ([]realm.Template, error) {
-	//			return []realm.Template{
-	//				{
-	//					ID:   "palm-pilot.bitcoin-miner",
-	//					Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
-	//				},
-	//				{
-	//					ID:   "blackberry.important-business-app",
-	//					Name: "Oh wow, a Blackberry... you must a very powerful, extravagant man.",
-	//				},
-	//			}, nil
-	//		}
-	//
-	//		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
-	//		assert.Nil(t, err)
-	//		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-	//			return &clientZipPkg.Reader, nil
-	//		}
-	//		ac := mock.AtlasClient{}
-	//		ac.GroupsFn = func() ([]atlas.Group, error) {
-	//			return []atlas.Group{{ID: "123"}}, nil
-	//		}
-	//
-	//		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-	//			Name:            "template-app",
-	//			Location:        realm.LocationVirginia,
-	//			DeploymentModel: realm.DeploymentModelGlobal,
-	//			ConfigVersion:   realm.DefaultAppConfigVersion,
-	//		}}}
-	//
-	//		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
-	//
-	//		console.Tty().Close() // flush the writers
-	//		<-doneCh              // wait for procedure to complete
-	//
-	//		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
-	//		appLocal, err := local.LoadApp(path)
-	//		assert.Nil(t, err)
-	//
-	//		assert.Equal(t, appLocal.RootDir, path)
-	//	})
+	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		procedure := func(c *expect.Console) {
+			c.ExpectString("Please select a template from the available options")
+			c.SendLine("palm-pilot.bitcoin-miner")
+			c.ExpectEOF()
+		}
+
+		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			procedure(console)
+		}()
+
+		var createdApp realm.App
+		rc := mock.RealmClient{}
+
+		zipPkg, err := zip.OpenReader("testdata/project.zip")
+		assert.Nil(t, err)
+		defer zipPkg.Close()
+
+		rc.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "", &zipPkg.Reader, err
+		}
+		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			createdApp = realm.App{
+				GroupID:     groupID,
+				ID:          "456",
+				ClientAppID: name + "-abcde",
+				Name:        name,
+				AppMeta:     meta,
+			}
+			return createdApp, nil
+		}
+		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		rc.TemplatesFn = func() ([]realm.Template, error) {
+			return []realm.Template{
+				{
+					ID:   "palm-pilot.bitcoin-miner",
+					Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
+				},
+				{
+					ID:   "blackberry.important-business-app",
+					Name: "Oh wow, a Blackberry... you must a very powerful, extravagant man.",
+				},
+			}, nil
+		}
+
+		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
+		assert.Nil(t, err)
+		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+			return &clientZipPkg.Reader, nil
+		}
+		ac := mock.AtlasClient{}
+		ac.GroupsFn = func() ([]atlas.Group, error) {
+			return []atlas.Group{{ID: "123"}}, nil
+		}
+
+		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
+			Name:            "template-app",
+			Location:        realm.LocationVirginia,
+			DeploymentModel: realm.DeploymentModelGlobal,
+			ConfigVersion:   realm.DefaultAppConfigVersion,
+		}}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
+		appLocal, err := local.LoadApp(path)
+		assert.Nil(t, err)
+
+		assert.Equal(t, appLocal.RootDir, path)
+	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
@@ -504,15 +511,14 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		profile.SetRealmBaseURL("http://localhost:8080")
 
 		out, ui := mock.NewUI()
-
 		testApp := realm.App{
-			ID:          "789",
+			ID:          "456",
 			GroupID:     "123",
 			ClientAppID: "bitcoin-miner-abcde",
 			Name:        "bitcoin-miner",
 		}
 
-		backendZipPkg, err := zip.OpenReader("testdata/bitcoin-miner.zip")
+		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
 
 		client := mock.RealmClient{
@@ -520,7 +526,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 				return []realm.App{}, nil
 			},
 			ExportFn: func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
-				return "", &backendZipPkg.Reader, err
+				return "", &backendZipPkg.Reader, nil
 			},
 			CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 				return realm.App{
@@ -565,7 +571,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
 		assert.Nil(t, err)
-		assert.Equal(t, len(backendFileInfo), 10)
+		assert.Equal(t, len(backendFileInfo), 9)
 
 		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath))
 		assert.Nil(t, err)
