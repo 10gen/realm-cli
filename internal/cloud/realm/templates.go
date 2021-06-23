@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -77,8 +76,9 @@ func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, error) 
 	if resErr != nil {
 		return nil, resErr
 	}
+
 	if res.StatusCode == http.StatusBadRequest {
-		return nil, errors.New("app is not created with a template")
+		return nil, nil
 	}
 	if res.StatusCode != http.StatusOK {
 		return nil, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}

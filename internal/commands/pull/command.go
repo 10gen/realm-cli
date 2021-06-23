@@ -3,7 +3,6 @@ package pull
 import (
 	"archive/zip"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -28,12 +27,6 @@ var CommandMeta = cli.CommandMeta{
 applicable, Hosting Files and/or Dependencies associated with your Realm app will be
 exported as well.`,
 }
-
-// paths that are the same as app create for templates
-const (
-	backendPath  = "backend"
-	frontendPath = "frontend"
-)
 
 // Command is the `pull` command
 type Command struct {
@@ -68,7 +61,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	templateZipPkg, templatePathTypes, err := cmd.inputs.resolveTemplate(ui, clients.Realm, app.GroupID, app.ID)
+	templateZipPkgs, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -78,30 +71,21 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	var templatePathTargets []string
-	if templateZipPkg != nil {
-		for _, templatePathType := range templatePathTypes {
-			templatePathTarget := path.Join(pathTarget, templatePathType)
-			if proceed, err := checkPathDestination(ui, templatePathTarget); err != nil {
-				return err
-			} else if !proceed {
-				return nil
-			} else {
-				templatePathTargets = append(templatePathTargets, templatePathTarget)
-			}
-		}
-	}
-
-	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
-	if err != nil {
-		return err
-	}
-
+	// App path
 	proceed, err := checkPathDestination(ui, pathTarget)
 	if err != nil {
 		return err
 	} else if !proceed {
 		return nil
+	}
+
+	if len(templateZipPkgs) != 0 {
+		pathTarget = filepath.Join(pathTarget, local.BackendPath)
+	}
+
+	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
+	if err != nil {
+		return err
 	}
 
 	if cmd.inputs.DryRun {
@@ -117,9 +101,15 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
-	if templateZipPkg != nil {
-		for _, templatePathTarget := range templatePathTargets {
-			if err := local.WriteZip(templatePathTarget, templateZipPkg); err != nil {
+	if len(templateZipPkgs) != 0 {
+		templatePath := filepath.Join(pathTarget, local.FrontendPath)
+		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
+			return err
+		} else if !proceed {
+			return nil
+		}
+		for _, templateZipPkg := range templateZipPkgs {
+			if err := local.WriteZip(templatePath, templateZipPkg); err != nil {
 				return err
 			}
 			ui.Print(terminal.NewTextLog("Saved template to disk"))

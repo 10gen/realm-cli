@@ -18,11 +18,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	backendPath  = "backend"
-	frontendPath = "frontend"
-)
-
 // CommandMetaCreate is the command meta for the `app create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
@@ -154,7 +149,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	// code. Otherwise, all code is exported in rootDir
 	backendDir := rootDir
 	if cmd.inputs.Template != "" {
-		backendDir = path.Join(rootDir, backendPath)
+		backendDir = path.Join(rootDir, local.BackendPath)
 	}
 
 	if cmd.inputs.DryRun {
@@ -344,7 +339,7 @@ func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, ba
 			return err
 		}
 
-		if err := local.WriteZip(path.Join(rootDir, frontendPath, templateID), zipPkg); err != nil {
+		if err := local.WriteZip(path.Join(rootDir, local.FrontendPath), zipPkg); err != nil {
 			return err
 		}
 

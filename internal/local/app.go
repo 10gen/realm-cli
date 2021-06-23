@@ -15,6 +15,11 @@ const (
 	maxDirectoryContainSearchDepth = 8
 )
 
+const (
+	BackendPath  = "backend"
+	FrontendPath = "frontend"
+)
+
 func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }

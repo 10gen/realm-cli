@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/AlecAivazis/survey/v2"
-
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -43,7 +42,7 @@ const (
 
 	flagTemplate      = "template"
 	flagTemplateShort = "t"
-	flagTemplateUsage = "specify the template ID that is used for this app"
+	flagTemplateUsage = "Specify the Template ID that is used for this Realm app"
 )
 
 var (
@@ -119,45 +118,62 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	return app, nil
 }
 
-func (i *inputs) resolveTemplate(ui terminal.UI, realmClient realm.Client, groupID, appID string) (*zip.Reader, []string,  error) {
-	if i.TemplateID == "" {
-		return nil, nil, nil
-	}
-
-	var paths []string
-	if !ui.AutoConfirm() {
-		selectablePaths := []string{
-			frontendPath,
-			backendPath,
-		}
-		if err := ui.AskOne(
-			&paths,
-			&survey.MultiSelect{
-				Message: "Where would you like to export the template?",
-				Options: selectablePaths,
-			}); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		paths = append(paths, frontendPath)
-	}
-
+func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID, appID string) ([]*zip.Reader, error) {
 	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	for _, template := range compatibleTemplates {
-		// This is the ID that they selected
-		if template.ID == i.TemplateID {
-			// Fetch the template
-			templateZip, err := realmClient.ClientTemplate(groupID, appID, template.ID)
-			if err != nil {
-				return nil, nil, err
+	if i.TemplateID != "" {
+		for _, template := range compatibleTemplates {
+			// This is the ID that they selected
+			if template.ID == i.TemplateID {
+				// Fetch the template
+				templateZip, err := realmClient.ClientTemplate(groupID, appID, template.ID)
+				if err != nil {
+					return nil, err
+				}
+				return []*zip.Reader{templateZip}, nil
 			}
-			return templateZip, paths, nil
+		}
+		return nil, fmt.Errorf("template %s is not compatible with this app", i.TemplateID)
+	}
+
+	if len(compatibleTemplates) != 0 {
+		if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {
+			return nil, err
+		} else if proceed {
+			nameOptions := make([]string, len(compatibleTemplates))
+			namesToIDs := make(map[string]string, len(compatibleTemplates))
+			for _, compatibleTemplate := range compatibleTemplates {
+				namesToIDs[compatibleTemplate.Name] = compatibleTemplate.ID
+			}
+
+			selectedTemplates := make([]string, len(compatibleTemplates))
+			if err := ui.AskOne(
+				&selectedTemplates,
+				&survey.MultiSelect{
+					Message: "Which template(s) would you like to export this app with",
+					Options: nameOptions,
+				}); err != nil {
+				return nil, err
+			}
+
+			templateIDs := make([]string, len(selectedTemplates))
+			for _, selectedTemplate := range selectedTemplates {
+				templateIDs = append(templateIDs, namesToIDs[selectedTemplate])
+			}
+
+			result := make([]*zip.Reader, len(templateIDs))
+			for _, templateID := range templateIDs {
+				templateZip, err := realmClient.ClientTemplate(groupID, appID, templateID)
+				if err != nil {
+					return nil, err
+				}
+				result = append(result, templateZip)
+			}
+			return result, nil
 		}
 	}
-
-	return nil, nil, fmt.Errorf("templateID %s is not compatible with this app", i.TemplateID)
+	return nil, nil
 }
