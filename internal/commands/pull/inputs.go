@@ -118,7 +118,7 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	return app, nil
 }
 
-func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID, appID string) ([]*zip.Reader, error) {
+func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID, appID string) (map[string]*zip.Reader, error) {
 	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID
 				if err != nil {
 					return nil, err
 				}
-				return []*zip.Reader{templateZip}, nil
+				return map[string]*zip.Reader{template.ID: templateZip}, nil
 			}
 		}
 		return nil, fmt.Errorf("template %s is not compatible with this app", i.TemplateID)
@@ -145,11 +145,12 @@ func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID
 		} else if proceed {
 			nameOptions := make([]string, len(compatibleTemplates))
 			namesToIDs := make(map[string]string, len(compatibleTemplates))
-			for _, compatibleTemplate := range compatibleTemplates {
+			for idx, compatibleTemplate := range compatibleTemplates {
 				namesToIDs[compatibleTemplate.Name] = compatibleTemplate.ID
+				nameOptions[idx] = compatibleTemplate.Name
 			}
 
-			selectedTemplates := make([]string, len(compatibleTemplates))
+			var selectedTemplates []string
 			if err := ui.AskOne(
 				&selectedTemplates,
 				&survey.MultiSelect{
@@ -160,17 +161,17 @@ func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID
 			}
 
 			templateIDs := make([]string, len(selectedTemplates))
-			for _, selectedTemplate := range selectedTemplates {
-				templateIDs = append(templateIDs, namesToIDs[selectedTemplate])
+			for idx, selectedTemplate := range selectedTemplates {
+				templateIDs[idx] = namesToIDs[selectedTemplate]
 			}
 
-			result := make([]*zip.Reader, len(templateIDs))
+			result := make(map[string]*zip.Reader, len(templateIDs))
 			for _, templateID := range templateIDs {
 				templateZip, err := realmClient.ClientTemplate(groupID, appID, templateID)
 				if err != nil {
 					return nil, err
 				}
-				result = append(result, templateZip)
+				result[templateID] = templateZip
 			}
 			return result, nil
 		}

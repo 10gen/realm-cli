@@ -79,10 +79,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	if len(templateZipPkgs) != 0 {
-		pathTarget = filepath.Join(pathTarget, local.BackendPath)
-	}
-
 	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
 	if err != nil {
 		return err
@@ -96,11 +92,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
-		return err
-	}
-	ui.Print(terminal.NewTextLog("Saved app to disk"))
-
 	if len(templateZipPkgs) != 0 {
 		templatePath := filepath.Join(pathTarget, local.FrontendPath)
 		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
@@ -108,13 +99,21 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		} else if !proceed {
 			return nil
 		}
-		for _, templateZipPkg := range templateZipPkgs {
-			if err := local.WriteZip(templatePath, templateZipPkg); err != nil {
+
+		for templateID, templateZipPkg := range templateZipPkgs {
+			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
 				return err
 			}
 			ui.Print(terminal.NewTextLog("Saved template to disk"))
 		}
+
+		pathTarget = filepath.Join(pathTarget, local.BackendPath)
 	}
+
+	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
+		return err
+	}
+	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
 	if cmd.inputs.IncludeDependencies {
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)

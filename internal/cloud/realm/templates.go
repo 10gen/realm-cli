@@ -18,15 +18,15 @@ type Template struct {
 }
 
 const (
-	templatesPath                  = adminAPI + "/templates"
+	allTemplatesPath               = adminAPI + "/templates"
 	clientTemplatePathPattern      = appPathPattern + "/templates/%s/client"
 	compatibleTemplatesPathPattern = appPathPattern + "/templates"
 )
 
-func (c *client) Templates() ([]Template, error) {
+func (c *client) AllTemplates() ([]Template, error) {
 	res, resErr := c.do(
 		http.MethodGet,
-		templatesPath,
+		allTemplatesPath,
 		api.RequestOptions{},
 	)
 	if resErr != nil {
