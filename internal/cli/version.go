@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
+
 	"github.com/blang/semver"
 )
 
