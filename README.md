@@ -41,6 +41,16 @@ This will create a CLI build that will print `0.0.0-local` when `--version` is i
 
 > NOTE: `${segment_write_key}` is a dynamic value you would need to replace with something valid.  If it is left blank, then events will simply not be sent to Segment.
 
+#### Using `go install`
+
+Lastly, you can use `go install` which will build the `realm-cli` executable and install it in `$GOPATH/bin` (making it readily accessible throughout your machine).  To do so, run:
+
+```cmd
+go install main.go
+```
+
+This will create a CLI executable that is, by default, named `main`.  You should be able to run `which main` and/or `main --version` to confirm this installation was successful.  **You may wish to rename this binary to something more descriptive like `realm-cli` or `realm-cli-local`, to do so just `mv` the resulting file in `$GOPATH/bin`.**  Additionally, the same `-ldflags` apply for `go install` as they do `go build` should you wish to configure this build further.
+
 ## Running the CLI Locally
 
 To run the CLI locally, you will want to have Realm server locally and capable of communicating with an Atlas instance for authentication.  The recommended way to do this would be run `baas` with the `local_cloud_dev_config.json` server config via:
