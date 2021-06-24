@@ -46,10 +46,10 @@ This will create a CLI build that will print `0.0.0-local` when `--version` is i
 Lastly, you can use `go install` which will build the `realm-cli` executable and install it in `$GOPATH/bin` (making it readily accessible throughout your machine).  To do so, run:
 
 ```cmd
-go install main.go
+go install
 ```
 
-This will create a CLI executable that is, by default, named `main`.  You should be able to run `which main` and/or `main --version` to confirm this installation was successful.  **You may wish to rename this binary to something more descriptive like `realm-cli` or `realm-cli-local`, to do so just `mv` the resulting file in `$GOPATH/bin`.**  Additionally, the same `-ldflags` apply for `go install` as they do `go build` should you wish to configure this build further.
+Additionally, the same `-ldflags` apply for `go install` as they do `go build` should you wish to configure this build further.
 
 ## Running the CLI Locally
 
