@@ -277,7 +277,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
 				if templateID == "some-template-id" {
 					return &templateZipPkg1.Reader, nil
-				} else if templateID == "another-template-id"  {
+				} else if templateID == "another-template-id" {
 					return &templateZipPkg2.Reader, nil
 				}
 				return nil, errors.New("should not happen in this test")

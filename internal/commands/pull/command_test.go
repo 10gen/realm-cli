@@ -431,7 +431,7 @@ Successfully pulled app down: app
 
 			cmd := &Command{input}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
-			expected := map[string]string {
+			expected := map[string]string{
 				"template_1": `{
   "egg": "over easy",
   "pancake": "blueberry",
