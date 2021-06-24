@@ -44,7 +44,9 @@ func TestPullHandler(t *testing.T) {
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "", nil, errors.New("something bad happened")
 		}
-
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
+		}
 		cmd := &Command{inputs{Project: "elsewhere", RemoteApp: "somewhere"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
@@ -62,6 +64,9 @@ func TestPullHandler(t *testing.T) {
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
 		}
 
 		t.Run("should not write any contents to the destination in a dry run", func(t *testing.T) {
@@ -121,6 +126,9 @@ Successfully pulled app down: app
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "", nil, errors.New("something bad happened")
 		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
+		}
 
 		t.Run("should not attempt to export dependencies if the flag is not set", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
@@ -174,6 +182,9 @@ Successfully pulled app down: app
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "node_modules.zip", depsPkg, nil
 		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
+		}
 
 		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
 
@@ -201,6 +212,9 @@ Successfully pulled app down: app
 		}
 		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
 			return nil, errors.New("something bad happened")
+		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
 		}
 
 		t.Run("should not attempt to export hosting assets if the flag is not set", func(t *testing.T) {
@@ -265,6 +279,9 @@ Successfully pulled app down: app
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
 		}
 		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
 			return []realm.HostingAsset{

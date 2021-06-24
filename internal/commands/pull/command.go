@@ -61,7 +61,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	templateZipPkgs, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
+	templateZipPkgs, ok, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -69,6 +69,24 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
+	}
+
+	if ok {
+		templatePath := filepath.Join(pathTarget, local.FrontendPath)
+		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
+			return err
+		} else if !proceed {
+			return nil
+		}
+
+		for templateID, templateZipPkg := range templateZipPkgs {
+			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
+				return err
+			}
+			ui.Print(terminal.NewTextLog("Saved template to disk"))
+		}
+
+		pathTarget = filepath.Join(pathTarget, local.BackendPath)
 	}
 
 	// App path
@@ -90,24 +108,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			terminal.NewDebugLog("Contents would have been written to: %s", pathRelative),
 		)
 		return nil
-	}
-
-	if len(templateZipPkgs) != 0 {
-		templatePath := filepath.Join(pathTarget, local.FrontendPath)
-		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
-			return err
-		} else if !proceed {
-			return nil
-		}
-
-		for templateID, templateZipPkg := range templateZipPkgs {
-			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
-				return err
-			}
-			ui.Print(terminal.NewTextLog("Saved template to disk"))
-		}
-
-		pathTarget = filepath.Join(pathTarget, local.BackendPath)
 	}
 
 	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
