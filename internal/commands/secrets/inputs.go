@@ -15,5 +15,5 @@ const (
 	flagSecret            = "secret"
 	flagSecretShort       = "s"
 	flagSecretUsageUpdate = "Specify the name or ID of the secret to update"
-	flagSecretUsageDelete = "Speicfy the name or ID of the secret to delete"
+	flagSecretUsageDelete = "Specify the name or ID of the secret to delete"
 )
