@@ -2,7 +2,6 @@ package pull
 
 import (
 	"archive/zip"
-	"bytes"
 	"errors"
 	"io/ioutil"
 	"path/filepath"
@@ -163,182 +162,148 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 }
 
 func TestPullTemplatesResolve(t *testing.T) {
-	t.Run("should not do anything if there is no templateID passed in", func(t *testing.T) {
-		i := inputs{Project: "some-project", RemoteApp: "some-app"}
+	templateZipPkg1, err := zip.OpenReader("testdata/template_1.zip")
+	assert.Nil(t, err)
+	defer templateZipPkg1.Close()
+
+	templateZipPkg2, err := zip.OpenReader("testdata/template_2.zip")
+	assert.Nil(t, err)
+	defer templateZipPkg2.Close()
+
+	t.Run("should not do anything if fetching for compatible templates errors", func(t *testing.T) {
 		var realmClient mock.RealmClient
-		templateZipPkg, paths, err := i.resolveTemplate(nil, realmClient, "group-id", "app-id")
-		assert.Nil(t, err)
-		assert.Nil(t, paths)
-		assert.Nil(t, templateZipPkg)
-	})
-	t.Run("when there is a templateID passed in", func(t *testing.T) {
-		t.Run("should use frontendPath by default if autoConfirm is on", func(t *testing.T) {
-			i := inputs{TemplateID: "some-template-id"}
-			var realmClient mock.RealmClient
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{
-					{"some-template-id", "the name of some template id"},
-					{"some-other-template-id", "the name of the other"},
-				}, nil
-			}
 
-			expectedZipPkg, err := zip.OpenReader("testdata/template.zip")
-			assert.Nil(t, err)
-			defer func() {
-				err := expectedZipPkg.Close()
-				assert.Nil(t, err)
-			}()
-
-			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-				return &expectedZipPkg.Reader, err
-			}
-
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-
-			templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
-			assert.Nil(t, err)
-			assert.Equal(t, []string{frontendPath}, paths)
-			compareZipPackages(t, expectedZipPkg, templateZipPkg)
-
-		})
-		for _, tc := range []struct {
-			pathDescription string
-			chosenPaths     []string
-		}{
-			{
-				pathDescription: "with the frontend path selected",
-				chosenPaths:     []string{frontendPath},
-			},
-			{
-				pathDescription: "with the backend path selected",
-				chosenPaths:     []string{backendPath},
-			},
-			{
-				pathDescription: "with both paths selected",
-				chosenPaths:     []string{frontendPath, backendPath},
-			},
-		} {
-			t.Run(tc.pathDescription, func(t *testing.T) {
-				t.Run("should return the zip package and the selected path(s) when the template is compatible with the app's template", func(t *testing.T) {
-					i := inputs{TemplateID: "some-template-id"}
-					var realmClient mock.RealmClient
-					realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-						return []realm.Template{
-							{"some-template-id", "the name of some template id"},
-							{"some-other-template-id", "the name of the other"},
-						}, nil
-					}
-
-					expectedZipPkg, err := zip.OpenReader("testdata/template.zip")
-					assert.Nil(t, err)
-					defer func() {
-						err := expectedZipPkg.Close()
-						assert.Nil(t, err)
-					}()
-
-					realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-						return &expectedZipPkg.Reader, err
-					}
-
-					_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-					assert.Nil(t, consoleErr)
-					defer console.Close()
-
-					doneCh := make(chan struct{})
-					go func() {
-						defer close(doneCh)
-						console.ExpectString("Where would you like to export the template?")
-						for _, path := range tc.chosenPaths {
-							console.Send(path)
-							console.Send(" ")
-						}
-						console.SendLine("")
-						console.ExpectEOF()
-					}()
-
-					templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
-					assert.Nil(t, err)
-					assert.Equal(t, tc.chosenPaths, paths)
-					compareZipPackages(t, expectedZipPkg, templateZipPkg)
-				})
-			})
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, errors.New("something went wrong")
 		}
 
-		t.Run("should return nil if the requested template has no client", func(t *testing.T) {
-			i := inputs{TemplateID: "some-template-id"}
+		_, ui := mock.NewUI()
+		input := inputs{}
+		templateZipMap, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
+		assert.Nil(t, templateZipMap)
+		assert.Equal(t, "something went wrong", err.Error())
+	})
+
+	t.Run("with a template ID passed in", func(t *testing.T) {
+		t.Run("should return an error if fetching the ClientTemplate for this template fails", func(t *testing.T) {
 			var realmClient mock.RealmClient
+
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{
-					{"some-template-id", "the name of some template id"},
-					{"some-other-template-id", "the name of the other"},
-				}, nil
+				return []realm.Template{{ID: "some-template-id", Name: "should not be there"}}, nil
 			}
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+				return nil, errors.New("something went wrong with client")
+			}
+			_, ui := mock.NewUI()
+			input := inputs{TemplateID: "some-template-id"}
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
+			assert.Nil(t, result)
+			assert.Equal(t, "something went wrong with client", err.Error())
+		})
+
+		t.Run("should return an error if the template ID is not compatible with the app", func(t *testing.T) {
+			var realmClient mock.RealmClient
+
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+				return []realm.Template{{ID: "some-template-id", Name: "some template name"}}, nil
+			}
+
+			_, ui := mock.NewUI()
+			input := inputs{TemplateID: "wrong-template-id"}
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
+			assert.Nil(t, result)
+			assert.Equal(t, "template wrong-template-id is not compatible with this app", err.Error())
+		})
+
+		t.Run("should return the template client if it is compatible with this app", func(t *testing.T) {
+			var realmClient mock.RealmClient
+
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+				return []realm.Template{{ID: "some-template-id", Name: "some name"}, {ID: "some-other-template-id", Name: "some other name"}}, nil
+			}
+			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+				return &templateZipPkg1.Reader, nil
+			}
+
+			_, ui := mock.NewUI()
+			input := inputs{TemplateID: "some-template-id"}
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app")
+			assert.Nil(t, err)
+			assert.Equal(t, 1, len(result))
+			compareZipPackages(t, templateZipPkg1, result["some-template-id"])
+		})
+	})
+	t.Run("without a template ID passed in", func(t *testing.T) {
+		input := inputs{}
+		t.Run("should return nothing if the app is not made with a template", func(t *testing.T) {
+			var realmClient mock.RealmClient
+
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 				return nil, nil
 			}
-
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-
-			templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
+			_, ui := mock.NewUI()
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
+			assert.Nil(t, result)
 			assert.Nil(t, err)
-			assert.Nil(t, templateZipPkg)
-			assert.Equal(t, []string{frontendPath}, paths)
 		})
-
-		t.Run("should return nil if there's an issue with fetching compatible templates", func(t *testing.T) {
-			i := inputs{TemplateID: "some-template-id"}
+		t.Run("should return nothing if the user refuses to export with compatible templates", func(t *testing.T) {
 			var realmClient mock.RealmClient
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return nil, errors.New("issue with fetching templates")
+				return []realm.Template{{ID: "some-template-id", Name: "some name"}}, nil
 			}
+			_, console, _, ui, err := mock.NewVT10XConsole()
+			assert.Nil(t, err)
+			defer console.Close()
 
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+			doneCh := make(chan struct{})
+			go func() {
+				defer close(doneCh)
+				console.ExpectString("Would you like to export with a template?")
+				console.SendLine("n")
+				console.ExpectEOF()
+			}()
 
-			templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
-			assert.Nil(t, templateZipPkg)
-			assert.Nil(t, paths)
-			assert.Equal(t, "issue with fetching templates", err.Error())
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-group-app")
+			assert.Nil(t, result)
+			assert.Nil(t, err)
 		})
 
-		t.Run("should return nil if there's an issue with fetching the client for the requested template", func(t *testing.T) {
-			i := inputs{TemplateID: "some-template-id"}
+		t.Run("should prompt the user to export with compatible templates and return the templates selected", func(t *testing.T) {
 			var realmClient mock.RealmClient
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{
-					{"some-template-id", "some-template-name"},
-				}, nil
+				return []realm.Template{{ID: "some-template-id", Name: "some name"}, {ID: "some-other-id", Name: "some other name"}, {ID: "another-template-id", Name: "another name"}}, nil
 			}
+
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-				return nil, errors.New("issue with fetching client")
+				if templateID == "some-template-id" {
+					return &templateZipPkg1.Reader, nil
+				} else if templateID == "another-template-id"  {
+					return &templateZipPkg2.Reader, nil
+				}
+				return nil, errors.New("should not happen in this test")
 			}
 
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+			_, console, _, ui, err := mock.NewVT10XConsole()
+			assert.Nil(t, err)
+			defer console.Close()
 
-			templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
-			assert.Nil(t, templateZipPkg)
-			assert.Nil(t, paths)
-			assert.Equal(t, "issue with fetching client", err.Error())
-		})
-		t.Run("should return nil if the requested template is not compatible with the app", func(t *testing.T) {
-			i := inputs{TemplateID: "some-requested-template-id"}
-			var realmClient mock.RealmClient
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{
-					{"some-other-template-id", "some-template-name"},
-				}, nil
-			}
+			doneCh := make(chan struct{})
+			go func() {
+				defer close(doneCh)
+				console.ExpectString("Would you like to export with a template?")
+				console.SendLine("y")
+				console.ExpectString("Which template(s) would you like to export this app with")
+				console.Send("some name")
+				console.Send(" ")
+				console.Send("another name")
+				console.Send(" ")
+				console.SendLine("")
+				console.ExpectEOF()
+			}()
 
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-
-			templateZipPkg, paths, err := i.resolveTemplate(ui, realmClient, "group-id", "app-id")
-			assert.Nil(t, templateZipPkg)
-			assert.Nil(t, paths)
-			assert.Equal(t, "templateID some-requested-template-id is not compatible with this app", err.Error())
+			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-group-app")
+			assert.Nil(t, err)
+			assert.Equal(t, 2, len(result))
 		})
 	})
 }
