@@ -10,6 +10,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
+	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
@@ -67,6 +68,16 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 // Inputs is the command inputs
 func (cmd *CommandCreate) Inputs() cli.InputResolver {
 	return &cmd.inputs
+}
+
+// AdditionalTrackedFields adds any additional fields to our tracking service. In this case, we will apply the template id if in use
+func (cmd *CommandCreate) AdditionalTrackedFields() []telemetry.EventData {
+	if cmd.inputs.Template == "" {
+		return nil
+	}
+	return []telemetry.EventData{
+		{Key: telemetry.EventDataKeyTemplate, Value: cmd.inputs.Template},
+	}
 }
 
 // Handler is the command handler
