@@ -39,4 +39,13 @@ const (
 	eventDataKeyVersion     = "v"
 
 	EventDataKeyError = "err"
+
+	// EventDataKeyTemplate used to tracked if templates were used to create an app
+	EventDataKeyTemplate = "templateId"
 )
+
+// AdditionalTracker is used to propagate any additional fields to be tracked using our tracking srivce
+// this is called AFTER inputs are resolved so it is safe to use any inputs into the commands
+type AdditionalTracker interface {
+	AdditionalTrackedFields() []EventData
+}

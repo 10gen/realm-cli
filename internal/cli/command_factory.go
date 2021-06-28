@@ -107,7 +107,15 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		}
 
 		cmd.RunE = func(c *cobra.Command, a []string) error {
-			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandStart)
+			var additionalFields []telemetry.EventData
+			if additionalTracker, ok := command.Command.(telemetry.AdditionalTracker); ok {
+				additionalFields = additionalTracker.AdditionalTrackedFields()
+			}
+
+			factory.telemetryService.TrackEvent(
+				telemetry.EventTypeCommandStart,
+				additionalFields...,
+			)
 
 			err := command.Command.Handler(factory.profile, factory.ui, Clients{
 				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
@@ -117,12 +125,15 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
-					telemetry.EventData{Key: telemetry.EventDataKeyError, Value: err},
+					append(additionalFields, telemetry.EventData{Key: telemetry.EventDataKeyError, Value: err})...,
 				)
 				return fmt.Errorf("%s failed: %w", display, errDisableUsage{err})
 			}
 
-			factory.telemetryService.TrackEvent(telemetry.EventTypeCommandComplete)
+			factory.telemetryService.TrackEvent(
+				telemetry.EventTypeCommandComplete,
+				additionalFields...,
+			)
 			return nil
 		}
 	}
