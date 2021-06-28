@@ -44,8 +44,8 @@ func TestPullHandler(t *testing.T) {
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "", nil, errors.New("something bad happened")
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 		cmd := &Command{inputs{Project: "elsewhere", RemoteApp: "somewhere"}}
 
@@ -65,8 +65,8 @@ func TestPullHandler(t *testing.T) {
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 
 		t.Run("should not write any contents to the destination in a dry run", func(t *testing.T) {
@@ -126,8 +126,8 @@ Successfully pulled app down: app
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "", nil, errors.New("something bad happened")
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 
 		t.Run("should not attempt to export dependencies if the flag is not set", func(t *testing.T) {
@@ -182,8 +182,8 @@ Successfully pulled app down: app
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "node_modules.zip", depsPkg, nil
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 
 		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
@@ -213,8 +213,8 @@ Successfully pulled app down: app
 		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
 			return nil, errors.New("something bad happened")
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 
 		t.Run("should not attempt to export hosting assets if the flag is not set", func(t *testing.T) {
@@ -280,8 +280,8 @@ Successfully pulled app down: app
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
-		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-			return nil, nil
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+			return nil, false, nil
 		}
 		realmClient.HostingAssetsFn = func(groupID, appID string) ([]realm.HostingAsset, error) {
 			return []realm.HostingAsset{
@@ -384,8 +384,8 @@ Successfully pulled app down: app
 			},
 		} {
 			t.Run(fmt.Sprintf("should export the corresponding template when the template ID %s is passed in", tc.templateID), func(t *testing.T) {
-				realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-					return []realm.Template{{ID: tc.templateID, Name: "some template"}}, nil
+				realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+					return []realm.Template{{ID: tc.templateID, Name: "some template"}}, true, nil
 				}
 
 				realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
@@ -414,8 +414,8 @@ Successfully pulled app down: app
 		t.Run("should export all selected compatible templates if no template ID is passed in and the app is made with a template", func(t *testing.T) {
 			input := inputs{Project: "some_project", LocalPath: "app"}
 
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{{ID: "template_1", Name: "Template 1"}, {ID: "template_2", Name: "Template 2"}}, nil
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+				return []realm.Template{{ID: "template_1", Name: "Template 1"}, {ID: "template_2", Name: "Template 2"}}, true, nil
 			}
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
 				if templateID == "template_1" {
@@ -473,8 +473,8 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should return an error if resolving the template returns an error", func(t *testing.T) {
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return nil, errors.New("some kind of error")
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+				return nil, false, errors.New("some kind of error")
 			}
 
 			profile, teardown := mock.NewProfileFromTmpDir(t, "should_fail")
@@ -489,8 +489,8 @@ Successfully pulled app down: app
 			assert.Equal(t, "some kind of error", err.Error())
 		})
 		t.Run("should return an error if the template ID is not compatible with the app", func(t *testing.T) {
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{{ID: "wrong_id", Name: "should not appear"}}, nil
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+				return []realm.Template{{ID: "wrong_id", Name: "should not appear"}}, true, nil
 			}
 
 			profile, teardown := mock.NewProfileFromTmpDir(t, "should_fail_also")
@@ -506,8 +506,8 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should return nothing and continue exporting the app if the app is not made with a template", func(t *testing.T) {
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return nil, nil
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+				return nil, false, nil
 			}
 
 			profile, teardown := mock.NewProfileFromTmpDir(t, "should_fail_also")

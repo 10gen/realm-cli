@@ -71,23 +71,23 @@ func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader,
 	return zipPkg, nil
 }
 
-func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, error) {
+func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, bool, error) {
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(compatibleTemplatesPathPattern, groupID, appID), api.RequestOptions{})
 	if resErr != nil {
-		return nil, resErr
+		return nil, false, resErr
 	}
 
 	if res.StatusCode == http.StatusBadRequest {
-		return nil, nil
+		return nil, false, nil
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}
+		return nil, false, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}
 	}
 	defer res.Body.Close()
 
 	var templates []Template
 	if err := json.NewDecoder(res.Body).Decode(&templates); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return templates, nil
+	return templates, true, nil
 }

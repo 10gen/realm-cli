@@ -72,7 +72,7 @@ type Client interface {
 
 	AllTemplates() ([]Template, error)
 	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
-	CompatibleTemplates(groupID, appID string) ([]Template, error)
+	CompatibleTemplates(groupID, appID string) ([]Template, bool, error)
 
 	Status() error
 }

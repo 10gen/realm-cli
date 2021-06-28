@@ -61,7 +61,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	templateZipPkgs, ok, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
+	clientZipPkgs, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	if ok {
+	if clientZipPkgs != nil {
 		templatePath := filepath.Join(pathTarget, local.FrontendPath)
 		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
 			return err
@@ -79,7 +79,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
-		for templateID, templateZipPkg := range templateZipPkgs {
+		for templateID, templateZipPkg := range clientZipPkgs {
 			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
 				return err
 			}
