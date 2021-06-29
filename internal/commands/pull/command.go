@@ -2,6 +2,7 @@ package pull
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,7 +84,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
 				return err
 			}
-			ui.Print(terminal.NewTextLog("Saved template to disk"))
+			ui.Print(terminal.NewTextLog(fmt.Sprintf("Saved template %s to disk", templateID)))
 		}
 
 		pathTarget = filepath.Join(pathTarget, local.BackendPath)

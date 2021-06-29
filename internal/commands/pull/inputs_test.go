@@ -304,6 +304,13 @@ func TestPullTemplatesResolve(t *testing.T) {
 			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-group-app")
 			assert.Nil(t, err)
 			assert.Equal(t, 2, len(result))
+			expected := map[string]*zip.ReadCloser {
+				"some-template-id": templateZipPkg1,
+				"another-template-id": templateZipPkg2,
+			}
+			for templateId, zipPkg := range result {
+				compareZipPackages(t, expected[templateId], zipPkg)
+			}
 		})
 	})
 }

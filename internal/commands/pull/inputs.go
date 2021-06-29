@@ -147,22 +147,20 @@ func (i *inputs) resolveClient(ui terminal.UI, realmClient realm.Client, groupID
 			return nil, err
 		} else if proceed {
 			nameOptions := make([]string, len(compatibleTemplates))
-			namesToIDs := make(map[string]string, len(compatibleTemplates))
 			for idx, compatibleTemplate := range compatibleTemplates {
-				namesToIDs[compatibleTemplate.Name] = compatibleTemplate.ID
-				nameOptions[idx] = compatibleTemplate.Name
+				nameOptions[idx] = fmt.Sprintf("[%s]: %s", compatibleTemplate.ID, compatibleTemplate.Name)
 			}
 
-			var selectedTemplates []string
+			var selectedTemplateIdxs []int
 			if err := ui.AskOne(
-				&selectedTemplates,
+				&selectedTemplateIdxs,
 				&survey.MultiSelect{Message: "Which template(s) would you like to export this app with", Options: nameOptions}); err != nil {
 				return nil, err
 			}
 
-			templateIDs := make([]string, len(selectedTemplates))
-			for idx, selectedTemplate := range selectedTemplates {
-				templateIDs[idx] = namesToIDs[selectedTemplate]
+			templateIDs := make([]string, len(selectedTemplateIdxs))
+			for idx, selectedTemplateIdx := range selectedTemplateIdxs {
+				templateIDs[idx] = compatibleTemplates[selectedTemplateIdx].ID
 			}
 
 			result := make(map[string]*zip.Reader, len(templateIDs))
