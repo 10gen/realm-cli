@@ -400,12 +400,12 @@ Successfully pulled app down: app
 				cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: tc.templateID}}
 				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, tc.templateID)
+				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
 
 				_, err := os.Stat(destination)
 				assert.Nil(t, err)
 
-				testData, readErr := ioutil.ReadFile(filepath.Join(destination, "template.json"))
+				testData, readErr := ioutil.ReadFile(filepath.Join(destination, fmt.Sprintf("%s.json", tc.templateID)))
 				assert.Nil(t, readErr)
 				assert.Equal(t, tc.expectedTemplate, string(testData))
 			})
@@ -461,12 +461,12 @@ Successfully pulled app down: app
 }`,
 			}
 			for templateID, expectedString := range expected {
-				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
+				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
 
 				_, err = os.Stat(destination)
 				assert.Nil(t, err)
 
-				testData, readErr := ioutil.ReadFile(filepath.Join(destination, "template.json"))
+				testData, readErr := ioutil.ReadFile(filepath.Join(destination, fmt.Sprintf("%s.json", templateID)))
 				assert.Nil(t, readErr)
 				assert.Equal(t, expectedString, string(testData))
 			}

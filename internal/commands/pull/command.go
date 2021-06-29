@@ -81,7 +81,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 
 		for templateID, templateZipPkg := range clientZipPkgs {
-			if err := local.WriteZip(filepath.Join(templatePath, templateID), templateZipPkg); err != nil {
+			if err := local.WriteZip(templatePath, templateZipPkg); err != nil {
 				return err
 			}
 			ui.Print(terminal.NewTextLog(fmt.Sprintf("Saved template %s to disk", templateID)))
