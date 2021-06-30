@@ -311,7 +311,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		}, createdApp)
 	})
 
-	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
+	t.Run("when creating a template app", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -391,11 +391,19 @@ Check out your app: cd ./test-app && realm-cli app describe
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
-		appLocal, err := local.LoadApp(path)
-		assert.Nil(t, err)
+		t.Run("should export realm app in backend directory", func(t *testing.T) {
+			path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
+			appLocal, err := local.LoadApp(path)
+			assert.Nil(t, err)
 
-		assert.Equal(t, appLocal.RootDir, path)
+			assert.Equal(t, appLocal.RootDir, path)
+		})
+
+		t.Run("should export frontend client to frontend/ folder", func(t *testing.T) {
+			_, err := os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath, "palm-pilot.bitcoin-miner"))
+			frontendClientFolderExists := !os.IsNotExist((err))
+			assert.Equal(t, frontendClientFolderExists, true)
+		})
 	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {

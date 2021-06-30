@@ -53,9 +53,10 @@ type createInputs struct {
 }
 
 type dataSourceCluster struct {
-	Name   string        `json:"name"`
-	Type   string        `json:"type"`
-	Config configCluster `json:"config"`
+	Name    string        `json:"name"`
+	Type    string        `json:"type"`
+	Config  configCluster `json:"config"`
+	Version int           `json:"version"`
 }
 
 type configCluster struct {
@@ -65,9 +66,10 @@ type configCluster struct {
 }
 
 type dataSourceDatalake struct {
-	Name   string         `json:"name"`
-	Type   string         `json:"type"`
-	Config configDatalake `json:"config"`
+	Name    string         `json:"name"`
+	Type    string         `json:"type"`
+	Config  configDatalake `json:"config"`
+	Version int            `json:"version"`
 }
 
 type configDatalake struct {
@@ -206,6 +208,7 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 					ReadPreference:      "primary",
 					WireProtocolEnabled: false,
 				},
+				Version: 1,
 			})
 	}
 

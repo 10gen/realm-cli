@@ -18,10 +18,11 @@ const (
 
 // AppMeta is Realm application metadata
 type AppMeta struct {
-	Location        Location        `json:"location,omitempty"`
-	DeploymentModel DeploymentModel `json:"deployment_model,omitempty"`
-	Environment     Environment     `json:"environment,omitempty"`
-	Template        string          `json:"template_id,omitempty"`
+	Location          Location        `json:"location,omitempty"`
+	DeploymentModel   DeploymentModel `json:"deployment_model,omitempty"`
+	Environment       Environment     `json:"environment,omitempty"`
+	Template          string          `json:"template_id,omitempty"`
+	InitialDataSource interface{}     `json:"link_data_source_data,omitempty"`
 }
 
 // App is a Realm application
