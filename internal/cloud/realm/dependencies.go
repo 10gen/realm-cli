@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
@@ -18,9 +19,41 @@ const (
 	dependenciesPathPattern        = appPathPattern + "/dependencies"
 	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
+	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
 
 	paramFile = "file"
 )
+
+// AppDependenciesInfo is used to get information from a dependencies status request
+type AppDependenciesInfo struct {
+	Status DependenciesStatus `json:"status"`
+}
+
+// represents possible dependency statuses
+type DependenciesStatus string
+
+// set of known dependencies statuses
+const (
+	DependenciesStatusCreated    DependenciesStatus = "created"
+	DependenciesStatusSuccessful DependenciesStatus = "successful"
+	DependenciesStatusFailed     DependenciesStatus = "failed"
+)
+
+func (c *client) GetDependenciesStatus(groupID, appID string) (DependenciesStatus, error) {
+	res, err := c.do(
+		http.MethodGet,
+		fmt.Sprintf(dependenciesStatusPathPattern, groupID, appID),
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return "", err
+	}
+	var transpilation AppDependenciesInfo
+	if err := json.NewDecoder(res.Body).Decode(&transpilation); err != nil {
+		return "", err
+	}
+	return transpilation.Status, nil
+}
 
 func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	file, fileErr := os.Open(uploadPath)
@@ -37,9 +70,9 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
 
-	form, formErr := w.CreateFormFile(paramFile, fileInfo.Name())
-	if formErr != nil {
-		return formErr
+	form, err := w.CreateFormFile(paramFile, fileInfo.Name())
+	if err != nil {
+		return err
 	}
 
 	if _, err := io.Copy(form, file); err != nil {
@@ -49,20 +82,43 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 		return err
 	}
 
-	res, resErr := c.do(
-		http.MethodPost,
+	res, err := c.do(
+		http.MethodPut,
 		fmt.Sprintf(dependenciesPathPattern, groupID, appID),
 		api.RequestOptions{
 			Body:        body,
 			ContentType: w.FormDataContentType(),
 		},
 	)
-	if resErr != nil {
-		return resErr
+	if err != nil {
+		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
-		return api.ErrUnexpectedStatusCode{"import dependencies", res.StatusCode}
+		return fmt.Errorf("import got invalid status code %d", res.StatusCode)
 	}
+
+	waitForTranspilation := func() error {
+		status, err := c.GetDependenciesStatus(groupID, appID)
+		if err != nil {
+			return err
+		}
+		for status == DependenciesStatusCreated {
+			time.Sleep(time.Second)
+			status, err = c.GetDependenciesStatus(groupID, appID)
+			if err != nil {
+				return err
+			}
+			if status == DependenciesStatusFailed {
+				return fmt.Errorf("failed to transpile dependencies")
+			}
+		}
+		return nil
+	}
+
+	if err := waitForTranspilation(); err != nil {
+		return err
+	}
+
 	return nil
 }
 

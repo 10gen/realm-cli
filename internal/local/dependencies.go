@@ -2,7 +2,6 @@ package local
 
 import (
 	"archive/zip"
-	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"github.com/10gen/realm-cli/internal/terminal"
-
 	"github.com/briandowns/spinner"
 )
 
@@ -50,7 +48,7 @@ func FindAppDependencies(path string) (Dependencies, error) {
 }
 
 // PrepareUpload prepares a dependencies upload package by creating a .zip file
-// containing the specified archive's transpiled file contents in a tempmorary directory
+// containing the specified archive's file contents in a temporary directory
 // and returns that file path
 func (d Dependencies) PrepareUpload() (string, error) {
 	file, err := os.Open(d.ArchivePath)
@@ -60,11 +58,6 @@ func (d Dependencies) PrepareUpload() (string, error) {
 	defer file.Close()
 
 	archive, err := newArchiveReader(d.ArchivePath, file)
-	if err != nil {
-		return "", err
-	}
-
-	transpiler, err := newDefaultTranspiler()
 	if err != nil {
 		return "", err
 	}
@@ -129,16 +122,8 @@ func (d Dependencies) PrepareUpload() (string, error) {
 		}
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	transpiledSources, err := transpiler.Transpile(ctx, jsSources...)
-	if err != nil {
-		return "", err
-	}
-
-	for i, transpiledSource := range transpiledSources {
-		if err := writeFile(jsPaths[i], []byte(transpiledSource)); err != nil {
+	for i, jsSource := range jsSources {
+		if err := writeFile(jsPaths[i], []byte(jsSource)); err != nil {
 			return "", err
 		}
 	}

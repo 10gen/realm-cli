@@ -28,7 +28,14 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, err)
 
 		uploadPath := filepath.Join(wd, "testdata/dependencies_upload.zip")
+
+		_, err = client.GetDependenciesStatus(groupID, app.ID)
+		assert.NotNilf(t, err, "dependency status must return error before import")
 		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
+
+		status, err := client.GetDependenciesStatus(groupID, app.ID)
+		assert.Equalf(t, status, realm.DependenciesStatusSuccessful, "must wait until dependency status is successful during import")
+		assert.Nil(t, err)
 
 		t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
 			deployments, err := client.Deployments(groupID, app.ID)
@@ -78,7 +85,8 @@ func TestRealmDependencies(t *testing.T) {
 			assert.Nil(t, expectedDepsErr)
 			defer expectedDeps.Close()
 
-			assert.Equalf(t, parseZipArchive(t, expectedDeps), parseZipArchive(t, actualDeps), "expected archives to match")
+			// make sure same files are present; contents may be different because of transpilation
+			assert.Equal(t, getZipFileNames(t, expectedDeps), getZipFileNames(t, actualDeps))
 		})
 	})
 
@@ -97,7 +105,7 @@ func TestRealmDependencies(t *testing.T) {
 	})
 }
 
-func parseZipArchive(t *testing.T, file *os.File) map[string]string {
+func getZipFileNames(t *testing.T, file *os.File) map[string]bool {
 	t.Helper()
 
 	fileInfo, err := file.Stat()
@@ -106,5 +114,13 @@ func parseZipArchive(t *testing.T, file *os.File) map[string]string {
 	zipPkg, err := zip.NewReader(file, fileInfo.Size())
 	assert.Nil(t, err)
 
-	return parseZipPkg(t, zipPkg)
+	fileNames := make(map[string]bool, len(zipPkg.File))
+
+	for _, file := range zipPkg.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
+		fileNames[file.Name] = true
+	}
+	return fileNames
 }
