@@ -209,7 +209,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "wrong-template-id"}
 			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
-			assert.Equal(t, errors.New("template wrong-template-id is not compatible with this app"), err)
+			assert.Equal(t, errors.New("template 'wrong-template-id' is not compatible with this app"), err)
 		})
 
 		t.Run("should return the template client if it is compatible with this app", func(t *testing.T) {

@@ -485,7 +485,7 @@ Successfully pulled app down: app
 			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, errors.New("template some-template-id is not compatible with this app"), err)
+			assert.Equal(t, errors.New("template 'some-template-id' is not compatible with this app"), err)
 		})
 
 		t.Run("should return nothing and continue exporting the app if the app is not made with a template", func(t *testing.T) {
