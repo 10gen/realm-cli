@@ -3,7 +3,6 @@ package local
 import (
 	"archive/zip"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -100,7 +99,7 @@ func TestDependenciesPrepare(t *testing.T) {
 	testUpload, testUploadErr := os.Open(filepath.Join(wd, "testdata/dependencies/upload.zip"))
 	assert.Nil(t, testUploadErr)
 
-	testUploadPkg := parseZipPkg(t, testUpload)
+	testUploadPkg := getZipFileNames(t, testUpload)
 
 	for _, tc := range []struct {
 		description string
@@ -145,38 +144,27 @@ func TestDependenciesPrepare(t *testing.T) {
 			assert.Nil(t, fileErr)
 			defer upload.Close()
 
-			assert.Equal(t, testUploadPkg, parseZipPkg(t, upload))
+			assert.Equal(t, testUploadPkg, getZipFileNames(t, upload))
 		})
 	}
 }
 
-func parseZipPkg(t *testing.T, file *os.File) map[string]string {
+func getZipFileNames(t *testing.T, file *os.File) map[string]bool {
 	t.Helper()
 
-	fileInfo, fileInfoErr := file.Stat()
-	assert.Nil(t, fileInfoErr)
+	fileInfo, err := file.Stat()
+	assert.Nil(t, err)
 
-	zipPkg, zipErr := zip.NewReader(file, fileInfo.Size())
-	assert.Nil(t, zipErr)
+	zipPkg, err := zip.NewReader(file, fileInfo.Size())
+	assert.Nil(t, err)
 
-	out := make(map[string]string)
+	fileNames := make(map[string]bool, len(zipPkg.File))
+
 	for _, file := range zipPkg.File {
 		if file.FileInfo().IsDir() {
 			continue
 		}
-		out[file.Name] = parseZipFile(t, file)
+		fileNames[file.Name] = true
 	}
-	return out
-}
-
-func parseZipFile(t *testing.T, file *zip.File) string {
-	t.Helper()
-
-	r, openErr := file.Open()
-	assert.Nil(t, openErr)
-
-	data, readErr := ioutil.ReadAll(r)
-	assert.Nil(t, readErr)
-
-	return string(data)
+	return fileNames
 }

@@ -29,7 +29,7 @@ type AppDependenciesInfo struct {
 	Status DependenciesStatus `json:"status"`
 }
 
-// represents possible dependency statuses
+// DependenciesStatus represents possible dependency statuses
 type DependenciesStatus string
 
 // set of known dependencies statuses
