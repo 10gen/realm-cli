@@ -359,7 +359,7 @@ Successfully pulled app down: app
 		assert.Nil(t, err)
 		defer templateZipPkg2.Close()
 
-		t.Run(fmt.Sprintf("should export the corresponding template when the template id is passed in"), func(t *testing.T) {
+		t.Run("should export the corresponding template when the template id is passed in", func(t *testing.T) {
 			templateID := "template_2"
 			templateZip := &templateZipPkg2.Reader
 			expectedTemplate := `{
