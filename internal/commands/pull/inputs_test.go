@@ -179,13 +179,12 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 		_, ui := mock.NewUI()
 		input := inputs{}
-		templateZipMap, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
-		assert.Nil(t, templateZipMap)
-		assert.Equal(t, "something went wrong", err.Error())
+		_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+		assert.Equal(t, errors.New("something went wrong"), err)
 	})
 
-	t.Run("with a template ID passed in", func(t *testing.T) {
-		t.Run("should return an error if fetching the ClientTemplate for this template fails", func(t *testing.T) {
+	t.Run("with a template id passed in", func(t *testing.T) {
+		t.Run("should return an error if fetching the client template for this template fails", func(t *testing.T) {
 			var realmClient mock.RealmClient
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
@@ -196,12 +195,11 @@ func TestPullTemplatesResolve(t *testing.T) {
 			}
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "some-template-id"}
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
-			assert.Nil(t, result)
-			assert.Equal(t, "something went wrong with client", err.Error())
+			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+			assert.Equal(t, errors.New("something went wrong with client"), err)
 		})
 
-		t.Run("should return an error if the template ID is not compatible with the app", func(t *testing.T) {
+		t.Run("should return an error if the template id is not compatible with the app", func(t *testing.T) {
 			var realmClient mock.RealmClient
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
@@ -210,9 +208,8 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "wrong-template-id"}
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
-			assert.Nil(t, result)
-			assert.Equal(t, "template wrong-template-id is not compatible with this app", err.Error())
+			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+			assert.Equal(t, errors.New("template wrong-template-id is not compatible with this app"), err)
 		})
 
 		t.Run("should return the template client if it is compatible with this app", func(t *testing.T) {
@@ -227,13 +224,14 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "some-template-id"}
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app")
+			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app")
 			assert.Nil(t, err)
 			assert.Equal(t, 1, len(result))
 			compareZipPackages(t, templateZipPkg1, result["some-template-id"])
 		})
 	})
-	t.Run("without a template ID passed in", func(t *testing.T) {
+
+	t.Run("without a template id passed in", func(t *testing.T) {
 		input := inputs{}
 		t.Run("should return nothing if the app is not made with a template", func(t *testing.T) {
 			var realmClient mock.RealmClient
@@ -242,15 +240,18 @@ func TestPullTemplatesResolve(t *testing.T) {
 				return nil, false, nil
 			}
 			_, ui := mock.NewUI()
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-app-id")
-			assert.Nil(t, result)
+			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 			assert.Nil(t, err)
+			assert.Equal(t, 0, len(result))
+
 		})
+
 		t.Run("should return nothing if the user refuses to export with compatible templates", func(t *testing.T) {
 			var realmClient mock.RealmClient
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
 				return []realm.Template{{ID: "some-template-id", Name: "some name"}}, true, nil
 			}
+
 			_, console, _, ui, err := mock.NewVT10XConsole()
 			assert.Nil(t, err)
 			defer console.Close()
@@ -263,9 +264,9 @@ func TestPullTemplatesResolve(t *testing.T) {
 				console.ExpectEOF()
 			}()
 
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-group-app")
-			assert.Nil(t, result)
+			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-group-app")
 			assert.Nil(t, err)
+			assert.Equal(t, 0, len(result))
 		})
 
 		t.Run("should prompt the user to export with compatible templates and return the templates selected", func(t *testing.T) {
@@ -301,7 +302,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 				console.ExpectEOF()
 			}()
 
-			result, err := input.resolveClient(ui, realmClient, "some-group-id", "some-group-app")
+			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-group-app")
 			assert.Nil(t, err)
 			assert.Equal(t, 2, len(result))
 			expected := map[string]*zip.ReadCloser{

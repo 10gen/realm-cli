@@ -2,7 +2,6 @@ package pull
 
 import (
 	"archive/zip"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,43 +61,43 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	clientZipPkgs, err := cmd.inputs.resolveClient(ui, clients.Realm, app.GroupID, app.ID)
+	clientZipPkgs, err := cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
 
-	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
+	pathBackend, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
 
-	if clientZipPkgs != nil {
-		templatePath := filepath.Join(pathTarget, local.FrontendPath)
-		if proceed, err := checkPathDestination(ui, templatePath); err != nil {
+	if len(clientZipPkgs) != 0 {
+		pathFrontend := filepath.Join(pathBackend, local.FrontendPath)
+		if proceed, err := checkPathDestination(ui, pathFrontend); err != nil {
 			return err
 		} else if !proceed {
 			return nil
 		}
 
 		for templateID, templateZipPkg := range clientZipPkgs {
-			if err := local.WriteZip(templatePath, templateZipPkg); err != nil {
+			if err := local.WriteZip(pathFrontend, templateZipPkg); err != nil {
 				return err
 			}
-			ui.Print(terminal.NewTextLog(fmt.Sprintf("Saved template %s to disk", templateID)))
+			ui.Print(terminal.NewTextLog("Saved template %s to disk", templateID))
 		}
 
-		pathTarget = filepath.Join(pathTarget, local.BackendPath)
+		pathBackend = filepath.Join(pathBackend, local.BackendPath)
 	}
 
 	// App path
-	proceed, err := checkPathDestination(ui, pathTarget)
+	proceed, err := checkPathDestination(ui, pathBackend)
 	if err != nil {
 		return err
 	} else if !proceed {
 		return nil
 	}
 
-	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
+	appPath, err := filepath.Rel(profile.WorkingDirectory, pathBackend)
 	if err != nil {
 		return err
 	}
@@ -106,12 +105,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	if cmd.inputs.DryRun {
 		ui.Print(
 			terminal.NewTextLog("No changes were written to your file system"),
-			terminal.NewDebugLog("Contents would have been written to: %s", pathRelative),
+			terminal.NewDebugLog("Contents would have been written to: %s", appPath),
 		)
 		return nil
 	}
 
-	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
+	if err := local.WriteZip(pathBackend, zipPkg); err != nil {
 		return err
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
@@ -130,7 +129,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			return local.WriteFile(
-				filepath.Join(pathTarget, local.NameFunctions, archiveName),
+				filepath.Join(pathBackend, local.NameFunctions, archiveName),
 				0666,
 				archivePkg,
 			)
@@ -155,7 +154,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 				return err
 			}
 
-			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, app.GroupID, app.ID, appAssets)
+			return local.WriteHostingAssets(clients.HostingAsset, pathBackend, app.GroupID, app.ID, appAssets)
 		}
 
 		if err := exportHostingAssets(); err != nil {
@@ -164,7 +163,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
+	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", appPath))
 	return nil
 }
 

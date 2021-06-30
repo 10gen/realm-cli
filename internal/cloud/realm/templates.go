@@ -76,7 +76,6 @@ func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, bool, e
 	if resErr != nil {
 		return nil, false, resErr
 	}
-
 	if res.StatusCode == http.StatusBadRequest {
 		return nil, false, nil
 	}

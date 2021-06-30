@@ -16,9 +16,9 @@ const (
 )
 
 const (
-	// BackendPath is to specify the path for the app when we have templates
+	// BackendPath is the relative path to write app contents to when we have templates
 	BackendPath = "backend"
-	// FrontendPath is to specify the path for templates
+	// FrontendPath is the relative path to write frontend templates' contents to
 	FrontendPath = "frontend"
 )
 

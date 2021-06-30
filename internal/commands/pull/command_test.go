@@ -107,7 +107,8 @@ Successfully pulled app down: app
 
 			testData, readErr := ioutil.ReadFile(filepath.Join(destination, "test.json"))
 			assert.Nil(t, readErr)
-			assert.Equal(t, "{\"egg\":\"corn\"}\n", string(testData))
+			assert.Equal(t, `{"egg":"corn"}
+`, string(testData))
 		})
 	})
 
@@ -335,8 +336,7 @@ Successfully pulled app down: app
 		assert.Equal(t, "<html><body>hello world!</body></html>", string(modifiedData))
 	})
 
-	t.Run("with a template ID to export with", func(t *testing.T) {
-
+	t.Run("with a template id to export with", func(t *testing.T) {
 		// Needs to have a successful export for templates
 		zipPkg, err := zip.OpenReader("testdata/test.zip")
 		assert.Nil(t, err)
@@ -359,59 +359,41 @@ Successfully pulled app down: app
 		assert.Nil(t, err)
 		defer templateZipPkg2.Close()
 
-		for _, tc := range []struct {
-			templateID       string
-			templateZip      *zip.Reader
-			expectedTemplate string
-		}{
-			{
-				templateID:  "template_1",
-				templateZip: &templateZipPkg1.Reader,
-				expectedTemplate: `{
-  "egg": "over easy",
-  "pancake": "blueberry",
-  "toast": "french"
-}`,
-			},
-			{
-				templateID:  "template_2",
-				templateZip: &templateZipPkg2.Reader,
-				expectedTemplate: `{
+		t.Run(fmt.Sprintf("should export the corresponding template when the template id is passed in"), func(t *testing.T) {
+			templateID := "template_2"
+			templateZip := &templateZipPkg2.Reader
+			expectedTemplate := `{
   "egg": "scrambled",
   "pancake": "plain",
   "toast": "none"
-}`,
-			},
-		} {
-			t.Run(fmt.Sprintf("should export the corresponding template when the template ID %s is passed in", tc.templateID), func(t *testing.T) {
-				realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
-					return []realm.Template{{ID: tc.templateID, Name: "some template"}}, true, nil
-				}
+}`
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
+				return []realm.Template{{ID: templateID, Name: "some template"}}, true, nil
+			}
 
-				realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-					return tc.templateZip, nil
-				}
+			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
+				return templateZip, nil
+			}
 
-				profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
-				defer teardown()
+			profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
+			defer teardown()
 
-				_, ui := mock.NewUI()
+			_, ui := mock.NewUI()
 
-				cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: tc.templateID}}
-				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: templateID}}
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
+			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
 
-				_, err := os.Stat(destination)
-				assert.Nil(t, err)
+			_, err := os.Stat(destination)
+			assert.Nil(t, err)
 
-				testData, readErr := ioutil.ReadFile(filepath.Join(destination, fmt.Sprintf("%s.json", tc.templateID)))
-				assert.Nil(t, readErr)
-				assert.Equal(t, tc.expectedTemplate, string(testData))
-			})
-		}
+			testData, readErr := ioutil.ReadFile(filepath.Join(destination, fmt.Sprintf("%s.json", templateID)))
+			assert.Nil(t, readErr)
+			assert.Equal(t, expectedTemplate, string(testData))
+		})
 
-		t.Run("should export all selected compatible templates if no template ID is passed in and the app is made with a template", func(t *testing.T) {
+		t.Run("should export all selected compatible templates if no template id is passed in and the app is made with a template and autoConfirm is true", func(t *testing.T) {
 			input := inputs{Project: "some_project", LocalPath: "app"}
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
@@ -486,9 +468,10 @@ Successfully pulled app down: app
 			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, "some kind of error", err.Error())
+			assert.Equal(t, errors.New("some kind of error"), err)
 		})
-		t.Run("should return an error if the template ID is not compatible with the app", func(t *testing.T) {
+
+		t.Run("should return an error if the template id is not compatible with the app", func(t *testing.T) {
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, bool, error) {
 				return []realm.Template{{ID: "wrong_id", Name: "should not appear"}}, true, nil
 			}
@@ -502,7 +485,7 @@ Successfully pulled app down: app
 			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, "template some-template-id is not compatible with this app", err.Error())
+			assert.Equal(t, errors.New("template some-template-id is not compatible with this app"), err)
 		})
 
 		t.Run("should return nothing and continue exporting the app if the app is not made with a template", func(t *testing.T) {
@@ -529,7 +512,8 @@ Successfully pulled app down: app
 
 			testData, readErr := ioutil.ReadFile(filepath.Join(destination, "test.json"))
 			assert.Nil(t, readErr)
-			assert.Equal(t, "{\"egg\":\"corn\"}\n", string(testData))
+			assert.Equal(t, `{"egg":"corn"}
+`, string(testData))
 		})
 	})
 }
