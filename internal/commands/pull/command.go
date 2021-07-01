@@ -2,6 +2,7 @@ package pull
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,49 +67,49 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	projectPath, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
+	pathProject, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
 
 	var pathFrontend string
-	pathBackend := projectPath
+	pathBackend := pathProject
 	if len(clientZipPkgs) != 0 {
-		pathFrontend = filepath.Join(projectPath, local.FrontendPath)
-		pathBackend = filepath.Join(projectPath, local.BackendPath)
+		pathFrontend = filepath.Join(pathProject, local.FrontendPath)
+		pathBackend = filepath.Join(pathProject, local.BackendPath)
 	}
 
 	// App path
-	proceed, err := checkPathDestination(ui, projectPath)
+	proceed, err := checkPathDestination(ui, pathProject)
 	if err != nil {
 		return err
 	} else if !proceed {
 		return nil
 	}
 
-	pathRelative, err := filepath.Rel(profile.WorkingDirectory, projectPath)
+	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathProject)
 	if err != nil {
 		return err
 	}
 
 	if cmd.inputs.DryRun {
-		if len(cmd.inputs.TemplateID) != 0 {
-			ui.Print(
-				terminal.NewTextLog("No changes were written to your file system"),
+		logs := make([]terminal.Log, 0, 3)
+		logs = append(logs, terminal.NewTextLog("No changes were written to your file system"))
+
+		if len(clientZipPkgs) != 0 {
+			logs = append(logs,
 				terminal.NewDebugLog("App contents would have been written to: %s", filepath.Join(pathRelative, local.BackendPath)),
 				terminal.NewDebugLog("Template contents would have been written to: %s", filepath.Join(pathRelative, local.FrontendPath)),
 			)
 		} else {
-			ui.Print(
-				terminal.NewTextLog("No changes were written to your file system"),
-				terminal.NewDebugLog("Contents would have been written to: %s", pathRelative),
-			)
+			logs = append(logs, terminal.NewDebugLog("Contents would have been written to: %s", pathRelative))
 		}
+		ui.Print(logs...)
 		return nil
 	}
 
 	if err := local.WriteZip(pathBackend, zipPkg); err != nil {
-		return err
+		return fmt.Errorf("unable to write app to disk: %s", err)
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
@@ -160,12 +161,17 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
 	}
 
+	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
 	for templateID, templateZipPkg := range clientZipPkgs {
 		if err := local.WriteZip(pathFrontend, templateZipPkg); err != nil {
-			ui.Print(terminal.NewTextLog("Unable to save template %s to disk: %v", templateID, err))
+			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
 		} else {
-			ui.Print(terminal.NewTextLog("Saved template %s to disk", templateID))
+			// TODO(REALMC-9452): defer printing the successfully saved templates until after the `Successfully pulled app down' log
+			successfulTemplateWrites = append(successfulTemplateWrites, templateID)
 		}
+	}
+	if len(successfulTemplateWrites) != 0{
+		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites))
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))

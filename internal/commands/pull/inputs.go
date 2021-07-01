@@ -124,10 +124,6 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, err
 	}
 
-	if len(compatibleTemplates) == 0 {
-		return nil, nil
-	}
-
 	if i.TemplateID != "" {
 		for _, template := range compatibleTemplates {
 			if template.ID == i.TemplateID {
@@ -141,6 +137,10 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 			}
 		}
 		return nil, fmt.Errorf("template '%s' is not compatible with this app", i.TemplateID)
+	}
+
+	if len(compatibleTemplates) == 0 {
+		return nil, nil
 	}
 
 	if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {

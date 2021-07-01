@@ -68,6 +68,9 @@ func TestPullHandler(t *testing.T) {
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 			return nil, nil
 		}
+		realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+			return nil, true, nil
+		}
 
 		t.Run("should not write any contents to the destination in a dry run", func(t *testing.T) {
 			profile := mock.NewProfile(t)
@@ -92,6 +95,20 @@ Contents would have been written to: app
 
 			out, ui := mock.NewUI()
 
+			var realmClient mock.RealmClient
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return []realm.App{{ID: "appID", Name: "appName"}}, nil
+			}
+			realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+				return "app_20210101", &zipPkg.Reader, nil
+			}
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+				return []realm.Template{{ID: "some-template-id", Name:"some name"}}, nil
+			}
+			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+				return nil, true, nil
+			}
+
 			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app", TemplateID: "some-template-id"}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
@@ -104,9 +121,9 @@ Template contents would have been written to: app/frontend
 `, out.String())
 
 			_, err := os.Stat(backendDestination)
-			assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", err)
+			assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", backendDestination, err)
 			_, err = os.Stat(frontendDestination)
-			assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", err)
+			assert.True(t, os.IsNotExist(err), "expected %s to not exist, but instead: %s", frontendDestination, err)
 		})
 
 		t.Run("should write the received zip package to the destination", func(t *testing.T) {
@@ -415,7 +432,7 @@ Successfully pulled app down: app
 			assert.Equal(t, expectedTemplate, string(testData))
 		})
 
-		t.Run("should export all selected compatible templates if no template id is passed in and the app is made with a template and autoConfirm is true", func(t *testing.T) {
+		t.Run("should export all selected compatible templates if no template id is passed in and the app is made with a template and auto confirm is not set", func(t *testing.T) {
 			input := inputs{Project: "some_project", LocalPath: "app"}
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {

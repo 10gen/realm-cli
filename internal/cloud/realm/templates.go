@@ -51,7 +51,7 @@ func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader,
 	}
 	if res.StatusCode == http.StatusNoContent {
 		// No client exists for this template so there is nothing to return
-		return nil, true, nil
+		return nil, false, nil
 	}
 	if res.StatusCode != http.StatusOK {
 		return nil, false, api.ErrUnexpectedStatusCode{"get client template", res.StatusCode}
@@ -77,6 +77,7 @@ func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, error) 
 		return nil, resErr
 	}
 	if res.StatusCode == http.StatusBadRequest {
+		// 400 implies app was not created with template so we return no compatible templates
 		return nil, nil
 	}
 	if res.StatusCode != http.StatusOK {
