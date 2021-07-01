@@ -33,7 +33,7 @@ type Client interface {
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error
-	// TODO(REALMC-XXXX): remove this once /apps has "template_id" in the payload
+	// TODO(REALMC-9462): remove this once /apps has "template_id" in the payload
 	FindApp(groupID, appID string) (App, error)
 	FindApps(filter AppFilter) ([]App, error)
 	AppDescription(groupID, appID string) (AppDescription, error)

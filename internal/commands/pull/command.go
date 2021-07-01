@@ -62,7 +62,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	// TODO(REALMC-XXXX): maybe make this less hacky (pass app in to resolveClientTemplates perhaps?)
+	// TODO(REALMC-9462): maybe make this less hacky (pass app in to resolveClientTemplates perhaps?)
 	var clientZipPkgs map[string]*zip.Reader
 	if app.TemplateID != "" {
 		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)

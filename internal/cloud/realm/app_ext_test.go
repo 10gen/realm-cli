@@ -41,7 +41,7 @@ func TestRealmApps(t *testing.T) {
 				assert.Equal(t, []realm.App{app}, apps)
 			})
 
-			// TODO(REALMC-XXXX): remove this once /apps has "template_id" in the payload
+			// TODO(REALMC-9462): remove this once /apps has "template_id" in the payload
 			t.Run("and find the app by group and app id", func(t *testing.T) {
 				found, err := client.FindApp(app.GroupID, app.ID)
 				assert.Nil(t, err)

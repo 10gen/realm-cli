@@ -115,7 +115,7 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 		return realm.App{}, err
 	}
 
-	// TODO(REALMC-XXXX): remove this once /apps has "template_id" in the payload
+	// TODO(REALMC-9462): remove this once /apps has "template_id" in the payload
 	app, err = clients.Realm.FindApp(app.GroupID, app.ID)
 	if err != nil {
 		return realm.App{}, err
