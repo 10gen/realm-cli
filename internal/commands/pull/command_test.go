@@ -103,7 +103,7 @@ Contents would have been written to: app
 				return "app_20210101", &zipPkg.Reader, nil
 			}
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{{ID: "some-template-id", Name:"some name"}}, nil
+				return []realm.Template{{ID: "some-template-id", Name: "some name"}}, nil
 			}
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 				return nil, true, nil

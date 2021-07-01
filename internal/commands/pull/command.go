@@ -165,12 +165,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	for templateID, templateZipPkg := range clientZipPkgs {
 		if err := local.WriteZip(pathFrontend, templateZipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
-		} else {
-			// TODO(REALMC-9452): defer printing the successfully saved templates until after the `Successfully pulled app down' log
-			successfulTemplateWrites = append(successfulTemplateWrites, templateID)
 		}
+		// TODO(REALMC-9452): defer printing the successfully saved templates until after the `Successfully pulled app down' log
+		successfulTemplateWrites = append(successfulTemplateWrites, templateID)
 	}
-	if len(successfulTemplateWrites) != 0{
+	if len(successfulTemplateWrites) != 0 {
 		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites))
 	}
 

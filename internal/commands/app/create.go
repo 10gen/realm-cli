@@ -330,7 +330,7 @@ func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, ba
 		s.Start()
 		defer s.Stop()
 
-		zipPkg, err := realmClient.ClientTemplate(
+		zipPkg, ok, err := realmClient.ClientTemplate(
 			groupID,
 			appID,
 			templateID,
@@ -338,7 +338,9 @@ func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, ba
 		if err != nil {
 			return err
 		}
-
+		if !ok {
+			return fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
+		}
 		if err := local.WriteZip(path.Join(rootDir, local.FrontendPath), zipPkg); err != nil {
 			return err
 		}

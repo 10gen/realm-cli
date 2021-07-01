@@ -191,7 +191,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 				return []realm.Template{{ID: "some-template-id", Name: "should not be there"}}, nil
 			}
 			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
-				return nil, false,  errors.New("something went wrong with client")
+				return nil, false, errors.New("something went wrong with client")
 			}
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "some-template-id"}
