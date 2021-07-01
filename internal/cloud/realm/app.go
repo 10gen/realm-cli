@@ -36,6 +36,7 @@ type App struct {
 	LastUsed     int64  `json:"last_used"`
 	LastModified int64  `json:"last_modified"`
 	Product      string `json:"product"`
+	TemplateID   string `json:"template_id"`
 }
 
 // Option returns the Realm app data displayed as a selectable option
@@ -83,6 +84,28 @@ func (c *client) DeleteApp(groupID, appID string) error {
 		return api.ErrUnexpectedStatusCode{"delete app", res.StatusCode}
 	}
 	return nil
+}
+
+// TODO(REALMC-XXXX): remove this once /apps has "template_id" in the payload
+func (c *client) FindApp(groupID, appID string) (App, error) {
+	res, err := c.do(
+		http.MethodGet,
+		fmt.Sprintf(appPathPattern, groupID, appID),
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return App{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return App{}, api.ErrUnexpectedStatusCode{"get app", res.StatusCode}
+	}
+	defer res.Body.Close()
+
+	var app App
+	if err := json.NewDecoder(res.Body).Decode(&app); err != nil {
+		return App{}, err
+	}
+	return app, nil
 }
 
 // AppFilter represents the optional filter parameters available for lists of apps

@@ -35,10 +35,17 @@ func TestRealmApps(t *testing.T) {
 			assert.Equal(t, name, app.Name)
 			assert.True(t, strings.HasPrefix(app.ClientAppID, name), "expected client app id to be prefixed with name")
 
-			t.Run("and find the app by id", func(t *testing.T) {
+			t.Run("and find the app by client app id", func(t *testing.T) {
 				apps, err := client.FindApps(realm.AppFilter{App: app.ClientAppID})
 				assert.Nil(t, err)
 				assert.Equal(t, []realm.App{app}, apps)
+			})
+
+			// TODO(REALMC-XXXX): remove this once /apps has "template_id" in the payload
+			t.Run("and find the app by group and app id", func(t *testing.T) {
+				found, err := client.FindApp(app.GroupID, app.ID)
+				assert.Nil(t, err)
+				assert.Equal(t, app, found)
 			})
 
 			t.Run("and get the app description by id", func(t *testing.T) {

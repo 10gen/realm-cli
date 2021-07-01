@@ -62,9 +62,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	clientZipPkgs, err := cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
-	if err != nil {
-		return err
+	// TODO(REALMC-XXXX): maybe make this less hacky (pass app in to resolveClientTemplates perhaps?)
+	var clientZipPkgs map[string]*zip.Reader
+	if app.TemplateID != "" {
+		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
+		if err != nil {
+			return err
+		}
 	}
 
 	pathProject, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
