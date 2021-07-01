@@ -22,6 +22,7 @@ type AppMeta struct {
 	DeploymentModel DeploymentModel `json:"deployment_model,omitempty"`
 	Environment     Environment     `json:"environment,omitempty"`
 	Template        string          `json:"template_id,omitempty"`
+	DataSource      interface{}     `json:"data_source,omitempty"`
 }
 
 // App is a Realm application

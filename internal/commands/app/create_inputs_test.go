@@ -399,6 +399,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 					ReadPreference:      "primary",
 					WireProtocolEnabled: false,
 				},
+				Version: 1,
 			},
 		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
@@ -434,6 +435,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 					ReadPreference:      "primary",
 					WireProtocolEnabled: false,
 				},
+				Version: 1,
 			},
 			{
 				Name: "another-data-source",
@@ -443,6 +445,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 					ReadPreference:      "primary",
 					WireProtocolEnabled: false,
 				},
+				Version: 1,
 			},
 		}, ds)
 		assert.Equal(t, "123", expectedGroupID)
@@ -508,6 +511,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 					ReadPreference:      "primary",
 					WireProtocolEnabled: false,
 				},
+				Version: 1,
 			},
 		}, ds)
 	})
@@ -673,6 +677,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 							ReadPreference:      "primary",
 							WireProtocolEnabled: false,
 						},
+						Version: 1,
 					},
 					{
 						Name: tc.expectedClusterServiceNames[1],
@@ -682,6 +687,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 							ReadPreference:      "primary",
 							WireProtocolEnabled: false,
 						},
+						Version: 1,
 					},
 				}, ds)
 			})

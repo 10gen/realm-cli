@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -116,4 +117,43 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 	i.Template = templateIDs[selectedIndex]
 
 	return nil
+}
+
+func (i createInputs) resolveInitialTemplateDataSource(ui terminal.UI, dataLakes []dataSourceDatalake, clusters []dataSourceCluster) (interface{}, error) {
+	if len(dataLakes)+len(clusters) == 0 {
+		return nil, errors.New("cannot create a template without an initial data source")
+	}
+
+	if len(dataLakes)+len(clusters) == 1 {
+		if len(clusters) > 0 {
+			return clusters[0], nil
+		}
+		return dataLakes[0], nil
+	}
+
+	// If linking multiple data sources, prompt the user for which data source to write template app schema onto
+	initialTemplateDataSources := make([]interface{}, 0, len(clusters)+len(dataLakes))
+	options := make([]string, 0, len(clusters)+len(dataLakes))
+
+	for _, cluster := range clusters {
+		initialTemplateDataSources = append(initialTemplateDataSources, cluster)
+		options = append(options, fmt.Sprintf("[Cluster]: %s", cluster.Name))
+	}
+	for _, datalake := range dataLakes {
+		initialTemplateDataSources = append(initialTemplateDataSources, datalake)
+		options = append(options, fmt.Sprintf("[Data Lake]: %s", datalake.Name))
+	}
+
+	var selectedIndex int
+	if err := ui.AskOne(
+		&selectedIndex,
+		&survey.Select{
+			Message: "Please choose a data source to write template app schema to:",
+			Options: options,
+		},
+	); err != nil {
+		return nil, err
+	}
+
+	return initialTemplateDataSources[selectedIndex], nil
 }

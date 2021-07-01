@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -319,6 +320,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 		procedure := func(c *expect.Console) {
 			c.ExpectString("Please select a template from the available options")
 			c.SendLine("palm-pilot.bitcoin-miner")
+			c.ExpectString("Enter a Service Name for Cluster 'test-cluster")
+			c.SendLine("test-cluster")
 			c.ExpectEOF()
 		}
 
@@ -378,13 +381,19 @@ Check out your app: cd ./test-app && realm-cli app describe
 		ac.GroupsFn = func() ([]atlas.Group, error) {
 			return []atlas.Group{{ID: "123"}}, nil
 		}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{{Name: "test-cluster"}}, nil
+		}
 
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Name:            "template-app",
-			Location:        realm.LocationVirginia,
-			DeploymentModel: realm.DeploymentModelGlobal,
-			ConfigVersion:   realm.DefaultAppConfigVersion,
-		}}}
+		cmd := &CommandCreate{createInputs{
+			newAppInputs: newAppInputs{
+				Name:            "template-app",
+				Location:        realm.LocationVirginia,
+				DeploymentModel: realm.DeploymentModelGlobal,
+				ConfigVersion:   realm.DefaultAppConfigVersion,
+			},
+			Clusters: []string{"test-cluster"},
+		}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
@@ -510,7 +519,26 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
 
-		out, ui := mock.NewUI()
+		procedure := func(c *expect.Console) {
+			c.ExpectString("Please select a template from the available options")
+			c.SendLine("palm-pilot.bitcoin-miner")
+			c.ExpectString("Enter a Service Name for Cluster 'test-cluster")
+			c.SendLine("test-cluster")
+			c.ExpectEOF()
+		}
+
+		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
+		out := new(bytes.Buffer)
+		console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			procedure(console)
+		}()
+
 		testApp := realm.App{
 			ID:          "456",
 			GroupID:     "123",
@@ -521,6 +549,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
 
+		templateID := "palm-pilot.bitcoin-miner"
 		client := mock.RealmClient{
 			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{}, nil
@@ -543,7 +572,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 			TemplatesFn: func() ([]realm.Template, error) {
 				return []realm.Template{
 					{
-						ID:   "palm-pilot.bitcoin-miner",
+						ID:   templateID,
 						Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
 					},
 				}, nil
@@ -556,15 +585,25 @@ Check out your app: cd ./remote-app && realm-cli app describe
 			return &frontendZipPkg.Reader, err
 		}
 
-		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
-			Name:            "bitcoin-miner",
-			Project:         testApp.GroupID,
-			Template:        "palm-pilot.bitcoin-miner",
-			Location:        realm.LocationIreland,
-			DeploymentModel: realm.DeploymentModelGlobal,
-		}}}
+		cmd := &CommandCreate{createInputs{
+			newAppInputs: newAppInputs{
+				Name:            "bitcoin-miner",
+				Project:         testApp.GroupID,
+				Template:        templateID,
+				Location:        realm.LocationIreland,
+				DeploymentModel: realm.DeploymentModelGlobal,
+			},
+			Clusters: []string{"test-cluster"},
+		}}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client, Atlas: mock.AtlasClient{
+			ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+				return []atlas.Cluster{{Name: "test-cluster"}}, nil
+			},
+		}}))
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
 
 		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
 		assert.Nil(t, err)
@@ -573,19 +612,25 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		assert.Nil(t, err)
 		assert.Equal(t, len(backendFileInfo), 9)
 
-		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath))
+		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath, templateID))
 		assert.Nil(t, err)
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
 
-		assert.Equal(t, fmt.Sprintf(`Successfully created app
+		regex, err := regexp.Compile(`\s+`)
+		assert.Nil(t, err)
+
+		actual := regex.ReplaceAllString(out.String(), " ")
+		expected := regex.ReplaceAllString(fmt.Sprintf(`Successfully created app
 {
   "client_app_id": "bitcoin-miner-abcde",
   "filepath": %q,
-  "url": "http://localhost:8080/groups/123/apps/456/dashboard"
+  "url": "http://localhost:8080/groups/123/apps/456/dashboard",
+  "clusters": [ { "name": "test-cluster" } ]
 }
 Check out your app: cd ./bitcoin-miner && realm-cli app describe
-`, appLocal.RootDir), out.String())
+`, appLocal.RootDir), " ")
+		assert.Equal(t, strings.Contains(actual, expected), true)
 	})
 
 	for _, tc := range []struct {

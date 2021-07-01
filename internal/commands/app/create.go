@@ -183,15 +183,26 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return nil
 	}
 
+	createAppMetadata := realm.AppMeta{
+		Location:        cmd.inputs.Location,
+		DeploymentModel: cmd.inputs.DeploymentModel,
+		Environment:     cmd.inputs.Environment,
+		Template:        cmd.inputs.Template,
+	}
+
+	// choose a data source to import template app schema data onto
+	if cmd.inputs.Template != "" {
+		initialDataSource, err := cmd.inputs.resolveInitialTemplateDataSource(ui, dsDatalakes, dsClusters)
+		if err != nil {
+			return err
+		}
+		createAppMetadata.DataSource = initialDataSource
+	}
+
 	appRealm, err := clients.Realm.CreateApp(
 		groupID,
 		cmd.inputs.Name,
-		realm.AppMeta{
-			cmd.inputs.Location,
-			cmd.inputs.DeploymentModel,
-			cmd.inputs.Environment,
-			cmd.inputs.Template,
-		},
+		createAppMetadata,
 	)
 	if err != nil {
 		return err
@@ -247,6 +258,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 				"readPreference":      dsCluster.Config.ReadPreference,
 				"wireProtocolEnabled": dsCluster.Config.WireProtocolEnabled,
 			},
+			"version": dsCluster.Version,
 		})
 
 	}
@@ -258,6 +270,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 			"config": map[string]interface{}{
 				"dataLakeName": dsDatalake.Config.DatalakeName,
 			},
+			"version": dsDatalake.Version,
 		})
 	}
 
@@ -331,7 +344,7 @@ func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, ba
 			return err
 		}
 
-		if err := local.WriteZip(path.Join(rootDir, frontendPath), zipPkg); err != nil {
+		if err := local.WriteZip(path.Join(rootDir, frontendPath, templateID), zipPkg); err != nil {
 			return err
 		}
 
