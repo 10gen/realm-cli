@@ -14,7 +14,6 @@ import (
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
-	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
 	"github.com/spf13/pflag"
 )
@@ -184,59 +183,26 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return nil
 	}
 
+	createAppMetadata := realm.AppMeta{
+		Location:        cmd.inputs.Location,
+		DeploymentModel: cmd.inputs.DeploymentModel,
+		Environment:     cmd.inputs.Environment,
+		Template:        cmd.inputs.Template,
+	}
+
 	// choose a data source to import template app schema data onto
-	var initialDataSource interface{}
 	if cmd.inputs.Template != "" {
-		if len(dsClusters)+len(dsDatalakes) == 1 {
-			if len(dsClusters) > 0 {
-				initialDataSource = dsClusters[0]
-			} else {
-				initialDataSource = dsDatalakes[0]
-			}
-		} else {
-			// If linking multiple data sources, prompt the user to ask on which data source to write template app
-			// schema to
-			initialTemplateDataSources := make([]interface{}, 0, len(dsClusters)+len(dsDatalakes))
-			options := make([]string, 0, len(dsClusters)+len(dsDatalakes))
-
-			for _, cluster := range dsClusters {
-				initialTemplateDataSources = append(initialTemplateDataSources, cluster)
-				options = append(options, fmt.Sprintf("[Cluster]: %s", cluster.Name))
-			}
-			for _, datalake := range dsDatalakes {
-				initialTemplateDataSources = append(initialTemplateDataSources, datalake)
-				options = append(options, fmt.Sprintf("[Data Lake]: %s", datalake.Name))
-			}
-
-			var selectedIndex int
-			if err := ui.AskOne(
-				&selectedIndex,
-				&survey.Select{
-					Message: "Please choose a data source to write template app schema to:",
-					Options: options,
-				},
-			); err != nil {
-				return err
-			}
-			initialDataSource = initialTemplateDataSources[selectedIndex]
+		initialDataSource, err := cmd.inputs.resolveInitialTemplateDataSource(ui, dsDatalakes, dsClusters)
+		if err != nil {
+			return err
 		}
-
-		if initialDataSource == nil {
-			ui.Print(terminal.NewTextLog("Cannot create a template app without an initial data source"))
-			return nil
-		}
+		createAppMetadata.DataSource = initialDataSource
 	}
 
 	appRealm, err := clients.Realm.CreateApp(
 		groupID,
 		cmd.inputs.Name,
-		realm.AppMeta{
-			Location:        cmd.inputs.Location,
-			DeploymentModel: cmd.inputs.DeploymentModel,
-			Environment:     cmd.inputs.Environment,
-			Template:        cmd.inputs.Template,
-			DataSource:      initialDataSource,
-		},
+		createAppMetadata,
 	)
 	if err != nil {
 		return err
