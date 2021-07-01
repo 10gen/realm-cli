@@ -75,16 +75,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	pathBackend := projectPath
 	if len(clientZipPkgs) != 0 {
 		pathFrontend = filepath.Join(projectPath, local.FrontendPath)
-		if proceed, err := checkPathDestination(ui, pathFrontend); err != nil {
-			return err
-		} else if !proceed {
-			return nil
-		}
 		pathBackend = filepath.Join(projectPath, local.BackendPath)
 	}
 
 	// App path
-	proceed, err := checkPathDestination(ui, pathBackend)
+	proceed, err := checkPathDestination(ui, projectPath)
 	if err != nil {
 		return err
 	} else if !proceed {
