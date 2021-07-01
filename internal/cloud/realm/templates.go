@@ -44,49 +44,49 @@ func (c *client) AllTemplates() ([]Template, error) {
 	return templates, nil
 }
 
-func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error) {
+func (c *client) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(clientTemplatePathPattern, groupID, appID, templateID), api.RequestOptions{})
 	if resErr != nil {
-		return nil, resErr
+		return nil, false, resErr
 	}
 	if res.StatusCode == http.StatusNoContent {
 		// No client exists for this template so there is nothing to return
-		return nil, nil
+		return nil, true, nil
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"get client template", res.StatusCode}
+		return nil, false, api.ErrUnexpectedStatusCode{"get client template", res.StatusCode}
 	}
 
 	defer res.Body.Close()
 	body, bodyErr := ioutil.ReadAll(res.Body)
 	if bodyErr != nil {
-		return nil, bodyErr
+		return nil, false, bodyErr
 	}
 
 	zipPkg, zipErr := zip.NewReader(bytes.NewReader(body), int64(len(body)))
 	if zipErr != nil {
-		return nil, zipErr
+		return nil, false, zipErr
 	}
 
-	return zipPkg, nil
+	return zipPkg, true, nil
 }
 
-func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, bool, error) {
+func (c *client) CompatibleTemplates(groupID, appID string) ([]Template, error) {
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(compatibleTemplatesPathPattern, groupID, appID), api.RequestOptions{})
 	if resErr != nil {
-		return nil, false, resErr
+		return nil, resErr
 	}
 	if res.StatusCode == http.StatusBadRequest {
-		return nil, false, nil
+		return nil, nil
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, false, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}
+		return nil, api.ErrUnexpectedStatusCode{"get compatible templates", res.StatusCode}
 	}
 	defer res.Body.Close()
 
 	var templates []Template
 	if err := json.NewDecoder(res.Body).Decode(&templates); err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return templates, true, nil
+	return templates, nil
 }

@@ -62,8 +62,8 @@ type RealmClient struct {
 	SchemaModelsFn func(groupID, appID, language string) ([]realm.SchemaModel, error)
 
 	AllTemplatesFn        func() ([]realm.Template, error)
-	ClientTemplateFn      func(groupID, appID, templateID string) (*zip.Reader, error)
-	CompatibleTemplatesFn func(groupID, appID string) ([]realm.Template, bool, error)
+	ClientTemplateFn      func(groupID, appID, templateID string) (*zip.Reader, bool, error)
+	CompatibleTemplatesFn func(groupID, appID string) ([]realm.Template, error)
 
 	StatusFn func() error
 }
@@ -461,7 +461,7 @@ func (rc RealmClient) AllTemplates() ([]realm.Template, error) {
 // ClientTemplate calls the mocked ClientTemplate implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error) {
+func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 	if rc.ClientTemplateFn != nil {
 		return rc.ClientTemplateFn(groupID, appID, templateID)
 	}
@@ -471,7 +471,7 @@ func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Re
 // CompatibleTemplates calls the mocked CompatibleTemplates implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) CompatibleTemplates(groupID, appID string) ([]realm.Template, bool, error) {
+func (rc RealmClient) CompatibleTemplates(groupID, appID string) ([]realm.Template, error) {
 	if rc.CompatibleTemplatesFn != nil {
 		return rc.CompatibleTemplatesFn(groupID, appID)
 	}

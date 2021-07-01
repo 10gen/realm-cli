@@ -71,8 +71,8 @@ type Client interface {
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
 	AllTemplates() ([]Template, error)
-	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
-	CompatibleTemplates(groupID, appID string) ([]Template, bool, error)
+	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error)
+	CompatibleTemplates(groupID, appID string) ([]Template, error)
 
 	Status() error
 }

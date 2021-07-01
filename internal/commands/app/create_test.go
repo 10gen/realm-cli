@@ -374,8 +374,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 
 		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
-		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-			return &clientZipPkg.Reader, nil
+		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+			return &clientZipPkg.Reader, true, nil
 		}
 		ac := mock.AtlasClient{}
 		ac.GroupsFn = func() ([]atlas.Group, error) {
@@ -581,8 +581,8 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		frontendZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
-		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-			return &frontendZipPkg.Reader, err
+		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+			return &frontendZipPkg.Reader, true, err
 		}
 
 		cmd := &CommandCreate{createInputs{

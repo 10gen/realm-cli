@@ -119,19 +119,23 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 }
 
 func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) (map[string]*zip.Reader, error) {
-	compatibleTemplates, ok, err := realmClient.CompatibleTemplates(groupID, appID)
+	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
 	if err != nil {
 		return nil, err
-	} else if !ok {
+	}
+
+	if len(compatibleTemplates) == 0 {
 		return nil, nil
 	}
 
 	if i.TemplateID != "" {
 		for _, template := range compatibleTemplates {
 			if template.ID == i.TemplateID {
-				templateZip, err := realmClient.ClientTemplate(groupID, appID, template.ID)
+				templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, template.ID)
 				if err != nil {
 					return nil, err
+				} else if !ok {
+					return nil, fmt.Errorf("template '%s' does not have a frontend to pull", template.ID)
 				}
 				return map[string]*zip.Reader{template.ID: templateZip}, nil
 			}
@@ -139,9 +143,6 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, fmt.Errorf("template '%s' is not compatible with this app", i.TemplateID)
 	}
 
-	if len(compatibleTemplates) == 0 {
-		return nil, nil
-	}
 	if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {
 		return nil, err
 	} else if !proceed {
@@ -167,9 +168,11 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 
 	result := make(map[string]*zip.Reader, len(templateIDs))
 	for _, templateID := range templateIDs {
-		templateZip, err := realmClient.ClientTemplate(groupID, appID, templateID)
+		templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, templateID)
 		if err != nil {
 			return nil, err
+		} else if !ok {
+			return nil, fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
 		}
 		result[templateID] = templateZip
 	}
