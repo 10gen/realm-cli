@@ -167,7 +167,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
 	for templateID, templateZipPkg := range clientZipPkgs {
-		if err := local.WriteZip(pathFrontend, templateZipPkg); err != nil {
+		if err := local.WriteZip(filepath.Join(pathFrontend, templateID), templateZipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
 		}
 		// TODO(REALMC-9452): defer printing the successfully saved templates until after the `Successfully pulled app down' log
