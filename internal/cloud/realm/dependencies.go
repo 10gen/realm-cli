@@ -24,9 +24,10 @@ const (
 	paramFile = "file"
 )
 
-// AppDependenciesInfo is used to get information from a dependencies status request
-type AppDependenciesInfo struct {
-	Status DependenciesStatus `json:"status"`
+// DependencyInstallation is used to get information from a dependencies status request
+type DependencyInstallation struct {
+	Status        DependenciesStatus `json:"status"`
+	StatusMessage DependenciesStatus `json:"status_message"`
 }
 
 // DependenciesStatus represents possible dependency statuses
@@ -48,11 +49,11 @@ func (c *client) GetDependenciesStatus(groupID, appID string) (DependenciesStatu
 	if err != nil {
 		return "", err
 	}
-	var transpilation AppDependenciesInfo
-	if err := json.NewDecoder(res.Body).Decode(&transpilation); err != nil {
+	var install DependencyInstallation
+	if err := json.NewDecoder(res.Body).Decode(&install); err != nil {
 		return "", err
 	}
-	return transpilation.Status, nil
+	return install.Status, nil
 }
 
 func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
@@ -94,7 +95,7 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("import got invalid status code %d", res.StatusCode)
+		return api.ErrUnexpectedStatusCode{"import dependencies", res.StatusCode}
 	}
 
 	waitForTranspilation := func() error {
@@ -109,7 +110,7 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 				return err
 			}
 			if status == DependenciesStatusFailed {
-				return fmt.Errorf("failed to transpile dependencies")
+				return fmt.Errorf("failed to install dependencies")
 			}
 		}
 		return nil

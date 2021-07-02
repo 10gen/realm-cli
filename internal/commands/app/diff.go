@@ -97,10 +97,12 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		uploadPath, err := local.PrepareDependencies(app, ui)
+		uploadDependencies, err := local.FindAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
+		uploadPath := uploadDependencies.ArchivePath
+
 		defer os.Remove(uploadPath) //nolint:errcheck
 
 		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)

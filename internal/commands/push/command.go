@@ -100,16 +100,17 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	var uploadPathDependencies string
+	var uploadDependenciesPath string
 	var dependenciesDiffs realm.DependenciesDiff
 	if cmd.inputs.IncludeDependencies {
-		uploadPathDependencies, err = local.PrepareDependencies(app, ui)
+		uploadDependencies, err := local.FindAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(uploadPathDependencies) //nolint:errcheck
+		uploadDependenciesPath := uploadDependencies.ArchivePath
+		defer os.Remove(uploadDependenciesPath) //nolint:errcheck
 
-		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
+		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadDependenciesPath)
 		if err != nil {
 			return err
 		}
@@ -195,7 +196,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
+		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadDependenciesPath); err != nil {
 			return err
 		}
 		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
