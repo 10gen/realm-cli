@@ -149,6 +149,7 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, nil
 	}
 
+	// TODO(REALMC-9474) fix to align the template selection flow with app create
 	if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {
 		return nil, err
 	} else if !proceed {

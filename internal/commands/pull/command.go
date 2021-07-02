@@ -76,13 +76,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	var pathFrontend string
-	pathBackend := pathProject
-	if len(clientZipPkgs) != 0 {
-		pathFrontend = filepath.Join(pathProject, local.FrontendPath)
-		pathBackend = filepath.Join(pathProject, local.BackendPath)
-	}
-
 	// App path
 	proceed, err := checkPathDestination(ui, pathProject)
 	if err != nil {
@@ -94,6 +87,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathProject)
 	if err != nil {
 		return err
+	}
+
+	var pathFrontend string
+	pathBackend := pathProject
+	if len(clientZipPkgs) != 0 {
+		pathFrontend = filepath.Join(pathProject, local.FrontendPath)
+		pathBackend = filepath.Join(pathProject, local.BackendPath)
 	}
 
 	if cmd.inputs.DryRun {
@@ -108,6 +108,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		} else {
 			logs = append(logs, terminal.NewDebugLog("Contents would have been written to: %s", pathRelative))
 		}
+
 		ui.Print(logs...)
 		return nil
 	}
@@ -166,6 +167,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
+	// TODO(REALMC-9452) fix to iterate in a deterministic order
 	for templateID, templateZipPkg := range clientZipPkgs {
 		if err := local.WriteZip(filepath.Join(pathFrontend, templateID), templateZipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)

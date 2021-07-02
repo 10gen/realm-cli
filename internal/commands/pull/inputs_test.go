@@ -93,6 +93,9 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 			appFilter = filter
 			return []realm.App{{GroupID: "group-id", ID: "app-id"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{GroupID: "group-id", ID: "app-id"}, nil
+		}
 
 		app, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
@@ -116,6 +119,9 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 			appFilter = filter
 			return []realm.App{{GroupID: "group-id", ID: "app-id"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{GroupID: "group-id", ID: "app-id"}, nil
+		}
 
 		app, err := i.resolveRemoteApp(nil, cli.Clients{Atlas: atlasClient, Realm: realmClient})
 		assert.Nil(t, err)
@@ -130,6 +136,9 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return nil, cli.ErrAppNotFound{}
+		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{}, cli.ErrAppNotFound{}
 		}
 
 		_, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
@@ -211,24 +220,6 @@ func TestPullTemplatesResolve(t *testing.T) {
 			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 			assert.Equal(t, errors.New("template 'wrong-template-id' is not compatible with this app"), err)
 		})
-
-		t.Run("should return the template client if it is compatible with this app", func(t *testing.T) {
-			var realmClient mock.RealmClient
-
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{{ID: "some-template-id", Name: "some name"}, {ID: "some-other-template-id", Name: "some other name"}}, nil
-			}
-			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
-				return &templateZipPkg1.Reader, true, nil
-			}
-
-			_, ui := mock.NewUI()
-			input := inputs{TemplateID: "some-template-id"}
-			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app")
-			assert.Nil(t, err)
-			assert.Equal(t, 1, len(result))
-			compareZipPackages(t, templateZipPkg1, result["some-template-id"])
-		})
 	})
 
 	t.Run("without a template id passed in", func(t *testing.T) {
@@ -268,62 +259,5 @@ func TestPullTemplatesResolve(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, 0, len(result))
 		})
-
-		t.Run("should prompt the user to export with compatible templates and return the templates selected", func(t *testing.T) {
-			var realmClient mock.RealmClient
-			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
-				return []realm.Template{{ID: "some-template-id", Name: "some name"}, {ID: "some-other-id", Name: "some other name"}, {ID: "another-template-id", Name: "another name"}}, nil
-			}
-
-			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
-				if templateID == "some-template-id" {
-					return &templateZipPkg1.Reader, true, nil
-				} else if templateID == "another-template-id" {
-					return &templateZipPkg2.Reader, true, nil
-				}
-				return nil, false, errors.New("should not happen in this test")
-			}
-
-			_, console, _, ui, err := mock.NewVT10XConsole()
-			assert.Nil(t, err)
-			defer console.Close()
-
-			doneCh := make(chan struct{})
-			go func() {
-				defer close(doneCh)
-				console.ExpectString("Would you like to export with a template?")
-				console.SendLine("y")
-				console.ExpectString("Which template(s) would you like to export this app with")
-				console.Send("some name")
-				console.Send(" ")
-				console.Send("another name")
-				console.Send(" ")
-				console.SendLine("")
-				console.ExpectEOF()
-			}()
-
-			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-group-app")
-			assert.Nil(t, err)
-			assert.Equal(t, 2, len(result))
-			expected := map[string]*zip.ReadCloser{
-				"some-template-id":    templateZipPkg1,
-				"another-template-id": templateZipPkg2,
-			}
-			for templateID, zipPkg := range result {
-				compareZipPackages(t, expected[templateID], zipPkg)
-			}
-		})
 	})
-}
-
-func compareZipPackages(t *testing.T, expectedZipPkg *zip.ReadCloser, actualZipPkg *zip.Reader) {
-	expected := make(map[string]*zip.File, len(expectedZipPkg.File))
-	for _, f := range actualZipPkg.File {
-		expected[f.Name] = f
-	}
-	for _, f := range actualZipPkg.File {
-		assert.Equal(t, expected[f.Name].FileInfo().Name(), f.FileInfo().Name())
-		assert.Equal(t, expected[f.Name].FileInfo().ModTime(), f.FileInfo().ModTime())
-		assert.Equal(t, expected[f.Name].FileInfo().Size(), f.FileInfo().Size())
-	}
 }

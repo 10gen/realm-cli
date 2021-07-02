@@ -41,6 +41,9 @@ func TestPullHandler(t *testing.T) {
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "", nil, errors.New("something bad happened")
 		}
@@ -61,6 +64,9 @@ func TestPullHandler(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
+		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -98,6 +104,9 @@ Contents would have been written to: app
 			var realmClient mock.RealmClient
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{{ID: "appID", Name: "appName"}}, nil
+			}
+			realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+				return realm.App{ID: "appID", Name: "appName", TemplateID: "some-template-id"}, nil
 			}
 			realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 				return "app_20210101", &zipPkg.Reader, nil
@@ -160,6 +169,9 @@ Successfully pulled app down: app
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
@@ -216,6 +228,9 @@ Successfully pulled app down: app
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
@@ -246,6 +261,9 @@ Successfully pulled app down: app
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
+		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
@@ -317,6 +335,9 @@ Successfully pulled app down: app
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
@@ -386,6 +407,9 @@ Successfully pulled app down: app
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{{ID: "appID", Name: "appName"}}, nil
 		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName", TemplateID: "some-template-id"}, nil
+		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
@@ -422,7 +446,7 @@ Successfully pulled app down: app
 			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: templateID}}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
+			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
 
 			_, err := os.Stat(destination)
 			assert.Nil(t, err)
@@ -482,7 +506,7 @@ Successfully pulled app down: app
 }`,
 			}
 			for templateID, expectedString := range expected {
-				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath)
+				destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
 
 				_, err = os.Stat(destination)
 				assert.Nil(t, err)
