@@ -17,7 +17,7 @@ type createInputs struct {
 	AllowAll   bool
 }
 
-// CommandMetaCreate is the command meta for the `accesslist create` command
+// CommandMetaCreate is the command meta for the `accessList create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
 	Aliases:     []string{"add"},
