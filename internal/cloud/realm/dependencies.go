@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
@@ -24,13 +23,13 @@ const (
 	paramFile = "file"
 )
 
-// DependencyInstallation is used to get information from a dependencies status request
-type DependencyInstallation struct {
+// DependenciesInstallation is used to get information from a dependencies status request
+type DependenciesInstallation struct {
 	Status        DependenciesStatus `json:"status"`
-	StatusMessage DependenciesStatus `json:"status_message"`
+	StatusMessage string             `json:"status_message"`
 }
 
-// DependenciesStatus represents possible dependency statuses
+// DependenciesStatus represents the status of dependencies being installed
 type DependenciesStatus string
 
 // set of known dependencies statuses
@@ -40,20 +39,24 @@ const (
 	DependenciesStatusFailed     DependenciesStatus = "failed"
 )
 
-func (c *client) GetDependenciesStatus(groupID, appID string) (DependenciesStatus, error) {
+func (c *client) DependenciesInstallation(groupID, appID string) (DependenciesInstallation, error) {
 	res, err := c.do(
 		http.MethodGet,
 		fmt.Sprintf(dependenciesStatusPathPattern, groupID, appID),
 		api.RequestOptions{},
 	)
 	if err != nil {
-		return "", err
+		return DependenciesInstallation{}, err
 	}
-	var install DependencyInstallation
+	if res.StatusCode != http.StatusOK {
+		return DependenciesInstallation{}, api.ErrUnexpectedStatusCode{"dependencies installation", res.StatusCode}
+	}
+	defer res.Body.Close()
+	var install DependenciesInstallation
 	if err := json.NewDecoder(res.Body).Decode(&install); err != nil {
-		return "", err
+		return DependenciesInstallation{}, err
 	}
-	return install.Status, nil
+	return install, nil
 }
 
 func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
@@ -96,28 +99,6 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	}
 	if res.StatusCode != http.StatusNoContent {
 		return api.ErrUnexpectedStatusCode{"import dependencies", res.StatusCode}
-	}
-
-	waitForTranspilation := func() error {
-		status, err := c.GetDependenciesStatus(groupID, appID)
-		if err != nil {
-			return err
-		}
-		for status == DependenciesStatusCreated {
-			time.Sleep(time.Second)
-			status, err = c.GetDependenciesStatus(groupID, appID)
-			if err != nil {
-				return err
-			}
-			if status == DependenciesStatusFailed {
-				return fmt.Errorf("failed to install dependencies")
-			}
-		}
-		return nil
-	}
-
-	if err := waitForTranspilation(); err != nil {
-		return err
 	}
 
 	return nil

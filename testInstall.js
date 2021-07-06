@@ -97,19 +97,6 @@ if (fileExists(executable)) {
   process.exit(2);
 }
 
-const executableTranspiler = path.resolve(
-  tempInstallPath,
-  'node_modules',
-  'mongodb-realm-cli',
-  `transpiler${os.platform() === 'win32' ? '.exe' : ''}`
-);
-if (fileExists(executableTranspiler)) {
-  console.log(`Transpiler installed fine.`);
-} else {
-  console.error(`Transpiler did not install correctly, file '${executableTranspiler}' was not found.`);
-  process.exit(2);
-}
-
 try {
   removeFolder(tempInstallPath);
 } catch (err) {

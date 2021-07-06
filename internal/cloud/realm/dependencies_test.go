@@ -2,6 +2,7 @@ package realm_test
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,13 +30,20 @@ func TestRealmDependencies(t *testing.T) {
 
 		uploadPath := filepath.Join(wd, "testdata/dependencies_upload.zip")
 
-		_, err = client.GetDependenciesStatus(groupID, app.ID)
-		assert.NotNilf(t, err, "dependency status must return error before import")
-		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
+		install, err := client.DependenciesInstallation(groupID, app.ID)
+		assert.Equal(t, err, realm.ServerError{Message: "dependency installation not found"})
+		assert.Equal(t, install, realm.DependenciesInstallation{})
 
-		status, err := client.GetDependenciesStatus(groupID, app.ID)
-		assert.Equalf(t, status, realm.DependenciesStatusSuccessful, "must wait until dependency status is successful during import")
+		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
+		install, err = client.DependenciesInstallation(groupID, app.ID)
 		assert.Nil(t, err)
+		assert.Equal(t, install, realm.DependenciesInstallation{Status: realm.DependenciesStatusCreated, StatusMessage: "processing request"})
+
+		assert.Nil(t, waitForInstallation(client, groupID, app.ID))
+
+		install, err = client.DependenciesInstallation(groupID, app.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, install, realm.DependenciesInstallation{Status: realm.DependenciesStatusSuccessful})
 
 		t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
 			deployments, err := client.Deployments(groupID, app.ID)
@@ -105,7 +113,23 @@ func TestRealmDependencies(t *testing.T) {
 	})
 }
 
-func getZipFileNames(t *testing.T, file *os.File) map[string]bool {
+func waitForInstallation(realmClient realm.Client, groupID, appID string) error {
+	status := realm.DependenciesStatusCreated
+	for status == realm.DependenciesStatusCreated {
+		time.Sleep(time.Second)
+		install, err := realmClient.DependenciesInstallation(groupID, appID)
+		if err != nil {
+			return err
+		}
+		status = install.Status
+		if status == realm.DependenciesStatusFailed {
+			return fmt.Errorf("failed to install dependencies")
+		}
+	}
+	return nil
+}
+
+func getZipFileNames(t *testing.T, file *os.File) map[string]struct{} {
 	t.Helper()
 
 	fileInfo, err := file.Stat()
@@ -114,13 +138,13 @@ func getZipFileNames(t *testing.T, file *os.File) map[string]bool {
 	zipPkg, err := zip.NewReader(file, fileInfo.Size())
 	assert.Nil(t, err)
 
-	fileNames := make(map[string]bool, len(zipPkg.File))
+	out := make(map[string]struct{}, len(zipPkg.File))
 
 	for _, file := range zipPkg.File {
 		if file.FileInfo().IsDir() {
 			continue
 		}
-		fileNames[file.Name] = true
+		out[file.Name] = struct{}{}
 	}
-	return fileNames
+	return out
 }

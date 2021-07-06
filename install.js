@@ -8,30 +8,26 @@ const basedownloadURL = `https://s3.amazonaws.com/realm-clis/${versionMetadata.b
 const linuxdownloadURL = `${basedownloadURL}/linux-amd64/realm-cli`;
 const macdownloadURL = `${basedownloadURL}/macos-amd64/realm-cli`;
 const windowsdownloadURL = `${basedownloadURL}/windows-amd64/realm-cli.exe`;
-// transpiler downloads
-const linuxTranspilerdownloadURL = `${basedownloadURL}/linux-amd64/transpiler`;
-const macTranspilerdownloadURL = `${basedownloadURL}/macos-amd64/transpiler`;
-const windowsTranspilerdownloadURL = `${basedownloadURL}/windows-amd64/transpiler.exe`;
 
-function getdownloadURL(cli) {
+function getdownloadURL() {
   const platform = process.platform;
   let downloadURL;
 
   if (platform === 'linux') {
     if (process.arch === 'x64') {
-      downloadURL = cli ? linuxdownloadURL : linuxTranspilerdownloadURL;
+      downloadURL = linuxdownloadURL;
     } else {
       throw new Error('Only Linux 64 bits supported.');
     }
   } else if (platform === 'darwin' || platform === 'freebsd') {
     if (process.arch === 'x64' || process.arch === 'arm64') {
-      downloadURL = cli ? macdownloadURL : macTranspilerdownloadURL;
+      downloadURL = macdownloadURL;
     } else {
       throw new Error('Only Mac 64 bits supported.');
     }
   } else if (platform === 'win32') {
     if (process.arch === 'x64') {
-      downloadURL = cli ? windowsdownloadURL : windowsTranspilerdownloadURL;
+      downloadURL = windowsdownloadURL;
     } else {
       throw new Error('Only Windows 64 bits supported.');
     }
@@ -96,26 +92,13 @@ function requstBinary(downloadURL, baseName) {
 // Install script starts here
 let downloadURL;
 try {
-  downloadURL = getdownloadURL(true);
+  downloadURL = getdownloadURL();
 } catch (err) {
   console.error('Realm CLI installation failed:', err);
   process.exit(1);
 }
 
 requstBinary(downloadURL, 'realm-cli').catch(err => {
-  console.error('failed to download Realm CLI:', err);
-  process.exit(1);
-});
-
-let transpilerdownloadURL;
-try {
-  transpilerdownloadURL = getdownloadURL(false);
-} catch (err) {
-  console.error('Realm CLI installation failed:', err);
-  process.exit(1);
-}
-
-requstBinary(transpilerdownloadURL, 'transpiler').catch(err => {
   console.error('failed to download Realm CLI:', err);
   process.exit(1);
 });
