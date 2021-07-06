@@ -83,6 +83,10 @@ type CommandMeta struct {
 	// HelpText is the text shown in the 'help' output of the actual command
 	// right below the command's description
 	HelpText string
+
+	// Hidden controls if this command shows up in the list of available commands
+	// This value maps 1:1 to Cobra's `Hidden` property
+	Hidden bool
 }
 
 // CommandDisplay returns the command display with the provided flags
