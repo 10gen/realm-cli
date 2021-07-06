@@ -73,7 +73,7 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	if i.Address == "" {
-		if (!i.UseCurrent && !i.AllowAll) || (i.UseCurrent && i.AllowAll) {
+		if i.UseCurrent && i.AllowAll {
 			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
 		}
 	} else {
