@@ -74,11 +74,11 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 
 	if i.Address == "" {
 		if (!i.UseCurrent && !i.AllowAll) || (i.UseCurrent && i.AllowAll) {
-			return errors.New("If no address is provided, you can choose to use one of --use-current or -allow-all flags.")
+			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
 		}
 	} else {
 		if i.UseCurrent || i.AllowAll {
-			return errors.New("If an address is provided, you cannot use the --use-current or --allow-all flags.")
+			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
 		}
 	}
 	return nil
