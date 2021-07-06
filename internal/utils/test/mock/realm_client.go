@@ -66,6 +66,8 @@ type RealmClient struct {
 	ClientTemplateFn      func(groupID, appID, templateID string) (*zip.Reader, bool, error)
 	CompatibleTemplatesFn func(groupID, appID string) ([]realm.Template, error)
 
+	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error)
+
 	StatusFn func() error
 }
 
@@ -487,6 +489,16 @@ func (rc RealmClient) CompatibleTemplates(groupID, appID string) ([]realm.Templa
 		return rc.CompatibleTemplatesFn(groupID, appID)
 	}
 	return rc.Client.CompatibleTemplates(groupID, appID)
+}
+
+// AllowedIPCreate calls the mocked AllowedIPCreate implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error) {
+	if rc.AllowedIPCreateFn != nil {
+		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent)
+	}
+	return rc.AllowedIPCreate(groupID, appID, ipAddress, comment, useCurrent)
 }
 
 // Status calls the mocked Status implementation if provided,

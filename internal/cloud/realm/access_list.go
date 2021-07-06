@@ -25,29 +25,6 @@ type AllowedIP struct {
 	IncludesCurrent bool   `json:"includes_current"`
 }
 
-func (c *client) AllowedIPs(groupID, appID string) (AccessList, error) {
-	res, resErr := c.do(
-		http.MethodGet,
-		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
-		api.RequestOptions{},
-	)
-	if resErr != nil {
-		return AccessList{}, resErr
-	}
-
-	if res.StatusCode != http.StatusOK {
-		return AccessList{}, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
-	}
-
-	defer res.Body.Close()
-
-	var accessList AccessList
-	if err := json.NewDecoder(res.Body).Decode(&accessList); err != nil {
-		return AccessList{}, err
-	}
-	return accessList, nil
-}
-
 type allowedIPsPayload struct {
 	Address    string `json:"address"`
 	Comment    string `json:"comment,omitempty"`
