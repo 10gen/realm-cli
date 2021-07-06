@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/10gen/realm-cli/internal/cli"
+	"github.com/10gen/realm-cli/internal/commands/accesslist"
 	"github.com/10gen/realm-cli/internal/commands/app"
 	"github.com/10gen/realm-cli/internal/commands/function"
 	"github.com/10gen/realm-cli/internal/commands/login"
@@ -174,6 +175,21 @@ var (
 			{
 				Command:     &schema.CommandDatamodels{},
 				CommandMeta: schema.CommandMetaDatamodels,
+			},
+		},
+	}
+
+	AccessList = cli.CommandDefinition{
+		CommandMeta: cli.CommandMeta{
+			Use:         "accessList",
+			Aliases:     []string{"accesslist"},
+			Description: "Manage your allowed IP addresses and CIDR blocks",
+			Hidden:      true, // TODO(REALMC-9164): Set 'Hidden' to false
+		},
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &accesslist.CommandCreate{},
+				CommandMeta: accesslist.CommandMetaCreate,
 			},
 		},
 	}

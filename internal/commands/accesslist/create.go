@@ -19,10 +19,12 @@ type createInputs struct {
 
 // CommandMetaCreate is the command meta for the `accesslist create` command
 var CommandMetaCreate = cli.CommandMeta{
-	Use:     "create",
-	Aliases: []string{"add"},
-	Display: "accesslist create",
-	// Hidden:  true,
+	Use:         "create",
+	Aliases:     []string{"add"},
+	Display:     "accessList create",
+	Description: "Create an IP address or CIDR block in the Access List of your Realm app",
+	HelpText:    "Adds a new entry into the Access List of your Realm app. You will be prompted to input an IP address or CIDR block if none is provided in the initial command.",
+	Hidden:      true,
 }
 
 // CommandCreate is the ip access create command
@@ -72,11 +74,11 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 
 	if i.IPAddress == "" {
 		if (!i.UseCurrent && !i.AllowAll) || (i.UseCurrent && i.AllowAll) {
-			return errors.New("Must provide an IP Address or one of use-current and allow-all.")
+			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
 		}
 	} else {
 		if i.UseCurrent || i.AllowAll {
-			return errors.New("Cannot provide both an IP Address and one of use-current or allow-all.")
+			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
 		}
 	}
 	return nil
