@@ -11,7 +11,7 @@ import (
 
 type createInputs struct {
 	cli.ProjectInputs
-	IPAddress  string
+	Address    string
 	Comment    string
 	UseCurrent bool
 	AllowAll   bool
@@ -36,7 +36,7 @@ type CommandCreate struct {
 func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	cmd.inputs.Flags(fs, "")
 
-	fs.StringVar(&cmd.inputs.IPAddress, flagIP, "", flagIPUsageCreate)
+	fs.StringVar(&cmd.inputs.Address, flagIP, "", flagIPUsageCreate)
 	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageCreate)
 	fs.BoolVar(&cmd.inputs.UseCurrent, flagUseCurrent, false, flagUseCurrentUsageCreate)
 	fs.BoolVar(&cmd.inputs.AllowAll, flagAllowAll, false, flagAllowAllUsageCreate)
@@ -55,10 +55,10 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	if cmd.inputs.AllowAll {
-		cmd.inputs.IPAddress = "0.0.0.0"
+		cmd.inputs.Address = "0.0.0.0"
 	}
 
-	allowedIP, err := clients.Realm.AllowedIPCreate(app.GroupID, app.ID, cmd.inputs.IPAddress, cmd.inputs.Comment, cmd.inputs.UseCurrent)
+	allowedIP, err := clients.Realm.AllowedIPCreate(app.GroupID, app.ID, cmd.inputs.Address, cmd.inputs.Comment, cmd.inputs.UseCurrent)
 	if err != nil {
 		return err
 	}
@@ -72,13 +72,13 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if i.IPAddress == "" {
+	if i.Address == "" {
 		if (!i.UseCurrent && !i.AllowAll) || (i.UseCurrent && i.AllowAll) {
-			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
+			return errors.New("If no address is provided, you can choose to use one of --use-current or -allow-all flags.")
 		}
 	} else {
 		if i.UseCurrent || i.AllowAll {
-			return errors.New("When you are using this command, you can only provide one IP address or CIDR block at a time.")
+			return errors.New("If an address is provided, you cannot use the --use-current or --allow-all flags.")
 		}
 	}
 	return nil
