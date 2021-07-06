@@ -12,6 +12,7 @@ const (
 	allowedIPsPathPattern = appPathPattern + "/security/allowed_ips"
 )
 
+// AccessList is the list of addresses stored in a Realm app
 type AccessList struct {
 	AllowedIPs []AllowedIP `json:"allowed_ips"`
 	CurrentIP  string      `json:"current_ip"`
