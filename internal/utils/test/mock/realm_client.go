@@ -64,6 +64,8 @@ type RealmClient struct {
 	TemplatesFn      func() ([]realm.Template, error)
 	ClientTemplateFn func(groupID, appID, templateID string) (*zip.Reader, error)
 
+	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error)
+
 	StatusFn func() error
 }
 
@@ -465,6 +467,13 @@ func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Re
 		return rc.ClientTemplateFn(groupID, appID, templateID)
 	}
 	return rc.Client.ClientTemplate(groupID, appID, templateID)
+}
+
+func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error) {
+	if rc.AllowedIPCreateFn != nil {
+		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent)
+	}
+	return rc.AllowedIPCreate(groupID, appID, ipAddress, comment, useCurrent)
 }
 
 // Status calls the mocked Status implementation if provided,

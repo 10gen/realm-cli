@@ -73,7 +73,6 @@ type Client interface {
 	Templates() ([]Template, error)
 	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
 
-	AllowedIPs(groupID, appID string) (AccessList, error)
 	AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error)
 
 	Status() error
