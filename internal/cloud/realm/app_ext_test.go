@@ -45,7 +45,7 @@ func TestRealmApps(t *testing.T) {
 			t.Run("and find the app by group and app id", func(t *testing.T) {
 				found, err := client.FindApp(app.GroupID, app.ID)
 				assert.Nil(t, err)
-				assert.Equal(t, app, found)
+				assert.Equal(t, app.ID, found.ID)
 			})
 
 			t.Run("and get the app description by id", func(t *testing.T) {

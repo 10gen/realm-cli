@@ -612,7 +612,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		assert.Nil(t, err)
 		assert.Equal(t, len(backendFileInfo), 9)
 
-		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath))
+		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath, templateID))
 		assert.Nil(t, err)
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
