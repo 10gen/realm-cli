@@ -469,6 +469,9 @@ func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Re
 	return rc.Client.ClientTemplate(groupID, appID, templateID)
 }
 
+// AllowedIPCreate calls the mocked AllowedIPCreate implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
 func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error) {
 	if rc.AllowedIPCreateFn != nil {
 		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent)
