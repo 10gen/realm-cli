@@ -68,7 +68,7 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 		return nil
 	}
 
-	templates, err := client.Templates()
+	templates, err := client.AllTemplates()
 	if err != nil {
 		return err
 	}

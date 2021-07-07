@@ -15,6 +15,13 @@ const (
 	maxDirectoryContainSearchDepth = 8
 )
 
+const (
+	// BackendPath is the relative path to write app contents to when we have templates
+	BackendPath = "backend"
+	// FrontendPath is the relative path to write frontend templates' contents to
+	FrontendPath = "frontend"
+)
+
 func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }

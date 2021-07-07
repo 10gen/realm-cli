@@ -236,7 +236,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -276,7 +276,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -473,7 +473,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -528,7 +528,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -804,7 +804,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -858,7 +858,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
