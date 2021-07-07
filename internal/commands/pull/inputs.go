@@ -168,13 +168,9 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, err
 	}
 
-	templateIDs := make([]string, len(selectedTemplateIdxs))
-	for idx, selectedTemplateIdx := range selectedTemplateIdxs {
-		templateIDs[idx] = compatibleTemplates[selectedTemplateIdx].ID
-	}
-
-	result := make(map[string]*zip.Reader, len(templateIDs))
-	for _, templateID := range templateIDs {
+	result := make(map[string]*zip.Reader, len(selectedTemplateIdxs))
+	for _, selectedTemplateIdx := range selectedTemplateIdxs {
+		templateID := compatibleTemplates[selectedTemplateIdx].ID
 		templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, templateID)
 		if err != nil {
 			return nil, err
@@ -183,5 +179,6 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		}
 		result[templateID] = templateZip
 	}
+
 	return result, nil
 }

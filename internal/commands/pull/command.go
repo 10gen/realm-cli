@@ -172,14 +172,14 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		if err := local.WriteZip(filepath.Join(pathFrontend, templateID), templateZipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
 		}
-		// TODO(REALMC-9452): defer printing the successfully saved templates until after the `Successfully pulled app down' log
 		successfulTemplateWrites = append(successfulTemplateWrites, templateID)
 	}
+
+	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
 	if len(successfulTemplateWrites) != 0 {
 		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites))
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
 	return nil
 }
 
