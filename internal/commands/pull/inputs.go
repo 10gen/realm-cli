@@ -1,7 +1,9 @@
 package pull
 
 import (
+	"archive/zip"
 	"errors"
+	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -9,6 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -36,6 +39,10 @@ const (
 
 	flagConfigVersion      = "config-version"
 	flagConfigVersionUsage = "Specify the app config version to export as"
+
+	flagTemplate      = "template"
+	flagTemplateShort = "t"
+	flagTemplateUsage = "Specify the Template ID that is used for this Realm app"
 )
 
 var (
@@ -50,6 +57,7 @@ type inputs struct {
 	IncludeDependencies bool
 	IncludeHosting      bool
 	DryRun              bool
+	TemplateID          string
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -107,5 +115,70 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 		return realm.App{}, err
 	}
 
+	// TODO(REALMC-9462): remove this once /apps has "template_id" in the payload
+	app, err = clients.Realm.FindApp(app.GroupID, app.ID)
+	if err != nil {
+		return realm.App{}, err
+	}
+
 	return app, nil
+}
+
+func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) (map[string]*zip.Reader, error) {
+	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
+	if err != nil {
+		return nil, err
+	}
+
+	if i.TemplateID != "" {
+		for _, template := range compatibleTemplates {
+			if template.ID == i.TemplateID {
+				templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, template.ID)
+				if err != nil {
+					return nil, err
+				} else if !ok {
+					return nil, fmt.Errorf("template '%s' does not have a frontend to pull", template.ID)
+				}
+				return map[string]*zip.Reader{template.ID: templateZip}, nil
+			}
+		}
+		return nil, fmt.Errorf("template '%s' is not compatible with this app", i.TemplateID)
+	}
+
+	if len(compatibleTemplates) == 0 {
+		return nil, nil
+	}
+
+	// TODO(REALMC-9474) fix to align the template selection flow with app create
+	if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {
+		return nil, err
+	} else if !proceed {
+		return nil, nil
+	}
+
+	nameOptions := make([]string, len(compatibleTemplates))
+	for idx, compatibleTemplate := range compatibleTemplates {
+		nameOptions[idx] = fmt.Sprintf("[%s]: %s", compatibleTemplate.ID, compatibleTemplate.Name)
+	}
+
+	var selectedTemplateIdxs []int
+	if err := ui.AskOne(
+		&selectedTemplateIdxs,
+		&survey.MultiSelect{Message: "Which template(s) would you like to export this app with", Options: nameOptions}); err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]*zip.Reader, len(selectedTemplateIdxs))
+	for _, selectedTemplateIdx := range selectedTemplateIdxs {
+		templateID := compatibleTemplates[selectedTemplateIdx].ID
+		templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, templateID)
+		if err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
+		}
+		result[templateID] = templateZip
+	}
+
+	return result, nil
 }

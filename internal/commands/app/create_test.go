@@ -44,7 +44,7 @@ func TestAppCreateHandler(t *testing.T) {
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		client.TemplatesFn = func() ([]realm.Template, error) {
+		client.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -229,7 +229,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 		ac := mock.AtlasClient{}
@@ -359,7 +359,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{
 				{
 					ID:   "palm-pilot.bitcoin-miner",
@@ -374,8 +374,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 
 		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
-		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-			return &clientZipPkg.Reader, nil
+		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+			return &clientZipPkg.Reader, true, nil
 		}
 		ac := mock.AtlasClient{}
 		ac.GroupsFn = func() ([]atlas.Group, error) {
@@ -400,7 +400,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath)
+		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath)
 		appLocal, err := local.LoadApp(path)
 		assert.Nil(t, err)
 
@@ -445,7 +445,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		client.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		client.TemplatesFn = func() ([]realm.Template, error) {
+		client.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
@@ -569,7 +569,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 			ImportFn: func(groupID, appID string, appData interface{}) error {
 				return nil
 			},
-			TemplatesFn: func() ([]realm.Template, error) {
+			AllTemplatesFn: func() ([]realm.Template, error) {
 				return []realm.Template{
 					{
 						ID:   templateID,
@@ -581,8 +581,8 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		frontendZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
-		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, error) {
-			return &frontendZipPkg.Reader, err
+		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+			return &frontendZipPkg.Reader, true, err
 		}
 
 		cmd := &CommandCreate{createInputs{
@@ -605,14 +605,14 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
+		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
 		assert.Nil(t, err)
 
-		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, backendPath))
+		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
 		assert.Nil(t, err)
 		assert.Equal(t, len(backendFileInfo), 9)
 
-		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, frontendPath, templateID))
+		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath, templateID))
 		assert.Nil(t, err)
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
@@ -741,7 +741,7 @@ Check out your app: cd ./bitcoin-miner && realm-cli app describe
 				importAppData = appData
 				return nil
 			}
-			rc.TemplatesFn = func() ([]realm.Template, error) {
+			rc.AllTemplatesFn = func() ([]realm.Template, error) {
 				return []realm.Template{}, nil
 			}
 
@@ -812,7 +812,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			description: "should create a minimal project dry run",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -830,7 +830,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			appRemote:   "remote-app",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 					FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -852,7 +852,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			clusterServiceNames: []string{"mongodb-atlas"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -877,7 +877,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			datalakeServiceNames: []string{"mongodb-datalake"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -901,7 +901,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			template:    "palm-pilot.bitcoin-miner",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{
 							{
 								ID:   "palm-pilot.bitcoin-miner",
@@ -980,7 +980,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			clusters:    []string{"test-cluster"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -998,7 +998,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			datalakes:   []string{"test-datalake"},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -1027,7 +1027,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			groupID:     "123",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return nil, errors.New("unable to find available templates")
 					},
 				},
@@ -1045,7 +1045,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			groupID:     "123",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 				},
@@ -1057,7 +1057,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			groupID:     "123",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{}, nil
 					},
 					CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
@@ -1083,7 +1083,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 			},
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
+					AllTemplatesFn: func() ([]realm.Template, error) {
 						return []realm.Template{
 							{
 								ID:   "palm-pilot.bitcoin-miner",
@@ -1143,7 +1143,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.TemplatesFn = func() ([]realm.Template, error) {
+		rc.AllTemplatesFn = func() ([]realm.Template, error) {
 			return []realm.Template{}, nil
 		}
 
