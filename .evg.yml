@@ -7,15 +7,6 @@ functions:
           set -e
           wget --quiet ${go_url}
           tar xvf ./go1*gz
-  "fetch_yarn":
-    - command: shell.exec
-      params:
-        shell: "bash"
-        script: |
-          set -e
-          curl --silent -OL ${yarn_url}
-          tar zvxf latest.tar.gz
-          mv yarn-* yarn
   "fetch_baas_artifacts": &fetch_baas_artifacts
     - command: shell.exec
       params:
@@ -151,7 +142,6 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go114"
-      - func: "fetch_yarn"
       - func: "fetch_baas_artifacts"
       - func: "setup_project"
       - command: shell.exec
@@ -181,7 +171,6 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go114"
-      - func: "fetch_yarn"
       - func: "fetch_baas_artifacts"
       - func: "setup_node"
       - func: "setup_project"

@@ -23,40 +23,37 @@ const (
 	paramFile = "file"
 )
 
-// DependenciesInstallation is used to get information from a dependencies status request
-type DependenciesInstallation struct {
-	Status        DependenciesStatus `json:"status"`
-	StatusMessage string             `json:"status_message"`
+// DependenciesStatus is used to get information from a dependencies status request
+type DependenciesStatus struct {
+	State   string `json:"status"`
+	Message string `json:"status_message"`
 }
 
-// DependenciesStatus represents the status of dependencies being installed
-type DependenciesStatus string
-
-// set of known dependencies statuses
+// set of known dependencies status states
 const (
-	DependenciesStatusCreated    DependenciesStatus = "created"
-	DependenciesStatusSuccessful DependenciesStatus = "successful"
-	DependenciesStatusFailed     DependenciesStatus = "failed"
+	DependenciesStateCreated    = "created"
+	DependenciesStateSuccessful = "successful"
+	DependenciesStateFailed     = "failed"
 )
 
-func (c *client) DependenciesInstallation(groupID, appID string) (DependenciesInstallation, error) {
+func (c *client) DependenciesStatus(groupID, appID string) (DependenciesStatus, error) {
 	res, err := c.do(
 		http.MethodGet,
 		fmt.Sprintf(dependenciesStatusPathPattern, groupID, appID),
 		api.RequestOptions{},
 	)
 	if err != nil {
-		return DependenciesInstallation{}, err
+		return DependenciesStatus{}, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return DependenciesInstallation{}, api.ErrUnexpectedStatusCode{"dependencies installation", res.StatusCode}
+		return DependenciesStatus{}, api.ErrUnexpectedStatusCode{"get dependencies status", res.StatusCode}
 	}
 	defer res.Body.Close()
-	var install DependenciesInstallation
-	if err := json.NewDecoder(res.Body).Decode(&install); err != nil {
-		return DependenciesInstallation{}, err
+	var status DependenciesStatus
+	if err := json.NewDecoder(res.Body).Decode(&status); err != nil {
+		return DependenciesStatus{}, err
 	}
-	return install, nil
+	return status, nil
 }
 
 func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {

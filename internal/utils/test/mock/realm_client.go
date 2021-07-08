@@ -18,10 +18,10 @@ type RealmClient struct {
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
 	ImportFn func(groupID, appID string, appData interface{}) error
 
-	ExportDependenciesFn       func(groupID, appID string) (string, io.ReadCloser, error)
-	ImportDependenciesFn       func(groupID, appID, uploadPath string) error
-	DiffDependenciesFn         func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
-	DependenciesInstallationFn func(groupID, appID string) (realm.DependenciesInstallation, error)
+	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
+	ImportDependenciesFn func(groupID, appID, uploadPath string) error
+	DiffDependenciesFn   func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
+	DependenciesStatusFn func(groupID, appID string) (realm.DependenciesStatus, error)
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
@@ -218,14 +218,14 @@ func (rc RealmClient) Deployment(groupID, appID, deploymentID string) (realm.App
 	return rc.Client.Deployment(groupID, appID, deploymentID)
 }
 
-// DependenciesInstallation calls the mocked DependenciesInstallation implementation if provided,
+// DependenciesStatus calls the mocked DependenciesStatus implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) DependenciesInstallation(groupID, appID string) (realm.DependenciesInstallation, error) {
-	if rc.DependenciesInstallationFn != nil {
-		return rc.DependenciesInstallationFn(groupID, appID)
+func (rc RealmClient) DependenciesStatus(groupID, appID string) (realm.DependenciesStatus, error) {
+	if rc.DependenciesStatusFn != nil {
+		return rc.DependenciesStatusFn(groupID, appID)
 	}
-	return rc.Client.DependenciesInstallation(groupID, appID)
+	return rc.Client.DependenciesStatus(groupID, appID)
 }
 
 // CreateAPIKey calls the mocked CreateAPIKey implementation if provided,

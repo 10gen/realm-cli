@@ -569,12 +569,46 @@ Successfully pushed app up: eggcorn-abcde
 			})
 		})
 
+		t.Run("succeeds in importing dependencies but fails during installation", func(t *testing.T) {
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, nil
+			}
+			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
+				return nil
+			}
+
+			t.Run("because of an error", func(t *testing.T) {
+				realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+					return realm.DependenciesStatus{}, errors.New("something bad happened")
+				}
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
+
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened"), err)
+			})
+			t.Run("because of an installation problem", func(t *testing.T) {
+				realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+					return realm.DependenciesStatus{State: realm.DependenciesStateFailed, Message: "something bad happened"}, nil
+				}
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
+
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("failed to install dependencies: something bad happened"), err)
+			})
+		})
+
 		t.Run("and can import dependencies should run import successfully", func(t *testing.T) {
 			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
 				return nil
 			}
-			realmClient.DependenciesInstallationFn = func(groupID, appID string) (realm.DependenciesInstallation, error) {
-				return realm.DependenciesInstallation{Status: realm.DependenciesStatusSuccessful}, nil
+			realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+				return realm.DependenciesStatus{State: realm.DependenciesStateSuccessful}, nil
 			}
 
 			out := new(bytes.Buffer)
@@ -588,8 +622,7 @@ Creating draft
 Pushing changes
 Deploying draft
 Deployment complete
-Dependencies installation complete
-Uploaded dependencies archive
+Installed dependencies
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
@@ -1427,89 +1460,6 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			assert.Nil(t, err)
 
 			assert.Equal(t, "Deployment complete\n", out.String())
-		})
-	})
-}
-
-func TestPushCommandImportDependenciesAndWait(t *testing.T) {
-	groupID, appID, uploadPath := "groupID", "appID", "node_modules.zip"
-	testError := errors.New("something bad happened")
-
-	t.Run("should return an error with a client that fails to import dependencies", func(t *testing.T) {
-		realmClient := mock.RealmClient{}
-
-		var capturedGroupID, capturedAppID, capturedUploadPath string
-		realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
-			capturedGroupID = groupID
-			capturedAppID = appID
-			capturedUploadPath = uploadPath
-			return testError
-		}
-		err := importDependenciesAndWait(nil, realmClient, appRemote{groupID, appID}, uploadPath)
-		assert.Equal(t, testError, err)
-
-		t.Log("and should properly pass through the expected inputs")
-		assert.Equal(t, groupID, capturedGroupID)
-		assert.Equal(t, appID, capturedAppID)
-		assert.Equal(t, uploadPath, capturedUploadPath)
-	})
-
-	t.Run("with a client that successfully imports dependencies", func(t *testing.T) {
-		realmClient := mock.RealmClient{}
-		realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
-			return nil
-		}
-
-		t.Run("but fails to finish the installation", func(t *testing.T) {
-			realmClient.DependenciesInstallationFn = func(groupID, appID string) (realm.DependenciesInstallation, error) {
-				return realm.DependenciesInstallation{}, testError
-			}
-
-			out, ui := mock.NewUI()
-			err := importDependenciesAndWait(ui, realmClient, appRemote{groupID, appID}, uploadPath)
-			t.Log("and should fail with error")
-			assert.Equal(t, err, testError)
-			assert.Equal(t, out.String(), "")
-		})
-
-		t.Run("and successfully finishes the installation", func(t *testing.T) {
-			var polls int
-
-			realmClient.DependenciesInstallationFn = func(groupID, appID string) (realm.DependenciesInstallation, error) {
-				status := realm.DependenciesStatusCreated
-				if polls > 1 {
-					status = realm.DependenciesStatusSuccessful
-				}
-				polls++
-				return realm.DependenciesInstallation{Status: status, StatusMessage: "processing"}, nil
-			}
-
-			out, ui := mock.NewUI()
-
-			t.Log("and should succeed with right output")
-			err := importDependenciesAndWait(ui, realmClient, appRemote{groupID, appID}, uploadPath)
-			assert.Nil(t, err)
-
-			assert.Equal(t, out.String(), "Dependencies installation complete\n")
-		})
-		t.Run("and eventually reaches unsuccessful installation", func(t *testing.T) {
-			var polls int
-
-			realmClient.DependenciesInstallationFn = func(groupID, appID string) (realm.DependenciesInstallation, error) {
-				status := realm.DependenciesStatusCreated
-				if polls > 1 {
-					status = realm.DependenciesStatusFailed
-				}
-				polls++
-				return realm.DependenciesInstallation{Status: status, StatusMessage: "processing"}, nil
-			}
-
-			out, ui := mock.NewUI()
-
-			t.Log("and should fail with installation error")
-			err := importDependenciesAndWait(ui, realmClient, appRemote{groupID, appID}, uploadPath)
-			assert.Equal(t, err, errors.New("failed to install dependencies"))
-			assert.Equal(t, out.String(), "")
 		})
 	})
 }

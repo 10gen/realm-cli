@@ -2,7 +2,6 @@ package realm_test
 
 import (
 	"archive/zip"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -30,20 +29,30 @@ func TestRealmDependencies(t *testing.T) {
 
 		uploadPath := filepath.Join(wd, "testdata/dependencies_upload.zip")
 
-		install, err := client.DependenciesInstallation(groupID, app.ID)
-		assert.Equal(t, err, realm.ServerError{Message: "dependency installation not found"})
-		assert.Equal(t, install, realm.DependenciesInstallation{})
+		_, err = client.DependenciesStatus(groupID, app.ID)
+		assert.Equal(t, realm.ServerError{Message: "dependency installation not found"}, err)
 
 		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
-		install, err = client.DependenciesInstallation(groupID, app.ID)
-		assert.Nil(t, err)
-		assert.Equal(t, install, realm.DependenciesInstallation{Status: realm.DependenciesStatusCreated, StatusMessage: "processing request"})
 
-		assert.Nil(t, waitForInstallation(client, groupID, app.ID))
-
-		install, err = client.DependenciesInstallation(groupID, app.ID)
+		startStatus, err := client.DependenciesStatus(groupID, app.ID)
 		assert.Nil(t, err)
-		assert.Equal(t, install, realm.DependenciesInstallation{Status: realm.DependenciesStatusSuccessful})
+		assert.Equal(t, realm.DependenciesStatus{
+			State:   realm.DependenciesStateCreated,
+			Message: "processing request",
+		}, startStatus)
+
+		// wait for dependencies to finish installation
+		var currentStatus realm.DependenciesStatus
+		for i := 0; i < 50; i++ {
+			var err error
+			currentStatus, err = client.DependenciesStatus(groupID, app.ID)
+			assert.Nil(t, err)
+			if currentStatus.State != realm.DependenciesStateCreated {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+		assert.Equal(t, realm.DependenciesStateSuccessful, currentStatus.State)
 
 		t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
 			deployments, err := client.Deployments(groupID, app.ID)
@@ -111,22 +120,6 @@ func TestRealmDependencies(t *testing.T) {
 			Modified: []realm.DependencyDiffData{{DependencyData: realm.DependencyData{"underscore", "1.9.2"}, PreviousVersion: "1.9.1"}},
 		}, diff)
 	})
-}
-
-func waitForInstallation(realmClient realm.Client, groupID, appID string) error {
-	status := realm.DependenciesStatusCreated
-	for status == realm.DependenciesStatusCreated {
-		time.Sleep(time.Second)
-		install, err := realmClient.DependenciesInstallation(groupID, appID)
-		if err != nil {
-			return err
-		}
-		status = install.Status
-		if status == realm.DependenciesStatusFailed {
-			return fmt.Errorf("failed to install dependencies")
-		}
-	}
-	return nil
 }
 
 func getZipFileNames(t *testing.T, file *os.File) map[string]struct{} {

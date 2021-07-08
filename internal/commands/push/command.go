@@ -195,10 +195,38 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		if err := importDependenciesAndWait(ui, clients.Realm, appRemote, uploadPathDependencies); err != nil {
+		installDependencies := func() error {
+			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+			s.Suffix = " Installing dependencies: starting..."
+
+			s.Start()
+			defer s.Stop()
+
+			if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
+				return err
+			}
+
+			status := realm.DependenciesStatus{State: realm.DependenciesStateCreated}
+			for status.State == realm.DependenciesStateCreated {
+				var err error
+				status, err = clients.Realm.DependenciesStatus(appRemote.GroupID, appRemote.AppID)
+				if err != nil {
+					return err
+				}
+				s.Suffix = fmt.Sprintf(" Installing dependencies: %s...", status.Message)
+				time.Sleep(time.Second)
+			}
+			if status.State == realm.DependenciesStateFailed {
+				return fmt.Errorf("failed to install dependencies: %s", status.Message)
+			}
+			return nil
+		}
+
+		if err := installDependencies(); err != nil {
 			return err
 		}
-		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
+
+		ui.Print(terminal.NewTextLog("Installed dependencies"))
 	}
 
 	if cmd.inputs.IncludeHosting {
@@ -442,42 +470,5 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 	}
 
 	ui.Print(terminal.NewTextLog("Deployment complete"))
-	return nil
-}
-
-func importDependenciesAndWait(ui terminal.UI, realmClient realm.Client, remote appRemote, uploadPath string) error {
-	err := realmClient.ImportDependencies(remote.GroupID, remote.AppID, uploadPath)
-	if err != nil {
-		return err
-	}
-
-	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-	s.Suffix = " Installing dependencies..."
-
-	waitForInstallation := func() error {
-		s.Start()
-		defer s.Stop()
-
-		status := realm.DependenciesStatusCreated
-		for status == realm.DependenciesStatusCreated {
-			time.Sleep(time.Second)
-			install, err := realmClient.DependenciesInstallation(remote.GroupID, remote.AppID)
-			if err != nil {
-				return err
-			}
-			s.Suffix = fmt.Sprintf(" %s...", install.StatusMessage)
-			status = install.Status
-			if status == realm.DependenciesStatusFailed {
-				return fmt.Errorf("failed to install dependencies")
-			}
-		}
-		return nil
-	}
-
-	if err := waitForInstallation(); err != nil {
-		return err
-	}
-
-	ui.Print(terminal.NewTextLog("Dependencies installation complete"))
 	return nil
 }
