@@ -130,8 +130,7 @@ func TestAppDiffHandler(t *testing.T) {
 		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
 		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-		assert.Equal(t, `Transpiled dependency sources
-The following reflects the proposed changes to your Realm app
+		assert.Equal(t, `The following reflects the proposed changes to your Realm app
 diff1
 diff2
 Added Dependencies

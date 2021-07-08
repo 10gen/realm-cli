@@ -18,9 +18,43 @@ const (
 	dependenciesPathPattern        = appPathPattern + "/dependencies"
 	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
+	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
 
 	paramFile = "file"
 )
+
+// DependenciesStatus is used to get information from a dependencies status request
+type DependenciesStatus struct {
+	State   string `json:"status"`
+	Message string `json:"status_message"`
+}
+
+// set of known dependencies status states
+const (
+	DependenciesStateCreated    = "created"
+	DependenciesStateSuccessful = "successful"
+	DependenciesStateFailed     = "failed"
+)
+
+func (c *client) DependenciesStatus(groupID, appID string) (DependenciesStatus, error) {
+	res, err := c.do(
+		http.MethodGet,
+		fmt.Sprintf(dependenciesStatusPathPattern, groupID, appID),
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return DependenciesStatus{}, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return DependenciesStatus{}, api.ErrUnexpectedStatusCode{"get dependencies status", res.StatusCode}
+	}
+	defer res.Body.Close()
+	var status DependenciesStatus
+	if err := json.NewDecoder(res.Body).Decode(&status); err != nil {
+		return DependenciesStatus{}, err
+	}
+	return status, nil
+}
 
 func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	file, fileErr := os.Open(uploadPath)
@@ -37,9 +71,9 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	body := &bytes.Buffer{}
 	w := multipart.NewWriter(body)
 
-	form, formErr := w.CreateFormFile(paramFile, fileInfo.Name())
-	if formErr != nil {
-		return formErr
+	form, err := w.CreateFormFile(paramFile, fileInfo.Name())
+	if err != nil {
+		return err
 	}
 
 	if _, err := io.Copy(form, file); err != nil {
@@ -49,20 +83,21 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 		return err
 	}
 
-	res, resErr := c.do(
-		http.MethodPost,
+	res, err := c.do(
+		http.MethodPut,
 		fmt.Sprintf(dependenciesPathPattern, groupID, appID),
 		api.RequestOptions{
 			Body:        body,
 			ContentType: w.FormDataContentType(),
 		},
 	)
-	if resErr != nil {
-		return resErr
+	if err != nil {
+		return err
 	}
 	if res.StatusCode != http.StatusNoContent {
 		return api.ErrUnexpectedStatusCode{"import dependencies", res.StatusCode}
 	}
+
 	return nil
 }
 

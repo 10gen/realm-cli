@@ -28,7 +28,31 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, err)
 
 		uploadPath := filepath.Join(wd, "testdata/dependencies_upload.zip")
+
+		_, err = client.DependenciesStatus(groupID, app.ID)
+		assert.Equal(t, realm.ServerError{Message: "dependency installation not found"}, err)
+
 		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
+
+		startStatus, err := client.DependenciesStatus(groupID, app.ID)
+		assert.Nil(t, err)
+		assert.Equal(t, realm.DependenciesStatus{
+			State:   realm.DependenciesStateCreated,
+			Message: "processing request",
+		}, startStatus)
+
+		// wait for dependencies to finish installation
+		var currentStatus realm.DependenciesStatus
+		for i := 0; i < 50; i++ {
+			var err error
+			currentStatus, err = client.DependenciesStatus(groupID, app.ID)
+			assert.Nil(t, err)
+			if currentStatus.State != realm.DependenciesStateCreated {
+				break
+			}
+			time.Sleep(time.Second)
+		}
+		assert.Equal(t, realm.DependenciesStateSuccessful, currentStatus.State)
 
 		t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
 			deployments, err := client.Deployments(groupID, app.ID)
@@ -78,7 +102,8 @@ func TestRealmDependencies(t *testing.T) {
 			assert.Nil(t, expectedDepsErr)
 			defer expectedDeps.Close()
 
-			assert.Equalf(t, parseZipArchive(t, expectedDeps), parseZipArchive(t, actualDeps), "expected archives to match")
+			// make sure same files are present; contents may be different because of transpilation
+			assert.Equal(t, getZipFileNames(t, expectedDeps), getZipFileNames(t, actualDeps))
 		})
 	})
 
@@ -97,7 +122,7 @@ func TestRealmDependencies(t *testing.T) {
 	})
 }
 
-func parseZipArchive(t *testing.T, file *os.File) map[string]string {
+func getZipFileNames(t *testing.T, file *os.File) map[string]struct{} {
 	t.Helper()
 
 	fileInfo, err := file.Stat()
@@ -106,5 +131,13 @@ func parseZipArchive(t *testing.T, file *os.File) map[string]string {
 	zipPkg, err := zip.NewReader(file, fileInfo.Size())
 	assert.Nil(t, err)
 
-	return parseZipPkg(t, zipPkg)
+	out := make(map[string]struct{}, len(zipPkg.File))
+
+	for _, file := range zipPkg.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
+		out[file.Name] = struct{}{}
+	}
+	return out
 }

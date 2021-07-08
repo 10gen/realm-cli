@@ -569,9 +569,46 @@ Successfully pushed app up: eggcorn-abcde
 			})
 		})
 
+		t.Run("succeeds in importing dependencies but fails during installation", func(t *testing.T) {
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, nil
+			}
+			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
+				return nil
+			}
+
+			t.Run("because of an error", func(t *testing.T) {
+				realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+					return realm.DependenciesStatus{}, errors.New("something bad happened")
+				}
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
+
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened"), err)
+			})
+			t.Run("because of an installation problem", func(t *testing.T) {
+				realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+					return realm.DependenciesStatus{State: realm.DependenciesStateFailed, Message: "something bad happened"}, nil
+				}
+				out := new(bytes.Buffer)
+				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeDependencies: true}}
+
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("failed to install dependencies: something bad happened"), err)
+			})
+		})
+
 		t.Run("and can import dependencies should run import successfully", func(t *testing.T) {
 			realmClient.ImportDependenciesFn = func(groupID, appID, uploadPath string) error {
 				return nil
+			}
+			realmClient.DependenciesStatusFn = func(groupID, appID string) (realm.DependenciesStatus, error) {
+				return realm.DependenciesStatus{State: realm.DependenciesStateSuccessful}, nil
 			}
 
 			out := new(bytes.Buffer)
@@ -581,12 +618,11 @@ Successfully pushed app up: eggcorn-abcde
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, `Determining changes
-Transpiled dependency sources
 Creating draft
 Pushing changes
 Deploying draft
 Deployment complete
-Uploaded dependencies archive
+Installed dependencies
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
@@ -736,7 +772,6 @@ Try instead: realm-cli push --local testdata/project --remote appID
 
 		assert.Nil(t, err)
 		assert.Equal(t, `Determining changes
-Transpiled dependency sources
 The following reflects the proposed changes to your Realm app
 diff1
 diff2

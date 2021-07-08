@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -111,13 +110,12 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		uploadPath, err := local.PrepareDependencies(app, ui)
+		appDependencies, err := local.FindAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(uploadPath) //nolint:errcheck
 
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.ArchivePath)
 		if err != nil {
 			return err
 		}

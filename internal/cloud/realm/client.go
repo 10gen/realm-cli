@@ -30,6 +30,7 @@ type Client interface {
 	ImportDependencies(groupID, appID, uploadPath string) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)
 	DiffDependencies(groupID, appID, uploadPath string) (DependenciesDiff, error)
+	DependenciesStatus(groupID, appID string) (DependenciesStatus, error)
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error

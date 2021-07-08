@@ -21,6 +21,7 @@ type RealmClient struct {
 	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
 	ImportDependenciesFn func(groupID, appID, uploadPath string) error
 	DiffDependenciesFn   func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
+	DependenciesStatusFn func(groupID, appID string) (realm.DependenciesStatus, error)
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
@@ -227,6 +228,16 @@ func (rc RealmClient) Deployment(groupID, appID, deploymentID string) (realm.App
 		return rc.DeploymentFn(groupID, appID, deploymentID)
 	}
 	return rc.Client.Deployment(groupID, appID, deploymentID)
+}
+
+// DependenciesStatus calls the mocked DependenciesStatus implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) DependenciesStatus(groupID, appID string) (realm.DependenciesStatus, error) {
+	if rc.DependenciesStatusFn != nil {
+		return rc.DependenciesStatusFn(groupID, appID)
+	}
+	return rc.Client.DependenciesStatus(groupID, appID)
 }
 
 // CreateAPIKey calls the mocked CreateAPIKey implementation if provided,

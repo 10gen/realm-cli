@@ -8,8 +8,7 @@
   },
   "license": "Apache-2.0",
   "bin": {
-    "realm-cli": "./wrapper.js",
-    "transpiler": "./wrapper-transpiler.js"
+    "realm-cli": "./wrapper.js"
   },
   "scripts": {
     "install": "node install.js"

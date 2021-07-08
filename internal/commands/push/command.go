@@ -1,7 +1,7 @@
 package push
 
 import (
-	"os"
+	"fmt"
 	"strings"
 	"time"
 
@@ -154,11 +154,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
 	if cmd.inputs.IncludeDependencies {
-		uploadPathDependencies, err = local.PrepareDependencies(app, ui)
+		appDependencies, err := local.FindAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(uploadPathDependencies) //nolint:errcheck
+		uploadPathDependencies = appDependencies.ArchivePath
 
 		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
 		if err != nil {
@@ -246,10 +246,38 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeDependencies {
-		if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
+		installDependencies := func() error {
+			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+			s.Suffix = " Installing dependencies: starting..."
+
+			s.Start()
+			defer s.Stop()
+
+			if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
+				return err
+			}
+
+			status := realm.DependenciesStatus{State: realm.DependenciesStateCreated}
+			for status.State == realm.DependenciesStateCreated {
+				var err error
+				status, err = clients.Realm.DependenciesStatus(appRemote.GroupID, appRemote.AppID)
+				if err != nil {
+					return err
+				}
+				s.Suffix = fmt.Sprintf(" Installing dependencies: %s...", status.Message)
+				time.Sleep(time.Second)
+			}
+			if status.State == realm.DependenciesStateFailed {
+				return fmt.Errorf("failed to install dependencies: %s", status.Message)
+			}
+			return nil
+		}
+
+		if err := installDependencies(); err != nil {
 			return err
 		}
-		ui.Print(terminal.NewTextLog("Uploaded dependencies archive"))
+
+		ui.Print(terminal.NewTextLog("Installed dependencies"))
 	}
 
 	if cmd.inputs.IncludeHosting {
