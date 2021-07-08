@@ -6,9 +6,8 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 	"github.com/AlecAivazis/survey/v2"
-
-	"github.com/spf13/pflag"
 )
 
 var errTooManyAddresses = "must only provide one IP address or CIDR block at a time"
@@ -21,10 +20,10 @@ type createInputs struct {
 	AllowAll   bool
 }
 
-// CommandMetaCreate is the command meta for the `accessList create` command
+// CommandMetaCreate is the command meta for the `accesslist create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
-	Display:     "accessList create",
+	Display:     "accesslist create",
 	Description: "Create an IP address or CIDR block in the Access List for your Realm app",
 	HelpText: `You will be prompted to input an IP address or CIDR block if none is
 provided in the initial command.`,
@@ -37,13 +36,32 @@ type CommandCreate struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "")
-
-	fs.StringVar(&cmd.inputs.Address, flagIP, "", flagIPUsageCreate)
-	fs.StringVar(&cmd.inputs.Comment, flagComment, "", flagCommentUsageCreate)
-	fs.BoolVar(&cmd.inputs.UseCurrent, flagUseCurrent, false, flagUseCurrentUsageCreate)
-	fs.BoolVar(&cmd.inputs.AllowAll, flagAllowAll, false, flagAllowAllUsageCreate)
+func (cmd *CommandCreate) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to create an entry in its Access List"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		ipFlag(&cmd.inputs.Address, "Specify the IP address or CIDR block that you would like to add"),
+		commentFlag(&cmd.inputs.Comment, "Add a comment to the IP address or CIDR block (Note: This action is optional)"),
+		flags.BoolFlag{
+			Value: &cmd.inputs.UseCurrent,
+			Meta: flags.Meta{
+				Name: "use-current",
+				Usage: flags.Usage{
+					Description: "Add your current IP address to your Access List",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.AllowAll,
+			Meta: flags.Meta{
+				Name: "allow-all",
+				Usage: flags.Usage{
+					Description: "Allows all IP addresses to access your Realm app (Note: “0.0.0.0/0” will be added as an entry)",
+				},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs
