@@ -24,6 +24,7 @@ type RealmClient struct {
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
+	FindAppFn        func(groupID, appID string) (realm.App, error)
 	FindAppsFn       func(filter realm.AppFilter) ([]realm.App, error)
 	AppDescriptionFn func(groupID, appID string) (realm.AppDescription, error)
 
@@ -61,8 +62,9 @@ type RealmClient struct {
 
 	SchemaModelsFn func(groupID, appID, language string) ([]realm.SchemaModel, error)
 
-	TemplatesFn      func() ([]realm.Template, error)
-	ClientTemplateFn func(groupID, appID, templateID string) (*zip.Reader, error)
+	AllTemplatesFn        func() ([]realm.Template, error)
+	ClientTemplateFn      func(groupID, appID, templateID string) (*zip.Reader, bool, error)
+	CompatibleTemplatesFn func(groupID, appID string) ([]realm.Template, error)
 
 	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error)
 
@@ -137,6 +139,16 @@ func (rc RealmClient) DeleteApp(groupID, appID string) error {
 		return rc.DeleteAppFn(groupID, appID)
 	}
 	return rc.Client.DeleteApp(groupID, appID)
+}
+
+// FindApp calls the mocked FindApp implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) FindApp(groupID, appID string) (realm.App, error) {
+	if rc.FindAppFn != nil {
+		return rc.FindAppFn(groupID, appID)
+	}
+	return rc.Client.FindApp(groupID, appID)
 }
 
 // FindApps calls the mocked FindApps implementation if provided,
@@ -449,24 +461,34 @@ func (rc RealmClient) SchemaModels(groupID, appID, language string) ([]realm.Sch
 	return rc.Client.SchemaModels(groupID, appID, language)
 }
 
-// Templates calls the mocked Templates implementation if provided,
+// AllTemplates calls the mocked AllTemplates implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) Templates() ([]realm.Template, error) {
-	if rc.TemplatesFn != nil {
-		return rc.TemplatesFn()
+func (rc RealmClient) AllTemplates() ([]realm.Template, error) {
+	if rc.AllTemplatesFn != nil {
+		return rc.AllTemplatesFn()
 	}
-	return rc.Client.Templates()
+	return rc.Client.AllTemplates()
 }
 
 // ClientTemplate calls the mocked ClientTemplate implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error) {
+func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 	if rc.ClientTemplateFn != nil {
 		return rc.ClientTemplateFn(groupID, appID, templateID)
 	}
 	return rc.Client.ClientTemplate(groupID, appID, templateID)
+}
+
+// CompatibleTemplates calls the mocked CompatibleTemplates implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) CompatibleTemplates(groupID, appID string) ([]realm.Template, error) {
+	if rc.CompatibleTemplatesFn != nil {
+		return rc.CompatibleTemplatesFn(groupID, appID)
+	}
+	return rc.Client.CompatibleTemplates(groupID, appID)
 }
 
 // AllowedIPCreate calls the mocked AllowedIPCreate implementation if provided,

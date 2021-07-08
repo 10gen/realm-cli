@@ -2,6 +2,7 @@ package pull
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -40,6 +41,7 @@ func (cmd *Command) Flags(fs *pflag.FlagSet) {
 	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
 	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
+	fs.StringVarP(&cmd.inputs.TemplateID, flagTemplate, flagTemplateShort, "", flagTemplateUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
 	flags.MarkHidden(fs, flagProject)
@@ -60,33 +62,59 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	pathTarget, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
+	// TODO(REALMC-9462): maybe make this less hacky (pass app in to resolveClientTemplates perhaps?)
+	var clientZipPkgs map[string]*zip.Reader
+	if app.TemplateID != "" {
+		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	pathProject, zipPkg, err := cmd.doExport(profile, clients.Realm, app.GroupID, app.ID)
 	if err != nil {
 		return err
 	}
 
-	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathTarget)
-	if err != nil {
-		return err
-	}
-
-	proceed, err := checkAppDestination(ui, pathTarget)
+	// App path
+	proceed, err := checkPathDestination(ui, pathProject)
 	if err != nil {
 		return err
 	} else if !proceed {
 		return nil
 	}
 
+	pathRelative, err := filepath.Rel(profile.WorkingDirectory, pathProject)
+	if err != nil {
+		return err
+	}
+
+	var pathFrontend string
+	pathBackend := pathProject
+	if len(clientZipPkgs) != 0 {
+		pathFrontend = filepath.Join(pathProject, local.FrontendPath)
+		pathBackend = filepath.Join(pathProject, local.BackendPath)
+	}
+
 	if cmd.inputs.DryRun {
-		ui.Print(
-			terminal.NewTextLog("No changes were written to your file system"),
-			terminal.NewDebugLog("Contents would have been written to: %s", pathRelative),
-		)
+		logs := make([]terminal.Log, 0, 3)
+		logs = append(logs, terminal.NewTextLog("No changes were written to your file system"))
+
+		if len(clientZipPkgs) != 0 {
+			logs = append(logs,
+				terminal.NewDebugLog("App contents would have been written to: %s", filepath.Join(pathRelative, local.BackendPath)),
+				terminal.NewDebugLog("Template contents would have been written to: %s", filepath.Join(pathRelative, local.FrontendPath)),
+			)
+		} else {
+			logs = append(logs, terminal.NewDebugLog("Contents would have been written to: %s", pathRelative))
+		}
+
+		ui.Print(logs...)
 		return nil
 	}
 
-	if err := local.WriteZip(pathTarget, zipPkg); err != nil {
-		return err
+	if err := local.WriteZip(pathBackend, zipPkg); err != nil {
+		return fmt.Errorf("unable to write app to disk: %s", err)
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
@@ -104,7 +132,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			return local.WriteFile(
-				filepath.Join(pathTarget, local.NameFunctions, archiveName),
+				filepath.Join(pathBackend, local.NameFunctions, archiveName),
 				0666,
 				archivePkg,
 			)
@@ -129,7 +157,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 				return err
 			}
 
-			return local.WriteHostingAssets(clients.HostingAsset, pathTarget, app.GroupID, app.ID, appAssets)
+			return local.WriteHostingAssets(clients.HostingAsset, pathBackend, app.GroupID, app.ID, appAssets)
 		}
 
 		if err := exportHostingAssets(); err != nil {
@@ -138,7 +166,20 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
 	}
 
+	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
+	// TODO(REALMC-9452) fix to iterate in a deterministic order
+	for templateID, templateZipPkg := range clientZipPkgs {
+		if err := local.WriteZip(filepath.Join(pathFrontend, templateID), templateZipPkg); err != nil {
+			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
+		}
+		successfulTemplateWrites = append(successfulTemplateWrites, templateID)
+	}
+
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
+	if len(successfulTemplateWrites) != 0 {
+		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites))
+	}
+
 	return nil
 }
 
@@ -172,7 +213,7 @@ func (cmd *Command) doExport(profile *user.Profile, realmClient realm.Client, gr
 	return target, zipPkg, nil
 }
 
-func checkAppDestination(ui terminal.UI, path string) (bool, error) {
+func checkPathDestination(ui terminal.UI, path string) (bool, error) {
 	if ui.AutoConfirm() {
 		return true, nil
 	}

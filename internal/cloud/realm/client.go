@@ -33,6 +33,8 @@ type Client interface {
 
 	CreateApp(groupID, name string, meta AppMeta) (App, error)
 	DeleteApp(groupID, appID string) error
+	// TODO(REALMC-9462): remove this once /apps has "template_id" in the payload
+	FindApp(groupID, appID string) (App, error)
 	FindApps(filter AppFilter) ([]App, error)
 	AppDescription(groupID, appID string) (AppDescription, error)
 
@@ -70,8 +72,9 @@ type Client interface {
 
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
-	Templates() ([]Template, error)
-	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, error)
+	AllTemplates() ([]Template, error)
+	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error)
+	CompatibleTemplates(groupID, appID string) ([]Template, error)
 
 	AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error)
 
