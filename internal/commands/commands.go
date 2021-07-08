@@ -182,9 +182,9 @@ var (
 	AccessList = cli.CommandDefinition{
 		CommandMeta: cli.CommandMeta{
 			Use:         "accessList",
-			Aliases:     []string{"accesslist"},
+			Aliases:     []string{"accesslist", "access-list"},
 			Description: "Manage your allowed IP addresses and CIDR blocks",
-			Hidden:      true, // TODO(REALMC-9164): Set 'Hidden' to false
+			Hidden:      true, // TODO(REALMC-9164): Remove 'Hidden'
 		},
 		SubCommands: []cli.CommandDefinition{
 			{
