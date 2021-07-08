@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
