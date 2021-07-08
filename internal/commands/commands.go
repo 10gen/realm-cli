@@ -184,7 +184,7 @@ var (
 			Use:         "accessList",
 			Aliases:     []string{"accesslist", "access-list"},
 			Description: "Manage your allowed IP addresses and CIDR blocks",
-			Hidden:      true, // TODO(REALMC-9164): Remove 'Hidden'
+			//Hidden:      true, // TODO(REALMC-9164): Remove 'Hidden'
 		},
 		SubCommands: []cli.CommandDefinition{
 			{

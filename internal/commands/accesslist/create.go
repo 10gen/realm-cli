@@ -28,7 +28,7 @@ var CommandMetaCreate = cli.CommandMeta{
 	Description: "Create an IP address or CIDR block in the Access List for your Realm app",
 	HelpText: `You will be prompted to input an IP address or CIDR block if none is
 provided in the initial command.`,
-	Hidden: true,
+	// Hidden: true,
 }
 
 // CommandCreate is the ip access create command
@@ -87,7 +87,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 }
 
 func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
 		return err
 	}
 
