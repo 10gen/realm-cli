@@ -28,7 +28,7 @@ var CommandMetaCreate = cli.CommandMeta{
 	Description: "Create an IP address or CIDR block in the Access List for your Realm app",
 	HelpText: `You will be prompted to input an IP address or CIDR block if none is
 provided in the initial command.`,
-	// Hidden: true,
+	Hidden: true,
 }
 
 // CommandCreate is the ip access create command
