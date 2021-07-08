@@ -4,8 +4,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaCreate is the command meta for the `secrets create` command
@@ -22,11 +21,14 @@ type CommandCreate struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to create its secrets")
-
-	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsageCreate)
-	fs.StringVarP(&cmd.inputs.Value, flagValue, flagValueShort, "", flagValueUsageCreate)
+func (cmd *CommandCreate) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to create its secrets"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		nameFlag(&cmd.inputs.Name, "Name the secret"),
+		valueFlag(&cmd.inputs.Value, "Specify the secret value"),
+	}
 }
 
 // Inputs is the command inputs

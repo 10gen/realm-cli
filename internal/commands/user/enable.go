@@ -8,8 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaEnable is the command meta for the `user enable` command
@@ -32,9 +31,13 @@ type enableInputs struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandEnable) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to enable its users")
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserEnableUsage)
+func (cmd *CommandEnable) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to enable its users’"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		usersFlag(&cmd.inputs.Users, "Specify the Realm app's users' ID(s) to enable"),
+	}
 }
 
 // Inputs is the command inputs

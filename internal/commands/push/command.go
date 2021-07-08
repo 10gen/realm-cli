@@ -14,7 +14,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/briandowns/spinner"
-	"github.com/spf13/pflag"
 )
 
 // CommandMeta is the command meta for the 'push' command
@@ -35,16 +34,68 @@ type Command struct {
 }
 
 // Flags is the command flags
-func (cmd *Command) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPath, "", flagLocalPathUsage)
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemote, "", flagRemoteUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
-	fs.BoolVarP(&cmd.inputs.ResetCDNCache, flagResetCDNCache, flagResetCDNCacheShort, false, flagResetCDNCacheUsage)
-	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
+func (cmd *Command) Flags() []flags.Flag {
+	return []flags.Flag{
+		flags.StringFlag{
+			Value: &cmd.inputs.LocalPath,
+			Meta: flags.Meta{
+				Name: flagLocalPath,
+				Usage: flags.Usage{
+					Description: "Specify the local filepath of a Realm app to be imported",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.RemoteApp,
+			Meta: flags.Meta{
+				Name: flagRemote,
+				Usage: flags.Usage{
+					Description: "Specify the name or ID of a remote Realm app to edit",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeDependencies,
+			Meta: flags.Meta{
+				Name:      flagIncludeDependencies,
+				Shorthand: "d",
+				Usage: flags.Usage{
+					Description: "Import and include Realm app dependencies",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeHosting,
+			Meta: flags.Meta{
+				Name:      flagIncludeHosting,
+				Shorthand: "h",
+				Usage: flags.Usage{
+					Description: "Import and include Realm app hosting files",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.ResetCDNCache,
+			Meta: flags.Meta{
+				Name:      flagResetCDNCache,
+				Shorthand: "c",
+				Usage: flags.Usage{
+					Description: "Reset the hosting CDN cache of a Realm app",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.DryRun,
+			Meta: flags.Meta{
+				Name:      flagDryRun,
+				Shorthand: "x",
+				Usage: flags.Usage{
+					Description: "Run without pushing any changes to the Realm server",
+				},
+			},
+		},
+		cli.ProjectFlag(&cmd.inputs.Project),
+	}
 }
 
 // Inputs is the command inputs

@@ -13,20 +13,6 @@ import (
 	"github.com/AlecAivazis/survey/v2/core"
 )
 
-const (
-	flagUserType      = "type"
-	flagUserTypeUsage = `Select the type of user to create (Default value: <none>; Allowed values: <none>, "api-key", "email")`
-
-	flagEmail      = "email"
-	flagEmailUsage = "Specify the email of the new user"
-
-	flagPassword      = "password"
-	flagPasswordUsage = "Specify the password of the new user"
-
-	flagAPIKeyName      = "name"
-	flagAPIKeyNameUsage = "Specify the name of the API Key"
-)
-
 // input field names, per survey
 const (
 	inputCreateFieldEmail      = "email"

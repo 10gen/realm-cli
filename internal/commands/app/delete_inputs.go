@@ -10,12 +10,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-var (
-	flagDeleteApp      = "app"
-	flagDeleteAppShort = "a"
-	flagDeleteAppUsage = "Specify the name(s) or ID(s) of Realm apps to delete"
-)
-
 type deleteInputs struct {
 	Apps    []string
 	Project string

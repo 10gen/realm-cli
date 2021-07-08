@@ -7,8 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaDelete is the command meta
@@ -27,9 +26,22 @@ type CommandDelete struct {
 }
 
 // Flags function for the secrets delete command
-func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to delete its secrets")
-	fs.StringSliceVarP(&cmd.inputs.secrets, flagSecret, flagSecretShort, []string{}, flagSecretUsageDelete)
+func (cmd *CommandDelete) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to delete its secrets"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.secrets,
+			Meta: flags.Meta{
+				Name:      flagSecret,
+				Shorthand: flagSecretShort,
+				Usage: flags.Usage{
+					Description: "Specify the name or ID of the secret to delete",
+				},
+			},
+		},
+	}
 }
 
 // Inputs function for the secrets delete command

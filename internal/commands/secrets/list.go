@@ -7,8 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaList is the command meta for the `secrets list` command
@@ -30,8 +29,12 @@ type listInputs struct {
 }
 
 // Flags are the command flags
-func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to list its secrets")
+func (cmd *CommandList) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to list its secrets"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+	}
 }
 
 // Inputs are the command inputs

@@ -9,8 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaDatamodels is the command meta for the `schema datamodels` command
@@ -38,13 +37,45 @@ type CommandDatamodels struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandDatamodels) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to generate its data models")
-
-	fs.VarP(&cmd.inputs.Language, flagModelsLanguage, flagModelsLanguageShort, flagModelsLanguageUsage)
-	fs.BoolVar(&cmd.inputs.Flat, flagModelsFlat, false, flagModelsFlatUsage)
-	fs.BoolVar(&cmd.inputs.NoImports, flagModelsNoImports, false, flagModelsNoImportsUsage)
-	fs.StringSliceVar(&cmd.inputs.Names, flagModelsName, []string{}, flagModelsNameUsage)
+func (cmd *CommandDatamodels) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to generate its data models"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.CustomFlag{
+			Value: &cmd.inputs.Language,
+			Meta: flags.Meta{
+				Name:      "language",
+				Shorthand: "l",
+				Usage: flags.Usage{
+					Description:   "Specify the language to generate schema data models in",
+					DefaultValue:  "<none>",
+					AllowedValues: []string{}, // TODO
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.Flat,
+			Meta: flags.Meta{
+				Name:  "flat",
+				Usage: flags.Usage{Description: "View generated data models (and associated imports) as a single code block"},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.NoImports,
+			Meta: flags.Meta{
+				Name:  "no-imports",
+				Usage: flags.Usage{Description: "View generated data models without imports"},
+			},
+		},
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.Names,
+			Meta: flags.Meta{
+				Name:  "name",
+				Usage: flags.Usage{Description: "Filter generated data models by name(s)"},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs

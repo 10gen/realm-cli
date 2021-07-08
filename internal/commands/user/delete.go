@@ -9,8 +9,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaDelete is the command meta for the `user delete` command
@@ -28,16 +26,16 @@ type CommandDelete struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandDelete) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to delete its users")
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserDeleteUsage)
-	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
-	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)
-	fs.Var(
-		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validAuthProviderTypes()),
-		flagProvider,
-		flagProviderUsage,
-	)
+func (cmd *CommandDelete) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to delete its users"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		usersFlag(&cmd.inputs.Users, "Specify the Realm app's users' ID(s) to delete"),
+		pendingFlag(&cmd.inputs.Pending),
+		stateFlag(&cmd.inputs.State),
+		providersFlag(&cmd.inputs.ProviderTypes),
+	}
 }
 
 // Inputs is the command inputs

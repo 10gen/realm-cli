@@ -4,8 +4,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaUpdate is the command meta for the `secrets update` command
@@ -28,11 +27,24 @@ func (cmd *CommandUpdate) Inputs() cli.InputResolver {
 }
 
 // Flags function for the secrets update command
-func (cmd *CommandUpdate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to update its secrets")
-	fs.StringVarP(&cmd.inputs.secret, flagSecret, flagSecretShort, "", flagSecretUsageUpdate)
-	fs.StringVarP(&cmd.inputs.name, flagName, flagNameShort, "", flagNameUsageUpdate)
-	fs.StringVarP(&cmd.inputs.value, flagValue, flagValueShort, "", flagValueUsageUpdate)
+func (cmd *CommandUpdate) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to update its secrets"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.StringFlag{
+			Value: &cmd.inputs.secret,
+			Meta: flags.Meta{
+				Name:      flagSecret,
+				Shorthand: flagSecretShort,
+				Usage: flags.Usage{
+					Description: "Specify the name or ID of the secret to update",
+				},
+			},
+		},
+		nameFlag(&cmd.inputs.name, "Re-name the secret"),
+		valueFlag(&cmd.inputs.value, "Specify the new secret value"),
+	}
 }
 
 // Handler function for the secrets update command

@@ -10,8 +10,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 const (
@@ -39,14 +37,74 @@ type CommandList struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandList) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to list its logs")
-
-	fs.Var(flags.NewEnumSet(&cmd.inputs.Types, allLogTypes), flagType, flagTypeUsage)
-	fs.BoolVar(&cmd.inputs.Errors, flagErrors, false, flagErrorsUsage)
-	fs.Var(&cmd.inputs.Start, flagStartDate, flagStartDateUsage)
-	fs.Var(&cmd.inputs.End, flagEndDate, flagEndDateUsage)
-	fs.BoolVar(&cmd.inputs.Tail, flagTail, false, flagTailUsage)
+func (cmd *CommandList) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to list its logs"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.NewStringSetFlag(
+			&cmd.inputs.Types,
+			flags.StringSetOptions{
+				Meta: flags.Meta{
+					Name: "type",
+					Usage: flags.Usage{
+						Description: "Specify the type(s) of logs to list",
+					},
+				},
+				ValidValues: []string{
+					logTypeAuth,
+					logTypeFunction,
+					logTypePush,
+					logTypeService,
+					logTypeTrigger,
+					logTypeGraphQL,
+					logTypeSync,
+					logTypeSchema,
+				},
+			},
+		),
+		flags.BoolFlag{
+			Value: &cmd.inputs.Errors,
+			Meta: flags.Meta{
+				Name: "errors",
+				Usage: flags.Usage{
+					Description: "View your Realm app's error logs",
+				},
+			},
+		},
+		flags.CustomFlag{
+			Value: &cmd.inputs.Start,
+			Meta: flags.Meta{
+				Name: "start",
+				Usage: flags.Usage{
+					Description:   "Specify when to begin listing logs",
+					AllowedFormat: "2006-01-02[T15:04:05.000-0700]",
+					DocsLink:      "https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range",
+				},
+			},
+		},
+		flags.CustomFlag{
+			Value: &cmd.inputs.End,
+			Meta: flags.Meta{
+				Name: "end",
+				Usage: flags.Usage{
+					Description:   "Specify when to finish listing logs",
+					AllowedFormat: "2006-01-02[T15:04:05.000-0700]",
+					DocsLink:      "https://docs.mongodb.com/realm/logs/cli/#view-logs-for-a-date-range",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.Errors,
+			Meta: flags.Meta{
+				Name: "tail",
+				Usage: flags.Usage{
+					Description: "View your Realm app's logs in real-time",
+					Note:        `"--start" and "--end" flags do not apply here`,
+				},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs

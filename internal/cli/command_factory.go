@@ -73,7 +73,10 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		if command, ok := command.Command.(CommandFlags); ok {
 			fs := cmd.Flags()
 			fs.SortFlags = false // ensures command flags are added unsorted
-			command.Flags(fs)
+
+			for _, flag := range command.Flags() {
+				flag.Register(fs)
+			}
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {

@@ -15,7 +15,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/briandowns/spinner"
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaCreate is the command meta for the `app create` command
@@ -39,25 +38,80 @@ type CommandCreate struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppNew, "", flagRemoteAppNewUsage)
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathCreate, "", flagLocalPathCreateUsage)
-	fs.StringVarP(&cmd.inputs.Name, flagName, flagNameShort, "", flagNameUsage)
-	fs.VarP(&cmd.inputs.Location, flagLocation, flagLocationShort, flagLocationUsage)
-	fs.VarP(&cmd.inputs.DeploymentModel, flagDeploymentModel, flagDeploymentModelShort, flagDeploymentModelUsage)
-	fs.VarP(&cmd.inputs.Environment, flagEnvironment, flagEnvironmentShort, flagEnvironmentUsage)
-	fs.StringSliceVar(&cmd.inputs.Clusters, flagCluster, []string{}, flagClusterUsage)
-	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
-	fs.StringSliceVar(&cmd.inputs.Datalakes, flagDatalake, []string{}, flagDatalakeUsage)
-	fs.StringSliceVar(&cmd.inputs.DatalakeServiceNames, flagDatalakeServiceName, []string{}, flagDatalakeServiceNameUsage)
-	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
-	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
-	flags.MarkHidden(fs, flagProject)
-
-	fs.Var(&cmd.inputs.ConfigVersion, flagConfigVersion, flagConfigVersionUsage)
-	flags.MarkHidden(fs, flagConfigVersion)
+func (cmd *CommandCreate) Flags() []flags.Flag {
+	return []flags.Flag{
+		remoteAppFlag(&cmd.inputs.RemoteApp),
+		flags.StringFlag{
+			Value: &cmd.inputs.LocalPath,
+			Meta: flags.Meta{
+				Name: flagLocalPathCreate,
+				Usage: flags.Usage{
+					Description: "Specify the local filepath of a Realm app to be created",
+				},
+			},
+		},
+		nameFlag(&cmd.inputs.Name),
+		locationFlag(&cmd.inputs.Location),
+		deploymentModelFlag(&cmd.inputs.DeploymentModel),
+		environmentFlag(&cmd.inputs.Environment),
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.Clusters,
+			Meta: flags.Meta{
+				Name: flagCluster,
+				Usage: flags.Usage{
+					Description: "Link Atlas cluster(s) to your Realm app",
+				},
+			},
+		},
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.ClusterServiceNames,
+			Meta: flags.Meta{
+				Name: flagClusterServiceName,
+				Usage: flags.Usage{
+					Description: "Specify the Realm app Service name to reference your Atlas cluster",
+				},
+			},
+		},
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.Clusters,
+			Meta: flags.Meta{
+				Name: flagDatalake,
+				Usage: flags.Usage{
+					Description: "Link Atlas data lake(s) to your Realm app",
+				},
+			},
+		},
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.ClusterServiceNames,
+			Meta: flags.Meta{
+				Name: flagDatalakeServiceName,
+				Usage: flags.Usage{
+					Description: "Specify the Realm app Service name to reference your Atlas data lake",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.Template,
+			Meta: flags.Meta{
+				Name: flagTemplate,
+				Usage: flags.Usage{
+					Description: "Create your Realm app from an available template",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.DryRun,
+			Meta: flags.Meta{
+				Name:      flagDryRun,
+				Shorthand: "x",
+				Usage: flags.Usage{
+					Description: "Run without writing any changes to the local filepath or pushing any changes to the Realm server",
+				},
+			},
+		},
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ConfigVersionFlag(&cmd.inputs.ConfigVersion, flagConfigVersionDescription),
+	}
 }
 
 // Inputs is the command inputs

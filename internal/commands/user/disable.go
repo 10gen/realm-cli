@@ -8,8 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaDisable is the command meta for the `user disable` command
@@ -27,9 +26,13 @@ type CommandDisable struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandDisable) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to disable its users")
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserDisableUsage)
+func (cmd *CommandDisable) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to disable its users"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		usersFlag(&cmd.inputs.Users, "Specify the Realm app's users' ID(s) to disable"),
+	}
 }
 
 // Inputs is the command inputs

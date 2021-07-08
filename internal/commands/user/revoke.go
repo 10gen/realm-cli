@@ -9,8 +9,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaRevoke is the command meta for the `user revoke` command
@@ -28,16 +26,16 @@ type CommandRevoke struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandRevoke) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to revoke its users' sessions")
-	fs.StringSliceVarP(&cmd.inputs.Users, flagUser, flagUserShort, []string{}, flagUserRevokeUsage)
-	fs.BoolVar(&cmd.inputs.Pending, flagPending, false, flagPendingUsage)
-	fs.Var(&cmd.inputs.State, flagState, flagStateUsage)
-	fs.Var(
-		flags.NewEnumSet(&cmd.inputs.ProviderTypes, validAuthProviderTypes()),
-		flagProvider,
-		flagProviderUsage,
-	)
+func (cmd *CommandRevoke) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to revoke its users' sessions"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		usersFlag(&cmd.inputs.Users, "Specify the Realm app's users' ID(s) to revoke sessions for"),
+		pendingFlag(&cmd.inputs.Pending),
+		stateFlag(&cmd.inputs.State),
+		providersFlag(&cmd.inputs.ProviderTypes),
+	}
 }
 
 // Inputs is the command inputs

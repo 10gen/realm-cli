@@ -10,9 +10,9 @@ import (
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/briandowns/spinner"
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaRun is the command meta for the `function run` command
@@ -33,43 +33,46 @@ type CommandRun struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandRun) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to run its function")
-
-	fs.StringVar(&cmd.inputs.Name, flagFunctionName, "", flagFunctionNameUsage)
-	fs.StringArrayVar(&cmd.inputs.Args, flagFunctionArgs, nil, flagFunctionArgsUsage)
-	fs.StringVar(&cmd.inputs.User, flagAsUser, "", flagAsUserUsage)
+func (cmd *CommandRun) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to run its function"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.StringFlag{
+			Value: &cmd.inputs.Name,
+			Meta: flags.Meta{
+				Name:  "name",
+				Usage: flags.Usage{Description: "Specify the name of the function to run"},
+			},
+		},
+		flags.StringArrayFlag{
+			Value: &cmd.inputs.Args,
+			Meta: flags.Meta{
+				Name: "args",
+				Usage: flags.Usage{
+					Description: "Specify the args to pass to your function",
+					DocsLink:    "https://docs.mongodb.com/realm/functions/call-a-function/#call-from-realm-cli",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.User,
+			Meta: flags.Meta{
+				Name: "user",
+				Usage: flags.Usage{
+					Description:   "Specify which user to run the function as",
+					DefaultValue:  "<none>",
+					AllowedValues: []string{"<none>", "<userID>"},
+					Note:          "Using <none> will run as the System user",
+				},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs
 func (cmd *CommandRun) Inputs() cli.InputResolver {
 	return &cmd.inputs
-}
-
-func isJSON(data string) bool {
-	var obj map[string]interface{}
-	if err := json.Unmarshal([]byte(data), &obj); err == nil {
-		return true
-	}
-	var list []interface{}
-	if err := json.Unmarshal([]byte(data), &list); err == nil {
-		return true
-	}
-	return false
-}
-
-func isInt(data string) bool {
-	if _, err := strconv.Atoi(data); err != nil {
-		return false
-	}
-	return true
-}
-
-func isFloat(data string) bool {
-	if _, err := strconv.ParseFloat(data, 64); err != nil {
-		return false
-	}
-	return true
 }
 
 // Handler is the command handler
@@ -138,4 +141,30 @@ func (cmd *CommandRun) Handler(profile *user.Profile, ui terminal.UI, clients cl
 	ui.Print(terminal.NewJSONLog("Result", response.Result))
 
 	return nil
+}
+
+func isJSON(data string) bool {
+	var obj map[string]interface{}
+	if err := json.Unmarshal([]byte(data), &obj); err == nil {
+		return true
+	}
+	var list []interface{}
+	if err := json.Unmarshal([]byte(data), &list); err == nil {
+		return true
+	}
+	return false
+}
+
+func isInt(data string) bool {
+	if _, err := strconv.Atoi(data); err != nil {
+		return false
+	}
+	return true
+}
+
+func isFloat(data string) bool {
+	if _, err := strconv.ParseFloat(data, 64); err != nil {
+		return false
+	}
+	return true
 }

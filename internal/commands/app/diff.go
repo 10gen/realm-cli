@@ -13,7 +13,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/spf13/pflag"
 )
 
 // CommandMetaDiff is the command meta
@@ -40,34 +39,49 @@ type diffInputs struct {
 	IncludeHosting      bool
 }
 
-const (
-	flagLocalPathDiff      = "local"
-	flagLocalPathDiffUsage = "Specify the local filepath of a Realm app to diff"
-
-	flagRemoteAppDiff      = "remote"
-	flagRemoteAppDiffUsage = "Specify the name or ID of a Realm app to diff"
-
-	flagProjectDiff      = "project"
-	flagProjectDiffUsage = "Specify the ID of a MongoDB Atlas project"
-
-	flagIncludeDependencies      = "include-dependencies"
-	flagIncludeDependenciesShort = "d"
-	flagIncludeDependenciesUsage = "Include Realm app dependencies in the diff"
-
-	flagIncludeHosting      = "include-hosting"
-	flagIncludeHostingShort = "s"
-	flagIncludeHostingUsage = "Include Realm app hosting files in the diff"
-)
-
 // Flags is the command flags
-func (cmd *CommandDiff) Flags(fs *pflag.FlagSet) {
-	fs.StringVar(&cmd.inputs.LocalPath, flagLocalPathDiff, "", flagLocalPathDiffUsage)
-	fs.StringVar(&cmd.inputs.RemoteApp, flagRemoteAppDiff, "", flagRemoteAppDiffUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeDependencies, flagIncludeDependencies, flagIncludeDependenciesShort, false, flagIncludeDependenciesUsage)
-	fs.BoolVarP(&cmd.inputs.IncludeHosting, flagIncludeHosting, flagIncludeHostingShort, false, flagIncludeHostingUsage)
-
-	fs.StringVar(&cmd.inputs.Project, flagProjectDiff, "", flagProjectDiffUsage)
-	flags.MarkHidden(fs, flagProjectDiff)
+func (cmd *CommandDiff) Flags() []flags.Flag {
+	return []flags.Flag{
+		flags.StringFlag{
+			Value: &cmd.inputs.LocalPath,
+			Meta: flags.Meta{
+				Name: "local",
+				Usage: flags.Usage{
+					Description: "Specify the local filepath of a Realm app to diff",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.RemoteApp,
+			Meta: flags.Meta{
+				Name: "remote",
+				Usage: flags.Usage{
+					Description: "Specify the name or ID of a Realm app to diff",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeDependencies,
+			Meta: flags.Meta{
+				Name:      "include-dependencies",
+				Shorthand: "d",
+				Usage: flags.Usage{
+					Description: "Include Realm app dependencies in the diff",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeHosting,
+			Meta: flags.Meta{
+				Name:      "include-hosting",
+				Shorthand: "h",
+				Usage: flags.Usage{
+					Description: "Include Realm app hosting files in the diff",
+				},
+			},
+		},
+		cli.ProjectFlag(&cmd.inputs.Project),
+	}
 }
 
 // Inputs is the command inputs

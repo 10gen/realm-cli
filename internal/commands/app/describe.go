@@ -4,8 +4,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaDescribe is the command meta for the `app describe` command
@@ -28,8 +27,12 @@ type describeInputs struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandDescribe) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to describe")
+func (cmd *CommandDescribe) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to describe"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+	}
 }
 
 // Inputs is the command inputs

@@ -6,8 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/spf13/pflag"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
 // CommandMetaCreate is the command meta for the `user create` command
@@ -25,13 +24,53 @@ type CommandCreate struct {
 }
 
 // Flags is the command flags
-func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
-	cmd.inputs.Flags(fs, "to create its users")
-
-	fs.Var(&cmd.inputs.UserType, flagUserType, flagUserTypeUsage)
-	fs.StringVar(&cmd.inputs.APIKeyName, flagAPIKeyName, "", flagAPIKeyNameUsage)
-	fs.StringVar(&cmd.inputs.Email, flagEmail, "", flagEmailUsage)
-	fs.StringVar(&cmd.inputs.Password, flagPassword, "", flagPasswordUsage)
+func (cmd *CommandCreate) Flags() []flags.Flag {
+	return []flags.Flag{
+		cli.AppFlagWithContext(&cmd.inputs.App, "to create its users"),
+		cli.ProjectFlag(&cmd.inputs.Project),
+		cli.ProductFlag(&cmd.inputs.Products),
+		flags.CustomFlag{
+			Value: &cmd.inputs.UserType,
+			Meta: flags.Meta{
+				Name: "type",
+				Usage: flags.Usage{
+					Description:  "Select the type of user to create",
+					DefaultValue: "<none>",
+					AllowedValues: []string{
+						string(userTypeAPIKey),
+						string(userTypeEmailPassword),
+					},
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.APIKeyName,
+			Meta: flags.Meta{
+				Name: "name",
+				Usage: flags.Usage{
+					Description: "Specify the name of the new API Key",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.Email,
+			Meta: flags.Meta{
+				Name: "email",
+				Usage: flags.Usage{
+					Description: "Specify the email of the new user",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.Password,
+			Meta: flags.Meta{
+				Name: "password",
+				Usage: flags.Usage{
+					Description: "Specify the password of the new user",
+				},
+			},
+		},
+	}
 }
 
 // Inputs is the command inputs

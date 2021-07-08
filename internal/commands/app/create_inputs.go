@@ -19,27 +19,13 @@ import (
 )
 
 var (
-	flagLocalPathCreate      = "local"
-	flagLocalPathCreateUsage = "Specify the local filepath of a Realm app to be created"
-
-	flagCluster      = "cluster"
-	flagClusterUsage = "Link Atlas cluster(s) to your Realm app"
-
-	flagClusterServiceName      = "cluster-service-name"
-	flagClusterServiceNameUsage = "Specify the Realm app Service name to reference your Atlas cluster"
-
-	flagDatalake      = "datalake"
-	flagDatalakeUsage = "Link Atlas data lake(s) to your Realm app"
-
-	flagDatalakeServiceName      = "datalake-service-name"
-	flagDatalakeServiceNameUsage = "Specify the Realm app Service name to reference your Atlas data lake"
-
-	flagTemplate      = "template"
-	flagTemplateUsage = "Create your Realm app from an available template"
-
-	flagDryRun      = "dry-run"
-	flagDryRunShort = "x"
-	flagDryRunUsage = "Run without writing any changes to the local filepath or pushing any changes to the Realm server"
+	flagLocalPathCreate     = "local"
+	flagCluster             = "cluster"
+	flagClusterServiceName  = "cluster-service-name"
+	flagDatalake            = "datalake"
+	flagDatalakeServiceName = "datalake-service-name"
+	flagTemplate            = "template"
+	flagDryRun              = "dry-run"
 )
 
 type createInputs struct {
@@ -269,7 +255,7 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{flagName, i.Name})
 	}
 	if i.RemoteApp != "" {
-		args = append(args, flags.Arg{flagRemoteAppNew, i.RemoteApp})
+		args = append(args, flags.Arg{flagRemoteApp, i.RemoteApp})
 	}
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
