@@ -11,10 +11,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-const (
-	createInputFieldAddress = "address"
-)
-
 var errTooManyAddresses = "must only provide one IP address or CIDR block at a time"
 
 type createInputs struct {
