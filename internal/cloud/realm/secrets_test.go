@@ -15,7 +15,7 @@ func TestRealmSecrets(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
 	t.Run("should fail without an auth client", func(t *testing.T) {
-		client := realm.NewClient(u.RealmServerURL() + "")
+		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.Secrets(primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex())
 		assert.Equal(t, realm.ErrInvalidSession{}, err)

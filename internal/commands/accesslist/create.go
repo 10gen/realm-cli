@@ -6,8 +6,16 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/AlecAivazis/survey/v2"
+
 	"github.com/spf13/pflag"
 )
+
+const (
+	createInputFieldAddress = "address"
+)
+
+var errTooManyAddresses = "must only provide one IP address or CIDR block at a time"
 
 type createInputs struct {
 	cli.ProjectInputs
@@ -20,11 +28,11 @@ type createInputs struct {
 // CommandMetaCreate is the command meta for the `accessList create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
-	Aliases:     []string{"add"},
 	Display:     "accessList create",
-	Description: "Create an IP address or CIDR block in the Access List of your Realm app",
-	HelpText:    "Adds a new entry into the Access List of your Realm app. You will be prompted to input an IP address or CIDR block if none is provided in the initial command.",
-	Hidden:      true,
+	Description: "Create an IP address or CIDR block in the Access List for your Realm app",
+	HelpText: `You will be prompted to input an IP address or CIDR block if none is
+provided in the initial command.`,
+	Hidden: true,
 }
 
 // CommandCreate is the ip access create command
@@ -54,10 +62,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	if cmd.inputs.AllowAll {
-		cmd.inputs.Address = "0.0.0.0"
-	}
-
 	allowedIP, err := clients.Realm.AllowedIPCreate(app.GroupID, app.ID, cmd.inputs.Address, cmd.inputs.Comment, cmd.inputs.UseCurrent)
 	if err != nil {
 		return err
@@ -72,14 +76,21 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if i.Address == "" {
-		if i.UseCurrent && i.AllowAll {
-			return errors.New("when you are using this command, you can only provide one IP address or CIDR block at a time")
+	if i.Address == "" && !(i.AllowAll || i.UseCurrent) {
+		if err := ui.AskOne(&i.Address, &survey.Input{Message: "IP Address"}); err != nil {
+			return err
 		}
-	} else {
-		if i.UseCurrent || i.AllowAll {
-			return errors.New("when you are using this command, you can only provide one IP address or CIDR block at a time")
+	}
+
+	if i.AllowAll {
+		if i.Address != "" {
+			return errors.New(errTooManyAddresses)
 		}
+		i.Address = "0.0.0.0"
+	}
+
+	if i.Address != "" && i.UseCurrent {
+		return errors.New(errTooManyAddresses)
 	}
 	return nil
 }
