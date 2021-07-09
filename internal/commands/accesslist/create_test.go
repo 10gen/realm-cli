@@ -115,7 +115,6 @@ func TestAllowedIPCreateHandler(t *testing.T) {
 	})
 }
 func TestCreateInputs(t *testing.T) {
-
 	for _, tc := range []struct {
 		description string
 		inputs      createInputs
