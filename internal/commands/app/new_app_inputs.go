@@ -64,7 +64,7 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 }
 
 func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	if i.Template == "" && ui.AutoConfirm() {
+	if i.Template == "" {
 		return nil
 	}
 
@@ -73,50 +73,16 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 		return err
 	}
 
-	// do not disrupt application creation flow if templates are not
-	// available and user is not specifying a template
-	if i.Template == "" && len(templates) == 0 {
-		return nil
-	}
-
 	if len(templates) == 0 {
 		return fmt.Errorf("unable to find template '%s'", i.Template)
 	}
 
-	if i.Template != "" {
-		for _, template := range templates {
-			if template.ID == i.Template {
-				i.Template = template.ID
-				return nil
-			}
+	for _, template := range templates {
+		if template.ID == i.Template {
+			// provided template ID is valid
+			return nil
 		}
-
-		return fmt.Errorf("template '%s' not found", i.Template)
 	}
 
-	// TODO REALMC-9228 Re-enable prompting for template selection
 	return fmt.Errorf("template '%s' not found", i.Template)
-	//	options := make([]string, 0, len(templates)+1)
-	//	templateIDs := make([]string, 0, len(templates)+1)
-	//	options = append(options, "[No Template]: Do Not Use A Template")
-	//	templateIDs = append(templateIDs, "")
-	//	for _, template := range templates {
-	//		options = append(options, fmt.Sprintf("[%s]: %s", template.ID, template.Name))
-	//		templateIDs = append(templateIDs, template.ID)
-	//	}
-	//
-	//	var selectedIndex int
-	//	if err := ui.AskOne(
-	//		&selectedIndex,
-	//		&survey.Select{
-	//			Message: "Please select a template from the available options",
-	//			Options: options,
-	//		},
-	//	); err != nil {
-	//		return err
-	//	}
-	//
-	//	i.Template = templateIDs[selectedIndex]
-	//
-	//	return nil
 }

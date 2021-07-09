@@ -973,6 +973,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		},
 		{
 			description: "should error when fetching templates fails",
+			template:    "palm-pilot.bitcoin-miner",
 			groupID:     "123",
 			clients: cli.Clients{
 				Realm: mock.RealmClient{
