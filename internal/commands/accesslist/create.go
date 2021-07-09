@@ -11,7 +11,9 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
-var errTooManyAddresses = "must only provide one IP address or CIDR block at a time"
+var (
+	errTooManyAddressess = errors.New("must only provide one IP address or CIDR block at a time")
+)
 
 type createInputs struct {
 	cli.ProjectInputs
@@ -26,12 +28,11 @@ var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
 	Display:     "accesslist create",
 	Description: "Create an IP address or CIDR block in the Access List for your Realm app",
-	HelpText: `You will be prompted to input an IP address or CIDR block if none is
-provided in the initial command.`,
-	Hidden: true,
+	HelpText: `You will be prompted to input an IP address or CIDR block if none is provided in
+the initial command.`,
 }
 
-// CommandCreate is the ip access create command
+// CommandCreate is the `accesslist create` command
 type CommandCreate struct {
 	inputs createInputs
 }
@@ -42,8 +43,25 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 		cli.AppFlagWithContext(&cmd.inputs.App, "to create an entry in its Access List"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
-		ipFlag(&cmd.inputs.Address, "Specify the IP address or CIDR block that you would like to add"),
-		commentFlag(&cmd.inputs.Comment, "Add a comment to the IP address or CIDR block (Note: This action is optional)"),
+		flags.StringFlag{
+			Value: &cmd.inputs.Address,
+			Meta: flags.Meta{
+				Name: "ip",
+				Usage: flags.Usage{
+					Description: "Specify the IP address or CIDR block that you would like to add",
+				},
+			},
+		},
+		flags.StringFlag{
+			Value: &cmd.inputs.Comment,
+			Meta: flags.Meta{
+				Name: "comment",
+				Usage: flags.Usage{
+					Description: "Add a comment to the IP address or CIDR block",
+					Note:        "This action is optional",
+				},
+			},
+		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.UseCurrent,
 			Meta: flags.Meta{
@@ -58,7 +76,8 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: "allow-all",
 				Usage: flags.Usage{
-					Description: "Allows all IP addresses to access your Realm app (Note: “0.0.0.0/0” will be added as an entry)",
+					Description: "Allows all IP addresses to access your Realm app",
+					Note:        `“0.0.0.0/0” will be added as an entry`,
 				},
 			},
 		},
@@ -91,21 +110,23 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if i.Address == "" && !(i.AllowAll || i.UseCurrent) {
-		if err := ui.AskOne(&i.Address, &survey.Input{Message: "IP Address"}); err != nil {
-			return err
-		}
-	}
-
 	if i.AllowAll {
 		if i.Address != "" {
-			return errors.New(errTooManyAddresses)
+			return errTooManyAddressess
 		}
 		i.Address = "0.0.0.0"
 	}
 
 	if i.Address != "" && i.UseCurrent {
-		return errors.New(errTooManyAddresses)
+		return errTooManyAddressess
 	}
+
+	if i.Address == "" && !i.UseCurrent {
+		// TODO(REALMC-9532): validate the user does not enter an empty string
+		if err := ui.AskOne(&i.Address, &survey.Input{Message: "IP Address"}); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
