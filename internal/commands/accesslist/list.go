@@ -19,7 +19,7 @@ var CommandMetaList = cli.CommandMeta{
 	HelpText:    `This will display the IP addresses/CIDR blocks in your Access List`,
 }
 
-// CommandList is the `secrets list` command
+// CommandList is the `accesslist list` command
 type CommandList struct {
 	inputs listInputs
 }
@@ -31,7 +31,7 @@ type listInputs struct {
 // Flags are the command flags
 func (cmd *CommandList) Flags() []flags.Flag {
 	return []flags.Flag{
-		cli.AppFlagWithContext(&cmd.inputs.App, "to list its secrets"),
+		cli.AppFlagWithContext(&cmd.inputs.App, "to list its allowed IPs"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
 	}
