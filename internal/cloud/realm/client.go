@@ -77,6 +77,8 @@ type Client interface {
 	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error)
 	CompatibleTemplates(groupID, appID string) ([]Template, error)
 
+	AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error)
+
 	Status() error
 }
 
