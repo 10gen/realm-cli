@@ -972,37 +972,6 @@ Check out your app: cd ./test-app && realm-cli app describe
 			expectedErr: errors.New("realm client error"),
 		},
 		{
-			description: "should error when fetching templates fails",
-			template:    "palm-pilot.bitcoin-miner",
-			groupID:     "123",
-			clients: cli.Clients{
-				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
-						return nil, errors.New("unable to find available templates")
-					},
-				},
-				Atlas: mock.AtlasClient{
-					GroupsFn: func() ([]atlas.Group, error) {
-						return []atlas.Group{{ID: "123"}}, nil
-					},
-				},
-			},
-			expectedErr: errors.New("unable to find available templates"),
-		},
-		{
-			description: "should error when the requested template is not available",
-			template:    "palm-pilot.bitcoin-miner",
-			groupID:     "123",
-			clients: cli.Clients{
-				Realm: mock.RealmClient{
-					TemplatesFn: func() ([]realm.Template, error) {
-						return []realm.Template{}, nil
-					},
-				},
-			},
-			expectedErr: errors.New("unable to find template 'palm-pilot.bitcoin-miner'"),
-		},
-		{
 			description: "should not error when no templates are available and a template id has not been provided",
 			groupID:     "123",
 			clients: cli.Clients{
