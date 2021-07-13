@@ -364,7 +364,7 @@ buildvariants:
     realm_server_url: "http://localhost:9090"
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
     node_version: 12.16.2
-    version: 2.0.0-beta.7
+    version: 2.0.0
   tasks:
   - name: test_unit
   - name: test_with_cloud
