@@ -2,6 +2,7 @@ package accesslist
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -27,7 +28,7 @@ func TestAllowedIPCreateHandler(t *testing.T) {
 		Name:        "eggcorn",
 	}
 
-	t.Run("should create an allowed IP", func(t *testing.T) {
+	t.Run("should create an allowed ip", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
@@ -60,7 +61,7 @@ func TestAllowedIPCreateHandler(t *testing.T) {
 		}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, "Successfully created allowed IP, id: allowedIPID\n", out.String())
+		assert.Equal(t, fmt.Sprintf("Successfully created allowed IP, id: %s\n", "allowedIPID"), out.String())
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, realm.AppFilter{projectID, appID, nil}, capturedFilter)
@@ -114,7 +115,7 @@ func TestAllowedIPCreateHandler(t *testing.T) {
 		}
 	})
 }
-func TestCreateInputs(t *testing.T) {
+func TestAllowedIPCreateInputs(t *testing.T) {
 	for _, tc := range []struct {
 		description string
 		inputs      createInputs
