@@ -3,12 +3,12 @@ package accesslist
 import "github.com/10gen/realm-cli/internal/cloud/realm"
 
 const (
-	headerIP      = "IP Address"
+	headerAddress = "IP Address"
 	headerComment = "Comment"
 )
 
 var (
-	tableHeaders = []string{headerIP, headerComment}
+	tableHeaders = []string{headerAddress, headerComment}
 )
 
 type allowedIPOutputs []allowedIPOutput
@@ -30,7 +30,7 @@ func tableRows(outputs allowedIPOutputs, modifier tableRowModifier) []map[string
 
 func tableRow(output allowedIPOutput, modifier tableRowModifier) map[string]interface{} {
 	row := map[string]interface{}{
-		headerIP:      output.allowedIP.ID,
+		headerAddress: output.allowedIP.ID,
 		headerComment: output.allowedIP.Comment,
 	}
 	modifier(output, row)
