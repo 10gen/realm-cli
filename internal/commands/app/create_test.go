@@ -1170,7 +1170,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
 			cmd.display(false),
 		)
 	})
@@ -1195,7 +1195,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
 			cmd.display(false),
 		)
 	})
