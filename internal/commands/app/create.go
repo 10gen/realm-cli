@@ -54,7 +54,6 @@ func (cmd *CommandCreate) Flags(fs *pflag.FlagSet) {
 	fs.StringSliceVar(&cmd.inputs.ClusterServiceNames, flagClusterServiceName, []string{}, flagClusterServiceNameUsage)
 	fs.StringSliceVar(&cmd.inputs.Datalakes, flagDatalake, []string{}, flagDatalakeUsage)
 	fs.StringSliceVar(&cmd.inputs.DatalakeServiceNames, flagDatalakeServiceName, []string{}, flagDatalakeServiceNameUsage)
-	fs.StringVar(&cmd.inputs.Template, flagTemplate, "", flagTemplateUsage)
 	fs.BoolVarP(&cmd.inputs.DryRun, flagDryRun, flagDryRunShort, false, flagDryRunUsage)
 
 	fs.StringVar(&cmd.inputs.Project, flagProject, "", flagProjectUsage)
@@ -94,10 +93,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	rootDir, err := cmd.inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 	if err != nil {
-		return err
-	}
-
-	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
 		return err
 	}
 
