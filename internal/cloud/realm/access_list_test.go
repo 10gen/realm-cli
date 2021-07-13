@@ -39,6 +39,5 @@ func TestRealmIPAccess(t *testing.T) {
 			assert.Equal(t, address, allowedIP.Address)
 			assert.Equal(t, comment, allowedIP.Comment)
 		})
-
 	})
 }

@@ -12,6 +12,12 @@ const (
 	allowedIPsPathPattern = appPathPattern + "/security/allowed_ips"
 )
 
+// AccessList is a list of allowed IPs stored in a Realm app
+type AccessList struct {
+	AllowedIPs []AllowedIP `json:"allowed_ips"`
+	CurrentIP  string      `json:"current_ip"`
+}
+
 // AllowedIP is an IP Access address stored in a Realm app
 type AllowedIP struct {
 	ID              string `json:"_id"`
@@ -24,6 +30,29 @@ type allowedIPCreatePayload struct {
 	Address    string `json:"address"`
 	Comment    string `json:"comment,omitempty"`
 	UseCurrent bool   `json:"use_current,omitempty"`
+}
+
+func (c *client) AllowedIPs(groupID, appID string) (AccessList, error) {
+	res, resErr := c.do(
+		http.MethodGet,
+		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
+		api.RequestOptions{},
+	)
+	if resErr != nil {
+		return AccessList{}, resErr
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return AccessList{}, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
+	}
+
+	defer res.Body.Close()
+
+	var accessList AccessList
+	if err := json.NewDecoder(res.Body).Decode(&accessList); err != nil {
+		return AccessList{}, err
+	}
+	return accessList, nil
 }
 
 func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error) {
