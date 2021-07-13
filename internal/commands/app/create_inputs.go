@@ -34,9 +34,6 @@ var (
 	flagDatalakeServiceName      = "datalake-service-name"
 	flagDatalakeServiceNameUsage = "Specify the Realm app Service name to reference your Atlas data lake"
 
-	flagTemplate      = "template"
-	flagTemplateUsage = "Create your Realm app from an available template"
-
 	flagDryRun      = "dry-run"
 	flagDryRunShort = "x"
 	flagDryRunUsage = "Run without writing any changes to the local filepath or pushing any changes to the Realm server"
@@ -270,9 +267,6 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
-	}
-	if i.Template != "" {
-		args = append(args, flags.Arg{flagTemplate, i.Template})
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})

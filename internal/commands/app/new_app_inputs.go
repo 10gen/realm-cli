@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -61,28 +59,4 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 		ra = app
 	}
 	return ra, nil
-}
-
-func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	if i.Template == "" {
-		return nil
-	}
-
-	templates, err := client.Templates()
-	if err != nil {
-		return err
-	}
-
-	if len(templates) == 0 {
-		return fmt.Errorf("unable to find template '%s'", i.Template)
-	}
-
-	for _, template := range templates {
-		if template.ID == i.Template {
-			// provided template ID is valid
-			return nil
-		}
-	}
-
-	return fmt.Errorf("template '%s' not found", i.Template)
 }
