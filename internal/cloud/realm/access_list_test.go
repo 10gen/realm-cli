@@ -29,7 +29,13 @@ func TestRealmIPAccess(t *testing.T) {
 		testApp, teardown := setupTestApp(t, client, groupID, "accesslist-test")
 		defer teardown()
 
-		t.Run("should create an allowed IP", func(t *testing.T) {
+		t.Run("should have no allowed ips upon app initialization", func(t *testing.T) {
+			allowedIPs, err := client.AllowedIPs(groupID, testApp.ID)
+			assert.Nil(t, err)
+			assert.Equal(t, 0, len(allowedIPs))
+		})
+
+		t.Run("should create an allowed ip", func(t *testing.T) {
 			address := "0.0.0.0"
 			comment := "comment"
 			useCurrent := false
@@ -38,7 +44,12 @@ func TestRealmIPAccess(t *testing.T) {
 			assert.Nil(t, err)
 			assert.Equal(t, address, allowedIP.Address)
 			assert.Equal(t, comment, allowedIP.Comment)
-		})
 
+			t.Run("and list all app allowed ips", func(t *testing.T) {
+				allowedIPs, err := client.AllowedIPs(groupID, testApp.ID)
+				assert.Nil(t, err)
+				assert.Equal(t, []realm.AllowedIP{allowedIP}, allowedIPs)
+			})
+		})
 	})
 }
