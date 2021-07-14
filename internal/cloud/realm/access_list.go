@@ -43,7 +43,7 @@ func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
+		return nil, api.ErrUnexpectedStatusCode{"get allowed ips and/or CIDR blocks", res.StatusCode}
 	}
 
 	defer res.Body.Close()
@@ -71,7 +71,7 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 	}
 
 	if res.StatusCode != http.StatusCreated {
-		return AllowedIP{}, api.ErrUnexpectedStatusCode{"create allowed ip", res.StatusCode}
+		return AllowedIP{}, api.ErrUnexpectedStatusCode{"create allowed ip and/or CIDR block", res.StatusCode}
 	}
 
 	defer res.Body.Close()
