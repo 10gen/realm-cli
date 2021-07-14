@@ -32,27 +32,27 @@ type allowedIPCreatePayload struct {
 	UseCurrent bool   `json:"use_current,omitempty"`
 }
 
-func (c *client) AllowedIPs(groupID, appID string) (AccessList, error) {
+func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {
 	res, resErr := c.do(
 		http.MethodGet,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
 		api.RequestOptions{},
 	)
 	if resErr != nil {
-		return AccessList{}, resErr
+		return nil, resErr
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return AccessList{}, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
+		return nil, api.ErrUnexpectedStatusCode{"get allowed ips", res.StatusCode}
 	}
 
 	defer res.Body.Close()
 
 	var accessList AccessList
 	if err := json.NewDecoder(res.Body).Decode(&accessList); err != nil {
-		return AccessList{}, err
+		return nil, err
 	}
-	return accessList, nil
+	return accessList.AllowedIPs, nil
 }
 
 func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error) {

@@ -20,30 +20,27 @@ func TestAllowedIPListHandler(t *testing.T) {
 		ClientAppID: "eggcorn-abcde",
 		Name:        "eggcorn",
 	}
-	testAllowedIPs := realm.AccessList{
-		[]realm.AllowedIP{
-			{Address: "0.0.0.0", Comment: "comment"},
-			{Address: "192.1.1.1"},
-			{Address: "192.158.1.38", Comment: "cool comment"},
-		},
-		"0.0.0.0",
+	testAllowedIPs := []realm.AllowedIP{
+		{Address: "0.0.0.0", Comment: "comment"},
+		{Address: "192.1.1.1"},
+		{Address: "192.158.1.38", Comment: "cool comment"},
 	}
 
 	for _, tc := range []struct {
 		description    string
-		accessList     realm.AccessList
+		allowedIPs     []realm.AllowedIP
 		expectedOutput string
 	}{
 		{
-			description:    "should list no allowed IPs with no app allowed IPs found",
-			expectedOutput: "No available allowed IPs to show\n",
+			description:    "should list no allowed ips with no app allowed ips found",
+			expectedOutput: "No available allowed IP addressess and/or CIDR blocks to show\n",
 		},
 		{
-			description: "should list the allowed IPs found for the app",
-			accessList:  testAllowedIPs,
+			description: "should list the allowed ips found for the app",
+			allowedIPs:  testAllowedIPs,
 			expectedOutput: strings.Join(
 				[]string{
-					"Found 3 allowed IPs",
+					"Found 3 allowed IP address(es) and/or CIDR block(s)",
 					"  IP Address    Comment     ",
 					"  ------------  ------------",
 					"  0.0.0.0       comment     ",
@@ -63,8 +60,8 @@ func TestAllowedIPListHandler(t *testing.T) {
 				return []realm.App{app}, nil
 			}
 
-			realmClient.AllowedIPsFn = func(groupID, appID string) (realm.AccessList, error) {
-				return tc.accessList, nil
+			realmClient.AllowedIPsFn = func(groupID, appID string) ([]realm.AllowedIP, error) {
+				return tc.allowedIPs, nil
 			}
 
 			cmd := &CommandList{listInputs{cli.ProjectInputs{
@@ -95,14 +92,14 @@ func TestAllowedIPListHandler(t *testing.T) {
 				expectedErr: errors.New("something bad happened"),
 			},
 			{
-				description: "when finding the allowed IPs fails",
+				description: "when finding the allowed ips fails",
 				setupClient: func() realm.Client {
 					realmClient := mock.RealmClient{}
 					realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 						return []realm.App{app}, nil
 					}
-					realmClient.AllowedIPsFn = func(groupID, appID string) (realm.AccessList, error) {
-						return realm.AccessList{}, errors.New("something bad happened")
+					realmClient.AllowedIPsFn = func(groupID, appID string) ([]realm.AllowedIP, error) {
+						return nil, errors.New("something bad happened")
 					}
 					return realmClient
 				},

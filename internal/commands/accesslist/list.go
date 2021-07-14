@@ -5,9 +5,17 @@ import (
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+)
+
+const (
+	headerAddress = "IP Address"
+	headerComment = "Comment"
+)
+
+var (
+	listTableHeaders = []string{headerAddress, headerComment}
 )
 
 // CommandMetaList is the command meta for the `accesslist list` command
@@ -16,7 +24,8 @@ var CommandMetaList = cli.CommandMeta{
 	Aliases:     []string{"ls"},
 	Display:     "accesslist list",
 	Description: "List the allowed entries in the Access List of your Realm app",
-	HelpText:    `This will display the IP addresses/CIDR blocks in your Access List`,
+	HelpText: `This will display the IP addresses and/or CIDR blocks in the Access
+List of your Realm app`,
 }
 
 // CommandList is the `accesslist list` command
@@ -31,7 +40,7 @@ type listInputs struct {
 // Flags are the command flags
 func (cmd *CommandList) Flags() []flags.Flag {
 	return []flags.Flag{
-		cli.AppFlagWithContext(&cmd.inputs.App, "to list its allowed IPs"),
+		cli.AppFlagWithContext(&cmd.inputs.App, "to list its allowed IP addresses and/or CIDR blocks"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
 	}
@@ -49,33 +58,30 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return appErr
 	}
 
-	accessList, accessListErr := clients.Realm.AllowedIPs(app.GroupID, app.ID)
-	if accessListErr != nil {
-		return accessListErr
+	allowedIPs, allowedIPsErr := clients.Realm.AllowedIPs(app.GroupID, app.ID)
+	if allowedIPsErr != nil {
+		return allowedIPsErr
 	}
 
-	if len(accessList.AllowedIPs) == 0 {
-		ui.Print(terminal.NewTextLog("No available allowed IPs to show"))
+	if len(allowedIPs) == 0 {
+		ui.Print(terminal.NewTextLog("No available allowed IP addressess and/or CIDR blocks to show"))
 		return nil
 	}
 
-	ui.Print(terminal.NewTableLog(
-		fmt.Sprintf("Found %d allowed IPs", len(accessList.AllowedIPs)),
-		tableHeaders,
-		tableRowsList(accessList.AllowedIPs)...,
-	))
-	return nil
-}
-
-func tableRowsList(allowedIPs []realm.AllowedIP) []map[string]interface{} {
-	rows := make([]map[string]interface{}, 0, len(allowedIPs))
+	tableRows := make([]map[string]interface{}, 0, len(allowedIPs))
 	for _, allowedIP := range allowedIPs {
-		rows = append(rows, map[string]interface{}{
+		tableRows = append(tableRows, map[string]interface{}{
 			headerAddress: allowedIP.Address,
 			headerComment: allowedIP.Comment,
 		})
 	}
-	return rows
+
+	ui.Print(terminal.NewTableLog(
+		fmt.Sprintf("Found %d allowed IP address(es) and/or CIDR block(s)", len(allowedIPs)),
+		listTableHeaders,
+		tableRows...,
+	))
+	return nil
 }
 
 func (i *listInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
