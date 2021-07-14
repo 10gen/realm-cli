@@ -71,7 +71,7 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 	}
 
 	if res.StatusCode != http.StatusCreated {
-		return AllowedIP{}, api.ErrUnexpectedStatusCode{"create allowed ip and/or CIDR block", res.StatusCode}
+		return AllowedIP{}, api.ErrUnexpectedStatusCode{"create allowed ip or CIDR block", res.StatusCode}
 	}
 
 	defer res.Body.Close()
