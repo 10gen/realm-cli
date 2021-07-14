@@ -1,6 +1,7 @@
 package accesslist
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -110,27 +111,8 @@ func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	var questions []*survey.Question
-
-	if i.NewAddress == "" {
-		questions = append(questions, &survey.Question{
-			Name:   "new-ip",
-			Prompt: &survey.Input{Message: "New IP Address or CIDR block"},
-		})
-	}
-
-	if i.Comment == "" {
-		questions = append(questions, &survey.Question{
-			Name:   "comment",
-			Prompt: &survey.Password{Message: "Comment"},
-		})
-	}
-
-	if len(questions) > 0 {
-		err := ui.Ask(i, questions...)
-		if err != nil {
-			return err
-		}
+	if i.NewAddress == "" && i.Comment == "" {
+		return errors.New("must set either --new-ip or --comment when updating an allowed IP")
 	}
 
 	return nil
