@@ -27,7 +27,7 @@ var CommandMetaUpdate = cli.CommandMeta{
 prompted to select an IP address or CIDR block if none is provided in the initial command.`,
 }
 
-// CommandCreate is the `accesslist update` command
+// CommandUpdate is the `accesslist update` command
 type CommandUpdate struct {
 	inputs updateInputs
 }
