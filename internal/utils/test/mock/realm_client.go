@@ -68,8 +68,8 @@ type RealmClient struct {
 	CompatibleTemplatesFn func(groupID, appID string) ([]realm.Template, error)
 
 	AllowedIPsFn      func(groupID, appID string) ([]realm.AllowedIP, error)
-	AllowedIPCreateFn func(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error)
-	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newIPAddress, comment string) error
+	AllowedIPCreateFn func(groupID, appID, address, comment string, useCurrent bool) (realm.AllowedIP, error)
+	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newAddress, comment string) error
 
 	StatusFn func() error
 }
@@ -517,21 +517,21 @@ func (rc RealmClient) AllowedIPs(groupID, appID string) ([]realm.AllowedIP, erro
 // AllowedIPCreate calls the mocked AllowedIPCreate implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (realm.AllowedIP, error) {
+func (rc RealmClient) AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (realm.AllowedIP, error) {
 	if rc.AllowedIPCreateFn != nil {
-		return rc.AllowedIPCreateFn(groupID, appID, ipAddress, comment, useCurrent)
+		return rc.AllowedIPCreateFn(groupID, appID, address, comment, useCurrent)
 	}
-	return rc.AllowedIPCreate(groupID, appID, ipAddress, comment, useCurrent)
+	return rc.AllowedIPCreate(groupID, appID, address, comment, useCurrent)
 }
 
 // AllowedIPUpdate calls the mocked AllowedIPs implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment string) error {
+func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment string) error {
 	if rc.AllowedIPUpdateFn != nil {
-		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newIPAddress, comment)
+		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newAddress, comment)
 	}
-	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment)
+	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment)
 }
 
 // Status calls the mocked Status implementation if provided,

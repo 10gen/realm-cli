@@ -55,12 +55,12 @@ func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {
 	return accessList.AllowedIPs, nil
 }
 
-func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error) {
+func (c *client) AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (AllowedIP, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
 		allowedIPsPayload{
-			ipAddress,
+			address,
 			comment,
 			useCurrent,
 		},
@@ -83,12 +83,12 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 	return allowedIP, nil
 }
 
-func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment string) error {
+func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment string) error {
 	res, err := c.doJSON(
 		http.MethodPut,
 		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
 		allowedIPsPayload{
-			newIPAddress,
+			newAddress,
 			comment,
 			false,
 		},
