@@ -112,7 +112,7 @@ func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	if i.NewAddress == "" && i.Comment == "" {
-		return errors.New("must set either --new-ip or --comment when updating an allowed IP")
+		return errors.New("must set either --new-ip or --comment when updating an allowed IP address or CIDR block")
 	}
 
 	return nil
