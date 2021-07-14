@@ -10,6 +10,7 @@ import (
 
 const (
 	allowedIPsPathPattern = appPathPattern + "/security/allowed_ips"
+	allowedIPPathPattern  = allowedIPsPathPattern + "/%s"
 )
 
 // AccessList is a list of allowed IPs stored in a Realm app
@@ -25,7 +26,7 @@ type AllowedIP struct {
 	IncludesCurrent bool   `json:"includes_current"`
 }
 
-type allowedIPCreatePayload struct {
+type allowedIPsPayload struct {
 	Address    string `json:"address"`
 	Comment    string `json:"comment,omitempty"`
 	UseCurrent bool   `json:"use_current,omitempty"`
@@ -58,7 +59,7 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
-		allowedIPCreatePayload{
+		allowedIPsPayload{
 			ipAddress,
 			comment,
 			useCurrent,
@@ -80,4 +81,26 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 		return AllowedIP{}, err
 	}
 	return allowedIP, nil
+}
+
+func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newIPAddress, comment string) error {
+	res, err := c.doJSON(
+		http.MethodPut,
+		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
+		allowedIPsPayload{
+			newIPAddress,
+			comment,
+			false,
+		},
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return api.ErrUnexpectedStatusCode{"update allowed ip", res.StatusCode}
+	}
+
+	return nil
 }
