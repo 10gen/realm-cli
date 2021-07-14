@@ -64,7 +64,7 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 	}
 
 	if len(allowedIPs) == 0 {
-		ui.Print(terminal.NewTextLog("No available allowed IP addressess and/or CIDR blocks to show"))
+		ui.Print(terminal.NewTextLog("No available allowed IP addresses and/or CIDR blocks to show"))
 		return nil
 	}
 

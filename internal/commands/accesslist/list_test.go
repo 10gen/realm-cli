@@ -33,7 +33,7 @@ func TestAllowedIPListHandler(t *testing.T) {
 	}{
 		{
 			description:    "should list no allowed ips with no app allowed ips found",
-			expectedOutput: "No available allowed IP addressess and/or CIDR blocks to show\n",
+			expectedOutput: "No available allowed IP addresses and/or CIDR blocks to show\n",
 		},
 		{
 			description: "should list the allowed ips found for the app",
