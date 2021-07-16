@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	allowedIPsPathPattern = appPathPattern + "/security/allowed_ips"
+	allowedIPsPathPattern = appPathPattern + "/security/access_list"
 	allowedIPPathPattern  = allowedIPsPathPattern + "/%s"
 )
 
