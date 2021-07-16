@@ -50,6 +50,22 @@ func TestRealmIPAccess(t *testing.T) {
 				assert.Nil(t, err)
 				assert.Equal(t, []realm.AllowedIP{allowedIP}, allowedIPs)
 			})
+
+			t.Run("and should update the allowed ip address", func(t *testing.T) {
+				assert.Nil(t, client.AllowedIPUpdate(groupID, testApp.ID, allowedIP.ID, "1.1.1.1", "new comment"))
+
+				t.Run("and list the new allowed ip address and comment", func(t *testing.T) {
+					allowedIPs, err := client.AllowedIPs(groupID, testApp.ID)
+					assert.Nil(t, err)
+					assert.Equal(t, "1.1.1.1", allowedIPs[0].Address)
+					assert.Equal(t, "new comment", allowedIPs[0].Comment)
+				})
+
+				t.Run("and return an error if we can't find the allowed ip", func(t *testing.T) {
+					err := client.AllowedIPUpdate(groupID, testApp.ID, "notFound", "notUsed", "notUsed")
+					assert.Equal(t, realm.ServerError{Message: "allowed IP not found: 'notFound'"}, err)
+				})
+			})
 		})
 	})
 }

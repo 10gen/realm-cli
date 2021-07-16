@@ -52,10 +52,6 @@ func TestSecretUpdateHandler(t *testing.T) {
 			testSecret:  "secretID2",
 			testValue:   "newValue2",
 		},
-		{
-			description: "should return a successful message for an empty update",
-			testSecret:  "secretName0",
-		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			realmClient := mock.RealmClient{}
