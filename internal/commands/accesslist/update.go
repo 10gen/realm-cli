@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
+
 	"github.com/AlecAivazis/survey/v2"
 )
 
@@ -25,7 +26,8 @@ var CommandMetaUpdate = cli.CommandMeta{
 	Display:     "accesslist update",
 	Description: "Modify an IP address or CIDR block in the Access List of your Realm app",
 	HelpText: `Changes an existing entry from the Access List of your Realm app. You will be
-prompted to select an IP address or CIDR block if none is provided in the initial command.`,
+prompted to select an IP address or CIDR block to update if neither is
+specified.`,
 }
 
 // CommandUpdate is the `accesslist update` command
@@ -62,8 +64,7 @@ func (cmd *CommandUpdate) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: "comment",
 				Usage: flags.Usage{
-					Description: "Add or edit a comment to the IP address or CIDR block that is being modified in the Access List",
-					Note:        "This action is optional",
+					Description: "Add or edit a comment to the IP address or CIDR block that is being modified",
 				},
 			},
 		},
@@ -107,7 +108,7 @@ func (cmd *CommandUpdate) Handler(profile *user.Profile, ui terminal.UI, clients
 }
 
 func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, false); err != nil {
+	if err := i.ProjectInputs.Resolve(ui, profile.WorkingDirectory, true); err != nil {
 		return err
 	}
 
@@ -131,7 +132,7 @@ func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 	selectableAllowedIPs := map[string]realm.AllowedIP{}
 	selectableOptions := make([]string, len(allowedIPs))
 	for i, allowedIP := range allowedIPs {
-		option := allowedIP.ID
+		option := displayAllowedIPOption(allowedIP)
 		selectableOptions[i] = option
 		selectableAllowedIPs[option] = allowedIP
 	}
@@ -140,7 +141,7 @@ func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 	if err := ui.AskOne(
 		&selected,
 		&survey.Select{
-			Message: "Which IP address or CIDR block would you like to update?",
+			Message: "Select an IP address or CIDR block to update",
 			Options: selectableOptions,
 		},
 	); err != nil {
@@ -148,4 +149,11 @@ func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 	}
 
 	return selectableAllowedIPs[selected], nil
+}
+
+func displayAllowedIPOption(allowedIP realm.AllowedIP) string {
+	if allowedIP.Comment == "" {
+		return allowedIP.ID + terminal.DelimiterInline + allowedIP.Address
+	}
+	return allowedIP.ID + terminal.DelimiterInline + allowedIP.Address + terminal.DelimiterInline + allowedIP.Comment
 }

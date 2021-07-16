@@ -26,7 +26,7 @@ type AllowedIP struct {
 	IncludesCurrent bool   `json:"includes_current"`
 }
 
-type allowedIPsPayload struct {
+type allowedIPRequest struct {
 	Address    string `json:"address"`
 	Comment    string `json:"comment,omitempty"`
 	UseCurrent bool   `json:"use_current,omitempty"`
@@ -59,7 +59,7 @@ func (c *client) AllowedIPCreate(groupID, appID, address, comment string, useCur
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
-		allowedIPsPayload{
+		allowedIPRequest{
 			address,
 			comment,
 			useCurrent,
@@ -87,10 +87,9 @@ func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, commen
 	res, err := c.doJSON(
 		http.MethodPut,
 		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
-		allowedIPsPayload{
-			newAddress,
-			comment,
-			false,
+		allowedIPRequest{
+			Address: newAddress,
+			Comment: comment,
 		},
 		api.RequestOptions{},
 	)
