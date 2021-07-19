@@ -167,6 +167,36 @@ tasks:
           content_type: text/plain
           permissions: public-read
 
+  - name: test_e2e
+    exec_timeout_secs: 3600
+    commands:
+      - func: "fetch_go114"
+      - func: "fetch_baas_artifacts"
+      - func: "setup_project"
+      - command: shell.exec
+        params:
+          shell: "bash"
+          script: |
+            set -v
+            set -e
+            export ROOT_DIR=`pwd`
+            export PATH="$ROOT_DIR:$PATH"
+            export PATH="$ROOT_DIR/realm-cli/etc/bin:$PATH"
+            export GOROOT=$ROOT_DIR/go
+            export PATH=$GOROOT/bin:$PATH
+            cd $ROOT_DIR/realm-cli
+            go test -v -covermode=count -coverprofile=$ROOT_DIR/cover.out $(go list github.com/10gen/realm-cli/e2e/...) > $ROOT_DIR/realm-cli.suite
+      - command: s3.put
+        params:
+          aws_key: ${test_aws_key}
+          aws_secret: ${test_aws_secret}
+          local_file: cover.out
+          remote_file: ${task_id}/cover.out
+          bucket: baas-test-artifacts
+          content_type: text/plain
+          permissions: public-read
+
+
   - name: test_with_cloud
     exec_timeout_secs: 3600
     commands:
@@ -316,5 +346,6 @@ buildvariants:
   tasks:
   - name: test_unit
   - name: test_with_cloud
+  - name: test_e2e
   - name: lint
   - name: build_publish_clis

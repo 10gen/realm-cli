@@ -4,6 +4,19 @@
 
 This project follows [Semantic Versioning 2.0](https://semver.org/)
 
+When choosing the next version, make sure to consider the following major changes:
+
+* did you remove or rename any command?
+* did you remove or rename any command flag (including shorthands)?
+* does any command behave differently than it previously did before?
+* did you significantly re-write or re-architect how commands work?
+
+Make sure to also consider the following minor changes:
+
+* did you add any command?
+* did you add any command flag?
+* did you fix a bug or improve any existing behavior?
+
 ## Publishing a version
 
 1. Update the version field in `.evg.yml` and commit your changes
