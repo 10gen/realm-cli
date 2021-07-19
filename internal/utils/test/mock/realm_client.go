@@ -524,14 +524,14 @@ func (rc RealmClient) AllowedIPCreate(groupID, appID, address, comment string, u
 	return rc.AllowedIPCreate(groupID, appID, address, comment, useCurrent)
 }
 
-// AllowedIPUpdate calls the mocked AllowedIPs implementation if provided,
+// AllowedIPUpdate calls the mocked AllowedIPUpdate implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment string) error {
+func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment string) error {
 	if rc.AllowedIPUpdateFn != nil {
-		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newAddress, comment)
+		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newAddress, newComment)
 	}
-	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment)
+	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment)
 }
 
 // Status calls the mocked Status implementation if provided,

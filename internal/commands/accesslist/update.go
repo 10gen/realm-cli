@@ -1,7 +1,6 @@
 package accesslist
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -13,11 +12,16 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+const (
+	flagIPNew   = "new-ip"
+	flagComment = "comment"
+)
+
 type updateInputs struct {
 	cli.ProjectInputs
 	Address    string
 	NewAddress string
-	Comment    string
+	NewComment string
 }
 
 // CommandMetaUpdate is the command meta for the `accesslist update` command
@@ -60,7 +64,7 @@ func (cmd *CommandUpdate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringFlag{
-			Value: &cmd.inputs.Comment,
+			Value: &cmd.inputs.NewComment,
 			Meta: flags.Meta{
 				Name: "comment",
 				Usage: flags.Usage{
@@ -98,7 +102,7 @@ func (cmd *CommandUpdate) Handler(profile *user.Profile, ui terminal.UI, clients
 		app.ID,
 		allowedIP.ID,
 		cmd.inputs.NewAddress,
-		cmd.inputs.Comment,
+		cmd.inputs.NewComment,
 	); err != nil {
 		return err
 	}
@@ -112,8 +116,11 @@ func (i *updateInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return err
 	}
 
-	if i.NewAddress == "" && i.Comment == "" {
-		return errors.New("must set either --new-ip or --comment when updating an allowed IP address or CIDR block")
+	if i.NewAddress == "" && i.NewComment == "" {
+		return fmt.Errorf(
+			"must set either %s or %s when updating an allowed IP address or CIDR block",
+			flags.Arg{Name: flagIPNew}, flags.Arg{Name: flagComment},
+		)
 	}
 
 	return nil

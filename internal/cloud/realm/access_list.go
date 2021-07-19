@@ -83,13 +83,14 @@ func (c *client) AllowedIPCreate(groupID, appID, address, comment string, useCur
 	return allowedIP, nil
 }
 
-func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, comment string) error {
+// TODO(REALMC-9689): Update to PATCH
+func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment string) error {
 	res, err := c.doJSON(
 		http.MethodPut,
 		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
 		allowedIPRequest{
 			Address: newAddress,
-			Comment: comment,
+			Comment: newComment,
 		},
 		api.RequestOptions{},
 	)

@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
+
 	"github.com/Netflix/go-expect"
 )
 
@@ -31,18 +32,23 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 		description    string
 		testAddress    string
 		testNewAddress string
-		testComment    string
+		testNewComment string
 	}{
 		{
 			description:    "should return a successful message for a successful update for address and comment",
 			testAddress:    "0.0.0.0",
 			testNewAddress: "2.2.2.2",
-			testComment:    "new comment",
+			testNewComment: "new comment",
 		},
 		{
 			description:    "should return a successful message for an update with only an address",
 			testAddress:    "192.1.1.1",
 			testNewAddress: "68.192.33.2",
+		},
+		{
+			description:    "should return a successful message for an update with only a comment",
+			testAddress:    "192.1.1.1",
+			testNewComment: "new comment",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -62,7 +68,7 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 				cli.ProjectInputs{projectID, appID, nil},
 				tc.testAddress,
 				tc.testNewAddress,
-				tc.testComment,
+				tc.testNewComment,
 			}}
 
 			out, ui := mock.NewUI()
@@ -170,7 +176,7 @@ func TestAllowedIPUpdateInputs(t *testing.T) {
 			assert.Equal(t, allowedIPs[0], result)
 		})
 
-		t.Run("should return an error if we cannot find the allowed ip to update", func(t *testing.T) {
+		t.Run("should return an error if allowed ip is not found", func(t *testing.T) {
 			inputs := updateInputs{
 				Address: "1.1.1.1",
 			}
@@ -179,7 +185,7 @@ func TestAllowedIPUpdateInputs(t *testing.T) {
 			assert.Equal(t, errors.New("unable to find allowed IP: 1.1.1.1"), err)
 		})
 
-		t.Run("should return an error if one of new ip or comment is not provided", func(t *testing.T) {
+		t.Run("should return an error if neither new ip nor comment is provided", func(t *testing.T) {
 			profile := mock.NewProfile(t)
 			inputs := updateInputs{
 				Address: "1.1.1.1",
@@ -189,7 +195,7 @@ func TestAllowedIPUpdateInputs(t *testing.T) {
 			assert.Equal(t, errors.New("must set either --new-ip or --comment when updating an allowed IP address or CIDR block"), err)
 		})
 
-		t.Run("should prompt for address when none provided", func(t *testing.T) {
+		t.Run("should prompt for address when is not provided", func(t *testing.T) {
 			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
 			assert.Nil(t, consoleErr)
 			defer console.Close()
