@@ -191,6 +191,14 @@ var (
 				Command:     &accesslist.CommandCreate{},
 				CommandMeta: accesslist.CommandMetaCreate,
 			},
+			{
+				Command:     &accesslist.CommandList{},
+				CommandMeta: accesslist.CommandMetaList,
+			},
+			{
+				Command:     &accesslist.CommandUpdate{},
+				CommandMeta: accesslist.CommandMetaUpdate,
+			},
 		},
 	}
 )
