@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -94,7 +95,18 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	return app, nil
 }
 
-func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) (map[string]*zip.Reader, error) {
+type clientTemplate struct {
+	id     string
+	client *zip.Reader
+}
+
+func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) ([]clientTemplate, error) {
+	if proceed, err := ui.Confirm("Would you like to export with a client template?"); err != nil {
+		return nil, err
+	} else if !proceed {
+		return nil, nil
+	}
+
 	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
 	if err != nil {
 		return nil, err
@@ -109,20 +121,16 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 				} else if !ok {
 					return nil, fmt.Errorf("template '%s' does not have a frontend to pull", template.ID)
 				}
-				return map[string]*zip.Reader{template.ID: templateZip}, nil
+				return []clientTemplate{{
+					id:     template.ID,
+					client: templateZip,
+				}}, nil
 			}
 		}
 		return nil, fmt.Errorf("template '%s' is not compatible with this app", i.TemplateID)
 	}
 
 	if len(compatibleTemplates) == 0 {
-		return nil, nil
-	}
-
-	// TODO(REALMC-9474) fix to align the template selection flow with app create
-	if proceed, err := ui.Confirm("Would you like to export with a template?"); err != nil {
-		return nil, err
-	} else if !proceed {
 		return nil, nil
 	}
 
@@ -138,7 +146,7 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, err
 	}
 
-	result := make(map[string]*zip.Reader, len(selectedTemplateIdxs))
+	result := make([]clientTemplate, 0, len(selectedTemplateIdxs))
 	for _, selectedTemplateIdx := range selectedTemplateIdxs {
 		templateID := compatibleTemplates[selectedTemplateIdx].ID
 		templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, templateID)
@@ -147,8 +155,14 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		} else if !ok {
 			return nil, fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
 		}
-		result[templateID] = templateZip
+		result = append(result, clientTemplate{
+			id:     templateID,
+			client: templateZip,
+		})
 	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i].id < result[j].id
+	})
 
 	return result, nil
 }

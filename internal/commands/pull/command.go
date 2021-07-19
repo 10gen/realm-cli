@@ -111,8 +111,9 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	// TODO(REALMC-9462): maybe make this less hacky (pass app in to resolveClientTemplates perhaps?)
-	var clientZipPkgs map[string]*zip.Reader
+	// TODO(REALMC-9462): add template_id to /apps payload and pass into resolveClientTemplate to correctly report an
+	//  error when an app has not created with a template
+	var clientZipPkgs []clientTemplate
 	if app.TemplateID != "" {
 		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
 		if err != nil {
@@ -216,12 +217,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
-	// TODO(REALMC-9452) fix to iterate in a deterministic order
-	for templateID, templateZipPkg := range clientZipPkgs {
-		if err := local.WriteZip(filepath.Join(pathFrontend, templateID), templateZipPkg); err != nil {
-			return fmt.Errorf("unable to save template '%s' to disk: %s", templateID, err)
+	for _, namedClient := range clientZipPkgs {
+		if err := local.WriteZip(filepath.Join(pathFrontend, namedClient.id), namedClient.client); err != nil {
+			return fmt.Errorf("unable to save template '%s' to disk: %s", namedClient.id, err)
 		}
-		successfulTemplateWrites = append(successfulTemplateWrites, templateID)
+		successfulTemplateWrites = append(successfulTemplateWrites, namedClient.id)
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
