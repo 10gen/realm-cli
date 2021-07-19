@@ -42,17 +42,21 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 		},
 		{
 			description:    "should return a successful message for an update with only an address",
-			testAddress:    "192.1.1.1",
+			testAddress:    "0.0.0.0",
 			testNewAddress: "68.192.33.2",
 		},
 		{
 			description:    "should return a successful message for an update with only a comment",
-			testAddress:    "192.1.1.1",
+			testAddress:    "0.0.0.0",
 			testNewComment: "new comment",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			realmClient := mock.RealmClient{}
+
+			var updateArgs struct {
+				groupID, appID, allowedIPID string
+			}
 
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{app}, nil
@@ -60,7 +64,11 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			realmClient.AllowedIPsFn = func(groupID, appID string) ([]realm.AllowedIP, error) {
 				return allowedIPs, nil
 			}
-			realmClient.AllowedIPUpdateFn = func(groupID, appID, allowedIPID, newAddress, comment string) error {
+			realmClient.AllowedIPUpdateFn = func(groupID, appID, allowedIPID, newAddress, newComment string) error {
+				updateArgs = struct {
+					groupID, appID, allowedIPID string
+				}{groupID, appID, allowedIPID}
+
 				return nil
 			}
 
@@ -76,6 +84,9 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, "Successfully updated allowed IP\n", out.String())
+			assert.Equal(t, "projectID", updateArgs.groupID)
+			assert.Equal(t, "appID", updateArgs.appID)
+			assert.Equal(t, "address1", updateArgs.allowedIPID)
 		})
 	}
 
