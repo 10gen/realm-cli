@@ -1,8 +1,10 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -99,15 +101,6 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				},
 			},
 		},
-		flags.StringFlag{
-			Value: &cmd.inputs.TemplateDataSource,
-			Meta: flags.Meta{
-				Name: flagTemplateDataSource,
-				Usage: flags.Usage{
-					Description: "Specify the data source that you want to initialize your template app with",
-				},
-			},
-		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.DryRun,
 			Meta: flags.Meta{
@@ -166,17 +159,13 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
+	if err = cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
 		return err
 	}
 
-	var dsClusters []dataSourceCluster
-	var dsClustersMissing []string
-	if len(cmd.inputs.Clusters) > 0 {
-		dsClusters, dsClustersMissing, err = cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
-		if err != nil {
-			return err
-		}
+	dsClusters, dsClustersMissing, err := cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
+	if err != nil {
+		return err
 	}
 
 	var dsDatalakes []dataSourceDatalake
@@ -207,25 +196,29 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	// If using a template, we nest backendDir under rootDir and export the
-	// backend code there alongside a sibling directory containing the frontend
-	// code. Otherwise, all code is exported in rootDir
-	backendDir := rootDir
 	if cmd.inputs.Template != "" {
-		backendDir = path.Join(rootDir, local.BackendPath)
+		return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 	}
+	return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
+}
 
+func (cmd CommandCreate) handleCreateApp(
+	profile *user.Profile,
+	ui terminal.UI,
+	clients cli.Clients,
+	groupID string,
+	rootDir string,
+	appRemote realm.App,
+	dsClusters []dataSourceCluster,
+	dsDatalakes []dataSourceDatalake,
+) error {
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
 		var appCreatedText string
 		if appRemote.GroupID == "" && appRemote.ID == "" {
-			appCreatedText = fmt.Sprintf("A minimal Realm app would be created at %s", backendDir)
+			appCreatedText = fmt.Sprintf("A minimal Realm app would be created at %s", rootDir)
 		} else {
-			appCreatedText = fmt.Sprintf("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, backendDir)
-		}
-
-		if cmd.inputs.Template != "" {
-			appCreatedText = fmt.Sprintf("%s using the '%s' template", appCreatedText, cmd.inputs.Template)
+			appCreatedText = fmt.Sprintf("A Realm app based on the Realm app '%s' would be created at %s", cmd.inputs.RemoteApp, rootDir)
 		}
 
 		logs = append(logs, terminal.NewTextLog(appCreatedText))
@@ -247,16 +240,6 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		Environment:     cmd.inputs.Environment,
 	}
 
-	// choose a data source to import template app schema data onto
-	if cmd.inputs.Template != "" {
-		initialDataSource, err := cmd.inputs.resolveTemplateDataSource(ui, dsDatalakes, dsClusters)
-		if err != nil {
-			return err
-		}
-		createAppMetadata.Template = cmd.inputs.Template
-		createAppMetadata.DataSource = initialDataSource
-	}
-
 	appRealm, err := clients.Realm.CreateApp(
 		groupID,
 		cmd.inputs.Name,
@@ -267,14 +250,9 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	var appLocal local.App
-	if cmd.inputs.Template != "" {
-		appLocal, err = createFromTemplate(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, backendDir, rootDir)
-		if err != nil {
-			return err
-		}
-	} else if appRemote.GroupID == "" && appRemote.ID == "" {
+	if appRemote.GroupID == "" && appRemote.ID == "" {
 		appLocal = local.NewApp(
-			backendDir,
+			rootDir,
 			appRealm.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
@@ -297,11 +275,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 			return err
 		}
 
-		if err := local.WriteZip(backendDir, zipPkg); err != nil {
+		if err := local.WriteZip(rootDir, zipPkg); err != nil {
 			return err
 		}
 
-		appLocal, err = local.LoadApp(backendDir)
+		appLocal, err = local.LoadApp(rootDir)
 		if err != nil {
 			return err
 		}
@@ -346,7 +324,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 
 	output := newAppOutputs{
 		AppID:    appRealm.ClientAppID,
-		Filepath: backendDir,
+		Filepath: rootDir,
 		URL:      fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
 	}
 
@@ -363,11 +341,107 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	return nil
 }
 
+func (cmd CommandCreate) handleCreateTemplateApp(
+	profile *user.Profile,
+	ui terminal.UI,
+	clients cli.Clients,
+	groupID string,
+	rootDir string,
+	dsClusters []dataSourceCluster,
+	dsDatalakes []dataSourceDatalake,
+) error {
+	if cmd.inputs.DryRun {
+		logs := make([]terminal.Log, 0, len(dsClusters)+len(dsDatalakes)+2)
+		logs = append(logs, terminal.NewTextLog(fmt.Sprintf(
+			"A Realm app would be created at %s using the '%s' template",
+			rootDir,
+			cmd.inputs.Template,
+		)))
+
+		for _, cluster := range dsClusters {
+			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cluster.Config.ClusterName, cluster.Name))
+		}
+		for _, datalake := range dsDatalakes {
+			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", datalake.Config.DatalakeName, datalake.Name))
+		}
+		logs = append(logs, terminal.NewFollowupLog("To create this app run", cmd.display(true)))
+		ui.Print(logs...)
+		return nil
+	}
+
+	if len(dsClusters) != 1 {
+		return errors.New("could not send app creation request due to unexpected number of clusters")
+	}
+	createAppMetadata := realm.AppMeta{
+		Location:        cmd.inputs.Location,
+		DeploymentModel: cmd.inputs.DeploymentModel,
+		Environment:     cmd.inputs.Environment,
+		Template:        cmd.inputs.Template,
+		DataSource:      dsClusters[0],
+	}
+
+	createTemplateApp := func() (realm.App, error) {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Creating template app..."
+		s.Start()
+		defer s.Stop()
+
+		appRealm, err := clients.Realm.CreateApp(
+			groupID,
+			cmd.inputs.Name,
+			createAppMetadata,
+		)
+		if err != nil {
+			return realm.App{}, err
+		}
+		return appRealm, nil
+	}
+	appRealm, err := createTemplateApp()
+	if err != nil {
+		return err
+	}
+
+	_, err = writeTemplateAppToLocal(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, rootDir)
+	if err != nil {
+		return err
+	}
+
+	output := newAppOutputs{
+		AppID:     appRealm.ClientAppID,
+		Filepath:  rootDir,
+		Backend:   filepath.Join(rootDir, local.BackendPath),
+		Frontends: filepath.Join(rootDir, local.FrontendPath),
+		URL:       fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
+	}
+
+	for _, dsCluster := range dsClusters {
+		output.Clusters = append(output.Clusters, dataSourceOutputs{dsCluster.Name})
+	}
+
+	// TODO(REALMC-9460): Add better template-app-specific directions for checking out the newly created template app
+	ui.Print(terminal.NewJSONLog("Successfully created app", output))
+	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
+	return nil
+}
+
 func (cmd *CommandCreate) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMetaCreate.Display, cmd.inputs.args(omitDryRun))
 }
 
-func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, backendDir, rootDir string) (local.App, error) {
+func writeTemplateAppToLocal(realmClient realm.Client, appID, groupID, templateID, rootDir string) (local.App, error) {
+	backendDir := filepath.Join(rootDir, local.BackendPath)
+	frontendDir := filepath.Join(rootDir, local.FrontendPath)
+
+	compatibleFrontends, err := realmClient.CompatibleTemplates(groupID, appID)
+	if err != nil {
+		return local.App{}, err
+	}
+	hasCompatibleFrontends := len(compatibleFrontends) > 0
+	if !hasCompatibleFrontends {
+		// the current template has no compatible templates
+		backendDir = rootDir
+	}
+
 	_, zipPkg, err := realmClient.Export(
 		groupID,
 		appID,
@@ -386,33 +460,36 @@ func createFromTemplate(realmClient realm.Client, appID, groupID, templateID, ba
 		return local.App{}, err
 	}
 
-	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-	s.Suffix = " Downloading client template..."
+	if hasCompatibleFrontends {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Downloading client template..."
 
-	downloadAndWriteClient := func() error {
-		s.Start()
-		defer s.Stop()
+		downloadAndWriteClient := func() error {
+			s.Start()
+			defer s.Stop()
 
-		zipPkg, ok, err := realmClient.ClientTemplate(
-			groupID,
-			appID,
-			templateID,
-		)
-		if err != nil {
-			return err
+			zipPkg, ok, err := realmClient.ClientTemplate(
+				groupID,
+				appID,
+				templateID,
+			)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				// The template has no frontend to pull so the process of fetching frontends is done.
+				return nil
+			}
+			if err := local.WriteZip(path.Join(frontendDir, templateID), zipPkg); err != nil {
+				return err
+			}
+
+			return nil
 		}
-		if !ok {
-			return fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
-		}
-		if err := local.WriteZip(path.Join(rootDir, local.FrontendPath, templateID), zipPkg); err != nil {
-			return err
-		}
 
-		return nil
-	}
-
-	if err := downloadAndWriteClient(); err != nil {
-		return local.App{}, err
+		if err := downloadAndWriteClient(); err != nil {
+			return local.App{}, err
+		}
 	}
 
 	return appLocal, nil

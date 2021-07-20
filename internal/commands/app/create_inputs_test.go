@@ -727,11 +727,11 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			},
 			Clusters:            clusterNames,
 			ClusterServiceNames: clusterServiceNames,
-			TemplateDataSource:  "",
 		}
 		_, _, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Equal(t, nil, err)
-		assert.Equal(t, "Cluster0", inputs.TemplateDataSource)
+		assert.Equal(t, 1, len(inputs.Clusters))
+		assert.Equal(t, "Cluster0", inputs.Clusters[0])
 	})
 
 	t.Run("should force mongodb-atlas as template data source name", func(t *testing.T) {
@@ -749,8 +749,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 				Template: "ios.template.todo",
 			},
 			Clusters:            clusterNames,
-			ClusterServiceNames: []string{},
-			TemplateDataSource:  "",
+			ClusterServiceNames: []string{"overridden_name"},
 		}
 		clusters, _, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Equal(t, nil, err)
@@ -1084,76 +1083,6 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		_, _, err := inputs.resolveDatalakes(ui, ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
-	})
-}
-
-func TestAppNewAppInputsResolveTemplateDataSource(t *testing.T) {
-	t.Run("should error if specified template data source does not exist", func(t *testing.T) {
-		_, ui := mock.NewUI()
-		inputs := createInputs{
-			newAppInputs: newAppInputs{
-				Template: "ios.template.todo",
-			},
-			Clusters:            []string{"Cluster0"},
-			ClusterServiceNames: []string{},
-			TemplateDataSource:  "Cluster1",
-		}
-
-		_, err := inputs.resolveTemplateDataSource(ui, []dataSourceDatalake{}, []dataSourceCluster{
-			{
-				Name: "mongodb-atlas",
-				Type: "mongodb-atlas",
-				Config: configCluster{
-					ClusterName: "Cluster0",
-				},
-				Version: 1,
-			},
-		})
-		assert.NotNil(t, err)
-		assert.Match(t, "invalid template data source: data source \"Cluster1\" could not be found", err.Error())
-	})
-
-	t.Run("should error if no cluster have been defined", func(t *testing.T) {
-		_, ui := mock.NewUI()
-		inputs := createInputs{
-			newAppInputs: newAppInputs{
-				Template: "ios.template.todo",
-			},
-			Clusters:            []string{"Cluster0"},
-			ClusterServiceNames: []string{},
-			TemplateDataSource:  "Cluster1",
-		}
-
-		_, err := inputs.resolveTemplateDataSource(ui, []dataSourceDatalake{}, []dataSourceCluster{})
-		assert.NotNil(t, err)
-		assert.Match(t, "cannot create a template without an initial data source", err.Error())
-	})
-
-	t.Run("should be able to resolve template data source in happy path", func(t *testing.T) {
-		_, ui := mock.NewUI()
-		inputs := createInputs{
-			newAppInputs: newAppInputs{
-				Template: "ios.template.todo",
-			},
-			Clusters:            []string{"Cluster0"},
-			ClusterServiceNames: []string{},
-			TemplateDataSource:  "Cluster0",
-		}
-
-		expectedCluster := dataSourceCluster{
-			Name: "mongodb-atlas",
-			Type: "mongodb-atlas",
-			Config: configCluster{
-				ClusterName: "Cluster0",
-			},
-			Version: 1,
-		}
-		rawCluster, err := inputs.resolveTemplateDataSource(ui, []dataSourceDatalake{}, []dataSourceCluster{expectedCluster})
-		assert.Nil(t, err)
-
-		actualCluster, ok := rawCluster.(dataSourceCluster)
-		assert.Equal(t, true, ok)
-		assert.Match(t, expectedCluster, actualCluster)
 	})
 }
 
