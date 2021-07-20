@@ -155,6 +155,10 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 }
 
 func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
+	if i.Template != "" && len(i.Clusters) == 1 {
+		// if a user only specifies one data source, we use this data source to create their template app if specified
+		i.TemplateDataSource = i.Clusters[0]
+	}
 	clusters, err := client.Clusters(groupID)
 	if err != nil {
 		return nil, nil, err

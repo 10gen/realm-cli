@@ -95,16 +95,18 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 	return nil
 }
 
-func (i createInputs) resolveInitialTemplateDataSource(ui terminal.UI, dataLakes []dataSourceDatalake, clusters []dataSourceCluster) (interface{}, error) {
-	if len(dataLakes)+len(clusters) == 0 {
+func (i createInputs) resolveTemplateDataSource(ui terminal.UI, dataLakes []dataSourceDatalake, clusters []dataSourceCluster) (interface{}, error) {
+	if len(clusters) == 0 {
 		return nil, errors.New("cannot create a template without an initial data source")
 	}
 
-	if len(dataLakes)+len(clusters) == 1 {
-		if len(clusters) > 0 {
-			return clusters[0], nil
+	if i.TemplateDataSource != "" {
+		for _, dataSource := range clusters {
+			if dataSource.Config.ClusterName == i.TemplateDataSource {
+				return dataSource, nil
+			}
 		}
-		return dataLakes[0], nil
+		return nil, fmt.Errorf(`invalid template data source: data source "%s" could not be found`, i.TemplateDataSource)
 	}
 
 	// If linking multiple data sources, prompt the user for which data source to write template app schema onto

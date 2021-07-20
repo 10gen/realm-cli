@@ -245,15 +245,15 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		Location:        cmd.inputs.Location,
 		DeploymentModel: cmd.inputs.DeploymentModel,
 		Environment:     cmd.inputs.Environment,
-		Template:        cmd.inputs.Template,
 	}
 
 	// choose a data source to import template app schema data onto
 	if cmd.inputs.Template != "" {
-		initialDataSource, err := cmd.inputs.resolveInitialTemplateDataSource(ui, dsDatalakes, dsClusters)
+		initialDataSource, err := cmd.inputs.resolveTemplateDataSource(ui, dsDatalakes, dsClusters)
 		if err != nil {
 			return err
 		}
+		createAppMetadata.Template = cmd.inputs.Template
 		createAppMetadata.DataSource = initialDataSource
 	}
 
