@@ -205,7 +205,7 @@ func TestAllowedIPUpdateInputs(t *testing.T) {
 			}
 
 			err := inputs.Resolve(profile, nil)
-			assert.Equal(t, errors.New("must set either --new-ip or --comment when updating an allowed IP address or CIDR block"), err)
+			assert.Equal(t, errors.New("must set either  --new-ip or  --comment when updating an allowed IP address or CIDR block"), err)
 		})
 
 		t.Run("should prompt for address when is not provided", func(t *testing.T) {
