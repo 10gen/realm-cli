@@ -69,7 +69,7 @@ type RealmClient struct {
 
 	AllowedIPsFn      func(groupID, appID string) ([]realm.AllowedIP, error)
 	AllowedIPCreateFn func(groupID, appID, address, comment string, useCurrent bool) (realm.AllowedIP, error)
-	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newAddress, comment string) error
+	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newAddress, newComment string) error
 
 	StatusFn func() error
 }

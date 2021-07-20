@@ -57,7 +57,7 @@ func (cmd *CommandUpdate) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.NewAddress,
 			Meta: flags.Meta{
-				Name: "new-ip",
+				Name: flagIPNew,
 				Usage: flags.Usage{
 					Description: "Specify the new IP address or CIDR block that will replace the existing entry",
 				},
@@ -66,7 +66,7 @@ func (cmd *CommandUpdate) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.NewComment,
 			Meta: flags.Meta{
-				Name: "comment",
+				Name: flagComment,
 				Usage: flags.Usage{
 					Description: "Add or edit a comment to the IP address or CIDR block that is being modified",
 				},

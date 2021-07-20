@@ -55,7 +55,7 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			realmClient := mock.RealmClient{}
 
 			var updateArgs struct {
-				groupID, appID, allowedIPID string
+				groupID, appID, allowedIPID, newAddress, newComment string
 			}
 
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -66,8 +66,8 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			}
 			realmClient.AllowedIPUpdateFn = func(groupID, appID, allowedIPID, newAddress, newComment string) error {
 				updateArgs = struct {
-					groupID, appID, allowedIPID string
-				}{groupID, appID, allowedIPID}
+					groupID, appID, allowedIPID, newAddress, newComment string
+				}{groupID, appID, allowedIPID, newAddress, newComment}
 
 				return nil
 			}
@@ -87,6 +87,8 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			assert.Equal(t, "projectID", updateArgs.groupID)
 			assert.Equal(t, "appID", updateArgs.appID)
 			assert.Equal(t, "address1", updateArgs.allowedIPID)
+			assert.Equal(t, tc.testNewAddress, updateArgs.newAddress)
+			assert.Equal(t, tc.testNewComment, updateArgs.newComment)
 		})
 	}
 
