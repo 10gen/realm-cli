@@ -25,6 +25,7 @@ var (
 	flagDatalake            = "datalake"
 	flagDatalakeServiceName = "datalake-service-name"
 	flagTemplate            = "template"
+	flagTemplateDataSource  = "template-data-source"
 	flagDryRun              = "dry-run"
 )
 
@@ -33,6 +34,7 @@ type createInputs struct {
 	LocalPath            string
 	Clusters             []string
 	ClusterServiceNames  []string
+	TemplateDataSource   string
 	Datalakes            []string
 	DatalakeServiceNames []string
 	DryRun               bool
@@ -176,11 +178,15 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			serviceName = i.ClusterServiceNames[idx]
 		} else {
 			if !ui.AutoConfirm() {
-				if err := ui.AskOne(&serviceName, &survey.Input{
-					Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName),
-					Default: serviceName,
-				}); err != nil {
-					return nil, nil, err
+				if clusterName == i.TemplateDataSource {
+					serviceName = "mongodb-atlas"
+				} else {
+					if err := ui.AskOne(&serviceName, &survey.Input{
+						Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName),
+						Default: serviceName,
+					}); err != nil {
+						return nil, nil, err
+					}
 				}
 			}
 		}

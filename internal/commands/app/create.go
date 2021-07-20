@@ -99,6 +99,15 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				},
 			},
 		},
+		flags.StringFlag{
+			Value: &cmd.inputs.TemplateDataSource,
+			Meta: flags.Meta{
+				Name: flagTemplateDataSource,
+				Usage: flags.Usage{
+					Description: "Specify the data source that you want to initialize your template app with",
+				},
+			},
+		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.DryRun,
 			Meta: flags.Meta{
