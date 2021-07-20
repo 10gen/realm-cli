@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	allowedIPsPathPattern = appPathPattern + "/security/allowed_ips"
+	allowedIPsPathPattern = appPathPattern + "/security/access_list"
+	allowedIPPathPattern  = allowedIPsPathPattern + "/%s"
 )
 
 // AccessList is a list of allowed IPs stored in a Realm app
@@ -25,7 +26,7 @@ type AllowedIP struct {
 	IncludesCurrent bool   `json:"includes_current"`
 }
 
-type allowedIPCreatePayload struct {
+type allowedIPRequest struct {
 	Address    string `json:"address"`
 	Comment    string `json:"comment,omitempty"`
 	UseCurrent bool   `json:"use_current,omitempty"`
@@ -54,12 +55,12 @@ func (c *client) AllowedIPs(groupID, appID string) ([]AllowedIP, error) {
 	return accessList.AllowedIPs, nil
 }
 
-func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error) {
+func (c *client) AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (AllowedIP, error) {
 	res, resErr := c.doJSON(
 		http.MethodPost,
 		fmt.Sprintf(allowedIPsPathPattern, groupID, appID),
-		allowedIPCreatePayload{
-			ipAddress,
+		allowedIPRequest{
+			address,
 			comment,
 			useCurrent,
 		},
@@ -80,4 +81,26 @@ func (c *client) AllowedIPCreate(groupID, appID, ipAddress, comment string, useC
 		return AllowedIP{}, err
 	}
 	return allowedIP, nil
+}
+
+// TODO(REALMC-9689): Update to PATCH
+func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment string) error {
+	res, err := c.doJSON(
+		http.MethodPut,
+		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
+		allowedIPRequest{
+			Address: newAddress,
+			Comment: newComment,
+		},
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return api.ErrUnexpectedStatusCode{"update allowed ip", res.StatusCode}
+	}
+
+	return nil
 }

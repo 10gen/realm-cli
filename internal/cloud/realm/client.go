@@ -78,7 +78,8 @@ type Client interface {
 	CompatibleTemplates(groupID, appID string) ([]Template, error)
 
 	AllowedIPs(groupID, appID string) ([]AllowedIP, error)
-	AllowedIPCreate(groupID, appID, ipAddress, comment string, useCurrent bool) (AllowedIP, error)
+	AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (AllowedIP, error)
+	AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment string) error
 
 	Status() error
 }
