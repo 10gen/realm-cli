@@ -70,6 +70,7 @@ type RealmClient struct {
 	AllowedIPsFn      func(groupID, appID string) ([]realm.AllowedIP, error)
 	AllowedIPCreateFn func(groupID, appID, address, comment string, useCurrent bool) (realm.AllowedIP, error)
 	AllowedIPUpdateFn func(groupID, appID, allowedIPID, newAddress, newComment string) error
+	AllowedIPDeleteFn func(groupID, appID, allowedIPID string) error
 
 	StatusFn func() error
 }
@@ -532,6 +533,16 @@ func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, n
 		return rc.AllowedIPUpdateFn(groupID, appID, allowedIPID, newAddress, newComment)
 	}
 	return rc.Client.AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment)
+}
+
+// AllowedIPDelete calls the mocked AllowedIPDelete implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) AllowedIPDelete(groupID, appID, allowedIPID string) error {
+	if rc.AllowedIPUpdateFn != nil {
+		return rc.AllowedIPDeleteFn(groupID, appID, allowedIPID)
+	}
+	return rc.Client.AllowedIPDelete(groupID, appID, allowedIPID)
 }
 
 // Status calls the mocked Status implementation if provided,

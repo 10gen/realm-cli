@@ -9,11 +9,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
-const (
-	headerAddress = "IP Address"
-	headerComment = "Comment"
-)
-
 var (
 	listTableHeaders = []string{headerAddress, headerComment}
 )

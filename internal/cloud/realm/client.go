@@ -80,6 +80,7 @@ type Client interface {
 	AllowedIPs(groupID, appID string) ([]AllowedIP, error)
 	AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (AllowedIP, error)
 	AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newComment string) error
+	AllowedIPDelete(groupID, appID, allowedIPID string) error
 
 	Status() error
 }

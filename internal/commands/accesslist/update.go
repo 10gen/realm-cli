@@ -157,11 +157,3 @@ func (i *updateInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 
 	return selectableAllowedIPs[selected], nil
 }
-
-func displayAllowedIPOption(allowedIP realm.AllowedIP) string {
-	option := allowedIP.ID + terminal.DelimiterInline + allowedIP.Address
-	if allowedIP.Comment == "" {
-		return option
-	}
-	return option + terminal.DelimiterInline + allowedIP.Comment
-}
