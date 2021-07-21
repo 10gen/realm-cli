@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -605,7 +604,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
+		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
 		assert.Nil(t, err)
 
 		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
@@ -616,22 +615,6 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		assert.Nil(t, err)
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
-
-		regex, err := regexp.Compile(`\s+`)
-		assert.Nil(t, err)
-
-		actual := regex.ReplaceAllString(out.String(), " ")
-		expected := regex.ReplaceAllString(fmt.Sprintf(`Successfully created app
-{
-  "client_app_id": "bitcoin-miner-abcde",
-  "filepath": %q,
-  "backend": %q,
-  "url": "http://localhost:8080/groups/123/apps/456/dashboard",
-  "clusters": [ { "name": "test-cluster" } ]
-}
-Check out your app: cd ./bitcoin-miner && realm-cli app describe
-`, appLocal.RootDir, filepath.Join(appLocal.RootDir, local.BackendPath)), " ")
-		assert.Equal(t, strings.Contains(actual, expected), true)
 	})
 
 	for _, tc := range []struct {

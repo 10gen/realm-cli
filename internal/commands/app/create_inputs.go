@@ -26,7 +26,6 @@ var (
 	flagDatalake            = "datalake"
 	flagDatalakeServiceName = "datalake-service-name"
 	flagTemplate            = "template"
-	flagTemplateDataSource  = "template-data-source"
 	flagDryRun              = "dry-run"
 )
 
@@ -182,10 +181,12 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 				clusterOptions = append(clusterOptions, c.Name)
 			}
 
-			ui.AskOne(&clusterName, &survey.Select{
+			if err := ui.AskOne(&clusterName, &survey.Select{
 				Message: "Select a cluster to link to your Realm application:",
 				Options: clusterOptions,
-			})
+			}); err != nil {
+				return nil, nil, err
+			}
 		}
 
 		i.Clusters = []string{clusterName}

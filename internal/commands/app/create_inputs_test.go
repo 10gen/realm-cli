@@ -710,10 +710,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		assert.Equal(t, "123", expectedGroupID)
 	})
 
-	t.Run("should automatically select a template data source if only one cluster was defined", func(t *testing.T) {
+	t.Run("should error when more than one cluster passed in when creating template app", func(t *testing.T) {
 		_, ui := mock.NewUI()
-		clusterNames := []string{"Cluster0"}
-		clusterServiceNames := []string{"mongodb-atlas"}
+		clusterNames := []string{"Cluster0", "Cluster1"}
 
 		ac := mock.AtlasClient{}
 		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
@@ -725,13 +724,53 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			newAppInputs: newAppInputs{
 				Template: "ios.template.todo",
 			},
-			Clusters:            clusterNames,
-			ClusterServiceNames: clusterServiceNames,
+			Clusters: clusterNames,
 		}
 		_, _, err := inputs.resolveClusters(ui, ac, "123")
+		assert.Equal(t, "template apps can only be created with one data source", err.Error())
+	})
+
+	t.Run("should error if no atlas clusters exist when creating template app", func(t *testing.T) {
+		_, ui := mock.NewUI()
+		clusterNames := []string{"Cluster0"}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{}, nil
+		}
+		inputs := createInputs{
+			newAppInputs: newAppInputs{
+				Template: "ios.template.todo",
+			},
+			Clusters: clusterNames,
+		}
+		_, _, err := inputs.resolveClusters(ui, ac, "123")
+		assert.Equal(t, "please create an atlas cluster before creating a template app", err.Error())
+	})
+
+	t.Run("should resolve a single data source if creating template app", func(t *testing.T) {
+		_, ui := mock.NewUI()
+		clusterNames := []string{"Cluster0"}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{
+				{ID: "1", Name: clusterNames[0]},
+				{ID: "2", Name: "Cluster1"},
+			}, nil
+		}
+		inputs := createInputs{
+			newAppInputs: newAppInputs{
+				Template: "ios.template.todo",
+			},
+			Clusters: clusterNames,
+		}
+
+		clusters, _, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Equal(t, nil, err)
-		assert.Equal(t, 1, len(inputs.Clusters))
-		assert.Equal(t, "Cluster0", inputs.Clusters[0])
+		assert.Equal(t, 1, len(clusters))
+		assert.Equal(t, "Cluster0", clusters[0].Config.ClusterName)
+		assert.Equal(t, "mongodb-atlas", clusters[0].Name)
 	})
 
 	t.Run("should force mongodb-atlas as template data source name", func(t *testing.T) {
@@ -1083,6 +1122,20 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		_, _, err := inputs.resolveDatalakes(ui, ac, "123")
 		assert.Equal(t, errors.New("client error"), err)
 		assert.Equal(t, "123", expectedGroupID)
+	})
+
+	t.Run("should error if creating template with a datalake", func(t *testing.T) {
+		_, ui := mock.NewUI()
+		ac := mock.AtlasClient{}
+		inputs := createInputs{
+			newAppInputs: newAppInputs{
+				Template: "ios.template.todo",
+			},
+			Datalakes: []string{"test-datalake"},
+		}
+
+		_, _, err := inputs.resolveDatalakes(ui, ac, "123")
+		assert.Equal(t, "cannot create a template app with data lakes", err.Error())
 	})
 }
 
