@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -407,11 +408,16 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	}
 
 	output := newAppOutputs{
-		AppID:     appRealm.ClientAppID,
-		Filepath:  rootDir,
-		Backend:   filepath.Join(rootDir, local.BackendPath),
-		Frontends: filepath.Join(rootDir, local.FrontendPath),
-		URL:       fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
+		AppID:    appRealm.ClientAppID,
+		Filepath: rootDir,
+		Backend:  filepath.Join(rootDir, local.BackendPath),
+		URL:      fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
+	}
+
+	frontendFolder := filepath.Join(rootDir, local.FrontendPath)
+	_, err = os.Stat(frontendFolder)
+	if err != nil && os.IsNotExist(err) {
+		output.Frontends = frontendFolder
 	}
 
 	for _, dsCluster := range dsClusters {
@@ -432,16 +438,6 @@ func writeTemplateAppToLocal(realmClient realm.Client, appID, groupID, templateI
 	backendDir := filepath.Join(rootDir, local.BackendPath)
 	frontendDir := filepath.Join(rootDir, local.FrontendPath)
 
-	compatibleFrontends, err := realmClient.CompatibleTemplates(groupID, appID)
-	if err != nil {
-		return local.App{}, err
-	}
-	hasCompatibleFrontends := len(compatibleFrontends) > 0
-	if !hasCompatibleFrontends {
-		// the current template has no compatible templates
-		backendDir = rootDir
-	}
-
 	_, zipPkg, err := realmClient.Export(
 		groupID,
 		appID,
@@ -460,36 +456,33 @@ func writeTemplateAppToLocal(realmClient realm.Client, appID, groupID, templateI
 		return local.App{}, err
 	}
 
-	if hasCompatibleFrontends {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Downloading client template..."
+	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+	s.Suffix = " Downloading client template..."
 
-		downloadAndWriteClient := func() error {
-			s.Start()
-			defer s.Stop()
+	downloadAndWriteClient := func() error {
+		s.Start()
+		defer s.Stop()
 
-			zipPkg, ok, err := realmClient.ClientTemplate(
-				groupID,
-				appID,
-				templateID,
-			)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				// The template has no frontend to pull so the process of fetching frontends is done.
-				return nil
-			}
-			if err := local.WriteZip(path.Join(frontendDir, templateID), zipPkg); err != nil {
-				return err
-			}
-
+		zipPkg, ok, err := realmClient.ClientTemplate(
+			groupID,
+			appID,
+			templateID,
+		)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			// The template has no frontend to pull
 			return nil
 		}
-
-		if err := downloadAndWriteClient(); err != nil {
-			return local.App{}, err
+		if err := local.WriteZip(path.Join(frontendDir, templateID), zipPkg); err != nil {
+			return err
 		}
+		return nil
+	}
+
+	if err := downloadAndWriteClient(); err != nil {
+		return local.App{}, err
 	}
 
 	return appLocal, nil
