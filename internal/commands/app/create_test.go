@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -605,32 +604,17 @@ Check out your app: cd ./remote-app && realm-cli app describe
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		appLocal, err := local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
+		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
 		assert.Nil(t, err)
 
 		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
 		assert.Nil(t, err)
-		assert.Equal(t, len(backendFileInfo), 9)
+		assert.Equal(t, len(backendFileInfo), 6)
 
 		frontendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath, templateID))
 		assert.Nil(t, err)
 		assert.Equal(t, len(frontendFileInfo), 1)
 		assert.Equal(t, frontendFileInfo[0].Name(), "react-native")
-
-		regex, err := regexp.Compile(`\s+`)
-		assert.Nil(t, err)
-
-		actual := regex.ReplaceAllString(out.String(), " ")
-		expected := regex.ReplaceAllString(fmt.Sprintf(`Successfully created app
-{
-  "client_app_id": "bitcoin-miner-abcde",
-  "filepath": %q,
-  "url": "http://localhost:8080/groups/123/apps/456/dashboard",
-  "clusters": [ { "name": "test-cluster" } ]
-}
-Check out your app: cd ./bitcoin-miner && realm-cli app describe
-`, appLocal.RootDir), " ")
-		assert.Equal(t, strings.Contains(actual, expected), true)
 	})
 
 	for _, tc := range []struct {
@@ -910,10 +894,19 @@ Check out your app: cd ./test-app && realm-cli app describe
 						}, nil
 					},
 				},
+				Atlas: mock.AtlasClient{
+					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+						return []atlas.Cluster{
+							{Name: "cluster0"},
+						}, nil
+					},
+				},
 			},
+			clusters: []string{"cluster0"},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
-					fmt.Sprintf("A minimal Realm app would be created at %s/backend using the 'palm-pilot.bitcoin-miner' template", dir),
+					fmt.Sprintf("A Realm app would be created at %s using the 'palm-pilot.bitcoin-miner' template", dir),
+					"The cluster 'cluster0' would be linked as data source 'mongodb-atlas'",
 					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")

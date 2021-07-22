@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -153,55 +154,115 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 }
 
 func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
-	clusters, err := client.Clusters(groupID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	existingClusters := map[string]struct{}{}
-	for _, c := range clusters {
-		existingClusters[c.Name] = struct{}{}
-	}
-	nonExistingClusters := make([]string, 0, len(i.Clusters))
-
-	dsClusters := make([]dataSourceCluster, 0, len(i.Clusters))
-	for idx, clusterName := range i.Clusters {
-		if _, ok := existingClusters[clusterName]; !ok {
-			nonExistingClusters = append(nonExistingClusters, clusterName)
-			continue
+	if i.Template != "" {
+		clusters, err := client.Clusters(groupID)
+		if err != nil {
+			return nil, nil, err
 		}
 
-		serviceName := clusterName
-		if len(i.ClusterServiceNames) > idx {
-			serviceName = i.ClusterServiceNames[idx]
+		// If creating template app, only allow a 0 or 1 passed-in cluster names
+		switch len(i.Clusters) {
+		case 0, 1:
+		default:
+			return nil, nil, errors.New("template apps can only be created with one cluster")
+		}
+
+		if len(clusters) == 0 {
+			// TODO(REALMC-9713): Enable the ability to create a new cluster upon template app creation
+			return nil, nil, errors.New("please create an Atlas cluster before creating a template app")
+		}
+
+		var clusterName string
+		if len(i.Clusters) == 1 {
+			clusterName = i.Clusters[0]
 		} else {
-			if !ui.AutoConfirm() {
-				if err := ui.AskOne(&serviceName, &survey.Input{
-					Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName),
-					Default: serviceName,
-				}); err != nil {
-					return nil, nil, err
-				}
+			clusterOptions := make([]string, 0, len(clusters))
+			for _, c := range clusters {
+				clusterOptions = append(clusterOptions, c.Name)
+			}
+
+			if err := ui.AskOne(&clusterName, &survey.Select{
+				Message: "Select a cluster to link to your Realm application:",
+				Options: clusterOptions,
+			}); err != nil {
+				return nil, nil, err
 			}
 		}
 
-		dsClusters = append(dsClusters,
-			dataSourceCluster{
-				Name: serviceName,
-				Type: realm.ServiceTypeCluster,
-				Config: configCluster{
-					ClusterName:         clusterName,
-					ReadPreference:      "primary",
-					WireProtocolEnabled: false,
-				},
-				Version: 1,
-			})
+		if len(i.ClusterServiceNames) > 0 {
+			ui.Print(terminal.NewTextLog("Overriding user-provided cluster service name(s). "+
+				"The template app data source will be created with name '%s'", realm.DefaultServiceNameCluster))
+		}
+
+		i.Clusters = []string{clusterName}
+		return []dataSourceCluster{{
+			Name: realm.DefaultServiceNameCluster,
+			Type: realm.ServiceTypeCluster,
+			Config: configCluster{
+				ClusterName:         clusterName,
+				ReadPreference:      "primary",
+				WireProtocolEnabled: false,
+			},
+			Version: 1,
+		}}, nil, nil
+	}
+
+	// Non-template app creation cluster resolution
+	dsClusters := make([]dataSourceCluster, 0, len(i.Clusters))
+	nonExistingClusters := make([]string, 0, len(i.Clusters))
+	if len(i.Clusters) > 0 {
+		clusters, err := client.Clusters(groupID)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		existingClusters := map[string]struct{}{}
+		for _, c := range clusters {
+			existingClusters[c.Name] = struct{}{}
+		}
+
+		for idx, clusterName := range i.Clusters {
+			if _, ok := existingClusters[clusterName]; !ok {
+				nonExistingClusters = append(nonExistingClusters, clusterName)
+				continue
+			}
+
+			serviceName := clusterName
+			if len(i.ClusterServiceNames) > idx {
+				serviceName = i.ClusterServiceNames[idx]
+			} else {
+				if !ui.AutoConfirm() {
+					if err := ui.AskOne(&serviceName, &survey.Input{
+						Message: fmt.Sprintf("Enter a Service Name for Cluster '%s'", clusterName),
+						Default: serviceName,
+					}); err != nil {
+						return nil, nil, err
+					}
+				}
+			}
+
+			dsClusters = append(dsClusters,
+				dataSourceCluster{
+					Name: serviceName,
+					Type: realm.ServiceTypeCluster,
+					Config: configCluster{
+						ClusterName:         clusterName,
+						ReadPreference:      "primary",
+						WireProtocolEnabled: false,
+					},
+					Version: 1,
+				})
+		}
 	}
 
 	return dsClusters, nonExistingClusters, nil
 }
 
 func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, []string, error) {
+	if i.Template != "" && len(i.Datalakes) > 0 {
+		return nil, nil, errors.New("cannot create a template app with data lakes")
+	}
+
 	datalakes, err := client.Datalakes(groupID)
 	if err != nil {
 		return nil, nil, err
