@@ -111,8 +111,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	// TODO(REALMC-9462): add template_id to /apps payload to remove FindApp within resolveRemoteApp in order to
-	//  determine whether the current app has been created with a template
 	var clientZipPkgs []clientTemplate
 	if app.TemplateID != "" {
 		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
