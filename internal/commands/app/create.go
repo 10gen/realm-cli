@@ -352,12 +352,13 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	dsDatalakes []dataSourceDatalake,
 ) error {
 	if cmd.inputs.DryRun {
+		// +2 indicates that there are two logs in addition to the data lake and cluster ones
 		logs := make([]terminal.Log, 0, len(dsClusters)+len(dsDatalakes)+2)
-		logs = append(logs, terminal.NewTextLog(fmt.Sprintf(
+		logs = append(logs, terminal.NewTextLog(
 			"A Realm app would be created at %s using the '%s' template",
 			rootDir,
 			cmd.inputs.Template,
-		)))
+		))
 
 		for _, cluster := range dsClusters {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cluster.Config.ClusterName, cluster.Name))
@@ -371,7 +372,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	}
 
 	if len(dsClusters) != 1 {
-		return errors.New("could not send app creation request due to unexpected number of clusters")
+		return errors.New("must specify a cluster when creating app from template")
 	}
 	createAppMetadata := realm.AppMeta{
 		Location:        cmd.inputs.Location,
@@ -395,6 +396,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		if err != nil {
 			return realm.App{}, err
 		}
+		ui.Print(terminal.NewTextLog("Created template app"))
 		return appRealm, nil
 	}
 	appRealm, err := createTemplateApp()
@@ -412,16 +414,13 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		Filepath: rootDir,
 		Backend:  filepath.Join(rootDir, local.BackendPath),
 		URL:      fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", profile.RealmBaseURL(), appRealm.GroupID, appRealm.ID),
+		Clusters: []dataSourceOutputs{{Name: dsClusters[0].Name}},
 	}
 
-	frontendFolder := filepath.Join(rootDir, local.FrontendPath)
-	_, err = os.Stat(frontendFolder)
+	frontendDir := filepath.Join(rootDir, local.FrontendPath)
+	_, err = os.Stat(frontendDir)
 	if err != nil && os.IsNotExist(err) {
-		output.Frontends = frontendFolder
-	}
-
-	for _, dsCluster := range dsClusters {
-		output.Clusters = append(output.Clusters, dataSourceOutputs{dsCluster.Name})
+		output.Frontends = frontendDir
 	}
 
 	// TODO(REALMC-9460): Add better template-app-specific directions for checking out the newly created template app

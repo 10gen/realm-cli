@@ -727,7 +727,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			Clusters: clusterNames,
 		}
 		_, _, err := inputs.resolveClusters(ui, ac, "123")
-		assert.Equal(t, "template apps can only be created with one data source", err.Error())
+		assert.Equal(t, errors.New("template apps can only be created with one cluster"), err)
 	})
 
 	t.Run("should error if no atlas clusters exist when creating template app", func(t *testing.T) {
@@ -745,7 +745,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			Clusters: clusterNames,
 		}
 		_, _, err := inputs.resolveClusters(ui, ac, "123")
-		assert.Equal(t, "please create an atlas cluster before creating a template app", err.Error())
+		assert.Equal(t, errors.New("please create an Atlas cluster before creating a template app"), err)
 	})
 
 	t.Run("should resolve a single data source if creating template app", func(t *testing.T) {
@@ -1135,7 +1135,7 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		}
 
 		_, _, err := inputs.resolveDatalakes(ui, ac, "123")
-		assert.Equal(t, "cannot create a template app with data lakes", err.Error())
+		assert.Equal(t, errors.New("cannot create a template app with data lakes"), err)
 	})
 }
 

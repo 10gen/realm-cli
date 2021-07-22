@@ -164,12 +164,12 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 		switch len(i.Clusters) {
 		case 0, 1:
 		default:
-			return nil, nil, errors.New("template apps can only be created with one data source")
+			return nil, nil, errors.New("template apps can only be created with one cluster")
 		}
 
 		if len(clusters) == 0 {
 			// TODO(REALMC-9713): Enable the ability to create a new cluster upon template app creation
-			return nil, nil, errors.New("please create an atlas cluster before creating a template app")
+			return nil, nil, errors.New("please create an Atlas cluster before creating a template app")
 		}
 
 		var clusterName string
@@ -189,9 +189,14 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			}
 		}
 
+		if len(i.ClusterServiceNames) > 0 {
+			ui.Print(terminal.NewTextLog("Overriding user-provided cluster service name(s). "+
+				"The template app data source will be created with name '%s'", realm.DefaultServiceNameCluster))
+		}
+
 		i.Clusters = []string{clusterName}
 		return []dataSourceCluster{{
-			Name: "mongodb-atlas",
+			Name: realm.DefaultServiceNameCluster,
 			Type: realm.ServiceTypeCluster,
 			Config: configCluster{
 				ClusterName:         clusterName,
