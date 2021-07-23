@@ -68,7 +68,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
 				Name:      "include-hosting",
-				Shorthand: "h",
+				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app hosting files",
 				},
