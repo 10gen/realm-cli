@@ -52,7 +52,7 @@ type CommandDelete struct {
 // Flags is the command flags
 func (cmd *CommandDelete) Flags() []flags.Flag {
 	return []flags.Flag{
-		cli.AppFlagWithContext(&cmd.inputs.App, "to modify an entry in its Access List"),
+		cli.AppFlagWithContext(&cmd.inputs.App, "to remove an entry in its Access List"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
 		flags.StringSliceFlag{
@@ -115,7 +115,7 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	ui.Print(terminal.NewTableLog(
-		fmt.Sprintf("Deleted %d IP addresses(s) and CIDR block(s)", len(outputs)),
+		fmt.Sprintf("Deleted %d IP address(es) and CIDR block(s)", len(outputs)),
 		deleteTableHeaders,
 		tableRows...,
 	))
@@ -168,7 +168,7 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 	if err := ui.AskOne(
 		&selections,
 		&survey.MultiSelect{
-			Message: "Which IP Addresse(s) or CIDR block(s) would you like to delete?",
+			Message: "Which IP Address(es) or CIDR block(s) would you like to delete?",
 			Options: addressOptions,
 		},
 	); err != nil {

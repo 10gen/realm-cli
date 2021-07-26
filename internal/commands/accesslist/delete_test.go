@@ -60,7 +60,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			description: "should return successful outputs for proper inputs",
 			testInput:   []string{"0.0.0.0", "192.1.1.1"},
 			expectedOutput: strings.Join([]string{
-				"Deleted 2 IP addresses(s) and CIDR block(s)",
+				"Deleted 2 IP address(es) and CIDR block(s)",
 				"  IP Address  Comment  Deleted  Details",
 				"  ----------  -------  -------  -------",
 				"  0.0.0.0     comment  true            ",
@@ -72,7 +72,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			description: "should output the errors for deletes on individual allowed ips",
 			testInput:   []string{"0.0.0.0", "192.158.1.38"},
 			expectedOutput: strings.Join([]string{
-				"Deleted 2 IP addresses(s) and CIDR block(s)",
+				"Deleted 2 IP address(es) and CIDR block(s)",
 				"  IP Address    Comment       Deleted  Details           ",
 				"  ------------  ------------  -------  ------------------",
 				"  0.0.0.0       comment       false    something happened",
@@ -204,7 +204,7 @@ func TestAllowedIPDeleteInputs(t *testing.T) {
 			doneCh := make(chan struct{})
 			go func() {
 				defer close(doneCh)
-				console.ExpectString("Which IP Addresse(s) or CIDR block(s) would you like to delete?")
+				console.ExpectString("Which IP Address(es) or CIDR block(s) would you like to delete?")
 				for _, selected := range tc.selectedAllowedIPs {
 					console.Send(selected)
 					console.Send(" ")
