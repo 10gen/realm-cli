@@ -131,11 +131,11 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 							return []realm.App{app}, nil
 						},
 						AllowedIPsFn: func(groupID, appID string) ([]realm.AllowedIP, error) {
-							return nil, errors.New("something happened with secrets")
+							return nil, errors.New("something happened with allowed ips")
 						},
 					}
 				},
-				expectedErr: errors.New("something happened with secrets"),
+				expectedErr: errors.New("something happened with allowed ips"),
 			},
 			{
 				description: "if there is no app",
