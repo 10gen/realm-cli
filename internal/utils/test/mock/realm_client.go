@@ -539,7 +539,7 @@ func (rc RealmClient) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, n
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
 func (rc RealmClient) AllowedIPDelete(groupID, appID, allowedIPID string) error {
-	if rc.AllowedIPUpdateFn != nil {
+	if rc.AllowedIPDeleteFn != nil {
 		return rc.AllowedIPDeleteFn(groupID, appID, allowedIPID)
 	}
 	return rc.Client.AllowedIPDelete(groupID, appID, allowedIPID)

@@ -1,6 +1,7 @@
 package accesslist
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 
@@ -13,9 +14,24 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+const (
+	headerDeleted = "Deleted"
+	headerDetails = "Details"
+)
+
+var (
+	deleteTableHeaders = []string{headerAddress, headerComment, headerDeleted, headerDetails}
+)
+
+type deleteAllowedIPOutputs []deleteAllowedIPOutput
+
+type deleteAllowedIPOutput struct {
+	allowedIP realm.AllowedIP
+	err       error
+}
 type deleteInputs struct {
 	cli.ProjectInputs
-	Address string
+	Addresses []string
 }
 
 // CommandMetaDelete is the command meta for the `accesslist delete` command
@@ -39,8 +55,8 @@ func (cmd *CommandDelete) Flags() []flags.Flag {
 		cli.AppFlagWithContext(&cmd.inputs.App, "to modify an entry in its Access List"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
-		flags.StringFlag{
-			Value: &cmd.inputs.Address,
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.Addresses,
 			Meta: flags.Meta{
 				Name: "ip",
 				Usage: flags.Usage{
@@ -88,10 +104,20 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 		return outputs[i].err != nil && outputs[j].err == nil
 	})
 
+	tableRows := make([]map[string]interface{}, 0, len(outputs))
+	for _, output := range outputs {
+		row := map[string]interface{}{
+			headerAddress: output.allowedIP.Address,
+			headerComment: output.allowedIP.Comment,
+		}
+		tableRows = append(tableRows, row)
+		tableRowDelete(output, row)
+	}
+
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Deleted %d IP addresses(s) and CIDR block(s)", len(outputs)),
-		tableHeaders(headerDeleted, headerDetails),
-		tableRows(outputs, tableRowDelete)...,
+		deleteTableHeaders,
+		tableRows...,
 	))
 
 	return nil
@@ -105,14 +131,28 @@ func (i *deleteInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 }
 
 func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.AllowedIP) ([]realm.AllowedIP, error) {
-	if i.Address != "" {
+	if len(allowedIPs) == 0 {
+		return nil, nil
+	}
+
+	if len(i.Addresses) > 0 {
+		allowedIPsByAddress := make(map[string]realm.AllowedIP, len(allowedIPs))
 		for _, allowedIP := range allowedIPs {
-			if allowedIP.Address == i.Address {
-				allowedIPs := make([]realm.AllowedIP, 0, 1)
-				return allowedIPs, nil
+			allowedIPsByAddress[allowedIP.Address] = allowedIP
+		}
+
+		allowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
+		for _, identifier := range i.Addresses {
+			if allowedIP, ok := allowedIPsByAddress[identifier]; ok {
+				allowedIPs = append(allowedIPs, allowedIP)
 			}
 		}
-		return nil, fmt.Errorf("unable to find allowed IP: %s", i.Address)
+
+		if len(allowedIPs) == 0 {
+			return nil, errors.New("unable to find allowed IPs")
+		}
+
+		return allowedIPs, nil
 	}
 
 	addressOptions := make([]string, 0, len(allowedIPs))
@@ -149,5 +189,7 @@ func tableRowDelete(output deleteAllowedIPOutput, row map[string]interface{}) {
 	} else {
 		deleted = true
 	}
+	row[headerAddress] = output.allowedIP.Address
+	row[headerComment] = output.allowedIP.Comment
 	row[headerDeleted] = deleted
 }

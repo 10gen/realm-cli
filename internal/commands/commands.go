@@ -199,6 +199,10 @@ var (
 				Command:     &accesslist.CommandUpdate{},
 				CommandMeta: accesslist.CommandMetaUpdate,
 			},
+			{
+				Command:     &accesslist.CommandDelete{},
+				CommandMeta: accesslist.CommandMetaDelete,
+			},
 		},
 	}
 )
