@@ -185,6 +185,7 @@ func TestAllowedIPDeleteInputs(t *testing.T) {
 		expectedOutput     []realm.AllowedIP
 	}{
 		{
+			description:        "allow single selection",
 			selectedAllowedIPs: []string{"192.1.1.1"},
 			expectedOutput:     []realm.AllowedIP{allowedIPs[1]},
 		},
