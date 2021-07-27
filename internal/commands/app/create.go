@@ -164,7 +164,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	if err = cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
+	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
 		return err
 	}
 
