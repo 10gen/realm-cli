@@ -63,6 +63,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagCluster,
 				Usage: flags.Usage{
 					Description: "Link Atlas cluster(s) to your Realm app",
+					Note:        "Only one cluster can be linked during app creation if creating a template app",
 				},
 			},
 		},
@@ -72,6 +73,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagClusterServiceName,
 				Usage: flags.Usage{
 					Description: "Specify the Realm app Service name to reference your Atlas cluster",
+					Note:        "Service names will be overwritten when creating a template app",
 				},
 			},
 		},
@@ -81,6 +83,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagDatalake,
 				Usage: flags.Usage{
 					Description: "Link Atlas data lake(s) to your Realm app",
+					Note:        "Data lakes cannot be used to create template apps",
 				},
 			},
 		},
@@ -99,6 +102,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagTemplate,
 				Usage: flags.Usage{
 					Description: "Create your Realm app from an available template",
+					Note:        "A cluster must be supplied in order to create a template app",
 				},
 			},
 		},
