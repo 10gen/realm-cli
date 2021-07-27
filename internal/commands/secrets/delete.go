@@ -2,7 +2,6 @@ package secrets
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -76,10 +75,6 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 		err := clients.Realm.DeleteSecret(app.GroupID, app.ID, secret.ID)
 		outputs[i] = secretOutput{secret, err}
 	}
-
-	sort.SliceStable(outputs, func(i, j int) bool {
-		return outputs[i].err != nil && outputs[j].err == nil
-	})
 
 	ui.Print(terminal.NewTableLog(
 		fmt.Sprintf("Deleted %d secret(s)", len(outputs)),

@@ -28,7 +28,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 	}
 
 	t.Run("should show empty state message if no allowed ips are found", func(t *testing.T) {
-		out, ui := mock.NewUI()
+		_, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -45,9 +45,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			},
 		}}
 
-		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-
-		assert.Equal(t, "No IP addresses or CIDR blocks to delete\n", out.String())
+		assert.Equal(t, errors.New("No IP addresses or CIDR blocks to delete"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 
 	for _, tc := range []struct {
@@ -60,7 +58,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			description: "should return successful outputs for proper inputs",
 			testInput:   []string{"0.0.0.0", "192.1.1.1"},
 			expectedOutput: strings.Join([]string{
-				"Deleted 2 IP address(es) and CIDR block(s)",
+				"Deleted 2 IP address(es) and/or CIDR block(s)",
 				"  IP Address  Comment  Deleted  Details",
 				"  ----------  -------  -------  -------",
 				"  0.0.0.0     comment  true            ",
@@ -72,7 +70,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			description: "should output the errors for deletes on individual allowed ips",
 			testInput:   []string{"0.0.0.0", "192.158.1.38"},
 			expectedOutput: strings.Join([]string{
-				"Deleted 2 IP address(es) and CIDR block(s)",
+				"Deleted 2 IP address(es) and/or CIDR block(s)",
 				"  IP Address    Comment       Deleted  Details           ",
 				"  ------------  ------------  -------  ------------------",
 				"  0.0.0.0       comment       false    something happened",
@@ -121,6 +119,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 		for _, tc := range []struct {
 			description string
 			realmClient func() realm.Client
+			testInput   []string
 			expectedErr error
 		}{
 			{
@@ -151,9 +150,27 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 				},
 				expectedErr: errors.New("something went wrong with the app"),
 			},
+			{
+				description: "if provided ip address or cidr block does not exist in access list",
+				realmClient: func() realm.Client {
+					return mock.RealmClient{
+						FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+							return []realm.App{app}, nil
+						},
+						AllowedIPsFn: func(groupID, appID string) ([]realm.AllowedIP, error) {
+							return allowedIPs, nil
+						},
+					}
+				},
+				testInput:   []string{"0.0.0.0", "0.0.0.1", "192.1.2.1"},
+				expectedErr: errors.New("unable to find IP address(es) and/or CIDR block(s): 0.0.0.1, 192.1.2.1"),
+			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
-				cmd := &CommandDelete{}
+				cmd := &CommandDelete{deleteInputs{
+					cli.ProjectInputs{projectID, appID, nil},
+					tc.testInput,
+				}}
 				err := cmd.Handler(nil, nil, cli.Clients{Realm: tc.realmClient()})
 				assert.Equal(t, tc.expectedErr, err)
 			})
@@ -191,7 +208,7 @@ func TestAllowedIPDeleteInputs(t *testing.T) {
 		},
 		{
 			description:        "allow multiple selections",
-			selectedAllowedIPs: []string{"0.0.0.0", "192.158.1.38", "192.1.1.1"},
+			selectedAllowedIPs: []string{"0.0.0.0", "192.1.1.1", "192.158.1.38"},
 			expectedOutput:     []realm.AllowedIP{allowedIPs[0], allowedIPs[1], allowedIPs[2]},
 		},
 	} {

@@ -3,7 +3,7 @@ package accesslist
 import (
 	"errors"
 	"fmt"
-	"sort"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -40,7 +40,7 @@ var CommandMetaDelete = cli.CommandMeta{
 	Display:     "accesslist delete",
 	Description: "Delete an IP address or CIDR block from the Access List of your Realm app",
 	HelpText: `Removes an existing entry from the Access List of your Realm app. You will be
-prompted to select an IP address or CIDR block if none is provided in the
+prompted to select an IP address or CIDR block if none are provided in the
 initial command.`,
 }
 
@@ -60,7 +60,7 @@ func (cmd *CommandDelete) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: "ip",
 				Usage: flags.Usage{
-					Description: "Specify the IP address or CIDR block that you would like to delete",
+					Description: "Specify the IP address(es) or CIDR block(s) to delete",
 				},
 			},
 		},
@@ -84,25 +84,20 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	selected, err := cmd.inputs.resolveAllowedIP(ui, allowedIPs)
+	selectedAllowedIPs, err := cmd.inputs.resolveAllowedIP(ui, allowedIPs)
 	if err != nil {
 		return err
 	}
 
-	if len(selected) == 0 {
-		ui.Print(terminal.NewTextLog("No IP addresses or CIDR blocks to delete"))
-		return nil
+	if len(selectedAllowedIPs) == 0 {
+		return errors.New("No IP addresses or CIDR blocks to delete")
 	}
 
-	outputs := make(deleteAllowedIPOutputs, len(selected))
-	for i, allowedIP := range selected {
+	outputs := make(deleteAllowedIPOutputs, len(selectedAllowedIPs))
+	for i, allowedIP := range selectedAllowedIPs {
 		err := clients.Realm.AllowedIPDelete(app.GroupID, app.ID, allowedIP.ID)
 		outputs[i] = deleteAllowedIPOutput{allowedIP, err}
 	}
-
-	sort.SliceStable(outputs, func(i, j int) bool {
-		return outputs[i].err != nil && outputs[j].err == nil
-	})
 
 	tableRows := make([]map[string]interface{}, 0, len(outputs))
 	for _, output := range outputs {
@@ -110,12 +105,18 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 			headerAddress: output.allowedIP.Address,
 			headerComment: output.allowedIP.Comment,
 		}
+		deleted := false
+		if output.err != nil {
+			row[headerDetails] = output.err
+		} else {
+			deleted = true
+		}
+		row[headerDeleted] = deleted
 		tableRows = append(tableRows, row)
-		tableRowDelete(output, row)
 	}
 
 	ui.Print(terminal.NewTableLog(
-		fmt.Sprintf("Deleted %d IP address(es) and CIDR block(s)", len(outputs)),
+		fmt.Sprintf("Deleted %d IP address(es) and/or CIDR block(s)", len(outputs)),
 		deleteTableHeaders,
 		tableRows...,
 	))
@@ -142,14 +143,20 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 		}
 
 		allowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
+		notFound := false
+		var notFoundList []string
 		for _, identifier := range i.Addresses {
 			if allowedIP, ok := allowedIPsByAddress[identifier]; ok {
 				allowedIPs = append(allowedIPs, allowedIP)
+			} else {
+				notFound = true
+				notFoundList = append(notFoundList, identifier)
 			}
 		}
 
-		if len(allowedIPs) == 0 {
-			return nil, errors.New("unable to find allowed IPs")
+		if notFound {
+			err := "unable to find IP address(es) and/or CIDR block(s): " + strings.Join(notFoundList, ", ")
+			return nil, errors.New(err)
 		}
 
 		return allowedIPs, nil
@@ -180,16 +187,4 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 		allowedIPs = append(allowedIPs, allowedIPsByOption[selection])
 	}
 	return allowedIPs, nil
-}
-
-func tableRowDelete(output deleteAllowedIPOutput, row map[string]interface{}) {
-	deleted := false
-	if output.err != nil {
-		row[headerDetails] = output.err.Error()
-	} else {
-		deleted = true
-	}
-	row[headerAddress] = output.allowedIP.Address
-	row[headerComment] = output.allowedIP.Comment
-	row[headerDeleted] = deleted
 }

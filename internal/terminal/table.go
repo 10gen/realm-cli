@@ -134,6 +134,8 @@ func parseValue(value interface{}) string {
 		parsed = v
 	case fmt.Stringer:
 		parsed = v.String()
+	case error:
+		parsed = v.Error()
 	default:
 		parsed = fmt.Sprintf("%+v", v)
 	}
