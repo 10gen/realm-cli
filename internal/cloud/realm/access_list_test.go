@@ -1,6 +1,7 @@
 package realm_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -64,6 +65,21 @@ func TestRealmIPAccess(t *testing.T) {
 				t.Run("and return an error if we can't find the allowed ip", func(t *testing.T) {
 					err := client.AllowedIPUpdate(groupID, testApp.ID, "notFound", "notUsed", "notUsed")
 					assert.Equal(t, realm.ServerError{Message: "allowed IP not found: 'notFound'"}, err)
+				})
+			})
+
+			t.Run("and should delete the allowed ip", func(t *testing.T) {
+				assert.Nil(t, client.AllowedIPDelete(groupID, testApp.ID, allowedIP.Address))
+
+				t.Run("and list no more allowed ips", func(t *testing.T) {
+					allowedIPs, err := client.AllowedIPs(groupID, testApp.ID)
+					assert.Nil(t, err)
+					assert.Equal(t, []realm.AllowedIP{}, allowedIPs)
+				})
+
+				t.Run("and return an error if we can't find the allowed ip", func(t *testing.T) {
+					err := client.AllowedIPDelete(groupID, testApp.ID, allowedIP.Address)
+					assert.Equal(t, realm.ServerError{Message: fmt.Sprintf("allowed ip not found: '%s'", allowedIP.Address)}, err)
 				})
 			})
 		})
