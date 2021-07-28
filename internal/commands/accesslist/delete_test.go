@@ -45,7 +45,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			},
 		}}
 
-		assert.Equal(t, errors.New("No IP addresses or CIDR blocks to delete"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		assert.Equal(t, errors.New("no IP addresses or CIDR blocks to delete"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 
 	for _, tc := range []struct {
@@ -112,6 +112,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, out.String())
 			assert.Equal(t, "projectID", deleteArgs.groupID)
 			assert.Equal(t, "appID", deleteArgs.appID)
+			assert.Equal(t, "hi", deleteArgs.allowedIPID)
 		})
 	}
 

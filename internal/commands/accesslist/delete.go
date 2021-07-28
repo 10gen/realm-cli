@@ -23,8 +23,6 @@ var (
 	deleteTableHeaders = []string{headerAddress, headerComment, headerDeleted, headerDetails}
 )
 
-type deleteAllowedIPOutputs []deleteAllowedIPOutput
-
 type deleteAllowedIPOutput struct {
 	allowedIP realm.AllowedIP
 	err       error
@@ -52,7 +50,7 @@ type CommandDelete struct {
 // Flags is the command flags
 func (cmd *CommandDelete) Flags() []flags.Flag {
 	return []flags.Flag{
-		cli.AppFlagWithContext(&cmd.inputs.App, "to remove an entry in its Access List"),
+		cli.AppFlagWithContext(&cmd.inputs.App, "to remove entries from its Access List"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
 		flags.StringSliceFlag{
@@ -90,10 +88,10 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	if len(selectedAllowedIPs) == 0 {
-		return errors.New("No IP addresses or CIDR blocks to delete")
+		return errors.New("no IP addresses or CIDR blocks to delete")
 	}
 
-	outputs := make(deleteAllowedIPOutputs, len(selectedAllowedIPs))
+	outputs := make([]deleteAllowedIPOutput, len(selectedAllowedIPs))
 	for i, allowedIP := range selectedAllowedIPs {
 		err := clients.Realm.AllowedIPDelete(app.GroupID, app.ID, allowedIP.ID)
 		outputs[i] = deleteAllowedIPOutput{allowedIP, err}
@@ -105,13 +103,16 @@ func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients
 			headerAddress: output.allowedIP.Address,
 			headerComment: output.allowedIP.Comment,
 		}
-		deleted := false
+		var deleted bool
+		var err error
 		if output.err != nil {
-			row[headerDetails] = output.err
+			err = output.err
 		} else {
 			deleted = true
 		}
+
 		row[headerDeleted] = deleted
+		row[headerDetails] = err
 		tableRows = append(tableRows, row)
 	}
 
@@ -143,20 +144,20 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 		}
 
 		allowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
-		notFound := false
-		var notFoundList []string
-		for _, identifier := range i.Addresses {
-			if allowedIP, ok := allowedIPsByAddress[identifier]; ok {
+		var notFoundAddresses []string
+		for _, address := range i.Addresses {
+			if allowedIP, ok := allowedIPsByAddress[address]; ok {
 				allowedIPs = append(allowedIPs, allowedIP)
 			} else {
-				notFound = true
-				notFoundList = append(notFoundList, identifier)
+				notFoundAddresses = append(notFoundAddresses, address)
 			}
 		}
 
-		if notFound {
-			err := "unable to find IP address(es) and/or CIDR block(s): " + strings.Join(notFoundList, ", ")
-			return nil, errors.New(err)
+		if len(notFoundAddresses) > 0 {
+			return nil, errors.New(
+				"unable to find IP address(es) and/or CIDR block(s): " +
+					strings.Join(notFoundAddresses, ", "),
+			)
 		}
 
 		return allowedIPs, nil
