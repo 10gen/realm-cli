@@ -795,6 +795,27 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		assert.Equal(t, 1, len(clusters))
 		assert.Equal(t, "mongodb-atlas", clusters[0].Name)
 	})
+
+	t.Run("should error when provided cluster name does not exist", func(t *testing.T) {
+		_, ui := mock.NewUI()
+		clusterNames := []string{"nonExistentCluster"}
+
+		ac := mock.AtlasClient{}
+		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
+			return []atlas.Cluster{
+				{ID: "456", Name: "Cluster0"},
+			}, nil
+		}
+		inputs := createInputs{
+			newAppInputs: newAppInputs{
+				Template: "ios.template.todo",
+			},
+			Clusters: clusterNames,
+		}
+
+		_, _, err := inputs.resolveClusters(ui, ac, "123")
+		assert.Equal(t, errors.New("could not find atlas cluster 'nonExistentCluster'"), err)
+	})
 }
 
 func TestAppCreateInputsResolveDatalake(t *testing.T) {
