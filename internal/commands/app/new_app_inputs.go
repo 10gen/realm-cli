@@ -38,8 +38,17 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 	return ra, nil
 }
 
+// resolveTemplateID is responsible for resolving a template id from a user cli request.
+// a user can use the --template flag in 1 of the following ways:
+// 1. --template: This will populate the current value of i.Template to be `noArgsDefaultValueTemplate`. This tells us
+//    that the user wants to create a template but wants to be prompted for the template id
+// 2. --template=<template-id>: This populates the value of i.Template to be <template-id>. This skips the template id
+//    prompt and checks whether the supplied template id exists.
+// 3. no flag defined: This populates the value of i.Template to be "". This tells us to skip the template-app-related
+//    parts of app creation
 func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	if i.Template == "" && ui.AutoConfirm() {
+	ui.Print(terminal.NewTextLog("Current Template: %s", i.Template))
+	if i.Template == "" {
 		return nil
 	}
 
@@ -47,18 +56,11 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 	if err != nil {
 		return err
 	}
-
-	// do not disrupt application creation flow if templates are not
-	// available and user is not specifying a template
-	if i.Template == "" && len(templates) == 0 {
-		return nil
-	}
-
 	if len(templates) == 0 {
 		return fmt.Errorf("unable to find template '%s'", i.Template)
 	}
 
-	if i.Template != "" {
+	if i.Template != noArgsDefaultValueTemplate {
 		for _, template := range templates {
 			if template.ID == i.Template {
 				i.Template = template.ID
@@ -71,8 +73,6 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 
 	options := make([]string, 0, len(templates)+1)
 	templateIDs := make([]string, 0, len(templates)+1)
-	options = append(options, "[No Template]: Do Not Use A Template")
-	templateIDs = append(templateIDs, "")
 	for _, template := range templates {
 		options = append(options, fmt.Sprintf("[%s]: %s", template.ID, template.Name))
 		templateIDs = append(templateIDs, template.ID)

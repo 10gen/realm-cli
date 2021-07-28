@@ -20,6 +20,10 @@ import (
 	"github.com/briandowns/spinner"
 )
 
+var (
+	noArgsDefaultValueTemplate = "<prompt-templates>"
+)
+
 // CommandMetaCreate is the command meta for the `app create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
@@ -97,7 +101,8 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringFlag{
-			Value: &cmd.inputs.Template,
+			Value:              &cmd.inputs.Template,
+			NoArgsDefaultValue: &noArgsDefaultValueTemplate,
 			Meta: flags.Meta{
 				Name: flagTemplate,
 				Usage: flags.Usage{
@@ -201,10 +206,10 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	if cmd.inputs.Template != "" {
-		return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
+	if cmd.inputs.Template == "" {
+		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
 	}
-	return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
+	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 }
 
 func (cmd CommandCreate) handleCreateApp(
