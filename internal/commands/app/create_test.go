@@ -228,9 +228,6 @@ Check out your app: cd ./test-app && realm-cli app describe
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.AllTemplatesFn = func() ([]realm.Template, error) {
-			return []realm.Template{}, nil
-		}
 		ac := mock.AtlasClient{}
 		ac.GroupsFn = func() ([]atlas.Group, error) {
 			return []atlas.Group{{ID: "123"}}, nil
@@ -311,7 +308,84 @@ Check out your app: cd ./test-app && realm-cli app describe
 		}, createdApp)
 	})
 
-	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
+	t.Run("should not prompt for a template if template flag is not declared", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
+		defer teardown()
+		profile.SetRealmBaseURL("http://localhost:8080")
+
+		procedure := func(c *expect.Console) {
+			c.ExpectString("Enter a Service Name for Cluster 'test-cluster")
+			c.SendLine("test-cluster")
+			c.ExpectEOF()
+		}
+
+		// TODO(REALMC-8264): Mock console in tests does not behave as initially expected
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			procedure(console)
+		}()
+
+		testApp := realm.App{
+			ID:          "456",
+			GroupID:     "123",
+			ClientAppID: "bitcoin-miner-abcde",
+			Name:        "bitcoin-miner",
+		}
+
+		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
+		assert.Nil(t, err)
+
+		client := mock.RealmClient{
+			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+				return []realm.App{}, nil
+			},
+			ExportFn: func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+				return "", &backendZipPkg.Reader, nil
+			},
+			CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+				return realm.App{
+					GroupID:     groupID,
+					ID:          "456",
+					ClientAppID: name + "-abcde",
+					Name:        name,
+					AppMeta:     meta,
+				}, nil
+			},
+			ImportFn: func(groupID, appID string, appData interface{}) error {
+				return nil
+			},
+		}
+
+		cmd := &CommandCreate{createInputs{
+			newAppInputs: newAppInputs{
+				Name:            "bitcoin-miner",
+				Project:         testApp.GroupID,
+				Location:        realm.LocationIreland,
+				DeploymentModel: realm.DeploymentModelGlobal,
+			},
+			Clusters: []string{"test-cluster"},
+		}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client, Atlas: mock.AtlasClient{
+			ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+				return []atlas.Cluster{{Name: "test-cluster"}}, nil
+			},
+		}}))
+
+		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		assert.Nil(t, err)
+
+		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
+		assert.Nil(t, err)
+		assert.Equal(t, len(backendFileInfo), 10)
+	})
+
+	t.Run("should prompt for template selection if templates flag is declared but has no argument", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
@@ -390,6 +464,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 				Location:        realm.LocationVirginia,
 				DeploymentModel: realm.DeploymentModelGlobal,
 				ConfigVersion:   realm.DefaultAppConfigVersion,
+				Template:        noArgsDefaultValueTemplate, // when flag is declared but no args are supplied, this is the value
 			},
 			Clusters: []string{"test-cluster"},
 		}}
@@ -1030,6 +1105,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 					},
 				},
 			},
+			template:    "ios.template.todo",
 			expectedErr: errors.New("unable to find available templates"),
 		},
 		{

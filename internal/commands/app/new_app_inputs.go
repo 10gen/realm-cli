@@ -47,7 +47,6 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 // 3. no flag defined: This populates the value of i.Template to be "". This tells us to skip the template-app-related
 //    parts of app creation
 func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	ui.Print(terminal.NewTextLog("Current Template: %s", i.Template))
 	if i.Template == "" {
 		return nil
 	}
