@@ -331,6 +331,11 @@ func TestParseValue(t *testing.T) {
 			expectedString: "42.12",
 		},
 		{
+			description:    "the error new error as 'new error'",
+			value:          errors.New("new error"),
+			expectedString: "new error",
+		},
+		{
 			description: "a struct with all fields and values shown'",
 			value: struct {
 				foo           int
