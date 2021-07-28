@@ -107,7 +107,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagTemplate,
 				Usage: flags.Usage{
 					Description: "Create your Realm app from an available template",
-					Note:        "A cluster must be supplied in order to create a template app",
+					Note:        "Manually specifying a template id must be done with a '='. ie: --template=web.graphql.todo",
 				},
 			},
 		},
