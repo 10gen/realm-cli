@@ -1325,6 +1325,22 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 		)
 	})
 
+	t.Run("should create a command with --template flag that has no args", func(t *testing.T) {
+		cmd := &CommandCreate{
+			inputs: createInputs{
+				newAppInputs: newAppInputs{
+					Template:        noArgsDefaultValueTemplate,
+					Location:        realm.LocationIreland,
+					DeploymentModel: realm.DeploymentModelLocal,
+				},
+			},
+		}
+		assert.Equal(t,
+			cli.Name+" app create --template --location IE --deployment-model LOCAL",
+			cmd.display(false),
+		)
+	})
+
 	t.Run("should create a command with multiple input clusters and data lakes", func(t *testing.T) {
 		cmd := &CommandCreate{
 			inputs: createInputs{

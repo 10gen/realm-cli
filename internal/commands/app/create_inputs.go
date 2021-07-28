@@ -329,7 +329,11 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
 	}
 	if i.Template != "" {
-		args = append(args, flags.Arg{flagTemplate, i.Template})
+		if i.Template == noArgsDefaultValueTemplate {
+			args = append(args, flags.Arg{Name: flagTemplate})
+		} else {
+			args = append(args, flags.Arg{flagTemplate, i.Template})
+		}
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})
