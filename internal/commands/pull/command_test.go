@@ -442,14 +442,21 @@ Successfully pulled app down: app
 			profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
 			defer teardown()
 
-			_, ui := mock.NewUI()
+			_, console, _, ui, err := mock.NewVT10XConsole()
+			assert.Nil(t, err)
+			defer console.Close()
+			go func() {
+				console.ExpectString("Would you like to export with a client template?")
+				console.SendLine("y")
+				console.ExpectEOF()
+			}()
 
 			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: templateID}}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
 
-			_, err := os.Stat(destination)
+			_, err = os.Stat(destination)
 			assert.Nil(t, err)
 
 			testData, readErr := ioutil.ReadFile(filepath.Join(destination, fmt.Sprintf("%s.json", templateID)))
