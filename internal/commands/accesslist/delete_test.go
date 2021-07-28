@@ -112,7 +112,6 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, out.String())
 			assert.Equal(t, "projectID", deleteArgs.groupID)
 			assert.Equal(t, "appID", deleteArgs.appID)
-			assert.Equal(t, "hi", deleteArgs.allowedIPID)
 		})
 	}
 
