@@ -49,10 +49,11 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		description    string
-		testInput      []string
-		expectedOutput string
-		deleteErr      error
+		description          string
+		testInput            []string
+		expectedOutput       string
+		deleteErr            error
+		expectedAllowedIPIDs []string
 	}{
 		{
 			description: "should return successful outputs for proper inputs",
@@ -65,6 +66,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 				"  192.1.1.1            true            ",
 				"",
 			}, "\n"),
+			expectedAllowedIPIDs: []string{"address1", "address2"},
 		},
 		{
 			description: "should output the errors for deletes on individual allowed ips",
@@ -77,7 +79,8 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 				"  192.158.1.38  cool comment  false    something happened",
 				"",
 			}, "\n"),
-			deleteErr: errors.New("something happened"),
+			deleteErr:            errors.New("something happened"),
+			expectedAllowedIPIDs: []string{"address1", "address3"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -86,6 +89,8 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			var deleteArgs struct {
 				groupID, appID, allowedIPID string
 			}
+
+			var allowedIPIDs []string
 
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{app}, nil
@@ -97,7 +102,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 				deleteArgs = struct {
 					groupID, appID, allowedIPID string
 				}{groupID, appID, allowedIPID}
-
+				allowedIPIDs = append(allowedIPIDs, allowedIPID)
 				return tc.deleteErr
 			}
 
@@ -112,6 +117,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedOutput, out.String())
 			assert.Equal(t, "projectID", deleteArgs.groupID)
 			assert.Equal(t, "appID", deleteArgs.appID)
+			assert.Equal(t, tc.expectedAllowedIPIDs, allowedIPIDs)
 		})
 	}
 
