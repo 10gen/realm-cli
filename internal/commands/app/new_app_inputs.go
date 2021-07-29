@@ -41,7 +41,7 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 // resolveTemplateID is responsible for resolving a template id from a user cli request.
 // a user can use the --template flag in 1 of the following ways:
 // 1. --template: This will populate the current value of i.Template to be `noArgsDefaultValueTemplate`. This tells us
-//    that the user wants to create a template but wants to be prompted for the template id
+//    that the user wants to create a template and wants to be prompted for the template id
 // 2. --template=<template-id>: This populates the value of i.Template to be <template-id>. This skips the template id
 //    prompt and checks whether the supplied template id exists.
 // 3. no flag defined: This populates the value of i.Template to be "". This tells us to skip the template-app-related

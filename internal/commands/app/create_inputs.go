@@ -154,7 +154,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 }
 
 func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
-	if i.Template != "" {
+	if i.Template != "" && i.Template != noArgsDefaultValueTemplate {
 		clusters, err := client.Clusters(groupID)
 		if err != nil {
 			return nil, nil, err
@@ -182,6 +182,8 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			if clusterName == "" {
 				return nil, nil, fmt.Errorf("could not find atlas cluster '%s'", i.Clusters[0])
 			}
+		} else if len(clusters) == 1 {
+			clusterName = clusters[0].Name
 		} else {
 			clusterOptions := make([]string, 0, len(clusters))
 			for _, c := range clusters {
