@@ -143,11 +143,11 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 			allowedIPsByAddress[allowedIP.Address] = allowedIP
 		}
 
-		allowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
+		selectedAllowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
 		var notFoundAddresses []string
 		for _, address := range i.Addresses {
 			if allowedIP, ok := allowedIPsByAddress[address]; ok {
-				allowedIPs = append(allowedIPs, allowedIP)
+				selectedAllowedIPs = append(selectedAllowedIPs, allowedIP)
 			} else {
 				notFoundAddresses = append(notFoundAddresses, address)
 			}
@@ -160,9 +160,10 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 			)
 		}
 
-		return allowedIPs, nil
+		return selectedAllowedIPs, nil
 	}
 
+	// user did not provide any IP addresses and/or CIDR blocks to delete
 	addressOptions := make([]string, 0, len(allowedIPs))
 	allowedIPsByOption := map[string]realm.AllowedIP{}
 	for _, allowedIP := range allowedIPs {
@@ -183,9 +184,9 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 		return nil, err
 	}
 
-	allowedIPs = make([]realm.AllowedIP, 0, len(selections))
+	selectedAllowedIPs := make([]realm.AllowedIP, 0, len(selections))
 	for _, selection := range selections {
-		allowedIPs = append(allowedIPs, allowedIPsByOption[selection])
+		selectedAllowedIPs = append(selectedAllowedIPs, allowedIPsByOption[selection])
 	}
-	return allowedIPs, nil
+	return selectedAllowedIPs, nil
 }
