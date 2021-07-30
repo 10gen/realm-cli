@@ -154,7 +154,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 }
 
 func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
-	if i.Template != "" {
+	if i.Template.String() != "" {
 		clusters, err := client.Clusters(groupID)
 		if err != nil {
 			return nil, nil, err
@@ -259,7 +259,7 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 }
 
 func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, []string, error) {
-	if i.Template != "" && len(i.Datalakes) > 0 {
+	if i.Template.String() != "" && len(i.Datalakes) > 0 {
 		return nil, nil, errors.New("cannot create a template app with data lakes")
 	}
 
@@ -321,8 +321,8 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.LocalPath != "" {
 		args = append(args, flags.Arg{flagLocalPathCreate, i.LocalPath})
 	}
-	if i.Template != "" {
-		args = append(args, flags.Arg{flagTemplate, i.Template})
+	if i.Template.String() != "" {
+		args = append(args, flags.Arg{flagTemplate, i.Template.String()})
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})

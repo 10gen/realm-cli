@@ -6,6 +6,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
+	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
 )
@@ -22,7 +23,7 @@ type newAppInputs struct {
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
 	Environment     realm.Environment
-	Template        string
+	Template        flags.OptionalString
 	ConfigVersion   realm.AppConfigVersion
 }
 
@@ -39,7 +40,7 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 }
 
 func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	if i.Template == "" && ui.AutoConfirm() {
+	if i.Template.String() == "" && ui.AutoConfirm() {
 		return nil
 	}
 
@@ -50,7 +51,7 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 
 	// do not disrupt application creation flow if templates are not
 	// available and user is not specifying a template
-	if i.Template == "" && len(templates) == 0 {
+	if i.Template.String() == "" && len(templates) == 0 {
 		return nil
 	}
 
@@ -58,10 +59,10 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 		return fmt.Errorf("unable to find template '%s'", i.Template)
 	}
 
-	if i.Template != "" {
+	if i.Template.String() != "" {
 		for _, template := range templates {
-			if template.ID == i.Template {
-				i.Template = template.ID
+			if template.ID == i.Template.String() {
+				i.Template = flags.NewSetOptionalString(template.ID)
 				return nil
 			}
 		}
@@ -89,7 +90,7 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 		return err
 	}
 
-	i.Template = templateIDs[selectedIndex]
+	i.Template = flags.NewSetOptionalString(templateIDs[selectedIndex])
 
 	return nil
 }

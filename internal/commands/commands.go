@@ -55,7 +55,7 @@ var (
 				CommandMeta: app.CommandMetaInit,
 			},
 			{
-				Command:     &app.CommandCreate{},
+				Command:     app.NewCommandCreate(),
 				CommandMeta: app.CommandMetaCreate,
 			},
 			{

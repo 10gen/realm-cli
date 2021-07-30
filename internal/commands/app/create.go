@@ -40,6 +40,17 @@ type CommandCreate struct {
 	inputs createInputs
 }
 
+// NewCommandCreate returns a default uninitialized CommandCreate
+func NewCommandCreate() *CommandCreate {
+	return &CommandCreate{
+		inputs: createInputs{
+			newAppInputs: newAppInputs{
+				Template: flags.OptionalString{DefaultValue: "<prompt-templates>"},
+			},
+		},
+	}
+}
+
 // Flags is the command flags
 func (cmd *CommandCreate) Flags() []flags.Flag {
 	return []flags.Flag{
@@ -93,8 +104,8 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				},
 			},
 		},
-		flags.StringFlag{
-			Value: &cmd.inputs.Template,
+		flags.OptionalStringFlag{
+			Value: cmd.inputs.Template,
 			Meta: flags.Meta{
 				Name: flagTemplate,
 				Usage: flags.Usage{
@@ -124,7 +135,7 @@ func (cmd *CommandCreate) Inputs() cli.InputResolver {
 
 // AdditionalTrackedFields adds any additional fields to our tracking service. In this case, we will apply the template id if in use
 func (cmd *CommandCreate) AdditionalTrackedFields() []telemetry.EventData {
-	if cmd.inputs.Template == "" {
+	if cmd.inputs.Template.String() == "" {
 		return nil
 	}
 	return []telemetry.EventData{
@@ -164,6 +175,8 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
+	ui.Print(terminal.NewTextLog("current template id: %s", cmd.inputs.Template.String()))
+
 	dsClusters, dsClustersMissing, err := cmd.inputs.resolveClusters(ui, clients.Atlas, groupID)
 	if err != nil {
 		return err
@@ -197,7 +210,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	if cmd.inputs.Template != "" {
+	if cmd.inputs.Template.String() != "" {
 		return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 	}
 	return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
@@ -378,7 +391,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		Location:        cmd.inputs.Location,
 		DeploymentModel: cmd.inputs.DeploymentModel,
 		Environment:     cmd.inputs.Environment,
-		Template:        cmd.inputs.Template,
+		Template:        cmd.inputs.Template.String(),
 		DataSource:      dsClusters[0],
 	}
 
@@ -404,7 +417,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		return err
 	}
 
-	_, err = writeTemplateAppToLocal(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, rootDir)
+	_, err = writeTemplateAppToLocal(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template.String(), rootDir)
 	if err != nil {
 		return err
 	}

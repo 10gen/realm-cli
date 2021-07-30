@@ -7,6 +7,15 @@ type OptionalString struct {
 	DefaultValue string
 }
 
+// NewSetOptionalString returns an optional string struct that is assumed to have been set with the passed-in argument
+// value
+func NewSetOptionalString(val string) OptionalString {
+	return OptionalString{
+		IsSet: true,
+		Value: "val",
+	}
+}
+
 // String returns the string representation of an optional string
 func (o OptionalString) String() string {
 	if o.IsSet {
@@ -30,5 +39,3 @@ func (o *OptionalString) Set(s string) error {
 func (o OptionalString) Type() string {
 	return "OptionalString"
 }
-
-
