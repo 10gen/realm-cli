@@ -125,6 +125,25 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 	}
 }
 
+// OptionalStringFlag is a flag that has a default value when no args are supplied but
+type OptionalStringFlag struct {
+	Meta
+	Value OptionalString
+}
+
+// Register registers the optional string flag with the provided flag set
+func (f OptionalStringFlag) Register(fs *pflag.FlagSet) {
+	if f.Shorthand == "" {
+		fs.Var(&f.Value, f.Name, f.Usage.String())
+	} else {
+		fs.VarP(&f.Value, f.Name, f.Shorthand, f.Usage.String())
+	}
+
+	if f.Hidden {
+		MarkHidden(fs, f.Name)
+	}
+}
+
 // StringSetOptions are the options available when creating a new string set flag.
 // The DefaultValue and AllowedValues fields of these options (found in Meta.Usage)
 // are ignored and instead are derived from the initially provided values and
