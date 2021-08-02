@@ -99,9 +99,7 @@ Contents would have been written to: app
 		t.Run("should not write any contents to the destination in a dry run with a template id passed in", func(t *testing.T) {
 			profile := mock.NewProfile(t)
 
-			out := new(bytes.Buffer)
-			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-
+			out, ui := mock.NewUI()
 			var realmClient mock.RealmClient
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{{ID: "appID", Name: "appName"}}, nil

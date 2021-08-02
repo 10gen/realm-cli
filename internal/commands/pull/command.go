@@ -111,9 +111,9 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	var clientZipPkgs []clientTemplate
+	var clientTemplates []pkg
 	if app.TemplateID != "" {
-		clientZipPkgs, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
+		clientTemplates, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var pathFrontend string
 	pathBackend := pathProject
-	if len(clientZipPkgs) != 0 {
+	if len(clientTemplates) != 0 {
 		pathFrontend = filepath.Join(pathProject, local.FrontendPath)
 		pathBackend = filepath.Join(pathProject, local.BackendPath)
 	}
@@ -148,7 +148,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		logs := make([]terminal.Log, 0, 3)
 		logs = append(logs, terminal.NewTextLog("No changes were written to your file system"))
 
-		if len(clientZipPkgs) != 0 {
+		if len(clientTemplates) != 0 {
 			logs = append(logs,
 				terminal.NewDebugLog("App contents would have been written to: %s", filepath.Join(pathRelative, local.BackendPath)),
 				terminal.NewDebugLog("Template contents would have been written to: %s", filepath.Join(pathRelative, local.FrontendPath)),
@@ -214,12 +214,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
 	}
 
-	successfulTemplateWrites := make([]string, 0, len(clientZipPkgs))
-	for _, namedClient := range clientZipPkgs {
-		if err := local.WriteZip(filepath.Join(pathFrontend, namedClient.id), namedClient.client); err != nil {
-			return fmt.Errorf("unable to save template '%s' to disk: %s", namedClient.id, err)
+	successfulTemplateWrites := make([]string, 0, len(clientTemplates))
+	for _, ct := range clientTemplates {
+		if err := local.WriteZip(filepath.Join(pathFrontend, ct.id), ct.client); err != nil {
+			return fmt.Errorf("unable to save template '%s' to disk: %s", ct.id, err)
 		}
-		successfulTemplateWrites = append(successfulTemplateWrites, namedClient.id)
+		successfulTemplateWrites = append(successfulTemplateWrites, ct.id)
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
