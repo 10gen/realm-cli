@@ -228,7 +228,7 @@ func TestAllowedIPDeleteInputs(t *testing.T) {
 			doneCh := make(chan struct{})
 			go func() {
 				defer close(doneCh)
-				console.ExpectString("Which IP Address(es) or CIDR block(s) would you like to delete?")
+				console.ExpectString("Which IP Address(es) and/or CIDR block(s) would you like to delete?")
 				for _, selected := range tc.selectedAllowedIPs {
 					console.Send(selected)
 					console.Send(" ")
