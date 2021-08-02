@@ -146,11 +146,12 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 		selectedAllowedIPs := make([]realm.AllowedIP, 0, len(i.Addresses))
 		var notFoundAddresses []string
 		for _, address := range i.Addresses {
-			if allowedIP, ok := allowedIPsByAddress[address]; ok {
-				selectedAllowedIPs = append(selectedAllowedIPs, allowedIP)
-			} else {
+			allowedIP, ok := allowedIPsByAddress[address]
+			if !ok {
 				notFoundAddresses = append(notFoundAddresses, address)
+				continue
 			}
+			selectedAllowedIPs = append(selectedAllowedIPs, allowedIP)
 		}
 
 		if len(notFoundAddresses) > 0 {
@@ -177,7 +178,7 @@ func (i *deleteInputs) resolveAllowedIP(ui terminal.UI, allowedIPs []realm.Allow
 	if err := ui.AskOne(
 		&selections,
 		&survey.MultiSelect{
-			Message: "Which IP Address(es) or CIDR block(s) would you like to delete?",
+			Message: "Which IP Address(es) and/or CIDR block(s) would you like to delete?",
 			Options: addressOptions,
 		},
 	); err != nil {
