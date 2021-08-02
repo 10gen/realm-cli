@@ -1,6 +1,7 @@
 package terminal
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -114,7 +115,7 @@ func TestTableMessage(t *testing.T) {
 		{
 			description: "Should return correctly formatted values in the table, not create new columns, and not print empty rows",
 			message:     "a table message",
-			header:      []string{"arrays", "floats", "ints", "maps/objects", "strings", "sparse"},
+			header:      []string{"arrays", "floats", "ints", "maps/objects", "strings", "sparse", "errors"},
 			data: []map[string]interface{}{
 				{
 					"ints":    1,
@@ -137,6 +138,7 @@ func TestTableMessage(t *testing.T) {
 						"this": 2,
 					},
 					"sparse": "hello",
+					"errors": errors.New("new error"),
 				},
 				{
 					"ints":    -0002,
@@ -153,11 +155,11 @@ func TestTableMessage(t *testing.T) {
 			expectedMessage: fmt.Sprintf(
 				strings.Join([]string{
 					"a table message",
-					"  %s                  %s  %s  %s               %s        %s",
-					"  ----------------------  ------  ----  -------------------------  -------------  ------",
-					"  [1 test this]           12.34   1     {test:1234 this:12.345}    tester string        ",
-					"  [1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello ",
-					"  [1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                ",
+					"  %s                  %s  %s  %s               %s        %s  %s   ",
+					"  ----------------------  ------  ----  -------------------------  -------------  ------  ---------",
+					"  [1 test this]           12.34   1     {test:1234 this:12.345}    tester string                   ",
+					"  [1 2 3 4]               12.34   1     map[test:1 this:2]         test           hello   new error",
+					"  [1 2.3 4.5555555555 6]  123.34  -2    map[what happens:[1 2 3]]  hello                           ",
 				}, "\n"),
 				[]interface{}{
 					color.New(color.Bold).SprintFunc()("arrays"),
@@ -166,6 +168,7 @@ func TestTableMessage(t *testing.T) {
 					color.New(color.Bold).SprintFunc()("maps/objects"),
 					color.New(color.Bold).SprintFunc()("strings"),
 					color.New(color.Bold).SprintFunc()("sparse"),
+					color.New(color.Bold).SprintFunc()("errors"),
 				}...,
 			),
 		},
@@ -174,7 +177,7 @@ func TestTableMessage(t *testing.T) {
 			table := newTable(tc.message, tc.header, tc.data)
 			message, err := table.Message()
 			assert.Nil(t, err)
-			assert.Equal(t, message, tc.expectedMessage)
+			assert.Equal(t, tc.expectedMessage, message)
 		})
 	}
 }
@@ -219,7 +222,7 @@ func TestTableMessageNoBold(t *testing.T) {
 			table := newTable(tc.message, tc.header, tc.data)
 			message, err := table.Message()
 			assert.Nil(t, err)
-			assert.Equal(t, message, tc.expectedMessage)
+			assert.Equal(t, tc.expectedMessage, message)
 		})
 	}
 }
@@ -230,7 +233,7 @@ func TestTablePayload(t *testing.T) {
 		payloadKeys, payloadData, err := table.Payload()
 		assert.Nil(t, payloadKeys)
 		assert.Nil(t, payloadData)
-		assert.Equal(t, err.Error(), "cannot create a table without headers")
+		assert.Equal(t, "cannot create a table without headers", err.Error())
 	})
 
 	t.Run("Payload should work with a valid table", func(t *testing.T) {
@@ -328,6 +331,11 @@ func TestParseValue(t *testing.T) {
 			expectedString: "42.12",
 		},
 		{
+			description:    "the error new error as 'new error'",
+			value:          errors.New("new error"),
+			expectedString: "new error",
+		},
+		{
 			description: "a struct with all fields and values shown'",
 			value: struct {
 				foo           int
@@ -344,6 +352,6 @@ func TestParseValue(t *testing.T) {
 	t.Run("parseValue should correctly parse pointers", func(t *testing.T) {
 		var foo int = 42
 		pointerRepresentation := parseValue(&foo)
-		assert.Equal(t, pointerRepresentation[:2], "0x")
+		assert.Equal(t, "0x", pointerRepresentation[:2])
 	})
 }

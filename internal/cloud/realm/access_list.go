@@ -104,3 +104,20 @@ func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newCom
 
 	return nil
 }
+
+func (c *client) AllowedIPDelete(groupID, appID, allowedIPID string) error {
+	res, err := c.do(
+		http.MethodDelete,
+		fmt.Sprintf(allowedIPPathPattern, groupID, appID, allowedIPID),
+		api.RequestOptions{},
+	)
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode != http.StatusNoContent {
+		return api.ErrUnexpectedStatusCode{"delete allowed ip", res.StatusCode}
+	}
+
+	return nil
+}
