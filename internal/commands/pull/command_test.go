@@ -100,7 +100,6 @@ Contents would have been written to: app
 			profile := mock.NewProfile(t)
 
 			out, ui := mock.NewUI()
-		
 			var realmClient mock.RealmClient
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{{ID: "appID", Name: "appName"}}, nil
