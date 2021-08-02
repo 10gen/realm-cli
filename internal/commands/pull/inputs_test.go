@@ -187,7 +187,6 @@ func TestPullTemplatesResolve(t *testing.T) {
 		}
 
 		_, ui := mock.NewUI()
-
 		input := inputs{}
 		_, err = input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 		assert.Equal(t, errors.New("something went wrong"), err)
@@ -247,7 +246,18 @@ func TestPullTemplatesResolve(t *testing.T) {
 				return []realm.Template{{ID: "some-template-id", Name: "some name"}}, nil
 			}
 
-			_, ui := mock.NewUI()
+			_, console, _, ui, err := mock.NewVT10XConsole()
+			assert.Nil(t, err)
+			defer console.Close()
+
+			doneCh := make(chan struct{})
+			go func() {
+				defer close(doneCh)
+				console.ExpectString("Would you like to export with a client template?")
+				console.SendLine("n")
+				console.ExpectEOF()
+			}()
+
 			result, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-group-app")
 			assert.Nil(t, err)
 			assert.Equal(t, 0, len(result))
