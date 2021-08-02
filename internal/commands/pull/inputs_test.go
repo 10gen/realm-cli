@@ -250,7 +250,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 			doneCh := make(chan struct{})
 			go func() {
 				defer close(doneCh)
-				console.ExpectString("Would you like to export with a template?")
+				console.ExpectString("Would you like to export with a client template?")
 				console.SendLine("n")
 				console.ExpectEOF()
 			}()
