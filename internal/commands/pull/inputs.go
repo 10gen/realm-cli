@@ -94,12 +94,12 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	return app, nil
 }
 
-type pkg struct {
+type clientTemplate struct {
 	id     string
-	client *zip.Reader
+	zipPkg *zip.Reader
 }
 
-func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) ([]pkg, error) {
+func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client, groupID, appID string) ([]clientTemplate, error) {
 	compatibleTemplates, err := realmClient.CompatibleTemplates(groupID, appID)
 	if err != nil {
 		return nil, err
@@ -114,9 +114,9 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 				} else if !ok {
 					return nil, fmt.Errorf("template '%s' does not have a frontend to pull", template.ID)
 				}
-				return []pkg{{
+				return []clientTemplate{{
 					id:     template.ID,
-					client: templateZip,
+					zipPkg: templateZip,
 				}}, nil
 			}
 		}
@@ -145,7 +145,7 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		return nil, err
 	}
 
-	result := make([]pkg, 0, len(selectedTemplateIdxs))
+	result := make([]clientTemplate, 0, len(selectedTemplateIdxs))
 	for _, selectedTemplateIdx := range selectedTemplateIdxs {
 		templateID := compatibleTemplates[selectedTemplateIdx].ID
 		templateZip, ok, err := realmClient.ClientTemplate(groupID, appID, templateID)
@@ -154,9 +154,9 @@ func (i *inputs) resolveClientTemplates(ui terminal.UI, realmClient realm.Client
 		} else if !ok {
 			return nil, fmt.Errorf("template '%s' does not have a frontend to pull", templateID)
 		}
-		result = append(result, pkg{
+		result = append(result, clientTemplate{
 			id:     templateID,
-			client: templateZip,
+			zipPkg: templateZip,
 		})
 	}
 

@@ -188,7 +188,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 		_, ui := mock.NewUI()
 		input := inputs{}
-		_, err = input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+		_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 		assert.Equal(t, errors.New("something went wrong"), err)
 	})
 
@@ -205,7 +205,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 			_, ui := mock.NewUI()
 			input := inputs{TemplateID: "some-template-id"}
-			_, err = input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 			assert.Equal(t, errors.New("something went wrong with client"), err)
 		})
 
@@ -219,7 +219,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 			_, ui := mock.NewUI()
 
 			input := inputs{TemplateID: "wrong-template-id"}
-			_, err = input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
+			_, err := input.resolveClientTemplates(ui, realmClient, "some-group-id", "some-app-id")
 			assert.Equal(t, errors.New("template 'wrong-template-id' is not compatible with this app"), err)
 		})
 	})

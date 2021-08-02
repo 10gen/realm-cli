@@ -111,7 +111,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	var clientTemplates []pkg
+	var clientTemplates []clientTemplate
 	if app.TemplateID != "" {
 		clientTemplates, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
 		if err != nil {
@@ -216,7 +216,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	successfulTemplateWrites := make([]string, 0, len(clientTemplates))
 	for _, ct := range clientTemplates {
-		if err := local.WriteZip(filepath.Join(pathFrontend, ct.id), ct.client); err != nil {
+		if err := local.WriteZip(filepath.Join(pathFrontend, ct.id), ct.zipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", ct.id, err)
 		}
 		successfulTemplateWrites = append(successfulTemplateWrites, ct.id)
