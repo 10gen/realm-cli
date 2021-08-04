@@ -84,13 +84,13 @@ func (cmd *Command) Flags() []flags.Flag {
 				},
 			},
 		},
-		flags.StringFlag{
-			Value: &cmd.inputs.TemplateID,
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.TemplateIDs,
 			Meta: flags.Meta{
 				Name:      "template",
 				Shorthand: "t",
 				Usage: flags.Usage{
-					Description: "Specify the Template ID that is used for this Realm app",
+					Description: "Specify the IDs of the template frontend to export",
 				},
 			},
 		},
@@ -113,7 +113,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var clientTemplates []clientTemplate
 	if app.TemplateID != "" {
-		clientTemplates, err = cmd.inputs.resolveClientTemplates(ui, clients.Realm, app.GroupID, app.ID)
+		clientTemplates, err = cmd.inputs.resolveClientTemplates(clients.Realm, app.GroupID, app.ID)
 		if err != nil {
 			return err
 		}

@@ -117,7 +117,7 @@ Contents would have been written to: app
 				return nil, true, nil
 			}
 
-			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			backendDestination := filepath.Join(profile.WorkingDirectory, "app", local.BackendPath)
@@ -442,7 +442,7 @@ Successfully pulled app down: app
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: templateID}}
+			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateIDs: []string{templateID}}}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
@@ -527,7 +527,7 @@ Successfully pulled app down: app
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("some kind of error"), err)
@@ -544,7 +544,7 @@ Successfully pulled app down: app
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("template 'some-template-id' is not compatible with this app"), err)
