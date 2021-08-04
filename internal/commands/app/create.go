@@ -20,10 +20,6 @@ import (
 	"github.com/briandowns/spinner"
 )
 
-var (
-	noArgsDefaultValueTemplate = "<prompt-templates>"
-)
-
 // CommandMetaCreate is the command meta for the `app create` command
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
@@ -101,13 +97,12 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringFlag{
-			Value:              &cmd.inputs.Template,
-			NoArgsDefaultValue: &noArgsDefaultValueTemplate,
+			Value: &cmd.inputs.Template,
 			Meta: flags.Meta{
 				Name: flagTemplate,
 				Usage: flags.Usage{
 					Description: "Create your Realm app from an available template",
-					Note:        "Manually specifying a template id must be done with a '='. ie: --template=web.graphql.todo",
+					Note:        "Valid templates: web.graphql.todo, web.mql.todo, triggers, ios.swift.todo, android.kotlin.todo, react-native.todo, xamarin.todo",
 				},
 			},
 		},
@@ -169,7 +164,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	if err := cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
+	if err := cmd.inputs.resolveTemplateID(clients.Realm); err != nil {
 		return err
 	}
 

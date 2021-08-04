@@ -181,7 +181,6 @@ type StringFlag struct {
 	Meta
 	Value              *string
 	DefaultValue       string
-	NoArgsDefaultValue *string
 }
 
 // Register registers the string flag with the provided flag set
@@ -190,13 +189,6 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 		fs.StringVar(f.Value, f.Name, f.DefaultValue, f.Usage.String())
 	} else {
 		fs.StringVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
-	}
-
-	// If NoArgsDefaultValue is defined, set a default value when flag is defined with no args
-	if f.NoArgsDefaultValue != nil {
-		if flag := fs.Lookup(f.Name); flag != nil {
-			flag.NoOptDefVal = *f.NoArgsDefaultValue
-		}
 	}
 
 	if f.Hidden {
