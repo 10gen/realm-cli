@@ -73,9 +73,9 @@ type Client interface {
 
 	SchemaModels(groupID, appID, language string) ([]SchemaModel, error)
 
-	AllTemplates() ([]Template, error)
+	AllTemplates() (Templates, error)
 	ClientTemplate(groupID, appID, templateID string) (*zip.Reader, bool, error)
-	CompatibleTemplates(groupID, appID string) ([]Template, error)
+	CompatibleTemplates(groupID, appID string) (Templates, error)
 
 	AllowedIPs(groupID, appID string) ([]AllowedIP, error)
 	AllowedIPCreate(groupID, appID, address, comment string, useCurrent bool) (AllowedIP, error)

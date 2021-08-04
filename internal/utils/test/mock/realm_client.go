@@ -478,7 +478,7 @@ func (rc RealmClient) SchemaModels(groupID, appID, language string) ([]realm.Sch
 // AllTemplates calls the mocked AllTemplates implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) AllTemplates() ([]realm.Template, error) {
+func (rc RealmClient) AllTemplates() (realm.Templates, error) {
 	if rc.AllTemplatesFn != nil {
 		return rc.AllTemplatesFn()
 	}
@@ -498,7 +498,7 @@ func (rc RealmClient) ClientTemplate(groupID, appID, templateID string) (*zip.Re
 // CompatibleTemplates calls the mocked CompatibleTemplates implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) CompatibleTemplates(groupID, appID string) ([]realm.Template, error) {
+func (rc RealmClient) CompatibleTemplates(groupID, appID string) (realm.Templates, error) {
 	if rc.CompatibleTemplatesFn != nil {
 		return rc.CompatibleTemplatesFn(groupID, appID)
 	}
