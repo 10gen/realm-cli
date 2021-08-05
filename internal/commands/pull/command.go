@@ -90,7 +90,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      "template",
 				Shorthand: "t",
 				Usage: flags.Usage{
-					Description: "Specify the IDs of the template frontend to export",
+					Description: "Specify the IDs of the template frontend to export. Specified templates must be compatible with the remote app",
+					Note:        "Options include: web.graphql.todo, web.mql.todo, triggers, ios.swift.todo, android.kotlin.todo, react-native.todo, xamarin.todo",
 				},
 			},
 		},
