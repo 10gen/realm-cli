@@ -47,7 +47,7 @@ func TestCommandFactoryVersionCheck(t *testing.T) {
 		assert.Equal(t,
 			capturedEvent{
 				telemetry.EventTypeCommandError,
-				[]telemetry.EventData{{telemetry.EventDataKeyError, api.ErrUnexpectedStatusCode{"get cli version manifest", 404}}},
+				telemetry.EventDataError(api.ErrUnexpectedStatusCode{"get cli version manifest", 404}),
 			},
 			events[0],
 		)
