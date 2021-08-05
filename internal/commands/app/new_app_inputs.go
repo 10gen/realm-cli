@@ -55,15 +55,11 @@ func (i *newAppInputs) resolveTemplateID(client realm.Client) error {
 		return fmt.Errorf("unable to find template '%s'", i.Template)
 	}
 
-	if i.Template != "" {
-		for _, template := range templates {
-			if template.ID == i.Template {
-				i.Template = template.ID
-				return nil
-			}
+	// Check if supplied template id is a valid template
+	for _, template := range templates {
+		if template.ID == i.Template {
+			return nil
 		}
-
-		return fmt.Errorf("template '%s' not found", i.Template)
 	}
-	return nil
+	return fmt.Errorf("template '%s' not found", i.Template)
 }
