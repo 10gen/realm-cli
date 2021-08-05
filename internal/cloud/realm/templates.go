@@ -17,6 +17,7 @@ type Template struct {
 	Name string `json:"name"`
 }
 
+// Templates is a slice of Template structs
 type Templates []Template
 
 // MapByID converts an array of templates into a map whose keys are the template ids and values are the template

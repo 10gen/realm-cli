@@ -179,8 +179,8 @@ func NewStringSetFlag(values *[]string, opts StringSetOptions) CustomFlag {
 // StringFlag is a string flag
 type StringFlag struct {
 	Meta
-	Value              *string
-	DefaultValue       string
+	Value        *string
+	DefaultValue string
 }
 
 // Register registers the string flag with the provided flag set
