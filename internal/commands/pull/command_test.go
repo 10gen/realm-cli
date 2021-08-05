@@ -456,7 +456,7 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should export all selected compatible templates if no template id is passed in and the app is made with a template and auto confirm is not set", func(t *testing.T) {
-			input := inputs{Project: "some_project", LocalPath: "app"}
+			input := inputs{Project: "some_project", LocalPath: "app", TemplateIDs: []string{"template_1", "template_2"}}
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 				return []realm.Template{{ID: "template_1", Name: "Template 1"}, {ID: "template_2", Name: "Template 2"}}, nil
@@ -477,18 +477,6 @@ Successfully pulled app down: app
 			console, _, ui, err := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true})
 			assert.Nil(t, err)
 			defer console.Close()
-
-			doneCh := make(chan struct{})
-			go func() {
-				defer close(doneCh)
-				console.ExpectString("Which template(s) would you like to export this app with")
-				console.Send("Template 1")
-				console.Send(" ")
-				console.Send("Template 2")
-				console.Send(" ")
-				console.SendLine("")
-				console.ExpectEOF()
-			}()
 
 			cmd := &Command{input}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
@@ -547,7 +535,7 @@ Successfully pulled app down: app
 			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, errors.New("template 'some-template-id' is not compatible with this app"), err)
+			assert.Equal(t, errors.New("frontend template 'some-template-id' is not compatible with this app"), err)
 		})
 
 		t.Run("should return nothing and continue exporting the app if the app is not made with a template", func(t *testing.T) {
