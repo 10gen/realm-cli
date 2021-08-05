@@ -31,7 +31,7 @@ The above will build an executable named `realm-cli` that can be run with callin
 You may wish to set other configuration details while creating a local build of the CLI.  To do so, you'll need to leverage the `-ldflags` option of `go build`.  Here is an example usage of that with some CLI configuration details set:
 
 ```cmd
-go build -ldflags "-X github.com/10gen/realm-cli/internal/cli.Version=0.0.0-local -o realm-cli main.go
+go build -ldflags "-X github.com/10gen/realm-cli/internal/cli.Version=0.0.0-local" -o realm-cli main.go
 ```
 
 This will create a CLI build that will print `0.0.0-local` when `--version` is invoked.  Other configurable build options include:

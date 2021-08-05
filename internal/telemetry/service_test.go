@@ -51,16 +51,18 @@ func TestServiceTrackEvent(t *testing.T) {
 			tracker:     tracker,
 		}
 
-		service.TrackEvent(EventTypeCommandError, EventData{Key: EventDataKeyError, Value: errors.New("error")})
+		service.TrackEvent(EventTypeCommandError, EventDataError(errors.New("error"))...)
 
 		assert.Equal(t, EventTypeCommandError, tracker.lastTrackedEvent.eventType)
 		assert.Equal(t, testCommand, tracker.lastTrackedEvent.command)
 		assert.Equal(t, testXID, tracker.lastTrackedEvent.executionID)
 		assert.Equal(t, testUser, tracker.lastTrackedEvent.userID)
 		assert.Equal(t, testVersion, tracker.lastTrackedEvent.version)
-		assert.Equal(t, 1, len(tracker.lastTrackedEvent.data))
-		assert.Equal(t, EventDataKeyError, tracker.lastTrackedEvent.data[0].Key)
+		assert.Equal(t, 2, len(tracker.lastTrackedEvent.data))
+		assert.Equal(t, eventDataKeyError, tracker.lastTrackedEvent.data[0].Key)
 		assert.Equal(t, errors.New("error"), tracker.lastTrackedEvent.data[0].Value)
+		assert.Equal(t, eventDataKeyErrorMessage, tracker.lastTrackedEvent.data[1].Key)
+		assert.Equal(t, "error", tracker.lastTrackedEvent.data[1].Value)
 	})
 }
 

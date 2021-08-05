@@ -129,7 +129,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			if err != nil {
 				factory.telemetryService.TrackEvent(
 					telemetry.EventTypeCommandError,
-					append(additionalFields, telemetry.EventData{Key: telemetry.EventDataKeyError, Value: err})...,
+					append(additionalFields, telemetry.EventDataError(err)...)...,
 				)
 				return fmt.Errorf("%s failed: %w", display, errDisableUsage{err})
 			}
@@ -233,7 +233,7 @@ func (factory *CommandFactory) checkForNewVersion(client VersionManifestClient) 
 	if err != nil {
 		factory.telemetryService.TrackEvent(
 			telemetry.EventTypeCommandError,
-			telemetry.EventData{telemetry.EventDataKeyError, err},
+			telemetry.EventDataError(err)...,
 		)
 		return
 	}

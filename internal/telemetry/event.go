@@ -34,15 +34,27 @@ const (
 
 // set of event data keys
 const (
-	eventDataKeyCommand     = "cmd"
-	eventDataKeyExecutionID = "xid"
-	eventDataKeyVersion     = "v"
-
-	EventDataKeyError = "err"
+	eventDataKeyCommand      = "cmd"
+	eventDataKeyExecutionID  = "xid"
+	eventDataKeyVersion      = "v"
+	eventDataKeyError        = "err"
+	eventDataKeyErrorMessage = "err_msg"
 
 	// EventDataKeyTemplate used to tracked if templates were used to create an app
 	EventDataKeyTemplate = "templateId"
 )
+
+// EventDataError returns telemetry event data for an error
+func EventDataError(err error) []EventData {
+	if err == nil {
+		return nil
+	}
+
+	return []EventData{
+		{eventDataKeyError, err},
+		{eventDataKeyErrorMessage, err.Error()},
+	}
+}
 
 // AdditionalTracker is used to propagate any additional fields to be tracked using our tracking srivce
 // this is called AFTER inputs are resolved so it is safe to use any inputs into the commands

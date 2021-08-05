@@ -66,20 +66,22 @@ func TestSegmentTracker(t *testing.T) {
 		tracker := segmentTracker{}
 		tracker.client = client
 
-		tracker.Track(createEvent(EventTypeCommandError, []EventData{{Key: EventDataKeyError, Value: "Something"}}, testCommand))
+		tracker.Track(createEvent(EventTypeCommandError, EventDataError(errors.New("error")), testCommand))
 
-		assert.Equal(t, []interface{}{analytics.Track{
-			MessageId: testID,
-			UserId:    testUserID,
-			Timestamp: testTime,
-			Event:     string(EventTypeCommandError),
-			Properties: map[string]interface{}{
-				EventDataKeyError:       "Something",
-				eventDataKeyCommand:     testCommand,
-				eventDataKeyExecutionID: testExecutionID,
-				eventDataKeyVersion:     testVersion,
-			},
-		}}, client.calls)
+		assert.Equal(t, 1, len(client.calls))
+
+		track, ok := client.calls[0].(analytics.Track)
+		assert.True(t, ok, "expected client call to be a track")
+
+		assert.Equal(t, testID, track.MessageId)
+		assert.Equal(t, testUserID, track.UserId)
+		assert.Equal(t, testTime, track.Timestamp)
+		assert.Equal(t, string(EventTypeCommandError), track.Event)
+		assert.Equal(t, errors.New("error"), track.Properties[eventDataKeyError])
+		assert.Equal(t, "error", track.Properties[eventDataKeyErrorMessage])
+		assert.Equal(t, testCommand, track.Properties[eventDataKeyCommand])
+		assert.Equal(t, testExecutionID, track.Properties[eventDataKeyExecutionID])
+		assert.Equal(t, testVersion, track.Properties[eventDataKeyVersion])
 	})
 
 	t.Run("should capture the error in the logger passed in", func(t *testing.T) {
@@ -90,10 +92,7 @@ func TestSegmentTracker(t *testing.T) {
 		r, w, resetStdout := mockStdoutSetup(t)
 		defer resetStdout()
 
-		tracker.Track(createEvent(
-			EventTypeCommandError,
-			[]EventData{{Key: EventDataKeyError, Value: "Something"}}, testCommand,
-		))
+		tracker.Track(createEvent(EventTypeCommandError, EventDataError(errors.New("error")), testCommand))
 
 		assert.Nil(t, w.Close())
 
