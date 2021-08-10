@@ -11,6 +11,19 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
+// AllowedTemplates is an array of templates that we know to work. We need to update this in the event we add more
+// templates in the future.
+// This array is used to display the allowed values in the --help menu of the templates flag
+var AllowedTemplates = []string{
+	"web.graphql.todo",
+	"web.mql.todo",
+	"triggers",
+	"ios.swift.todo",
+	"android.kotlin.todo",
+	"react-native.todo",
+	"xamarin.todo",
+}
+
 // Template represents an available Realm app template
 type Template struct {
 	ID   string `json:"id"`

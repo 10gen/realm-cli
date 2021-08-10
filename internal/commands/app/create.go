@@ -101,8 +101,8 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: flagTemplate,
 				Usage: flags.Usage{
-					Description: "Create your Realm app from an available template",
-					Note:        "Valid templates: web.graphql.todo, web.mql.todo, triggers, ios.swift.todo, android.kotlin.todo, react-native.todo, xamarin.todo",
+					Description:   "Create your Realm app from an available template",
+					AllowedValues: realm.AllowedTemplates,
 				},
 			},
 		},
