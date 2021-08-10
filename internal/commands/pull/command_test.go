@@ -474,9 +474,7 @@ Successfully pulled app down: app
 			profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
 			defer teardown()
 
-			console, _, ui, err := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true})
-			assert.Nil(t, err)
-			defer console.Close()
+			_, ui := mock.NewUI()
 
 			cmd := &Command{input}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))

@@ -184,7 +184,7 @@ func TestPullTemplatesResolve(t *testing.T) {
 
 		input := inputs{}
 		out, err := input.resolveClientTemplates(realmClient, "some-group-id", "some-app-id")
-		assert.Equal(t, nil, err)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(out))
 	})
 

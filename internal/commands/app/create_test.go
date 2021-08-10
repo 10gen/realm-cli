@@ -337,15 +337,15 @@ Check out your app: cd ./test-app && realm-cli app describe
 			Name:        "bitcoin-miner",
 		}
 
-		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
+		defaultBackendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
 
-		client := mock.RealmClient{
+		realmClient := mock.RealmClient{
 			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
 				return []realm.App{}, nil
 			},
 			ExportFn: func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
-				return "", &backendZipPkg.Reader, nil
+				return "", &defaultBackendZipPkg.Reader, nil
 			},
 			CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 				return realm.App{
@@ -360,6 +360,11 @@ Check out your app: cd ./test-app && realm-cli app describe
 				return nil
 			},
 		}
+		atlasClient := mock.AtlasClient{
+			ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+				return []atlas.Cluster{{Name: "test-cluster"}}, nil
+			},
+		}
 
 		cmd := &CommandCreate{createInputs{
 			newAppInputs: newAppInputs{
@@ -371,18 +376,32 @@ Check out your app: cd ./test-app && realm-cli app describe
 			Clusters: []string{"test-cluster"},
 		}}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: client, Atlas: mock.AtlasClient{
-			ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
-				return []atlas.Cluster{{Name: "test-cluster"}}, nil
-			},
-		}}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient}))
 
 		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
 		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
-		assert.Equal(t, len(backendFileInfo), 10)
+
+		// we expect for the command to have created a default app. we will assert that realm_config.json exists and that
+		// backend/ and frontend/ do not exist in the directory.
+		var containsRealmConfig bool
+		var containsTemplateDirChild bool
+		for _, fi := range backendFileInfo {
+			if strings.Contains(fi.Name(), local.NameRealmConfig) {
+				containsRealmConfig = true
+			}
+			if fi.Name() == local.BackendPath || fi.Name() == local.FrontendPath {
+				containsTemplateDirChild = true
+			}
+		}
+
+		assert.True(t, containsRealmConfig, "expected resulting directory to contain realm_config.json")
+		assert.False(t, containsTemplateDirChild, "expected resulting directory not to contain %s/ or %s/",
+			local.BackendPath,
+			local.FrontendPath,
+		)
 	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
