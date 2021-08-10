@@ -767,7 +767,7 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 			}
 
 			_, _, err := inputs.resolveClusters(ui, ac, "123")
-			assert.Equal(t, errors.New("could not find atlas cluster 'nonExistentCluster'"), err)
+			assert.Equal(t, errors.New("could not find Atlas cluster 'nonExistentCluster'"), err)
 		})
 
 		t.Run("should resolve a single data source when cluster name is passed in", func(t *testing.T) {
