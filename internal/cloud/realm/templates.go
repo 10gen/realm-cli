@@ -12,7 +12,6 @@ import (
 )
 
 // AllowedTemplates is an array of supported templates.
-// This array is used to display the allowed values in the --help menu of the templates flag
 var AllowedTemplates = []string{
 	"web.graphql.todo",
 	"web.mql.todo",
