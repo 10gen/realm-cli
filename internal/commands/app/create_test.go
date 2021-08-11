@@ -382,27 +382,16 @@ Check out your app: cd ./test-app && realm-cli app describe
 		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
-		backendFileInfo, err := ioutil.ReadDir(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
-		assert.Nil(t, err)
-
 		// we expect for the command to have created a default app. we will assert that realm_config.json exists and that
 		// backend/ and frontend/ do not exist in the directory.
-		var containsRealmConfig bool
-		var containsTemplateDirChild bool
-		for _, fi := range backendFileInfo {
-			if fi.Name() == fmt.Sprintf("%s.json", local.NameRealmConfig) {
-				containsRealmConfig = true
-			}
-			if fi.Name() == local.BackendPath || fi.Name() == local.FrontendPath {
-				containsTemplateDirChild = true
-			}
-		}
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, "realm_config.json"))
+		assert.False(t, os.IsNotExist(err), "expected realm_config.json to exist")
 
-		assert.True(t, containsRealmConfig, "expected resulting directory to contain realm_config.json")
-		assert.False(t, containsTemplateDirChild, "expected resulting directory not to contain %s/ or %s/",
-			local.BackendPath,
-			local.FrontendPath,
-		)
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
+		assert.True(t, os.IsNotExist(err), "expected for backend path to not exist")
+
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath))
+		assert.True(t, os.IsNotExist(err), "expected for frontend path to not exist")
 	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
