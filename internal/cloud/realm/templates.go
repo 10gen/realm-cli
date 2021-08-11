@@ -11,7 +11,7 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
-// AllowedTemplates is an array of templates that we support. We should update this slice whenever we add new templates.
+// AllowedTemplates is an array of supported templates.
 // This array is used to display the allowed values in the --help menu of the templates flag
 var AllowedTemplates = []string{
 	"web.graphql.todo",

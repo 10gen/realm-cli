@@ -339,6 +339,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 
 		defaultBackendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer defaultBackendZipPkg.Close()
 
 		realmClient := mock.RealmClient{
 			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
@@ -389,7 +390,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 		var containsRealmConfig bool
 		var containsTemplateDirChild bool
 		for _, fi := range backendFileInfo {
-			if strings.Contains(fi.Name(), local.NameRealmConfig) {
+			if fi.Name() == fmt.Sprintf("%s.json", local.NameRealmConfig) {
 				containsRealmConfig = true
 			}
 			if fi.Name() == local.BackendPath || fi.Name() == local.FrontendPath {
@@ -545,6 +546,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer backendZipPkg.Close()
 
 		templateID := "palm-pilot.bitcoin-miner"
 		client := mock.RealmClient{
@@ -578,6 +580,8 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		frontendZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
+		defer frontendZipPkg.Close()
+
 		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 			return &frontendZipPkg.Reader, true, err
 		}

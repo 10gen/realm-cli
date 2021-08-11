@@ -90,7 +90,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      "template",
 				Shorthand: "t",
 				Usage: flags.Usage{
-					Description:   "Specify the frontend Template ID(s) to export. Specified templates must be compatible with the remote app",
+					Description:   "Specify the frontend Template ID(s) to export.",
+					Note:          "Specified templates must be compatible with the remote app",
 					AllowedValues: realm.AllowedTemplates,
 				},
 			},

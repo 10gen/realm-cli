@@ -177,6 +177,7 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 			for _, c := range clusters {
 				if c.Name == i.Clusters[0] {
 					clusterName = i.Clusters[0]
+					break
 				}
 			}
 			if clusterName == "" {
