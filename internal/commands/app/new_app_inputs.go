@@ -6,8 +6,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
-
-	"github.com/AlecAivazis/survey/v2"
 )
 
 const (
@@ -38,8 +36,11 @@ func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.
 	return ra, nil
 }
 
-func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) error {
-	if i.Template == "" && ui.AutoConfirm() {
+// resolveTemplateID is responsible for resolving a template id from a user cli request.
+// If the --template flag is not set, the CLI will create a default app without any template,
+// otherwise the CLI will attempt to create an app based on the specified template
+func (i *newAppInputs) resolveTemplateID(client realm.Client) error {
+	if i.Template == "" {
 		return nil
 	}
 
@@ -47,49 +48,15 @@ func (i *newAppInputs) resolveTemplateID(ui terminal.UI, client realm.Client) er
 	if err != nil {
 		return err
 	}
-
-	// do not disrupt application creation flow if templates are not
-	// available and user is not specifying a template
-	if i.Template == "" && len(templates) == 0 {
-		return nil
-	}
-
 	if len(templates) == 0 {
 		return fmt.Errorf("unable to find template '%s'", i.Template)
 	}
 
-	if i.Template != "" {
-		for _, template := range templates {
-			if template.ID == i.Template {
-				i.Template = template.ID
-				return nil
-			}
-		}
-
-		return fmt.Errorf("template '%s' not found", i.Template)
-	}
-
-	options := make([]string, 0, len(templates)+1)
-	templateIDs := make([]string, 0, len(templates)+1)
-	options = append(options, "[No Template]: Do Not Use A Template")
-	templateIDs = append(templateIDs, "")
+	// Check if supplied template id is a valid template
 	for _, template := range templates {
-		options = append(options, fmt.Sprintf("[%s]: %s", template.ID, template.Name))
-		templateIDs = append(templateIDs, template.ID)
+		if template.ID == i.Template {
+			return nil
+		}
 	}
-
-	var selectedIndex int
-	if err := ui.AskOne(
-		&selectedIndex,
-		&survey.Select{
-			Message: "Please select a template from the available options",
-			Options: options,
-		},
-	); err != nil {
-		return err
-	}
-
-	i.Template = templateIDs[selectedIndex]
-
-	return nil
+	return fmt.Errorf("template '%s' not found", i.Template)
 }

@@ -57,6 +57,10 @@ func (u Usage) String() string {
 
 	parts = append(parts, u.Description)
 
+	if u.Note != "" {
+		parts = append(parts, fmt.Sprintf("(Note: %s)", u.Note))
+	}
+
 	if u.DefaultValue != "" || len(u.AllowedValues) > 0 {
 		valueParts := make([]string, 0, 3)
 
@@ -73,10 +77,6 @@ func (u Usage) String() string {
 		}
 
 		parts = append(parts, fmt.Sprintf("(%s)", strings.Join(valueParts, "; ")))
-	}
-
-	if u.Note != "" {
-		parts = append(parts, fmt.Sprintf("(Note: %s)", u.Note))
 	}
 
 	if u.DocsLink != "" {

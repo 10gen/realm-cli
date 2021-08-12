@@ -117,7 +117,7 @@ Contents would have been written to: app
 				return nil, true, nil
 			}
 
-			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", DryRun: true, LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 			backendDestination := filepath.Join(profile.WorkingDirectory, "app", local.BackendPath)
@@ -442,7 +442,7 @@ Successfully pulled app down: app
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateID: templateID}}
+			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateIDs: []string{templateID}}}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
 			destination := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID)
@@ -456,7 +456,7 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should export all selected compatible templates if no template id is passed in and the app is made with a template and auto confirm is not set", func(t *testing.T) {
-			input := inputs{Project: "some_project", LocalPath: "app"}
+			input := inputs{Project: "some_project", LocalPath: "app", TemplateIDs: []string{"template_1", "template_2"}}
 
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 				return []realm.Template{{ID: "template_1", Name: "Template 1"}, {ID: "template_2", Name: "Template 2"}}, nil
@@ -474,21 +474,7 @@ Successfully pulled app down: app
 			profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
 			defer teardown()
 
-			console, _, ui, err := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true})
-			assert.Nil(t, err)
-			defer console.Close()
-
-			doneCh := make(chan struct{})
-			go func() {
-				defer close(doneCh)
-				console.ExpectString("Which template(s) would you like to export this app with")
-				console.Send("Template 1")
-				console.Send(" ")
-				console.Send("Template 2")
-				console.Send(" ")
-				console.SendLine("")
-				console.ExpectEOF()
-			}()
+			_, ui := mock.NewUI()
 
 			cmd := &Command{input}
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
@@ -527,7 +513,7 @@ Successfully pulled app down: app
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("some kind of error"), err)
@@ -544,10 +530,10 @@ Successfully pulled app down: app
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateID: "some-template-id"}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", TemplateIDs: []string{"some-template-id"}}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, errors.New("template 'some-template-id' is not compatible with this app"), err)
+			assert.Equal(t, errors.New("frontend template 'some-template-id' is not compatible with this app"), err)
 		})
 
 		t.Run("should return nothing and continue exporting the app if the app is not made with a template", func(t *testing.T) {

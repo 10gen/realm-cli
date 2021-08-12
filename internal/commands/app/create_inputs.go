@@ -99,7 +99,7 @@ func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID,
 }
 
 func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, error) {
-	//check if we are in an app directory already
+	// Check if current working directory is an app directory
 	_, appOK, err := local.FindApp(wd)
 	if err != nil {
 		return "", err
@@ -174,7 +174,17 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 
 		var clusterName string
 		if len(i.Clusters) == 1 {
-			clusterName = i.Clusters[0]
+			for _, c := range clusters {
+				if c.Name == i.Clusters[0] {
+					clusterName = i.Clusters[0]
+					break
+				}
+			}
+			if clusterName == "" {
+				return nil, nil, fmt.Errorf("could not find Atlas cluster '%s'", i.Clusters[0])
+			}
+		} else if len(clusters) == 1 {
+			clusterName = clusters[0].Name
 		} else {
 			clusterOptions := make([]string, 0, len(clusters))
 			for _, c := range clusters {

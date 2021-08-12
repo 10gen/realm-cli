@@ -63,6 +63,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagCluster,
 				Usage: flags.Usage{
 					Description: "Link Atlas cluster(s) to your Realm app",
+					Note:        "Only one cluster can be linked during app creation if creating a template app",
 				},
 			},
 		},
@@ -72,6 +73,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagClusterServiceName,
 				Usage: flags.Usage{
 					Description: "Specify the Realm app Service name to reference your Atlas cluster",
+					Note:        "Service names will be overwritten when creating a template app",
 				},
 			},
 		},
@@ -81,6 +83,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 				Name: flagDatalake,
 				Usage: flags.Usage{
 					Description: "Link Atlas data lake(s) to your Realm app",
+					Note:        "Data lakes cannot be used to create template apps",
 				},
 			},
 		},
@@ -98,7 +101,8 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: flagTemplate,
 				Usage: flags.Usage{
-					Description: "Create your Realm app from an available template",
+					Description:   "Create your Realm app from an available template",
+					AllowedValues: realm.AllowedTemplates,
 				},
 			},
 		},
@@ -160,7 +164,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
-	if err = cmd.inputs.resolveTemplateID(ui, clients.Realm); err != nil {
+	if err := cmd.inputs.resolveTemplateID(clients.Realm); err != nil {
 		return err
 	}
 
@@ -197,10 +201,10 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	if cmd.inputs.Template != "" {
-		return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
+	if cmd.inputs.Template == "" {
+		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
 	}
-	return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
+	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 }
 
 func (cmd CommandCreate) handleCreateApp(

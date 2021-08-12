@@ -228,9 +228,6 @@ Check out your app: cd ./test-app && realm-cli app describe
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.AllTemplatesFn = func() ([]realm.Template, error) {
-			return []realm.Template{}, nil
-		}
 		ac := mock.AtlasClient{}
 		ac.GroupsFn = func() ([]atlas.Group, error) {
 			return []atlas.Group{{ID: "123"}}, nil
@@ -311,14 +308,12 @@ Check out your app: cd ./test-app && realm-cli app describe
 		}, createdApp)
 	})
 
-	t.Run("when a template is not provided should prompt for template selection", func(t *testing.T) {
+	t.Run("should not prompt for a template if template flag is not declared", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 		profile.SetRealmBaseURL("http://localhost:8080")
 
 		procedure := func(c *expect.Console) {
-			c.ExpectString("Please select a template from the available options")
-			c.SendLine("palm-pilot.bitcoin-miner")
 			c.ExpectString("Enter a Service Name for Cluster 'test-cluster")
 			c.SendLine("test-cluster")
 			c.ExpectEOF()
@@ -335,75 +330,68 @@ Check out your app: cd ./test-app && realm-cli app describe
 			procedure(console)
 		}()
 
-		var createdApp realm.App
-		rc := mock.RealmClient{}
+		testApp := realm.App{
+			ID:          "456",
+			GroupID:     "123",
+			ClientAppID: "bitcoin-miner-abcde",
+			Name:        "bitcoin-miner",
+		}
 
-		zipPkg, err := zip.OpenReader("testdata/project.zip")
+		defaultBackendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
-		defer zipPkg.Close()
+		defer defaultBackendZipPkg.Close()
 
-		rc.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
-			return "", &zipPkg.Reader, err
+		realmClient := mock.RealmClient{
+			FindAppsFn: func(filter realm.AppFilter) ([]realm.App, error) {
+				return []realm.App{}, nil
+			},
+			ExportFn: func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+				return "", &defaultBackendZipPkg.Reader, nil
+			},
+			CreateAppFn: func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+				return realm.App{
+					GroupID:     groupID,
+					ID:          "456",
+					ClientAppID: name + "-abcde",
+					Name:        name,
+					AppMeta:     meta,
+				}, nil
+			},
+			ImportFn: func(groupID, appID string, appData interface{}) error {
+				return nil
+			},
 		}
-		rc.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			createdApp = realm.App{
-				GroupID:     groupID,
-				ID:          "456",
-				ClientAppID: name + "-abcde",
-				Name:        name,
-				AppMeta:     meta,
-			}
-			return createdApp, nil
-		}
-		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
-			return nil
-		}
-		rc.AllTemplatesFn = func() ([]realm.Template, error) {
-			return []realm.Template{
-				{
-					ID:   "palm-pilot.bitcoin-miner",
-					Name: "Mine bitcoin on your Palm Pilot from the comfort of your home, electricity not included",
-				},
-				{
-					ID:   "blackberry.important-business-app",
-					Name: "Oh wow, a Blackberry... you must a very powerful, extravagant man.",
-				},
-			}, nil
-		}
-
-		clientZipPkg, err := zip.OpenReader("testdata/react-native.zip")
-		assert.Nil(t, err)
-		rc.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
-			return &clientZipPkg.Reader, true, nil
-		}
-		ac := mock.AtlasClient{}
-		ac.GroupsFn = func() ([]atlas.Group, error) {
-			return []atlas.Group{{ID: "123"}}, nil
-		}
-		ac.ClustersFn = func(groupID string) ([]atlas.Cluster, error) {
-			return []atlas.Cluster{{Name: "test-cluster"}}, nil
+		atlasClient := mock.AtlasClient{
+			ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+				return []atlas.Cluster{{Name: "test-cluster"}}, nil
+			},
 		}
 
 		cmd := &CommandCreate{createInputs{
 			newAppInputs: newAppInputs{
-				Name:            "template-app",
-				Location:        realm.LocationVirginia,
+				Name:            "bitcoin-miner",
+				Project:         testApp.GroupID,
+				Location:        realm.LocationIreland,
 				DeploymentModel: realm.DeploymentModelGlobal,
-				ConfigVersion:   realm.DefaultAppConfigVersion,
 			},
 			Clusters: []string{"test-cluster"},
 		}}
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient}))
 
-		console.Tty().Close() // flush the writers
-		<-doneCh              // wait for procedure to complete
-
-		path := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath)
-		appLocal, err := local.LoadApp(path)
+		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
 		assert.Nil(t, err)
 
-		assert.Equal(t, appLocal.RootDir, path)
+		// we expect for the command to have created a default app. we will assert that realm_config.json exists and that
+		// backend/ and frontend/ do not exist in the directory.
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, "realm_config.json"))
+		assert.False(t, os.IsNotExist(err), "expected realm_config.json to exist")
+
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.BackendPath))
+		assert.True(t, os.IsNotExist(err), "expected for backend path to not exist")
+
+		_, err = os.Stat(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name, local.FrontendPath))
+		assert.True(t, os.IsNotExist(err), "expected for frontend path to not exist")
 	})
 
 	t.Run("should create a new app with a structure based on the specified remote app", func(t *testing.T) {
@@ -547,6 +535,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		backendZipPkg, err := zip.OpenReader("testdata/project.zip")
 		assert.Nil(t, err)
+		defer backendZipPkg.Close()
 
 		templateID := "palm-pilot.bitcoin-miner"
 		client := mock.RealmClient{
@@ -580,6 +569,8 @@ Check out your app: cd ./remote-app && realm-cli app describe
 
 		frontendZipPkg, err := zip.OpenReader("testdata/react-native.zip")
 		assert.Nil(t, err)
+		defer frontendZipPkg.Close()
+
 		client.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
 			return &frontendZipPkg.Reader, true, err
 		}
@@ -1030,6 +1021,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 					},
 				},
 			},
+			template:    "ios.template.todo",
 			expectedErr: errors.New("unable to find available templates"),
 		},
 		{
