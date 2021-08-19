@@ -78,7 +78,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringSliceFlag{
-			Value: &cmd.inputs.Clusters,
+			Value: &cmd.inputs.Datalakes,
 			Meta: flags.Meta{
 				Name: flagDatalake,
 				Usage: flags.Usage{
@@ -88,7 +88,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringSliceFlag{
-			Value: &cmd.inputs.ClusterServiceNames,
+			Value: &cmd.inputs.DatalakeServiceNames,
 			Meta: flags.Meta{
 				Name: flagDatalakeServiceName,
 				Usage: flags.Usage{

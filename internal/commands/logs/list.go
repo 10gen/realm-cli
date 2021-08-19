@@ -95,7 +95,7 @@ func (cmd *CommandList) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
-			Value: &cmd.inputs.Errors,
+			Value: &cmd.inputs.Tail,
 			Meta: flags.Meta{
 				Name: "tail",
 				Usage: flags.Usage{
