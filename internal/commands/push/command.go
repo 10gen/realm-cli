@@ -217,7 +217,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		diffs = append(diffs, appDiffs...)
 
-		if cmd.inputs.IncludeArchivedDependencies {
+		if cmd.inputs.IncludeArchivedDependencies || cmd.inputs.IncludeDependencies {
 			diffs = append(diffs, dependenciesDiffs.Strings()...)
 		}
 

@@ -133,6 +133,19 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		diffs = append(diffs, dependenciesDiff.Strings()...)
 	}
 
+	if cmd.inputs.IncludeDependencies {
+		appDependencies, err := local.FindPackageJSON(app.RootDir)
+		if err != nil {
+			return err
+		}
+
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.FilePath)
+		if err != nil {
+			return err
+		}
+		diffs = append(diffs, dependenciesDiff.Strings()...)
+	}
+
 	if cmd.inputs.IncludeHosting {
 		hosting, err := local.FindAppHosting(app.RootDir)
 		if err != nil {
