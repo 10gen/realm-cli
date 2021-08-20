@@ -108,7 +108,7 @@ func TestAppDiffHandler(t *testing.T) {
 		assert.Equal(t, errors.New("no app directory found at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
 	})
 
-	t.Run("with include dependencies set should diff function dependencies", func(t *testing.T) {
+	t.Run("with include archived dependencies set should diff function dependencies", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
@@ -127,7 +127,7 @@ func TestAppDiffHandler(t *testing.T) {
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeArchivedDependencies: true}}
 		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		assert.Equal(t, `The following reflects the proposed changes to your Realm app
@@ -142,7 +142,7 @@ Modified Dependencies
 `, out.String())
 	})
 
-	t.Run("should return error with include dependencies set and diff dependencies returns an error", func(t *testing.T) {
+	t.Run("should return error with include archived dependencies set and diff dependencies returns an error", func(t *testing.T) {
 		_, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
@@ -157,7 +157,7 @@ Modified Dependencies
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeArchivedDependencies: true}}
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 
