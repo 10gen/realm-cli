@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	flagLocalPath           = "local"
-	flagRemote              = "remote"
+	flagLocalPath                   = "local"
+	flagRemote                      = "remote"
 	flagIncludeArchivedDependencies = "include-archived-dependencies"
-	flagIncludeDependencies = "include-dependencies"
-	flagIncludeHosting      = "include-hosting"
-	flagResetCDNCache       = "reset-cdn-cache"
-	flagDryRun              = "dry-run"
+	flagIncludeDependencies         = "include-dependencies"
+	flagIncludeHosting              = "include-hosting"
+	flagResetCDNCache               = "reset-cdn-cache"
+	flagDryRun                      = "dry-run"
 )
 
 type appRemote struct {
@@ -25,14 +25,14 @@ type appRemote struct {
 }
 
 type inputs struct {
-	LocalPath           string
-	RemoteApp           string
-	Project             string
+	LocalPath                   string
+	RemoteApp                   string
+	Project                     string
 	IncludeArchivedDependencies bool
-	IncludeDependencies bool
-	IncludeHosting      bool
-	ResetCDNCache       bool
-	DryRun              bool
+	IncludeDependencies         bool
+	IncludeHosting              bool
+	ResetCDNCache               bool
+	DryRun                      bool
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
