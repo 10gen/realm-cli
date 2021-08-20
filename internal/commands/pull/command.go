@@ -205,7 +205,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewTextLog("Fetched dependencies JSON"))
 	}
 
-
 	if cmd.inputs.IncludeArchivedDependencies {
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = " Fetching dependencies archive..."

@@ -19,15 +19,15 @@ var (
 )
 
 type inputs struct {
-	Project             string
-	RemoteApp           string
-	LocalPath           string
-	AppVersion          realm.AppConfigVersion
+	Project                     string
+	RemoteApp                   string
+	LocalPath                   string
+	AppVersion                  realm.AppConfigVersion
 	IncludeArchivedDependencies bool
-	IncludeDependencies bool
-	IncludeHosting      bool
-	DryRun              bool
-	TemplateIDs         []string
+	IncludeDependencies         bool
+	IncludeHosting              bool
+	DryRun                      bool
+	TemplateIDs                 []string
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {

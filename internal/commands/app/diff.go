@@ -31,12 +31,12 @@ type CommandDiff struct {
 }
 
 type diffInputs struct {
-	LocalPath           string
-	RemoteApp           string
-	Project             string
+	LocalPath                   string
+	RemoteApp                   string
+	Project                     string
 	IncludeArchivedDependencies bool
-	IncludeDependencies bool
-	IncludeHosting      bool
+	IncludeDependencies         bool
+	IncludeHosting              bool
 }
 
 // Flags is the command flags

@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	dependenciesPathPattern        = appPathPattern + "/dependencies"
-	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
-	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
-	dependenciesExportPathPattern  = dependenciesPathPattern + "/export"
+	dependenciesPathPattern       = appPathPattern + "/dependencies"
+	dependenciesDiffPathPattern   = dependenciesPathPattern + "/diff"
+	dependenciesStatusPathPattern = dependenciesPathPattern + "/status"
+	dependenciesExportPathPattern = dependenciesPathPattern + "/export"
 
 	paramFile = "file"
 )
