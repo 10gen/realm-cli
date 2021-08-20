@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "axios": "0.21.1",
+    "Hello-world-npm": "1.0.0"
+  }
+}

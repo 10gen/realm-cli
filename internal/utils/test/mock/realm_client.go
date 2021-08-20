@@ -358,11 +358,11 @@ func (rc RealmClient) RevokeUserSessions(groupID, appID, userID string) error {
 // ExportDependencies calls the mocked ExportDependencies implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) ExportArchivedDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+func (rc RealmClient) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
 	if rc.ExportDependenciesFn != nil {
 		return rc.ExportDependenciesFn(groupID, appID)
 	}
-	return rc.Client.ExportArchivedDependencies(groupID, appID)
+	return rc.Client.ExportDependencies(groupID, appID)
 }
 
 // ImportDependencies calls the mocked ImportDependencies implementation if provided,
