@@ -19,6 +19,7 @@ const (
 	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
 	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
+	dependenciesJSONPathPattern = dependenciesPathPattern + "/export"
 
 	paramFile = "file"
 )
@@ -101,13 +102,35 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	return nil
 }
 
-func (c *client) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+func (c *client) ExportArchivedDependencies(groupID, appID string) (string, io.ReadCloser, error) {
 	res, resErr := c.do(http.MethodGet, fmt.Sprintf(dependenciesArchivePathPattern, groupID, appID), api.RequestOptions{})
 	if resErr != nil {
 		return "", nil, resErr
 	}
 	if res.StatusCode != http.StatusOK {
-		return "", nil, api.ErrUnexpectedStatusCode{"export dependencies", res.StatusCode}
+		return "", nil, api.ErrUnexpectedStatusCode{"export archived dependencies", res.StatusCode}
+	}
+
+	_, mediaParams, mediaErr := mime.ParseMediaType(res.Header.Get(api.HeaderContentDisposition))
+	if mediaErr != nil {
+		return "", nil, mediaErr
+	}
+
+	filename := mediaParams[mediaParamFilename]
+	if filename == "" {
+		return "", nil, errors.New("export response is missing filename")
+	}
+
+	return filename, res.Body, nil
+}
+
+func (c *client) ExportJSONDependencies(groupID, appID string) (string, io.ReadCloser, error) {
+	res, resErr := c.do(http.MethodGet, fmt.Sprintf(dependenciesJSONPathPattern, groupID, appID), api.RequestOptions{})
+	if resErr != nil {
+		return "", nil, resErr
+	}
+	if res.StatusCode != http.StatusOK {
+		return "", nil, api.ErrUnexpectedStatusCode{"export JSON dependencies", res.StatusCode}
 	}
 
 	_, mediaParams, mediaErr := mime.ParseMediaType(res.Header.Get(api.HeaderContentDisposition))

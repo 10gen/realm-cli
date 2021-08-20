@@ -34,6 +34,7 @@ type diffInputs struct {
 	LocalPath           string
 	RemoteApp           string
 	Project             string
+	IncludeArchivedDependencies bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 }
@@ -60,12 +61,22 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeArchivedDependencies,
+			Meta: flags.Meta{
+				Name:      "include-archived-dependencies",
+				Shorthand: "a",
+				Usage: flags.Usage{
+					Description: "Include Realm app dependencies in the diff from an archive file",
+				},
+			},
+		},
+		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff",
+					Description: "Include Realm app dependencies in the diff from a JSON file",
 				},
 			},
 		},
@@ -109,13 +120,13 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if cmd.inputs.IncludeDependencies {
-		appDependencies, err := local.FindAppDependencies(app.RootDir)
+	if cmd.inputs.IncludeArchivedDependencies {
+		appDependencies, err := local.FindAppDependenciesArchive(app.RootDir)
 		if err != nil {
 			return err
 		}
 
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.ArchivePath)
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.FilePath)
 		if err != nil {
 			return err
 		}

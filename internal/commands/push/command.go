@@ -55,12 +55,22 @@ func (cmd *Command) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeArchivedDependencies,
+			Meta: flags.Meta{
+				Name:      flagIncludeArchivedDependencies,
+				Shorthand: "a",
+				Usage: flags.Usage{
+					Description: "Import and include Realm app dependencies from an archive file",
+				},
+			},
+		},
+		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Import and include Realm app dependencies",
+					Description: "Import and include Realm app dependencies from a JSON file",
 				},
 			},
 		},
@@ -153,12 +163,25 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
-	if cmd.inputs.IncludeDependencies {
-		appDependencies, err := local.FindAppDependencies(app.RootDir)
+	if cmd.inputs.IncludeArchivedDependencies {
+		appDependencies, err := local.FindAppDependenciesArchive(app.RootDir)
 		if err != nil {
 			return err
 		}
-		uploadPathDependencies = appDependencies.ArchivePath
+		uploadPathDependencies = appDependencies.FilePath
+
+		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
+		if err != nil {
+			return err
+		}
+	}
+
+	if cmd.inputs.IncludeDependencies {
+		appDependencies, err := local.FindPackageJSON(app.RootDir)
+		if err != nil {
+			return err
+		}
+		uploadPathDependencies = appDependencies.FilePath
 
 		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
 		if err != nil {
@@ -194,7 +217,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		diffs = append(diffs, appDiffs...)
 
-		if cmd.inputs.IncludeDependencies {
+		if cmd.inputs.IncludeArchivedDependencies {
 			diffs = append(diffs, dependenciesDiffs.Strings()...)
 		}
 
@@ -246,6 +269,41 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeDependencies {
+		installDependencies := func() error {
+			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+			s.Suffix = " Installing dependencies: starting..."
+
+			s.Start()
+			defer s.Stop()
+
+			if err := clients.Realm.ImportDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies); err != nil {
+				return err
+			}
+
+			status := realm.DependenciesStatus{State: realm.DependenciesStateCreated}
+			for status.State == realm.DependenciesStateCreated {
+				var err error
+				status, err = clients.Realm.DependenciesStatus(appRemote.GroupID, appRemote.AppID)
+				if err != nil {
+					return err
+				}
+				s.Suffix = fmt.Sprintf(" Installing dependencies: %s...", status.Message)
+				time.Sleep(time.Second)
+			}
+			if status.State == realm.DependenciesStateFailed {
+				return fmt.Errorf("failed to install dependencies: %s", status.Message)
+			}
+			return nil
+		}
+
+		if err := installDependencies(); err != nil {
+			return err
+		}
+
+		ui.Print(terminal.NewTextLog("Installed dependencies"))
+	}
+
+	if cmd.inputs.IncludeArchivedDependencies {
 		installDependencies := func() error {
 			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 			s.Suffix = " Installing dependencies: starting..."

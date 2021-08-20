@@ -12,6 +12,7 @@ import (
 const (
 	flagLocalPath           = "local"
 	flagRemote              = "remote"
+	flagIncludeArchivedDependencies = "include-archived-dependencies"
 	flagIncludeDependencies = "include-dependencies"
 	flagIncludeHosting      = "include-hosting"
 	flagResetCDNCache       = "reset-cdn-cache"
@@ -27,6 +28,7 @@ type inputs struct {
 	LocalPath           string
 	RemoteApp           string
 	Project             string
+	IncludeArchivedDependencies bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -88,6 +90,9 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.RemoteApp != "" {
 		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
+	}
+	if i.IncludeArchivedDependencies {
+		args = append(args, flags.Arg{Name: flagIncludeArchivedDependencies})
 	}
 	if i.IncludeDependencies {
 		args = append(args, flags.Arg{Name: flagIncludeDependencies})

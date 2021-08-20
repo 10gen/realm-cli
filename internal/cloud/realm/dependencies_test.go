@@ -86,7 +86,7 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, zipPkg, err := client.ExportDependencies(groupID, app.ID)
+		name, zipPkg, err := client.ExportArchivedDependencies(groupID, app.ID)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "node_modules.zip", name)

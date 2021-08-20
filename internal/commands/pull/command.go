@@ -55,6 +55,16 @@ func (cmd *Command) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeArchivedDependencies,
+			Meta: flags.Meta{
+				Name:      "include-archived-dependencies",
+				Shorthand: "a",
+				Usage: flags.Usage{
+					Description: "Export and include Realm app dependencies",
+				},
+			},
+		},
+		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
@@ -176,7 +186,34 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			s.Start()
 			defer s.Stop()
 
-			archiveName, archivePkg, err := clients.Realm.ExportDependencies(app.GroupID, app.ID)
+			JSONName, JSONFile, err := clients.Realm.ExportJSONDependencies(app.GroupID, app.ID)
+			if err != nil {
+				return err
+			}
+
+			return local.WriteFile(
+				filepath.Join(pathBackend, local.NameFunctions, JSONName),
+				0666,
+				JSONFile,
+			)
+		}
+
+		if err := exportDependencies(); err != nil {
+			return err
+		}
+		ui.Print(terminal.NewTextLog("Fetched dependencies JSON"))
+	}
+
+
+	if cmd.inputs.IncludeArchivedDependencies {
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Fetching dependencies archive..."
+
+		exportDependencies := func() error {
+			s.Start()
+			defer s.Stop()
+
+			archiveName, archivePkg, err := clients.Realm.ExportArchivedDependencies(app.GroupID, app.ID)
 			if err != nil {
 				return err
 			}

@@ -23,6 +23,7 @@ type inputs struct {
 	RemoteApp           string
 	LocalPath           string
 	AppVersion          realm.AppConfigVersion
+	IncludeArchivedDependencies bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 	DryRun              bool
