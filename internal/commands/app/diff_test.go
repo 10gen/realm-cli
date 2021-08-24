@@ -196,6 +196,25 @@ Modified Dependencies
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 
+	t.Run("should return error with include dependencies set and diff dependencies returns an error", func(t *testing.T) {
+		_, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return apps, nil
+		}
+		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+			return realm.DependenciesDiff{}, errors.New("realm client error")
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
+
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+	})
+
 	t.Run("with include hosting set should diff hosting assets", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
