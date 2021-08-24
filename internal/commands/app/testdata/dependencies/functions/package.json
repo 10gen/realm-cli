@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "twilio": "3.35.1",
+    "underscore": "1.9.2"
+  }
+}
+
