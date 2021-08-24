@@ -142,7 +142,6 @@ Modified Dependencies
 `, out.String())
 	})
 
-
 	t.Run("with include dependencies set, should diff function dependencies", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
