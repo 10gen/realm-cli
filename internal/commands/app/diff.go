@@ -64,7 +64,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeArchivedDependencies,
 			Meta: flags.Meta{
 				Name:      "include-archived-dependencies",
-				Shorthand: "a",
+				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
@@ -74,7 +74,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
-				Shorthand: "d",
+				Shorthand: "i",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a JSON file",
 				},

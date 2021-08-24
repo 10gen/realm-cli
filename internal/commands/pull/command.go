@@ -58,7 +58,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeArchivedDependencies,
 			Meta: flags.Meta{
 				Name:      "include-archived-dependencies",
-				Shorthand: "a",
+				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies",
 				},
@@ -68,7 +68,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
-				Shorthand: "d",
+				Shorthand: "i",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies",
 				},

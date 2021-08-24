@@ -58,7 +58,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeArchivedDependencies,
 			Meta: flags.Meta{
 				Name:      flagIncludeArchivedDependencies,
-				Shorthand: "a",
+				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from an archive file",
 				},
@@ -68,7 +68,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
-				Shorthand: "d",
+				Shorthand: "i",
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from a JSON file",
 				},
@@ -317,12 +317,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 			status := realm.DependenciesStatus{State: realm.DependenciesStateCreated}
 			for status.State == realm.DependenciesStateCreated {
-				var err error
 				status, err = clients.Realm.DependenciesStatus(appRemote.GroupID, appRemote.AppID)
 				if err != nil {
 					return err
 				}
-				s.Suffix = fmt.Sprintf(" Installing dependencies: %s...", status.Message)
+				s.Suffix = fmt.Sprintf("Installing dependencies: %s...", status.Message)
 				time.Sleep(time.Second)
 			}
 			if status.State == realm.DependenciesStateFailed {

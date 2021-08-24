@@ -108,7 +108,7 @@ func TestAppDiffHandler(t *testing.T) {
 		assert.Equal(t, errors.New("no app directory found at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
 	})
 
-	t.Run("with include archived dependencies set should diff function dependencies", func(t *testing.T) {
+	t.Run("with include archived dependencies set, should diff function dependencies", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
