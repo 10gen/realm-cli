@@ -782,7 +782,7 @@ Removed Dependencies
 Modified Dependencies
   * underscore@1.9.1 -> underscore@1.9.2
 To push these changes, you must omit the 'dry-run' flag to proceed
-Try instead: realm-cli push --local testdata/dependencies --remote appID --include-archived-dependencies
+Try instead: realm-cli push --local testdata/dependencies --remote appID --include-node-modules
 `, out.String())
 	})
 
@@ -1497,7 +1497,7 @@ func TestPushCommandDisplay(t *testing.T) {
 				ResetCDNCache:      true,
 				DryRun:             true,
 			},
-			display: "realm-cli push --project project --local directory --remote remote --include-archived-dependencies --include-hosting --reset-cdn-cache --dry-run",
+			display: "realm-cli push --project project --local directory --remote remote --include-node-modules --include-hosting --reset-cdn-cache --dry-run",
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
