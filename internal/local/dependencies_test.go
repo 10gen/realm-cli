@@ -87,7 +87,6 @@ func TestDependenciesFind(t *testing.T) {
 		})
 	}
 
-
 	t.Run("should find a a package.json with a relative path", func(t *testing.T) {
 		absPath, err := filepath.Abs("../local/testdata/dependencies/json")
 		assert.Nil(t, err)

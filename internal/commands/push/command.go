@@ -279,7 +279,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules{
+	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
 		installDependencies := func() error {
 			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 			s.Suffix = " Installing dependencies: starting..."
