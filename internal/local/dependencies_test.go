@@ -16,7 +16,7 @@ func TestDependenciesFind(t *testing.T) {
 	testRoot := filepath.Join(wd, "testdata/dependencies")
 
 	t.Run("should return an empty data when run outside a project directory", func(t *testing.T) {
-		deps, err := FindAppDependenciesArchive(testRoot)
+		deps, err := FindNodeModules(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, Dependencies{}, deps)
 	})
@@ -24,7 +24,7 @@ func TestDependenciesFind(t *testing.T) {
 	t.Run("should return an error when a project has no node_modules archive", func(t *testing.T) {
 		dir := filepath.Join(testRoot, "empty")
 
-		_, err := FindAppDependenciesArchive(dir)
+		_, err := FindNodeModules(dir)
 		assert.Equal(t, fmt.Errorf("node_modules archive not found at '%s/functions'", dir), err)
 	})
 
@@ -78,7 +78,7 @@ func TestDependenciesFind(t *testing.T) {
 			absPath, err := filepath.Abs(tc.path)
 			assert.Nil(t, err)
 
-			deps, err := FindAppDependenciesArchive(tc.path)
+			deps, err := FindNodeModules(tc.path)
 			assert.Nil(t, err)
 			assert.Equal(t, Dependencies{
 				filepath.Join(absPath, "functions"),
@@ -86,4 +86,18 @@ func TestDependenciesFind(t *testing.T) {
 			}, deps)
 		})
 	}
+
+
+	t.Run("should find a a package.json with a relative path", func(t *testing.T) {
+		absPath, err := filepath.Abs("../local/testdata/dependencies/json")
+		assert.Nil(t, err)
+
+		deps, err := FindPackageJSON("../local/testdata/dependencies/json")
+		assert.Nil(t, err)
+		assert.Equal(t, Dependencies{
+			filepath.Join(absPath, "functions"),
+			filepath.Join(absPath, "functions", "package.json"),
+		}, deps)
+	})
+
 }

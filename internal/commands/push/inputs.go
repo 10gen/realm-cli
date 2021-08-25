@@ -10,13 +10,14 @@ import (
 )
 
 const (
-	flagLocalPath                   = "local"
-	flagRemote                      = "remote"
-	flagIncludeArchivedDependencies = "include-archived-dependencies"
-	flagIncludeDependencies         = "include-dependencies"
-	flagIncludeHosting              = "include-hosting"
-	flagResetCDNCache               = "reset-cdn-cache"
-	flagDryRun                      = "dry-run"
+	flagLocalPath           = "local"
+	flagRemote              = "remote"
+	flagIncludeNodeModules  = "include-node-modules"
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeDependencies = "include-dependencies"
+	flagIncludeHosting      = "include-hosting"
+	flagResetCDNCache       = "reset-cdn-cache"
+	flagDryRun              = "dry-run"
 )
 
 type appRemote struct {
@@ -25,14 +26,14 @@ type appRemote struct {
 }
 
 type inputs struct {
-	LocalPath                   string
-	RemoteApp                   string
-	Project                     string
-	IncludeArchivedDependencies bool
-	IncludeDependencies         bool
-	IncludeHosting              bool
-	ResetCDNCache               bool
-	DryRun                      bool
+	LocalPath          string
+	RemoteApp          string
+	Project            string
+	IncludeNodeModules bool
+	IncludePackageJSON bool
+	IncludeHosting     bool
+	ResetCDNCache      bool
+	DryRun             bool
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -91,11 +92,11 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	if i.RemoteApp != "" {
 		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
 	}
-	if i.IncludeArchivedDependencies {
-		args = append(args, flags.Arg{Name: flagIncludeArchivedDependencies})
+	if i.IncludeNodeModules {
+		args = append(args, flags.Arg{Name: flagIncludeNodeModules})
 	}
-	if i.IncludeDependencies {
-		args = append(args, flags.Arg{Name: flagIncludeDependencies})
+	if i.IncludePackageJSON {
+		args = append(args, flags.Arg{Name: flagIncludePackageJSON})
 	}
 	if i.IncludeHosting {
 		args = append(args, flags.Arg{Name: flagIncludeHosting})

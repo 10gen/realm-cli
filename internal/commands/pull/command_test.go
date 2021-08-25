@@ -202,7 +202,7 @@ Successfully pulled app down: app
 
 			_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeArchivedDependencies: true}}
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -240,7 +240,7 @@ Successfully pulled app down: app
 			return nil, nil
 		}
 
-		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeArchivedDependencies: true}}
+		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk

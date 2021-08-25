@@ -31,12 +31,12 @@ type CommandDiff struct {
 }
 
 type diffInputs struct {
-	LocalPath                   string
-	RemoteApp                   string
-	Project                     string
-	IncludeArchivedDependencies bool
-	IncludeDependencies         bool
-	IncludeHosting              bool
+	LocalPath          string
+	RemoteApp          string
+	Project            string
+	IncludeNodeModules bool
+	IncludePackageJSON bool
+	IncludeHosting     bool
 }
 
 // Flags is the command flags
@@ -61,22 +61,33 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeArchivedDependencies,
+			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      "include-archived-dependencies",
-				Shorthand: "d",
+				Name:      "include-node-modules",
+				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
 			},
 		},
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeDependencies,
+			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
-				Shorthand: "i",
+				Name:      "include-package-json",
+				Shorthand: "p",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a JSON file",
+				},
+			},
+		},
+		// TODO: Deprecate this flag in realmCli 3.x
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeNodeModules,
+			Meta: flags.Meta{
+				Name:      "include-dependencies",
+				Shorthand: "d",
+				Usage: flags.Usage{
+					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
 			},
 		},
@@ -120,8 +131,8 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if cmd.inputs.IncludeArchivedDependencies {
-		appDependencies, err := local.FindAppDependenciesArchive(app.RootDir)
+	if cmd.inputs.IncludeNodeModules {
+		appDependencies, err := local.FindNodeModules(app.RootDir)
 		if err != nil {
 			return err
 		}
@@ -133,7 +144,7 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		diffs = append(diffs, dependenciesDiff.Strings()...)
 	}
 
-	if cmd.inputs.IncludeDependencies {
+	if cmd.inputs.IncludePackageJSON {
 		appDependencies, err := local.FindPackageJSON(app.RootDir)
 		if err != nil {
 			return err

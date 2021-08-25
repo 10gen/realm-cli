@@ -127,7 +127,7 @@ func TestAppDiffHandler(t *testing.T) {
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeArchivedDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
 		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		assert.Equal(t, `The following reflects the proposed changes to your Realm app
@@ -161,7 +161,7 @@ Modified Dependencies
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
 		assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		assert.Equal(t, `The following reflects the proposed changes to your Realm app
@@ -191,7 +191,7 @@ Modified Dependencies
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeArchivedDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 
@@ -210,7 +210,7 @@ Modified Dependencies
 			return []string{"diff1", "diff2"}, nil
 		}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
 

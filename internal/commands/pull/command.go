@@ -55,20 +55,31 @@ func (cmd *Command) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeArchivedDependencies,
+			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      "include-archived-dependencies",
-				Shorthand: "d",
+				Name:      "include-node-modules",
+				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies",
 				},
 			},
 		},
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeDependencies,
+			Value: &cmd.inputs.IncludePackageJSON,
+			Meta: flags.Meta{
+				Name:      "include-package-json",
+				Shorthand: "p",
+				Usage: flags.Usage{
+					Description: "Export and include Realm app dependencies",
+				},
+			},
+		},
+		// TODO: Deprecate this flag in realmCli 3.x
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
-				Shorthand: "i",
+				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies",
 				},
@@ -178,7 +189,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
-	if cmd.inputs.IncludeDependencies {
+	if cmd.inputs.IncludePackageJSON {
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = " Fetching dependencies json..."
 
@@ -205,7 +216,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewTextLog("Fetched dependencies JSON"))
 	}
 
-	if cmd.inputs.IncludeArchivedDependencies {
+	if cmd.inputs.IncludeNodeModules {
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = " Fetching dependencies archive..."
 

@@ -562,7 +562,7 @@ Successfully pushed app up: eggcorn-abcde
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeArchivedDependencies: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeNodeModules: true}}
 
 				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("something bad happened"), err)
@@ -584,7 +584,7 @@ Successfully pushed app up: eggcorn-abcde
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeArchivedDependencies: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeNodeModules: true}}
 
 				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("something bad happened"), err)
@@ -596,7 +596,7 @@ Successfully pushed app up: eggcorn-abcde
 				out := new(bytes.Buffer)
 				ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeArchivedDependencies: true}}
+				cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeNodeModules: true}}
 
 				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("failed to install dependencies: something bad happened"), err)
@@ -614,7 +614,7 @@ Successfully pushed app up: eggcorn-abcde
 			out := new(bytes.Buffer)
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
-			cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeArchivedDependencies: true}}
+			cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID", IncludeNodeModules: true}}
 
 			assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, `Determining changes
@@ -766,7 +766,7 @@ Try instead: realm-cli push --local testdata/project --remote appID
 
 		out, ui := mock.NewUI()
 
-		cmd := &Command{inputs{LocalPath: "testdata/dependencies", DryRun: true, RemoteApp: "appID", IncludeArchivedDependencies: true}}
+		cmd := &Command{inputs{LocalPath: "testdata/dependencies", DryRun: true, RemoteApp: "appID", IncludeNodeModules: true}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
@@ -800,7 +800,7 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		_, ui := mock.NewUI()
 
-		cmd := &Command{inputs{LocalPath: "testdata/dependencies", RemoteApp: "appID", IncludeArchivedDependencies: true}}
+		cmd := &Command{inputs{LocalPath: "testdata/dependencies", RemoteApp: "appID", IncludeNodeModules: true}}
 
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 	})
@@ -1489,13 +1489,13 @@ func TestPushCommandDisplay(t *testing.T) {
 		{
 			description: "should print a complete command string",
 			inputs: inputs{
-				Project:                     "project",
-				LocalPath:                   "directory",
-				RemoteApp:                   "remote",
-				IncludeArchivedDependencies: true,
-				IncludeHosting:              true,
-				ResetCDNCache:               true,
-				DryRun:                      true,
+				Project:            "project",
+				LocalPath:          "directory",
+				RemoteApp:          "remote",
+				IncludeNodeModules: true,
+				IncludeHosting:     true,
+				ResetCDNCache:      true,
+				DryRun:             true,
 			},
 			display: "realm-cli push --project project --local directory --remote remote --include-archived-dependencies --include-hosting --reset-cdn-cache --dry-run",
 		},
