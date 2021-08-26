@@ -2,6 +2,8 @@ package realm_test
 
 import (
 	"archive/zip"
+	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -191,21 +193,23 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, json, err := client.ExportDependencies(groupID, app.ID, realm.JSON)
+		name, JSONpkg, err := client.ExportDependencies(groupID, app.ID, realm.JSON)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "package.json", name)
 
-		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, json))
+		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, JSONpkg))
 
-		actualDeps, actualDepsErr := os.Open(filepath.Join(tmpDir, name))
+		actualStr, actualDepsErr := ioutil.ReadFile(filepath.Join(tmpDir, name))
 		assert.Nil(t, actualDepsErr)
-		defer actualDeps.Close()
+		var actualDeps map[string]struct{}
+		assert.Nil(t, json.Unmarshal(actualStr, &actualDeps))
 
 		t.Run("and it should match the expected package..json", func(t *testing.T) {
-			expectedDeps, expectedDepsErr := os.Open("./testdata/package.json")
+			expectedStr, expectedDepsErr := ioutil.ReadFile("./testdata/package.json")
 			assert.Nil(t, expectedDepsErr)
-			defer expectedDeps.Close()
+			var expectedDeps map[string]struct{}
+			assert.Nil(t, json.Unmarshal(expectedStr, &expectedDeps))
 
 			// make sure same files are present; contents may be different because of transpilation
 			assert.Equal(t, expectedDeps, actualDeps)
