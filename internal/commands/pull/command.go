@@ -197,7 +197,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			s.Start()
 			defer s.Stop()
 
-			JSONName, JSONFile, err := clients.Realm.ExportDependencies(app.GroupID, app.ID)
+			JSONName, JSONFile, err := clients.Realm.ExportDependencies(app.GroupID, app.ID, realm.JSON)
 			if err != nil {
 				return err
 			}
@@ -224,7 +224,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			s.Start()
 			defer s.Stop()
 
-			archiveName, archivePkg, err := clients.Realm.ExportDependencies(app.GroupID, app.ID)
+			archiveName, archivePkg, err := clients.Realm.ExportDependencies(app.GroupID, app.ID, realm.Zip)
 			if err != nil {
 				return err
 			}

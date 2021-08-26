@@ -19,13 +19,20 @@ const (
 	cliHeaderValue      = "mongodb-baas-cli"
 )
 
+type Format int
+
+const (
+	JSON Format = iota
+	Zip
+)
+
 // Client is a Realm client
 type Client interface {
 	AuthProfile() (AuthProfile, error)
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
-	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
+	ExportDependencies(groupID, appID string, format Format) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData interface{}) error
 	ImportDependencies(groupID, appID, uploadPath string) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)

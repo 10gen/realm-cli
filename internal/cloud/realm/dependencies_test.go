@@ -86,7 +86,7 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, zipPkg, err := client.ExportDependencies(groupID, app.ID)
+		name, zipPkg, err := client.ExportDependencies(groupID, app.ID, realm.Zip)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "node_modules.zip", name)
@@ -191,12 +191,12 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, zipPkg, err := client.ExportDependencies(groupID, app.ID)
+		name, json, err := client.ExportDependencies(groupID, app.ID, realm.JSON)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "package.json", name)
 
-		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, zipPkg))
+		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, json))
 
 		actualDeps, actualDepsErr := os.Open(filepath.Join(tmpDir, name))
 		assert.Nil(t, actualDepsErr)

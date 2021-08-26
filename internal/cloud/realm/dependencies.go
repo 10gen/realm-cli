@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	dependenciesPathPattern       = appPathPattern + "/dependencies"
-	dependenciesDiffPathPattern   = dependenciesPathPattern + "/diff"
-	dependenciesStatusPathPattern = dependenciesPathPattern + "/status"
-	dependenciesExportPathPattern = dependenciesPathPattern + "/export"
+	dependenciesPathPattern        = appPathPattern + "/dependencies"
+	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
+	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
+	dependenciesExportPathPattern  = dependenciesPathPattern + "/export"
+	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 
 	paramFile = "file"
 )
@@ -101,8 +102,14 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	return nil
 }
 
-func (c *client) ExportDependencies(groupID, appID string) (string, io.ReadCloser, error) {
-	res, resErr := c.do(http.MethodGet, fmt.Sprintf(dependenciesExportPathPattern, groupID, appID), api.RequestOptions{})
+func (c *client) ExportDependencies(groupID, appID string, format Format) (string, io.ReadCloser, error) {
+	var res *http.Response
+	var resErr error
+	if format == JSON {
+		res, resErr = c.do(http.MethodGet, fmt.Sprintf(dependenciesExportPathPattern, groupID, appID), api.RequestOptions{})
+	} else {
+		res, resErr = c.do(http.MethodGet, fmt.Sprintf(dependenciesArchivePathPattern, groupID, appID), api.RequestOptions{})
+	}
 	if resErr != nil {
 		return "", nil, resErr
 	}
