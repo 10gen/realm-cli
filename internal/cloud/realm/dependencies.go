@@ -16,10 +16,10 @@ import (
 
 const (
 	dependenciesPathPattern        = appPathPattern + "/dependencies"
+	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 	dependenciesDiffPathPattern    = dependenciesPathPattern + "/diff"
 	dependenciesStatusPathPattern  = dependenciesPathPattern + "/status"
 	dependenciesExportPathPattern  = dependenciesPathPattern + "/export"
-	dependenciesArchivePathPattern = dependenciesPathPattern + "/archive"
 
 	paramFile = "file"
 )
@@ -102,7 +102,7 @@ func (c *client) ImportDependencies(groupID, appID, uploadPath string) error {
 	return nil
 }
 
-func (c *client) ExportDependencies(groupID, appID string, format Format) (string, io.ReadCloser, error) {
+func (c *client) ExportDependencies(groupID, appID string, format DepFileFormat) (string, io.ReadCloser, error) {
 	var res *http.Response
 	var resErr error
 	if format == JSON {

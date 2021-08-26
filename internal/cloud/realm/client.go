@@ -19,10 +19,10 @@ const (
 	cliHeaderValue      = "mongodb-baas-cli"
 )
 
-type Format int
+type DepFileFormat int
 
 const (
-	JSON Format = iota
+	JSON DepFileFormat = iota
 	Zip
 )
 
@@ -32,7 +32,7 @@ type Client interface {
 	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
-	ExportDependencies(groupID, appID string, format Format) (string, io.ReadCloser, error)
+	ExportDependencies(groupID, appID string, format DepFileFormat) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData interface{}) error
 	ImportDependencies(groupID, appID, uploadPath string) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)
