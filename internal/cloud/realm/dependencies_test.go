@@ -127,7 +127,7 @@ func TestRealmDependencies(t *testing.T) {
 
 	groupID = u.CloudGroupID()
 
-	app, teardown = setupTestApp(t, client, groupID, "importexport-test")
+	app, _  = setupTestApp(t, client, groupID, "importexport-test")
 
 	t.Run("should successfully import a package.json", func(t *testing.T) {
 		wd, err := os.Getwd()
