@@ -121,6 +121,11 @@ func TestRealmDependencies(t *testing.T) {
 		}, diff)
 	})
 
+	client = newAuthClient(t)
+
+	groupID = u.CloudGroupID()
+
+	app, teardown = setupTestApp(t, client, groupID, "importexport-test")
 
 	t.Run("should successfully import a package.json", func(t *testing.T) {
 		wd, err := os.Getwd()
@@ -129,7 +134,7 @@ func TestRealmDependencies(t *testing.T) {
 		uploadPath := filepath.Join(wd, "testdata/package.json")
 
 		_, err = client.DependenciesStatus(groupID, app.ID)
-		assert.Equal(t, realm.ServerError{Message: "dependency installation not found"}, err)
+		assert.Equal(t, nil, err)
 
 		assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
 
@@ -178,7 +183,6 @@ func TestRealmDependencies(t *testing.T) {
 				counter++
 			}
 		})
-
 
 	})
 
