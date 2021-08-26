@@ -147,7 +147,7 @@ func TestRealmDependencies(t *testing.T) {
 
 		// wait for dependencies to finish installation
 		var currentStatus realm.DependenciesStatus
-		for i := 0; i < 50; i++ {
+		for i := 0; i < 500; i++ {
 			var err error
 			currentStatus, err = client.DependenciesStatus(groupID, app.ID)
 			assert.Nil(t, err)
