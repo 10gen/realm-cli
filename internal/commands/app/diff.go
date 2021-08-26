@@ -80,14 +80,14 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				},
 			},
 		},
-		// TODO: Deprecate this flag in realmCli 3.x
+		// TODO: Deprecate this flag in realmCli 3.x, ticket REALMC-10088
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from a package.json file",
+					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
 			},
 		},

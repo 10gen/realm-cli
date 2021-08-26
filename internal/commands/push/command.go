@@ -74,7 +74,7 @@ func (cmd *Command) Flags() []flags.Flag {
 				},
 			},
 		},
-		// TODO: Deprecate this flag in realmCli 3.x
+		// TODO: Deprecate this flag in realmCli 3.x, ticket REALMC-10088
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
