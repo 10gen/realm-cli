@@ -220,7 +220,7 @@ func TestRealmDependencies(t *testing.T) {
 		wd, err := os.Getwd()
 		assert.Nil(t, err)
 
-		uploadPath := filepath.Join(wd, "testdata/package.json")
+		uploadPath := filepath.Join(wd, "testdata/package-diff.json")
 		diff, err := client.DiffDependencies(groupID, app.ID, uploadPath)
 		assert.Nil(t, err)
 		assert.Equal(t, realm.DependenciesDiff{
