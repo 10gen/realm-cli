@@ -2,6 +2,7 @@ package local
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 )
 
@@ -51,10 +52,16 @@ func FindPackageJSON(path string) (Dependencies, error) {
 
 	rootDir := filepath.Join(app.RootDir, NameFunctions)
 
-	JSONPath, err := filepath.Abs(filepath.Join(rootDir, nameJSON))
+	packageJSONPath, err := filepath.Abs(filepath.Join(rootDir, namePackageJSON))
 	if err != nil {
 		return Dependencies{}, err
 	}
 
-	return Dependencies{rootDir, JSONPath}, nil
+	if _, err := os.Stat(packageJSONPath); err != nil {
+		if os.IsNotExist(err) {
+			return Dependencies{}, fmt.Errorf("package.json not found at '%s'", rootDir)
+		}
+	}
+
+	return Dependencies{rootDir, packageJSONPath}, nil
 }

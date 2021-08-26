@@ -80,6 +80,7 @@ func TestRealmDependencies(t *testing.T) {
 
 				counter++
 			}
+			assert.Equal(t, realm.DeploymentStatusSuccessful, deployment.Status)
 		})
 	})
 
@@ -88,7 +89,7 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, zipPkg, err := client.ExportDependencies(groupID, app.ID, realm.Zip)
+		name, zipPkg, err := client.ExportDependenciesArchive(groupID, app.ID)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "node_modules.zip", name)
@@ -127,7 +128,8 @@ func TestRealmDependencies(t *testing.T) {
 
 	groupID = u.CloudGroupID()
 
-	app, _ = setupTestApp(t, client, groupID, "importexport-test")
+	app, teardownJSON := setupTestApp(t, client, groupID, "importexport-test")
+	defer teardownJSON()
 
 	t.Run("should successfully import a package.json", func(t *testing.T) {
 		wd, err := os.Getwd()
@@ -149,7 +151,7 @@ func TestRealmDependencies(t *testing.T) {
 
 		// wait for dependencies to finish installation
 		var currentStatus realm.DependenciesStatus
-		for i := 0; i < 500; i++ {
+		for i := 0; i < 150; i++ {
 			var err error
 			currentStatus, err = client.DependenciesStatus(groupID, app.ID)
 			assert.Nil(t, err)
@@ -184,6 +186,7 @@ func TestRealmDependencies(t *testing.T) {
 
 				counter++
 			}
+			assert.Equal(t, realm.DeploymentStatusSuccessful, deployment.Status)
 		})
 
 	})
@@ -193,25 +196,25 @@ func TestRealmDependencies(t *testing.T) {
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
 
-		name, JSONpkg, err := client.ExportDependencies(groupID, app.ID, realm.JSON)
+		name, pkgJSON, err := client.ExportDependencies(groupID, app.ID)
 		assert.Nil(t, err)
 
 		assert.Equal(t, "package.json", name)
 
-		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, JSONpkg))
+		assert.Nil(t, local.WriteFile(filepath.Join(tmpDir, name), 0666, pkgJSON))
 
 		actualStr, actualDepsErr := ioutil.ReadFile(filepath.Join(tmpDir, name))
 		assert.Nil(t, actualDepsErr)
 		var actualDeps map[string]struct{}
 		assert.Nil(t, json.Unmarshal(actualStr, &actualDeps))
 
-		t.Run("and it should match the expected package..json", func(t *testing.T) {
+		t.Run("and it should match the expected package.json", func(t *testing.T) {
 			expectedStr, expectedDepsErr := ioutil.ReadFile("./testdata/package.json")
 			assert.Nil(t, expectedDepsErr)
 			var expectedDeps map[string]struct{}
 			assert.Nil(t, json.Unmarshal(expectedStr, &expectedDeps))
 
-			// make sure same files are present; contents may be different because of transpilation
+			// make sure same files are present
 			assert.Equal(t, expectedDeps, actualDeps)
 		})
 	})

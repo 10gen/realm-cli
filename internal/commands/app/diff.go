@@ -67,7 +67,9 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
+
 			},
 		},
 		flags.BoolFlag{
@@ -76,11 +78,11 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Name:      "include-package-json",
 				Shorthand: "p",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from a JSON file",
+					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
 			},
 		},
-		// TODO: Deprecate this flag in realmCli 3.x, ticket REALMC-10088
+		// TODO(REALMC-10088): Remove this flag in realmCli 3.x8
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
@@ -131,21 +133,8 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if cmd.inputs.IncludeNodeModules {
-		appDependencies, err := local.FindNodeModules(app.RootDir)
-		if err != nil {
-			return err
-		}
-
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.FilePath)
-		if err != nil {
-			return err
-		}
-		diffs = append(diffs, dependenciesDiff.Strings()...)
-	}
-
-	if cmd.inputs.IncludePackageJSON {
-		appDependencies, err := local.FindPackageJSON(app.RootDir)
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON {
+		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
@@ -221,4 +210,19 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	return nil
+}
+
+func (i *diffInputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
+	var err error
+	var appDependencies local.Dependencies
+	if i.IncludePackageJSON {
+		appDependencies, err = local.FindPackageJSON(rootDir)
+	} else {
+		appDependencies, err = local.FindNodeModules(rootDir)
+	}
+	if err != nil {
+		return local.Dependencies{}, err
+	}
+
+	return appDependencies, nil
 }

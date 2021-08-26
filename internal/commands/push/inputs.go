@@ -31,6 +31,7 @@ type inputs struct {
 	Project            string
 	IncludeNodeModules bool
 	IncludePackageJSON bool
+	IncludeDependencies bool
 	IncludeHosting     bool
 	ResetCDNCache      bool
 	DryRun             bool
@@ -91,6 +92,9 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.RemoteApp != "" {
 		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
+	}
+	if i.IncludeDependencies {
+		args = append(args, flags.Arg{Name: flagIncludeDependencies})
 	}
 	if i.IncludeNodeModules {
 		args = append(args, flags.Arg{Name: flagIncludeNodeModules})

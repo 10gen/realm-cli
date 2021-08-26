@@ -60,7 +60,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      flagIncludeNodeModules,
 				Shorthand: "n",
 				Usage: flags.Usage{
-					Description: "Import and include Realm app dependencies from an archive file",
+					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -74,14 +75,15 @@ func (cmd *Command) Flags() []flags.Flag {
 				},
 			},
 		},
-		// TODO: Deprecate this flag in realmCli 3.x, ticket REALMC-10088
+		// TODO(REALMC-10088): Remove this flag in realmCli 3.x8
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Import and include Realm app dependencies from an archive file",
+					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -174,21 +176,8 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
-	if cmd.inputs.IncludeNodeModules {
-		appDependencies, err := local.FindNodeModules(app.RootDir)
-		if err != nil {
-			return err
-		}
-		uploadPathDependencies = appDependencies.FilePath
-
-		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
-		if err != nil {
-			return err
-		}
-	}
-
-	if cmd.inputs.IncludePackageJSON {
-		appDependencies, err := local.FindPackageJSON(app.RootDir)
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON {
+		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
@@ -363,6 +352,23 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 func (cmd *Command) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMeta.Use, cmd.inputs.args(omitDryRun))
 }
+
+
+func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
+	var err error
+	var appDependencies local.Dependencies
+	if i.IncludePackageJSON {
+		appDependencies, err = local.FindPackageJSON(rootDir)
+	} else {
+		appDependencies, err = local.FindNodeModules(rootDir)
+	}
+	if err != nil {
+		return local.Dependencies{}, err
+	}
+
+	return appDependencies, nil
+}
+
 
 type namer interface{ Name() string }
 type locationer interface{ Location() realm.Location }

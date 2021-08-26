@@ -3,6 +3,7 @@ package pull
 import (
 	"archive/zip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,7 +61,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      "include-node-modules",
 				Shorthand: "n",
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies",
+					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -70,18 +72,19 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      "include-package-json",
 				Shorthand: "p",
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies",
+					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
 			},
 		},
-		// TODO: Deprecate this flag in realmCli 3.x, ticket REALMC-10088
+		// TODO(REALMC-10088): Remove this flag in realmCli 3.x
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies",
+					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -189,57 +192,44 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
-	if cmd.inputs.IncludePackageJSON {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Fetching dependencies json..."
+	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
+		var (
+			fileName string
+			file io.ReadCloser
+			err error
+		)
 
-		exportDependencies := func() error {
+		logStr := "JSON"
+		if cmd.inputs.IncludeNodeModules {
+			logStr = "node modules"
+		}
+		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
+		s.Suffix = " Fetching dependencies " + logStr + "..."
+
+		exportDependencies := func(inputJSON, inputNodeModules bool) error {
 			s.Start()
 			defer s.Stop()
 
-			JSONName, JSONFile, err := clients.Realm.ExportDependencies(app.GroupID, app.ID, realm.JSON)
-			if err != nil {
-				return err
+			if inputJSON {
+				fileName, file, err = clients.Realm.ExportDependencies(app.GroupID, app.ID)
+			} else {
+				fileName, file, err = clients.Realm.ExportDependenciesArchive(app.GroupID, app.ID)
 			}
-
-			fmt.Println(JSONName)
-			return local.WriteFile(
-				filepath.Join(pathBackend, local.NameFunctions, JSONName),
-				0666,
-				JSONFile,
-			)
-		}
-
-		if err := exportDependencies(); err != nil {
-			return err
-		}
-		ui.Print(terminal.NewTextLog("Fetched dependencies JSON"))
-	}
-
-	if cmd.inputs.IncludeNodeModules {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Fetching dependencies archive..."
-
-		exportDependencies := func() error {
-			s.Start()
-			defer s.Stop()
-
-			archiveName, archivePkg, err := clients.Realm.ExportDependencies(app.GroupID, app.ID, realm.Zip)
 			if err != nil {
 				return err
 			}
 
 			return local.WriteFile(
-				filepath.Join(pathBackend, local.NameFunctions, archiveName),
+				filepath.Join(pathBackend, local.NameFunctions, fileName),
 				0666,
-				archivePkg,
+				file,
 			)
 		}
 
-		if err := exportDependencies(); err != nil {
+		if err := exportDependencies(cmd.inputs.IncludePackageJSON, cmd.inputs.IncludeNodeModules); err != nil {
 			return err
 		}
-		ui.Print(terminal.NewTextLog("Fetched dependencies archive"))
+		ui.Print(terminal.NewTextLog("Fetched dependencies " + logStr))
 	}
 
 	if cmd.inputs.IncludeHosting {
