@@ -62,7 +62,7 @@ func (cmd *Command) Flags() []flags.Flag {
 				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
-					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -85,8 +85,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
-				NormalizedName: "include-node-modules",
-				Deprecated: true,
+				NormalizedName:  "include-node-modules",
+				Deprecated:      true,
 				DeprecationNote: "please use --include-node-modules instead",
 			},
 		},
@@ -197,8 +197,8 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
 		var (
 			fileName string
-			file io.ReadCloser
-			err error
+			file     io.ReadCloser
+			err      error
 		)
 
 		logStr := "JSON"
