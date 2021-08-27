@@ -83,8 +83,10 @@ func (cmd *Command) Flags() []flags.Flag {
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
-					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
+				NormalizedName: flagIncludeNodeModules,
+				Deprecated: true,
+				DeprecationNote: "please use --include-node-modules instead",
 			},
 		},
 		flags.BoolFlag{

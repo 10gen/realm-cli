@@ -91,6 +91,9 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
+				NormalizedName: "inlude-node-modules",
+				Deprecated: true,
+				DeprecationNote: "please use --include-node-modules instead",
 			},
 		},
 		flags.BoolFlag{

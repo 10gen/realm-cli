@@ -24,6 +24,9 @@ type Meta struct {
 	Shorthand string
 	Usage     Usage
 	Hidden    bool
+	NormalizedName string
+	Deprecated bool
+	DeprecationNote string
 }
 
 // Usage represents the details of a flag's usage
@@ -104,6 +107,10 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecated {
+		MarkDeprecated(fs, f.Name)
+	}
 }
 
 // CustomFlag is a custom flag
@@ -122,6 +129,10 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
+	}
+
+	if f.Deprecated {
+		MarkDeprecated(fs, f.Name)
 	}
 }
 
@@ -194,6 +205,10 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecated {
+		MarkDeprecated(fs, f.Name)
+	}
 }
 
 // StringArrayFlag is a string array flag
@@ -213,6 +228,10 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
+	}
+
+	if f.Deprecated {
+		MarkDeprecated(fs, f.Name)
 	}
 }
 
@@ -234,6 +253,10 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecated {
+		MarkDeprecated(fs, f.Name)
+	}
 }
 
 // MarkHidden marks the specified flag as hidden from the provided flag set
@@ -241,5 +264,11 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 // golangci-lint to play nicely with errcheck and our exclude .errcheck file
 // For now, we use this to isolate and minimize the nolint directives in this repo
 func MarkHidden(fs *pflag.FlagSet, name string) {
+	fs.MarkHidden(name) //nolint: errcheck
+}
+
+// MarkDeprecated makres the specified flag as deprecated from the provided flag set
+// TODO(REALMC-8369), see MarkHidden comment for more detail
+func MarkDeprecated(fs *pflag.FlagSet, name string) {
 	fs.MarkHidden(name) //nolint: errcheck
 }
