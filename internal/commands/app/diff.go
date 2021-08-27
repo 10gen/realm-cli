@@ -67,9 +67,8 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
-					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-
 			},
 		},
 		flags.BoolFlag{
@@ -91,8 +90,8 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
-				NormalizedName: "inlude-node-modules",
-				Deprecated: true,
+				NormalizedName:  "inlude-node-modules",
+				Deprecated:      true,
 				DeprecationNote: "please use --include-node-modules instead",
 			},
 		},

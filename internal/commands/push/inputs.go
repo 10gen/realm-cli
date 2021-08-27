@@ -26,15 +26,15 @@ type appRemote struct {
 }
 
 type inputs struct {
-	LocalPath          string
-	RemoteApp          string
-	Project            string
-	IncludeNodeModules bool
-	IncludePackageJSON bool
+	LocalPath           string
+	RemoteApp           string
+	Project             string
+	IncludeNodeModules  bool
+	IncludePackageJSON  bool
 	IncludeDependencies bool
-	IncludeHosting     bool
-	ResetCDNCache      bool
-	DryRun             bool
+	IncludeHosting      bool
+	ResetCDNCache       bool
+	DryRun              bool
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {

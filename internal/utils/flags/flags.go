@@ -20,12 +20,12 @@ type Flag interface {
 
 // Meta represents the metadata of a flag
 type Meta struct {
-	Name      string
-	Shorthand string
-	Usage     Usage
-	Hidden    bool
-	NormalizedName string
-	Deprecated bool
+	Name            string
+	Shorthand       string
+	Usage           Usage
+	Hidden          bool
+	NormalizedName  string
+	Deprecated      bool
 	DeprecationNote string
 }
 

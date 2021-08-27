@@ -61,7 +61,7 @@ func (cmd *Command) Flags() []flags.Flag {
 				Shorthand: "n",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
-					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
 		},
@@ -84,8 +84,8 @@ func (cmd *Command) Flags() []flags.Flag {
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 				},
-				NormalizedName: flagIncludeNodeModules,
-				Deprecated: true,
+				NormalizedName:  flagIncludeNodeModules,
+				Deprecated:      true,
 				DeprecationNote: "please use --include-node-modules instead",
 			},
 		},
@@ -355,7 +355,6 @@ func (cmd *Command) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMeta.Use, cmd.inputs.args(omitDryRun))
 }
 
-
 func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
 	var err error
 	var appDependencies local.Dependencies
@@ -370,7 +369,6 @@ func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, err
 
 	return appDependencies, nil
 }
-
 
 type namer interface{ Name() string }
 type locationer interface{ Location() realm.Location }

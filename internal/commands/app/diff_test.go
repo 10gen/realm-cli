@@ -140,7 +140,6 @@ Modified Dependencies
 
 		t.Run("with include node modules set it should diff function dependencies", func(t *testing.T) {
 
-
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
 			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
@@ -154,7 +153,6 @@ Modified Dependencies
 			assert.Equal(t, diffStr, out.String())
 		})
 	})
-
 
 	t.Run("should return error with include archived dependencies set and diff dependencies returns an error", func(t *testing.T) {
 		_, ui := mock.NewUI()

@@ -80,10 +80,8 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			}
 
 			var aliasNormalizeFunc = func(f *pflag.FlagSet, name string) pflag.NormalizedName {
-				switch name {
-				case "include-dependencies":
+				if name == "include-dependencies" {
 					name = "include-node-modules"
-					break
 				}
 				return pflag.NormalizedName(name)
 			}

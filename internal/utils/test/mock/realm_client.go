@@ -18,11 +18,11 @@ type RealmClient struct {
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
 	ImportFn func(groupID, appID string, appData interface{}) error
 
-	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
+	ExportDependenciesFn        func(groupID, appID string) (string, io.ReadCloser, error)
 	ExportDependenciesArchiveFn func(groupID, appID string) (string, io.ReadCloser, error)
-	ImportDependenciesFn func(groupID, appID, uploadPath string) error
-	DiffDependenciesFn   func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
-	DependenciesStatusFn func(groupID, appID string) (realm.DependenciesStatus, error)
+	ImportDependenciesFn        func(groupID, appID, uploadPath string) error
+	DiffDependenciesFn          func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
+	DependenciesStatusFn        func(groupID, appID string) (realm.DependenciesStatus, error)
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
