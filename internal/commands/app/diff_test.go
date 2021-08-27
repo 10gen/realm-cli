@@ -146,6 +146,8 @@ Modified Dependencies
 			assert.Equal(t, diffStr, out.String())
 		})
 
+		out.Reset()
+
 		t.Run("with include package json set it should diff function dependencies", func(t *testing.T) {
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
 			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))

@@ -177,6 +177,9 @@ Successfully pulled app down: app
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "", nil, errors.New("something bad happened")
 		}
+		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+			return "", nil, errors.New("something bad happened")
+		}
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 			return nil, nil
 		}
@@ -234,6 +237,9 @@ Successfully pulled app down: app
 			return "app_20210101", &zipPkg.Reader, nil
 		}
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+			return "package.json", depsPkg, nil
+		}
+		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "node_modules.zip", depsPkg, nil
 		}
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
@@ -244,11 +250,54 @@ Successfully pulled app down: app
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk
-Fetched dependencies archive
+Fetched dependencies node modules
 Successfully pulled app down: app
 `, out.String())
 
 		_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
+		assert.Nil(t, pkgErr)
+	})
+
+	t.Run("with a realm client that successfully exports dependencies should write the package.json", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+		defer teardown()
+
+		out, ui := mock.NewUI()
+
+		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
+		assert.Nil(t, zipErr)
+		defer zipPkg.Close()
+
+		depsPkg, err := os.Open("testdata/package.json")
+		assert.Nil(t, err)
+		defer depsPkg.Close()
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
+		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
+		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+			return "package.json", depsPkg, nil
+		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
+		}
+
+		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludePackageJSON: true}}
+
+		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+		assert.Equal(t, `Saved app to disk
+Fetched dependencies JSON
+Successfully pulled app down: app
+`, out.String())
+
+		_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "package.json"))
 		assert.Nil(t, pkgErr)
 	})
 
