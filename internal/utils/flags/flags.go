@@ -258,28 +258,33 @@ func DeprecationHandler(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	return pflag.NormalizedName(name)
 }
 
+// Deprecator is capable of deprecating a flag
 type Deprecator interface {
 	Deprecate(fs *pflag.FlagSet, name string)
 }
 
+// Deprecated has a flag's deprecation information
 type Deprecated struct {
 	Message string
 }
 
+// Deprecate deprecates the deprecated flag
 func (d Deprecated) Deprecate(fs *pflag.FlagSet, name string) {
 	message := d.Message
 	if message == "" {
 		message = fmt.Sprintf("The field '%s' has been marked for deprecation", name)
 	}
 
-	fs.MarkDeprecated(name, message)
+	fs.MarkDeprecated(name, message) //nolint: errcheck
 }
 
+// Forwarded is capable of forwarding a flag that needs to be deprecated
 type Forwarded struct {
 	Deprecated Deprecated
 	To         string
 }
 
+// Deprecate deprecates the deprecated flag and forwards it to a new name
 func (f Forwarded) Deprecate(fs *pflag.FlagSet, name string) {
 	f.Deprecated.Deprecate(fs, name)
 	forwardedNames[name] = f.To
