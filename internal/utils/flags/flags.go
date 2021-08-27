@@ -20,13 +20,11 @@ type Flag interface {
 
 // Meta represents the metadata of a flag
 type Meta struct {
-	Name            string
-	Shorthand       string
-	Usage           Usage
-	Hidden          bool
-	NormalizedName  string
-	Deprecated      bool
-	DeprecationNote string
+	Name       string
+	Shorthand  string
+	Usage      Usage
+	Hidden     bool
+	Deprecator Deprecator
 }
 
 // Usage represents the details of a flag's usage
@@ -107,10 +105,6 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
-
-	if f.Deprecated {
-		MarkDeprecated(fs, f.Name)
-	}
 }
 
 // CustomFlag is a custom flag
@@ -129,10 +123,6 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecated {
-		MarkDeprecated(fs, f.Name)
 	}
 }
 
@@ -205,10 +195,6 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
-
-	if f.Deprecated {
-		MarkDeprecated(fs, f.Name)
-	}
 }
 
 // StringArrayFlag is a string array flag
@@ -228,10 +214,6 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecated {
-		MarkDeprecated(fs, f.Name)
 	}
 }
 
@@ -253,10 +235,6 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
-
-	if f.Deprecated {
-		MarkDeprecated(fs, f.Name)
-	}
 }
 
 // MarkHidden marks the specified flag as hidden from the provided flag set
@@ -267,8 +245,42 @@ func MarkHidden(fs *pflag.FlagSet, name string) {
 	fs.MarkHidden(name) //nolint: errcheck
 }
 
-// MarkDeprecated makres the specified flag as deprecated from the provided flag set
-// TODO(REALMC-8369), see MarkHidden comment for more detail
-func MarkDeprecated(fs *pflag.FlagSet, name string) {
-	fs.MarkHidden(name) //nolint: errcheck
+var (
+	forwardedNames = make(map[string]string)
+)
+
+// DeprecationHandler would be passed `SetNormalizeFunc`
+func DeprecationHandler(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	newName, ok := forwardedNames[name]
+	if ok {
+		name = newName
+	}
+	return pflag.NormalizedName(name)
+}
+
+type Deprecator interface {
+	Deprecate(fs *pflag.FlagSet, name string)
+}
+
+type Deprecated struct {
+	Message string
+}
+
+func (d Deprecated) Deprecate(fs *pflag.FlagSet, name string) {
+	message := d.Message
+	if message == "" {
+		message = fmt.Sprintf("The field '%s' has been marked for deprecation", name)
+	}
+
+	fs.MarkDeprecated(name, message)
+}
+
+type Forwarded struct {
+	Deprecated Deprecated
+	To         string
+}
+
+func (f Forwarded) Deprecate(fs *pflag.FlagSet, name string) {
+	f.Deprecated.Deprecate(fs, name)
+	forwardedNames[name] = f.To
 }

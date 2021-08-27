@@ -79,15 +79,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 				flag.Register(fs)
 			}
 
-			var aliasNormalizeFunc = func(f *pflag.FlagSet, name string) pflag.NormalizedName {
-				if name == "include-dependencies" {
-					name = "include-node-modules"
-				}
-				return pflag.NormalizedName(name)
-			}
-
-			fs.SetNormalizeFunc(aliasNormalizeFunc)
-
+			fs.SetNormalizeFunc(flags.DeprecationHandler)
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
