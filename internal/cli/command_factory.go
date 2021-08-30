@@ -80,6 +80,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			}
 
 			fs.SetNormalizeFunc(flags.DeprecationHandler)
+			factory.handleDependencies(fs)
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
@@ -286,4 +287,13 @@ func handleUsage(cmd *cobra.Command, err error) {
 		return
 	}
 	fmt.Println(cmd.UsageString())
+}
+
+func (factory *CommandFactory) handleDependencies(fs *pflag.FlagSet) {
+	if flag := fs.Lookup(flags.FlagIncludeNodeModules); flag != nil {
+		if flag = fs.Lookup(flags.FlagIncludePackageJSON); flag != nil {
+			factory.ui.Print(terminal.NewWarningLog("Packages will be uploaded from package.json. " +
+				"Please exclusively use the --" + flags.FlagIncludeNodeModules + "flag to upload the dependencies archive"))
+		}
+	}
 }
