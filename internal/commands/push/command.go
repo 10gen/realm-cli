@@ -70,7 +70,6 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name: flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from a package.json file",
-					Note:        "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
 				},
 			},
 		},
@@ -128,6 +127,12 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
+	if cmd.inputs.IncludeNodeModules && cmd.inputs.IncludePackageJSON {
+		return fmt.Errorf("please exclusively use the --include-package-json flag to upload the " +
+			"dependencies package.json, or exclusively use include--node-modules flag " +
+			"to upload the dependencies archive")
+	}
+
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err

@@ -115,6 +115,12 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
+	if cmd.inputs.IncludeNodeModules && cmd.inputs.IncludePackageJSON {
+		return fmt.Errorf("please exclusively use the --include-package-json flag to upload the " +
+			"dependencies package.json, or exclusively use include--node-modules flag " +
+			"to upload the dependencies archive")
+	}
+
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err
