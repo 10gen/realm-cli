@@ -108,6 +108,11 @@ type BoolFlag struct {
 
 // Register registers the boolean flag with the provided flag set
 func (f BoolFlag) Register(fs *pflag.FlagSet) {
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+		return
+	}
+
 	if f.Shorthand == "" {
 		fs.BoolVar(f.Value, f.Name, f.DefaultValue, f.Usage.String())
 	} else {
@@ -116,10 +121,6 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecator != nil {
-		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -131,6 +132,11 @@ type CustomFlag struct {
 
 // Register registers the custom flag with the provided flag set
 func (f CustomFlag) Register(fs *pflag.FlagSet) {
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+		return
+	}
+
 	if f.Shorthand == "" {
 		fs.Var(f.Value, f.Name, f.Usage.String())
 	} else {
@@ -139,10 +145,6 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecator != nil {
-		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -206,6 +208,11 @@ type StringFlag struct {
 
 // Register registers the string flag with the provided flag set
 func (f StringFlag) Register(fs *pflag.FlagSet) {
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+		return
+	}
+
 	if f.Shorthand == "" {
 		fs.StringVar(f.Value, f.Name, f.DefaultValue, f.Usage.String())
 	} else {
@@ -214,10 +221,6 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecator != nil {
-		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -230,6 +233,11 @@ type StringArrayFlag struct {
 
 // Register registers the string array flag with the provided flag set
 func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+		return
+	}
+
 	if f.Shorthand == "" {
 		fs.StringArrayVar(f.Value, f.Name, f.DefaultValue, f.Usage.String())
 	} else {
@@ -238,10 +246,6 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecator != nil {
-		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -254,6 +258,11 @@ type StringSliceFlag struct {
 
 // Register registers the string slice flag with the provided flag set
 func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+		return
+	}
+
 	if f.Shorthand == "" {
 		fs.StringSliceVar(f.Value, f.Name, f.DefaultValue, f.Usage.String())
 	} else {
@@ -262,10 +271,6 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
-	}
-
-	if f.Deprecator != nil {
-		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -286,7 +291,11 @@ func DeprecationHandler(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	newName, ok := forwardedNames[name]
 	if ok {
 		name = newName
+		f.Lookup(name).Name = newName
 	}
+
+	delete(forwardedNames, name)
+
 	return pflag.NormalizedName(name)
 }
 
@@ -318,10 +327,10 @@ type Forwarded struct {
 
 // Deprecate deprecates the deprecated flag and forwards it to a new name
 func (f Forwarded) Deprecate(fs *pflag.FlagSet, name string) {
-	message := f.Message
-	if message == "" {
-		message = fmt.Sprintf("The field '%s' has been marked for deprecation, instead please use '%s", name, f.To)
+	if f.Message == "" {
+		f.Message = fmt.Sprintf("The field '%s' has been marked for deprecation, instead please use '%s", name, f.To)
 	}
 
 	forwardedNames[name] = f.To
+	fs.MarkDeprecated(name, f.Message) //nolint: errcheck
 }

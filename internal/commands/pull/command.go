@@ -84,7 +84,7 @@ func (cmd *Command) Flags() []flags.Flag {
 					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{ To: "include-node-modules" },
+				Deprecator: flags.Forwarded{ To: flags.FlagIncludeNodeModules },
 			},
 		},
 		flags.BoolFlag{

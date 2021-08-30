@@ -77,6 +77,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Name:      flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
+					Note: "",
 				},
 			},
 		},
