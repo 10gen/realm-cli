@@ -70,7 +70,7 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from a package.json file",
-					Note: "--include modules will be ignored if presented with this flag",
+					Note: "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
 				},
 			},
 		},
