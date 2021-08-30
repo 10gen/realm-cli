@@ -321,8 +321,8 @@ func (d Deprecated) Deprecate(fs *pflag.FlagSet, name string) {
 
 // Forwarded is capable of forwarding a flag that needs to be deprecated
 type Forwarded struct {
-	Message    string
-	To         string
+	Message string
+	To      string
 }
 
 // Deprecate deprecates the deprecated flag and forwards it to a new name

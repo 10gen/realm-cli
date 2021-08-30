@@ -57,7 +57,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludeNodeModules,
+				Name: flags.FlagIncludeNodeModules,
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
@@ -67,10 +67,10 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludePackageJSON,
+				Name: flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from a package.json file",
-					Note: "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
+					Note:        "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
 				},
 			},
 		},
@@ -82,9 +82,9 @@ func (cmd *Command) Flags() []flags.Flag {
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
-					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{ To: flags.FlagIncludeNodeModules },
+				Deprecator: flags.Forwarded{To: flags.FlagIncludeNodeModules},
 			},
 		},
 		flags.BoolFlag{

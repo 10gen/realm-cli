@@ -131,7 +131,7 @@ func TestRealmDependencies(t *testing.T) {
 
 		groupID := u.CloudGroupID()
 
-		app, teardown:= setupTestApp(t, client, groupID, "importexport-test")
+		app, teardown := setupTestApp(t, client, groupID, "importexport-test")
 		defer teardown()
 
 		t.Run("should successfully import a package.json", func(t *testing.T) {
