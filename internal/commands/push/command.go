@@ -39,7 +39,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.LocalPath,
 			Meta: flags.Meta{
-				Name: flagLocalPath,
+				Name: flags.FlagLocalPath,
 				Usage: flags.Usage{
 					Description: "Specify the local filepath of a Realm app to be imported",
 				},
@@ -48,7 +48,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.RemoteApp,
 			Meta: flags.Meta{
-				Name: flagRemote,
+				Name: flags.FlagRemote,
 				Usage: flags.Usage{
 					Description: "Specify the name or ID of a remote Realm app to edit",
 				},
@@ -57,10 +57,9 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      flagIncludeNodeModules,
-				Shorthand: "n",
+				Name:      flags.FlagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -68,34 +67,29 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name:      flagIncludePackageJSON,
-				Shorthand: "p",
+				Name:      flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Import and include Realm app dependencies from a package.json file",
 				},
 			},
 		},
-		// TODO(REALMC-10088): Remove this flag in realmCli 3.x8
+		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      flagIncludeDependencies,
+				Name:      flags.FlagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note: "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{
-					Deprecated: flags.Deprecated{
-						Message: "please use --include-node-modules instead",
-					},
-					To: "include-node-modules",
-				},
+				Deprecator: flags.Forwarded{ To: flags.FlagIncludeNodeModules },
 			},
 		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
-				Name:      flagIncludeHosting,
+				Name:      flags.FlagIncludeHosting,
 				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Import and include Realm app hosting files",
@@ -105,7 +99,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.ResetCDNCache,
 			Meta: flags.Meta{
-				Name:      flagResetCDNCache,
+				Name:      flags.FlagResetCDNCache,
 				Shorthand: "c",
 				Usage: flags.Usage{
 					Description: "Reset the hosting CDN cache of a Realm app",
@@ -115,7 +109,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.DryRun,
 			Meta: flags.Meta{
-				Name:      flagDryRun,
+				Name:      flags.FlagDryRun,
 				Shorthand: "x",
 				Usage: flags.Usage{
 					Description: "Run without pushing any changes to the Realm server",
@@ -359,18 +353,10 @@ func (cmd *Command) display(omitDryRun bool) string {
 }
 
 func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
-	var err error
-	var appDependencies local.Dependencies
 	if i.IncludePackageJSON {
-		appDependencies, err = local.FindPackageJSON(rootDir)
-	} else {
-		appDependencies, err = local.FindNodeModules(rootDir)
+		return local.FindPackageJSON(rootDir)
 	}
-	if err != nil {
-		return local.Dependencies{}, err
-	}
-
-	return appDependencies, nil
+	return local.FindNodeModules(rootDir)
 }
 
 type namer interface{ Name() string }

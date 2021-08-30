@@ -34,6 +34,7 @@ type diffInputs struct {
 	LocalPath          string
 	RemoteApp          string
 	Project            string
+	IncludeDependencies bool
 	IncludeNodeModules bool
 	IncludePackageJSON bool
 	IncludeHosting     bool
@@ -45,7 +46,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.LocalPath,
 			Meta: flags.Meta{
-				Name: "local",
+				Name: flags.FlagLocalPath,
 				Usage: flags.Usage{
 					Description: "Specify the local filepath of a Realm app to diff",
 				},
@@ -54,7 +55,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.RemoteApp,
 			Meta: flags.Meta{
-				Name: "remote",
+				Name: flags.FlagRemote,
 				Usage: flags.Usage{
 					Description: "Specify the name or ID of a Realm app to diff",
 				},
@@ -63,8 +64,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      "include-node-modules",
-				Shorthand: "n",
+				Name:      flags.FlagIncludeNodeModules,
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
@@ -74,34 +74,29 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name:      "include-package-json",
-				Shorthand: "p",
+				Name:      flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
 			},
 		},
-		// TODO(REALMC-10088): Remove this flag in realmCli 3.x8
+		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
+				Name:      flags.FlagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{
-					Deprecated: flags.Deprecated{
-						Message: "please use --include-node-modules instead",
-					},
-					To: "include-node-modules",
-				},
+				Deprecator: flags.Forwarded{ To: flags.FlagIncludeNodeModules },
 			},
 		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
-				Name:      "include-hosting",
+				Name:      flags.FlagIncludeHosting,
 				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Include Realm app hosting files in the diff",
@@ -218,16 +213,8 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 }
 
 func (i *diffInputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
-	var err error
-	var appDependencies local.Dependencies
 	if i.IncludePackageJSON {
-		appDependencies, err = local.FindPackageJSON(rootDir)
-	} else {
-		appDependencies, err = local.FindNodeModules(rootDir)
+		return local.FindPackageJSON(rootDir)
 	}
-	if err != nil {
-		return local.Dependencies{}, err
-	}
-
-	return appDependencies, nil
+	return local.FindNodeModules(rootDir)
 }

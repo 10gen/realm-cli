@@ -86,7 +86,6 @@ func TestDependenciesFindNodeModules(t *testing.T) {
 			}, deps)
 		})
 	}
-
 }
 
 func TestDependenciesFindPackageJSON(t *testing.T) {

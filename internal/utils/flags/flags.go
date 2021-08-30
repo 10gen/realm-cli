@@ -13,6 +13,18 @@ const (
 	TypeString = "String"
 )
 
+// set of known flag names
+const (
+	FlagLocalPath           = "local"
+	FlagRemote              = "remote"
+	FlagIncludeNodeModules  = "include-node-modules"
+	FlagIncludePackageJSON  = "include-package-json"
+	FlagIncludeDependencies = "include-dependencies"
+	FlagIncludeHosting      = "include-hosting"
+	FlagResetCDNCache       = "reset-cdn-cache"
+	FlagDryRun              = "dry-run"
+)
+
 // Flag is capable of registering a CLI flag
 type Flag interface {
 	Register(fs *pflag.FlagSet)
@@ -105,6 +117,10 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+	}
 }
 
 // CustomFlag is a custom flag
@@ -123,6 +139,10 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
+	}
+
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -195,6 +215,10 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+	}
 }
 
 // StringArrayFlag is a string array flag
@@ -214,6 +238,10 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
+	}
+
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
 	}
 }
 
@@ -235,6 +263,10 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 	if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
+
+	if f.Deprecator != nil {
+		f.Deprecator.Deprecate(fs, f.Name)
+	}
 }
 
 // MarkHidden marks the specified flag as hidden from the provided flag set
@@ -249,7 +281,7 @@ var (
 	forwardedNames = make(map[string]string)
 )
 
-// DeprecationHandler would be passed `SetNormalizeFunc`
+// DeprecationHandler is a pflag normalizing function meant to handle deprecating and forwarding flags to new names
 func DeprecationHandler(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	newName, ok := forwardedNames[name]
 	if ok {
@@ -280,12 +312,16 @@ func (d Deprecated) Deprecate(fs *pflag.FlagSet, name string) {
 
 // Forwarded is capable of forwarding a flag that needs to be deprecated
 type Forwarded struct {
-	Deprecated Deprecated
+	Message    string
 	To         string
 }
 
 // Deprecate deprecates the deprecated flag and forwards it to a new name
 func (f Forwarded) Deprecate(fs *pflag.FlagSet, name string) {
-	f.Deprecated.Deprecate(fs, name)
+	message := f.Message
+	if message == "" {
+		message = fmt.Sprintf("The field '%s' has been marked for deprecation, instead please use '%s", name, f.To)
+	}
+
 	forwardedNames[name] = f.To
 }

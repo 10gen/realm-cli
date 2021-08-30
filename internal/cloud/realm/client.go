@@ -19,15 +19,6 @@ const (
 	cliHeaderValue      = "mongodb-baas-cli"
 )
 
-// DepFileFormat is used as a enum type for file format.
-type DepFileFormat int
-
-// set of file format options for dependencies
-const (
-	JSON DepFileFormat = iota
-	Zip
-)
-
 // Client is a Realm client
 type Client interface {
 	AuthProfile() (AuthProfile, error)

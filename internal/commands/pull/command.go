@@ -40,7 +40,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.LocalPath,
 			Meta: flags.Meta{
-				Name: "local",
+				Name: flags.FlagLocalPath,
 				Usage: flags.Usage{
 					Description: "Specify a local filepath to export a Realm app to",
 				},
@@ -49,7 +49,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.RemoteApp,
 			Meta: flags.Meta{
-				Name: "remote",
+				Name: flags.FlagRemote,
 				Usage: flags.Usage{
 					Description: "Specify the name or ID of a remote Realm app to export",
 				},
@@ -58,10 +58,9 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name:      "include-node-modules",
-				Shorthand: "n",
+				Name:      flags.FlagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -69,34 +68,29 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name:      "include-package-json",
-				Shorthand: "p",
+				Name:      flags.FlagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
 			},
 		},
-		// TODO(REALMC-10088): Remove this flag in realmCli 3.x
+		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
+				Name:     flags.FlagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Export and include Realm app dependencies from an archive file",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{
-					Deprecated: flags.Deprecated{
-						Message: "please use --include-node-modules instead",
-					},
-					To: "include-node-modules",
-				},
+				Deprecator: flags.Forwarded{ To: "include-node-modules" },
 			},
 		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
-				Name:      "include-hosting",
+				Name:      flags.FlagIncludeHosting,
 				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app hosting files",
@@ -106,7 +100,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.DryRun,
 			Meta: flags.Meta{
-				Name:      "dry-run",
+				Name:     flags.FlagDryRun,
 				Shorthand: "x",
 				Usage: flags.Usage{
 					Description: "Run without writing any changes to the local filepath",
@@ -198,28 +192,19 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
 	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
-		var (
-			fileName string
-			file     io.ReadCloser
-			err      error
-		)
-
-		logStr := "JSON"
+		logStr := "as a package.json file"
 		if cmd.inputs.IncludeNodeModules {
-			logStr = "node modules"
+			logStr = "as a node_modules .zip"
 		}
+
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = " Fetching dependencies " + logStr + "..."
 
-		exportDependencies := func(inputJSON, inputNodeModules bool) error {
+		var exportDependencies = func() error {
 			s.Start()
 			defer s.Stop()
 
-			if inputJSON {
-				fileName, file, err = clients.Realm.ExportDependencies(app.GroupID, app.ID)
-			} else {
-				fileName, file, err = clients.Realm.ExportDependenciesArchive(app.GroupID, app.ID)
-			}
+			fileName, file, err := cmd.exportDependencies(clients, app)
 			if err != nil {
 				return err
 			}
@@ -231,7 +216,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			)
 		}
 
-		if err := exportDependencies(cmd.inputs.IncludePackageJSON, cmd.inputs.IncludeNodeModules); err != nil {
+		if err := exportDependencies(); err != nil {
 			return err
 		}
 		ui.Print(terminal.NewTextLog("Fetched dependencies " + logStr))
@@ -323,4 +308,11 @@ func checkPathDestination(ui terminal.UI, path string) (bool, error) {
 	}
 
 	return ui.Confirm("Directory '%s' already exists, do you still wish to proceed?", path)
+}
+
+func (cmd *Command) exportDependencies(clients cli.Clients, app realm.App) (string, io.ReadCloser, error) {
+	if cmd.inputs.IncludePackageJSON {
+		return clients.Realm.ExportDependencies(app.GroupID, app.ID)
+	}
+	return clients.Realm.ExportDependenciesArchive(app.GroupID, app.ID)
 }

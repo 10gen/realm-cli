@@ -130,7 +130,7 @@ func (c *client) ExportDependenciesArchive(groupID, appID string) (string, io.Re
 		return "", nil, resErr
 	}
 	if res.StatusCode != http.StatusOK {
-		return "", nil, api.ErrUnexpectedStatusCode{"export dependencies", res.StatusCode}
+		return "", nil, api.ErrUnexpectedStatusCode{"export dependencies archive", res.StatusCode}
 	}
 
 	_, mediaParams, mediaErr := mime.ParseMediaType(res.Header.Get(api.HeaderContentDisposition))

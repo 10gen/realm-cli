@@ -175,10 +175,10 @@ Successfully pulled app down: app
 			return "app_20210101", &zipPkg.Reader, nil
 		}
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
-			return "", nil, errors.New("something bad happened")
+			return "", nil, errors.New("something bad happened with package json input")
 		}
 		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
-			return "", nil, errors.New("something bad happened")
+			return "", nil, errors.New("something bad happened with node modules input")
 		}
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 			return nil, nil
@@ -200,15 +200,30 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should return the error when exporting dependencies fails", func(t *testing.T) {
-			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
-			defer teardown()
+			t.Run(" when include package json file", func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+				defer teardown()
 
-			_, ui := mock.NewUI()
+				_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
+				cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludePackageJSON: true}}
 
-			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, errors.New("something bad happened"), err)
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened with package json input"), err)
+
+			})
+			t.Run(" when include node modules zip", func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+				defer teardown()
+
+				_, ui := mock.NewUI()
+
+				cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened with node modules input"), err)
+
+			})
 		})
 	})
 
@@ -250,7 +265,7 @@ Successfully pulled app down: app
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk
-Fetched dependencies node modules
+Fetched dependencies as a node_modules .zip
 Successfully pulled app down: app
 `, out.String())
 
@@ -293,7 +308,7 @@ Successfully pulled app down: app
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk
-Fetched dependencies JSON
+Fetched dependencies as a package.json file
 Successfully pulled app down: app
 `, out.String())
 

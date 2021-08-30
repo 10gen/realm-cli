@@ -12,7 +12,7 @@ type Dependencies struct {
 	FilePath string
 }
 
-// FindNodeModules finds the Realm app dependencies archive
+// FindNodeModules finds the Realm app dependencies as a node_modules archive
 func FindNodeModules(path string) (Dependencies, error) {
 	app, appOK, appErr := FindApp(path)
 	if appErr != nil {
@@ -40,7 +40,7 @@ func FindNodeModules(path string) (Dependencies, error) {
 	return Dependencies{rootDir, archivePath}, nil
 }
 
-// FindPackageJSON finds the Realm app dependencies JSON
+// FindPackageJSON finds the Realm app dependencies as a package.json file
 func FindPackageJSON(path string) (Dependencies, error) {
 	app, appOK, appErr := FindApp(path)
 	if appErr != nil {

@@ -9,17 +9,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
-const (
-	flagLocalPath           = "local"
-	flagRemote              = "remote"
-	flagIncludeNodeModules  = "include-node-modules"
-	flagIncludePackageJSON  = "include-package-json"
-	flagIncludeDependencies = "include-dependencies"
-	flagIncludeHosting      = "include-hosting"
-	flagResetCDNCache       = "reset-cdn-cache"
-	flagDryRun              = "dry-run"
-)
-
 type appRemote struct {
 	GroupID string
 	AppID   string
@@ -88,28 +77,28 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{cli.ProjectFlagName, i.Project})
 	}
 	if i.LocalPath != "" {
-		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
+		args = append(args, flags.Arg{flags.FlagLocalPath, i.LocalPath})
 	}
 	if i.RemoteApp != "" {
-		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
+		args = append(args, flags.Arg{flags.FlagRemote, i.RemoteApp})
 	}
 	if i.IncludeDependencies {
-		args = append(args, flags.Arg{Name: flagIncludeDependencies})
+		args = append(args, flags.Arg{Name: flags.FlagIncludeDependencies})
 	}
 	if i.IncludeNodeModules {
-		args = append(args, flags.Arg{Name: flagIncludeNodeModules})
+		args = append(args, flags.Arg{Name: flags.FlagIncludeNodeModules})
 	}
 	if i.IncludePackageJSON {
-		args = append(args, flags.Arg{Name: flagIncludePackageJSON})
+		args = append(args, flags.Arg{Name: flags.FlagIncludePackageJSON})
 	}
 	if i.IncludeHosting {
-		args = append(args, flags.Arg{Name: flagIncludeHosting})
+		args = append(args, flags.Arg{Name: flags.FlagIncludeHosting})
 	}
 	if i.ResetCDNCache {
-		args = append(args, flags.Arg{Name: flagResetCDNCache})
+		args = append(args, flags.Arg{Name: flags.FlagResetCDNCache})
 	}
 	if i.DryRun && !omitDryRun {
-		args = append(args, flags.Arg{Name: flagDryRun})
+		args = append(args, flags.Arg{Name: flags.FlagDryRun})
 	}
 	return args
 }

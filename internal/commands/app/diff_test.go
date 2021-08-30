@@ -109,7 +109,6 @@ func TestAppDiffHandler(t *testing.T) {
 	})
 
 	t.Run("diff function dependencies", func(t *testing.T) {
-		out, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
 
@@ -139,16 +138,15 @@ Modified Dependencies
 `
 
 		t.Run("with include node modules set it should diff function dependencies", func(t *testing.T) {
-
+			out, ui := mock.NewUI()
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
 			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, diffStr, out.String())
 		})
 
-		out.Reset()
-
 		t.Run("with include package json set it should diff function dependencies", func(t *testing.T) {
+			out, ui := mock.NewUI()
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
 			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
@@ -156,7 +154,7 @@ Modified Dependencies
 		})
 	})
 
-	t.Run("should return error with include archived dependencies set and diff dependencies returns an error", func(t *testing.T) {
+	t.Run("should return error with include node modules set and diff dependencies returns an error", func(t *testing.T) {
 		_, ui := mock.NewUI()
 
 		realmClient := mock.RealmClient{}
