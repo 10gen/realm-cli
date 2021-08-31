@@ -77,28 +77,28 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{cli.ProjectFlagName, i.Project})
 	}
 	if i.LocalPath != "" {
-		args = append(args, flags.Arg{flags.FlagLocalPath, i.LocalPath})
+		args = append(args, flags.Arg{flagLocalPath, i.LocalPath})
 	}
 	if i.RemoteApp != "" {
-		args = append(args, flags.Arg{flags.FlagRemote, i.RemoteApp})
+		args = append(args, flags.Arg{flagRemote, i.RemoteApp})
 	}
 	if i.IncludeDependencies {
-		args = append(args, flags.Arg{Name: flags.FlagIncludeDependencies})
+		args = append(args, flags.Arg{Name: flagIncludeDependencies})
 	}
 	if i.IncludeNodeModules {
-		args = append(args, flags.Arg{Name: flags.FlagIncludeNodeModules})
+		args = append(args, flags.Arg{Name: flagIncludeNodeModules})
 	}
 	if i.IncludePackageJSON {
-		args = append(args, flags.Arg{Name: flags.FlagIncludePackageJSON})
+		args = append(args, flags.Arg{Name: flagIncludePackageJSON})
 	}
 	if i.IncludeHosting {
-		args = append(args, flags.Arg{Name: flags.FlagIncludeHosting})
+		args = append(args, flags.Arg{Name: flagIncludeHosting})
 	}
 	if i.ResetCDNCache {
-		args = append(args, flags.Arg{Name: flags.FlagResetCDNCache})
+		args = append(args, flags.Arg{Name: flagResetCDNCache})
 	}
 	if i.DryRun && !omitDryRun {
-		args = append(args, flags.Arg{Name: flags.FlagDryRun})
+		args = append(args, flags.Arg{Name: flagDryRun})
 	}
 	return args
 }

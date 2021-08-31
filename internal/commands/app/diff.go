@@ -46,7 +46,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.LocalPath,
 			Meta: flags.Meta{
-				Name: flags.FlagLocalPath,
+				Name: "local",
 				Usage: flags.Usage{
 					Description: "Specify the local filepath of a Realm app to diff",
 				},
@@ -55,7 +55,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.RemoteApp,
 			Meta: flags.Meta{
-				Name: flags.FlagRemote,
+				Name: "remote",
 				Usage: flags.Usage{
 					Description: "Specify the name or ID of a Realm app to diff",
 				},
@@ -64,7 +64,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name: flags.FlagIncludeNodeModules,
+				Name: "include-node-modules",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
@@ -74,7 +74,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name: flags.FlagIncludePackageJSON,
+				Name: "include-package-json",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
 					Note:        "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
@@ -85,19 +85,19 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludeDependencies,
+				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: flags.FlagIncludeNodeModules},
+				Deprecator: flags.Forwarded{To: "include-node-modules"},
 			},
 		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludeHosting,
+				Name:      "include-hosting",
 				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Include Realm app hosting files in the diff",
@@ -115,11 +115,6 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	if cmd.inputs.IncludeNodeModules && cmd.inputs.IncludePackageJSON {
-		return fmt.Errorf("please exclusively use the --include-package-json flag to upload the " +
-			"dependencies package.json, or exclusively use include--node-modules flag " +
-			"to upload the dependencies archive")
-	}
 
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {

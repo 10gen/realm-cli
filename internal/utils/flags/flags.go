@@ -13,18 +13,6 @@ const (
 	TypeString = "String"
 )
 
-// set of known flag names
-const (
-	FlagLocalPath           = "local"
-	FlagRemote              = "remote"
-	FlagIncludeNodeModules  = "include-node-modules"
-	FlagIncludePackageJSON  = "include-package-json"
-	FlagIncludeDependencies = "include-dependencies"
-	FlagIncludeHosting      = "include-hosting"
-	FlagResetCDNCache       = "reset-cdn-cache"
-	FlagDryRun              = "dry-run"
-)
-
 // Flag is capable of registering a CLI flag
 type Flag interface {
 	Register(fs *pflag.FlagSet)
@@ -291,10 +279,7 @@ func DeprecationHandler(f *pflag.FlagSet, name string) pflag.NormalizedName {
 	newName, ok := forwardedNames[name]
 	if ok {
 		name = newName
-		f.Lookup(name).Name = newName
 	}
-
-	delete(forwardedNames, name)
 
 	return pflag.NormalizedName(name)
 }
@@ -332,5 +317,4 @@ func (f Forwarded) Deprecate(fs *pflag.FlagSet, name string) {
 	}
 
 	forwardedNames[name] = f.To
-	fs.MarkDeprecated(name, f.Message) //nolint: errcheck
 }

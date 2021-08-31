@@ -40,7 +40,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.LocalPath,
 			Meta: flags.Meta{
-				Name: flags.FlagLocalPath,
+				Name: "local",
 				Usage: flags.Usage{
 					Description: "Specify a local filepath to export a Realm app to",
 				},
@@ -49,7 +49,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.StringFlag{
 			Value: &cmd.inputs.RemoteApp,
 			Meta: flags.Meta{
-				Name: flags.FlagRemote,
+				Name: "remote",
 				Usage: flags.Usage{
 					Description: "Specify the name or ID of a remote Realm app to export",
 				},
@@ -58,7 +58,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name: flags.FlagIncludeNodeModules,
+				Name: "include-node-modules",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
@@ -68,7 +68,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name: flags.FlagIncludePackageJSON,
+				Name: "include-package-json",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
@@ -78,19 +78,19 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludeDependencies,
+				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies from an archive file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: flags.FlagIncludeNodeModules},
+				Deprecator: flags.Forwarded{To: "include-node-modules"},
 			},
 		},
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeHosting,
 			Meta: flags.Meta{
-				Name:      flags.FlagIncludeHosting,
+				Name:      "include-hosting",
 				Shorthand: "s",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app hosting files",
@@ -100,7 +100,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.DryRun,
 			Meta: flags.Meta{
-				Name:      flags.FlagDryRun,
+				Name:      "dry-run",
 				Shorthand: "x",
 				Usage: flags.Usage{
 					Description: "Run without writing any changes to the local filepath",
@@ -131,12 +131,6 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	if cmd.inputs.IncludeNodeModules && cmd.inputs.IncludePackageJSON {
-		return fmt.Errorf("please exclusively use the --include-package-json flag to upload the " +
-			"dependencies package.json, or exclusively use include--node-modules flag " +
-			"to upload the dependencies archive")
-	}
-
 	app, err := cmd.inputs.resolveRemoteApp(ui, clients)
 	if err != nil {
 		return err
@@ -200,13 +194,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
 		logStr := "as a package.json file"
 		if cmd.inputs.IncludeNodeModules {
-			logStr = "as a node_modules .zip"
+			logStr = "as a node_modules archive"
 		}
 
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = " Fetching dependencies " + logStr + "..."
 
-		var exportDependencies = func() error {
+		exportDependencies := func() error {
 			s.Start()
 			defer s.Stop()
 

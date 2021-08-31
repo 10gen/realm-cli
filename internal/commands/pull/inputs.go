@@ -32,6 +32,10 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if i.IncludeNodeModules && i.IncludePackageJSON {
+		return fmt.Errorf(`must not use both "--include-package-json" and "--include-node-modules" at the same time`)
+	}
+
 	wd := i.LocalPath
 	if wd == "" {
 		wd = profile.WorkingDirectory
