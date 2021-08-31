@@ -265,7 +265,7 @@ Successfully pulled app down: app
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 		assert.Equal(t, `Saved app to disk
-Fetched dependencies as a node_modules .zip
+Fetched dependencies as a node_modules archive
 Successfully pulled app down: app
 `, out.String())
 
