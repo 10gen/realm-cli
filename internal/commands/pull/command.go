@@ -322,7 +322,6 @@ func (cmd *Command) exportDependencies(clients cli.Clients, app realm.App) (stri
 	return clients.Realm.ExportDependenciesArchive(app.GroupID, app.ID)
 }
 
-
 // IsSupportedArchiveFormat returns true if the archive format is supported
 func IsSupportedArchiveFormat(filename string) bool {
 	filename = strings.ToLower(filename)
