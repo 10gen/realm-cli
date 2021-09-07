@@ -23,7 +23,6 @@ func TestRealmIPAccess(t *testing.T) {
 	})
 
 	t.Run("with an active session", func(t *testing.T) {
-		t.Skip("skipping test")
 		client := newAuthClient(t)
 		groupID := u.CloudGroupID()
 
