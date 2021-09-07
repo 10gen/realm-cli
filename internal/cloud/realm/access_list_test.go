@@ -61,7 +61,7 @@ func TestRealmIPAccess(t *testing.T) {
 				})
 
 				t.Run("and return an error if we can't find the allowed ip", func(t *testing.T) {
-					err := client.AllowedIPUpdate(groupID, testApp.ID, "notFound", "2.2.2.2", "notUsed")
+					err := client.AllowedIPUpdate(groupID, testApp.ID, primitive.NewObjectID().Hex(), "2.2.2.2", "notUsed")
 					assert.Equal(t, realm.ServerError{Message: "allowed IP not found: 'notFound'"}, err)
 				})
 			})
@@ -77,7 +77,7 @@ func TestRealmIPAccess(t *testing.T) {
 
 				t.Run("and return an error if we can't find the allowed ip", func(t *testing.T) {
 					err := client.AllowedIPDelete(groupID, testApp.ID, allowedIP.ID)
-					assert.Equal(t, realm.ServerError{Message: fmt.Sprintf("allowed ip not found: '%s'", allowedIP.Address)}, err)
+					assert.Equal(t, realm.ServerError{Message: fmt.Sprintf("allowed ip not found: '%s'", allowedIP.ID)}, err)
 				})
 			})
 		})

@@ -97,7 +97,7 @@ func (c *client) AllowedIPUpdate(groupID, appID, allowedIPID, newAddress, newCom
 		return err
 	}
 
-	if res.StatusCode != http.StatusCreated {
+	if res.StatusCode != http.StatusOK {
 		return api.ErrUnexpectedStatusCode{"update allowed ip", res.StatusCode}
 	}
 
