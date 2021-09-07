@@ -11,7 +11,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TODO(REALMC-9207): Unskip tests once backend is fully implemented
 func TestRealmIPAccess(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
@@ -68,7 +67,7 @@ func TestRealmIPAccess(t *testing.T) {
 			})
 
 			t.Run("and should delete the allowed ip", func(t *testing.T) {
-				assert.Nil(t, client.AllowedIPDelete(groupID, testApp.ID, allowedIP.Address))
+				assert.Nil(t, client.AllowedIPDelete(groupID, testApp.ID, allowedIP.ID))
 
 				t.Run("and list no more allowed ips", func(t *testing.T) {
 					allowedIPs, err := client.AllowedIPs(groupID, testApp.ID)
