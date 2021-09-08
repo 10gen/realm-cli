@@ -1,7 +1,9 @@
 package local
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -104,31 +106,29 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 		dir := filepath.Join(testRoot, "empty")
 
 		_, err := FindPackageJSON(dir)
-		assert.Equal(t, fmt.Errorf("package.json not found at '%s/functions'", dir), err)
+		pathError := &fs.PathError{Op: "stat", Path: fmt.Sprintf("%s/functions/package.json", dir), Err: errors.New("no such file or directory")}
+		assert.Equal(t, pathError, err.(*fs.PathError))
 	})
 
-	t.Run("should find a a package.json in directory format with an absolute path", func(t *testing.T) {
-		absPath, err := filepath.Abs("../local/testdata/dependencies/json")
+	t.Run("Should find a package.json", func(t *testing.T) {
+		absPath, err := filepath.Abs(filepath.Join(testRoot, "json"))
 		assert.Nil(t, err)
+		t.Run("with an absolute path", func(t *testing.T) {
+			deps, err := FindPackageJSON(filepath.Join(testRoot, "json"))
+			assert.Nil(t, err)
+			assert.Equal(t, Dependencies{
+				filepath.Join(absPath, "functions"),
+				filepath.Join(absPath, "functions", "package.json"),
+			}, deps)
+		})
 
-		deps, err := FindPackageJSON(absPath)
-		assert.Nil(t, err)
-		assert.Equal(t, Dependencies{
-			filepath.Join(absPath, "functions"),
-			filepath.Join(absPath, "functions", "package.json"),
-		}, deps)
+		t.Run("with a relative path", func(t *testing.T) {
+			deps, err := FindPackageJSON("../local/testdata/dependencies/json")
+			assert.Nil(t, err)
+			assert.Equal(t, Dependencies{
+				filepath.Join(absPath, "functions"),
+				filepath.Join(absPath, "functions", "package.json"),
+			}, deps)
+		})
 	})
-
-	t.Run("should find a a package.json with a relative path", func(t *testing.T) {
-		absPath, err := filepath.Abs("../local/testdata/dependencies/json")
-		assert.Nil(t, err)
-
-		deps, err := FindPackageJSON("../local/testdata/dependencies/json")
-		assert.Nil(t, err)
-		assert.Equal(t, Dependencies{
-			filepath.Join(absPath, "functions"),
-			filepath.Join(absPath, "functions", "package.json"),
-		}, deps)
-	})
-
 }

@@ -162,6 +162,12 @@ Modified Dependencies
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return apps, nil
 		}
+		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+			return realm.DependenciesDiff{}, errors.New("realm client error")
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1", "diff2"}, nil
+		}
 
 		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
 		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))

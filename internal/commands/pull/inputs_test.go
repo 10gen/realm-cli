@@ -48,6 +48,15 @@ func TestPullInputsResolve(t *testing.T) {
 			i := inputs{AppVersion: realm.AppConfigVersion20200603}
 			assert.Equal(t, errConfigVersionMismatch, i.Resolve(profile, nil))
 		})
+
+		t.Run("should return an error when include node modules and include package json are both provided", func(t *testing.T) {
+			i := inputs{IncludePackageJSON: true, IncludeNodeModules: true}
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_input_test")
+			defer teardown()
+
+			assert.Equal(t, errDependencyFlagConflict, i.Resolve(profile, nil))
+		})
+
 	})
 
 	t.Run("resolving the to flag should work", func(t *testing.T) {

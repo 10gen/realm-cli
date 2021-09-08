@@ -52,14 +52,11 @@ func FindPackageJSON(path string) (Dependencies, error) {
 
 	rootDir := filepath.Join(app.RootDir, NameFunctions)
 
-	packageJSONPath, err := filepath.Abs(filepath.Join(rootDir, NamePackageJSON))
-	if err != nil {
-		return Dependencies{}, err
-	}
+	packageJSONPath := filepath.Join(rootDir, NamePackageJSON)
 
 	if _, err := os.Stat(packageJSONPath); err != nil {
 		if os.IsNotExist(err) {
-			return Dependencies{}, fmt.Errorf("package.json not found at '%s'", rootDir)
+			return Dependencies{}, err
 		}
 	}
 

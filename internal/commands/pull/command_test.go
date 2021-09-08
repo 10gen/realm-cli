@@ -200,7 +200,7 @@ Successfully pulled app down: app
 		})
 
 		t.Run("should return the error when exporting dependencies fails", func(t *testing.T) {
-			t.Run(" when include package json file", func(t *testing.T) {
+			t.Run("when include package json file", func(t *testing.T) {
 				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 				defer teardown()
 
@@ -212,7 +212,7 @@ Successfully pulled app down: app
 				assert.Equal(t, errors.New("something bad happened with package json input"), err)
 
 			})
-			t.Run(" when include node modules zip", func(t *testing.T) {
+			t.Run("when include node modules zip", func(t *testing.T) {
 				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 				defer teardown()
 
@@ -250,9 +250,6 @@ Successfully pulled app down: app
 		}
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
-		}
-		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
-			return "package.json", depsPkg, nil
 		}
 		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "node_modules.zip", depsPkg, nil

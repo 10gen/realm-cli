@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	errConfigVersionMismatch = errors.New("must export an app with the same config version as found in the current project directory")
+	errConfigVersionMismatch  = errors.New("must export an app with the same config version as found in the current project directory")
+	errDependencyFlagConflict = errors.New(`cannot use both "--include-package-json" and "--include-node-modules" at the same time`)
 )
 
 type inputs struct {
@@ -33,7 +34,7 @@ type inputs struct {
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.IncludeNodeModules && i.IncludePackageJSON {
-		return fmt.Errorf(`must not use both "--include-package-json" and "--include-node-modules" at the same time`)
+		return errDependencyFlagConflict
 	}
 
 	wd := i.LocalPath

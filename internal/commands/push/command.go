@@ -21,7 +21,7 @@ const (
 	flagRemote              = "remote"
 	flagIncludeDependencies = "include-dependencies"
 	flagIncludeNodeModules  = "include-node-modules"
-	flagIncludePackageJSON  = "include-package-JSON"
+	flagIncludePackageJSON  = "include-package-json"
 	flagIncludeHosting      = "include-hosting"
 	flagResetCDNCache       = "reset-cdn-cache"
 	flagDryRun              = "dry-run"
@@ -70,7 +70,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: flagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies from an archive file",
+					Description: "Export and include Realm app dependencies from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -91,10 +91,10 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Include Realm app dependencies in the diff from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: "include-node-modules"},
+				Deprecator: flags.Forwarded{To: flagIncludeNodeModules},
 			},
 		},
 		flags.BoolFlag{
