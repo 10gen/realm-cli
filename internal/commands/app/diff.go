@@ -70,7 +70,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: flagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from a node_modules file",
+					Description: "Include Realm app dependencies in the diff from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -91,7 +91,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from a node_modules file",
+					Description: "Include Realm app dependencies in the diff from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 				Deprecator: flags.Forwarded{To: flagIncludeNodeModules},
