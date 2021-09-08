@@ -1,9 +1,7 @@
 package local
 
 import (
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -106,8 +104,11 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 		dir := filepath.Join(testRoot, "empty")
 
 		_, err := FindPackageJSON(dir)
-		pathError := &fs.PathError{Op: "stat", Path: fmt.Sprintf("%s/functions/package.json", dir), Err: errors.New("no such file or directory")}
-		assert.Equal(t, pathError, err.(*fs.PathError))
+		assert.NotNil(t, err)
+		assert.Equal(t,
+			err.Error(),
+			"stat /Users/rider.wang/Mongo/realm-cli/internal/local/testdata/dependencies/empty/functions/package.json: no such file or directory",
+		)
 	})
 
 	t.Run("Should find a package.json", func(t *testing.T) {
