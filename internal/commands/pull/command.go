@@ -214,7 +214,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			if cmd.inputs.IncludePackageJSON && fileName != local.NamePackageJSON {
-				ui.Print(terminal.NewWarningLog("No package.json file was found, export a node_modules file instead."))
+				ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead."))
 			}
 
 			return local.WriteFile(
