@@ -107,7 +107,7 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Equal(t,
 			err.Error(),
-			fmt.Sprintf("stat %s/functions/package.json: no such file or directory", dir),
+			fmt.Sprintf("package.json not found at '%s/functions'", dir),
 		)
 	})
 
