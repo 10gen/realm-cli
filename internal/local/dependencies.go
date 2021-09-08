@@ -52,7 +52,7 @@ func FindPackageJSON(path string) (Dependencies, error) {
 
 	rootDir := filepath.Join(app.RootDir, NameFunctions)
 
-	packageJSONPath, err := filepath.Abs(filepath.Join(rootDir, namePackageJSON))
+	packageJSONPath, err := filepath.Abs(filepath.Join(rootDir, NamePackageJSON))
 	if err != nil {
 		return Dependencies{}, err
 	}

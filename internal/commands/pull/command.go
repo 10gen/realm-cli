@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,6 +17,10 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/briandowns/spinner"
+)
+
+const (
+	flagIncludeNodeModules = "include-node-modules"
 )
 
 // CommandMeta is the command meta for the `pull` command
@@ -59,9 +62,9 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name: "include-node-modules",
+				Name: flagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies from an archive file",
+					Description: "Export and include Realm app dependencies from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -82,10 +85,10 @@ func (cmd *Command) Flags() []flags.Flag {
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Export and include Realm app dependencies from an archive file",
+					Description: "Export and include Realm app dependencies from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: "include-node-modules"},
+				Deprecator: flags.Forwarded{To: flagIncludeNodeModules},
 			},
 		},
 		flags.BoolFlag{
@@ -199,7 +202,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Fetching dependencies " + logStr + "..."
+		s.Suffix = fmt.Sprintf(" Fetching dependencies %s...", logStr)
 
 		exportDependencies := func() error {
 			s.Start()
@@ -210,8 +213,8 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 				return err
 			}
 
-			if cmd.inputs.IncludePackageJSON && IsSupportedArchiveFormat(fileName) {
-				ui.Print(terminal.NewWarningLog("No package.json file was found, export archive file instead."))
+			if cmd.inputs.IncludePackageJSON && fileName != local.NamePackageJSON {
+				ui.Print(terminal.NewWarningLog("No package.json file was found, export a node_modules file instead."))
 			}
 
 			return local.WriteFile(
@@ -320,18 +323,4 @@ func (cmd *Command) exportDependencies(clients cli.Clients, app realm.App) (stri
 		return clients.Realm.ExportDependencies(app.GroupID, app.ID)
 	}
 	return clients.Realm.ExportDependenciesArchive(app.GroupID, app.ID)
-}
-
-// IsSupportedArchiveFormat returns true if the archive format is supported
-func IsSupportedArchiveFormat(filename string) bool {
-	filename = strings.ToLower(filename)
-	ext := path.Ext(filename)
-	if ext == ".zip" ||
-		ext == ".tar" ||
-		ext == ".tar.gz" ||
-		strings.HasSuffix(filename, ".tgz") {
-		return true
-	}
-
-	return false
 }

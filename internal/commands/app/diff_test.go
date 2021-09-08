@@ -154,6 +154,19 @@ Modified Dependencies
 		})
 	})
 
+	t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
+		_, ui := mock.NewUI()
+
+		realmClient := mock.RealmClient{}
+
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return apps, nil
+		}
+
+		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
+		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+	})
+
 	t.Run("should return error with include node modules set and diff dependencies returns an error", func(t *testing.T) {
 		_, ui := mock.NewUI()
 

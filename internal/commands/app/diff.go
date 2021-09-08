@@ -14,6 +14,10 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+const (
+	flagIncludeNodeModules = "include-node-modules"
+)
+
 // CommandMetaDiff is the command meta
 var CommandMetaDiff = cli.CommandMeta{
 	Use:         "diff",
@@ -64,9 +68,9 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
-				Name: "include-node-modules",
+				Name: flagIncludeNodeModules,
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Include Realm app dependencies in the diff from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
 			},
@@ -77,7 +81,6 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Name: "include-package-json",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
-					Note:        "--include modules will be ignored if presented with this flag, node_modules.zip will be fetched if no package.json was configured",
 				},
 			},
 		},
@@ -88,10 +91,10 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 				Name:      "include-dependencies",
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from an archive file",
+					Description: "Include Realm app dependencies in the diff from a node_modules file",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: "include-node-modules"},
+				Deprecator: flags.Forwarded{To: flagIncludeNodeModules},
 			},
 		},
 		flags.BoolFlag{
@@ -115,7 +118,6 @@ func (cmd *CommandDiff) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-
 	app, err := local.LoadApp(cmd.inputs.LocalPath)
 	if err != nil {
 		return err
