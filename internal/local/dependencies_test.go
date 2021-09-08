@@ -107,7 +107,7 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Equal(t,
 			err.Error(),
-			"stat /Users/rider.wang/Mongo/realm-cli/internal/local/testdata/dependencies/empty/functions/package.json: no such file or directory",
+			fmt.Sprintf("stat %s/functions/package.json: no such file or directory", dir),
 		)
 	})
 
