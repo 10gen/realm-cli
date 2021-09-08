@@ -342,4 +342,19 @@ func TestAppDiffInputs(t *testing.T) {
 			tc.test(t, tc.inputs, profile)
 		})
 	}
+
+	t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		inputs := diffInputs{
+			IncludePackageJSON: true,
+			IncludeNodeModules: true,
+		}
+
+		assert.Equal(t, inputs.Resolve(profile, ui), errDependencyFlagConflict)
+	})
 }

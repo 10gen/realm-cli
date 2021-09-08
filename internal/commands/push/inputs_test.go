@@ -21,6 +21,14 @@ func TestPushInputsResolve(t *testing.T) {
 		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
 	})
 
+	t.Run("Should return an error if both include node modules and package json flags are set", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		i := inputs{IncludePackageJSON: true, IncludeNodeModules: true}
+		assert.Equal(t, errDependencyFlagConflict, i.Resolve(profile, nil))
+	})
+
 	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()

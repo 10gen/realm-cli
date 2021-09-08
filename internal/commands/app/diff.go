@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,6 +17,10 @@ import (
 
 const (
 	flagIncludeNodeModules = "include-node-modules"
+)
+
+var (
+	errDependencyFlagConflict = errors.New(`cannot use both "--include-package-json" and "--include-node-modules" at the same time`)
 )
 
 // CommandMetaDiff is the command meta
@@ -184,6 +189,10 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if i.IncludeNodeModules && i.IncludePackageJSON {
+		return errDependencyFlagConflict
+	}
+
 	searchPath := i.LocalPath
 	if searchPath == "" {
 		searchPath = profile.WorkingDirectory
