@@ -184,7 +184,6 @@ var (
 			Use:         "accessList",
 			Aliases:     []string{"accesslist", "access-list"},
 			Description: "Manage the allowed IP addresses and CIDR blocks of your Realm app",
-			Hidden:      true, // TODO(REALMC-9164): Remove 'Hidden'
 		},
 		SubCommands: []cli.CommandDefinition{
 			{
