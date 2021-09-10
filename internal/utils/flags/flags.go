@@ -268,6 +268,6 @@ func (m Meta) Deprecate(fs *pflag.FlagSet) bool {
 		deprecationMessage = fmt.Sprintf("%s, instead please use '%s'", deprecationMessage, m.Deprecated.To)
 	}
 
-	fs.MarkDeprecated(m.Name, deprecationMessage)
+	fs.MarkDeprecated(m.Name, deprecationMessage) //nolint: errcheck
 	return true
 }
