@@ -86,7 +86,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		},
 		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeDependencies,
+			Value: &cmd.inputs.IncludeNodeModules,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
@@ -94,7 +94,7 @@ func (cmd *Command) Flags() []flags.Flag {
 					Description: "Include Realm app dependencies in the diff from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecator: flags.Forwarded{To: flagIncludeNodeModules},
+				Deprecated: &flags.Deprecator{FirstUnsupportedVersion: "3.0", To: flagIncludeNodeModules},
 			},
 		},
 		flags.BoolFlag{

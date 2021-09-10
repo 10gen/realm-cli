@@ -78,8 +78,6 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			for _, flag := range command.Flags() {
 				flag.Register(fs)
 			}
-
-			fs.SetNormalizeFunc(flags.DeprecationHandler)
 		}
 
 		cmd.PersistentPreRun = func(c *cobra.Command, a []string) {
