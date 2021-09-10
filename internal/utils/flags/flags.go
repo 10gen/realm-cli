@@ -21,11 +21,11 @@ type Flag interface {
 // Meta represents the metadata of a flag. If Hidden is set to true and Deprecate is not a zero value string,
 // the flag will be marked as deprecated instead of being hidden.
 type Meta struct {
-	Name        string
-	Shorthand   string
-	Usage       Usage
-	Hidden      bool
-	Deprecated  *Deprecator
+	Name       string
+	Shorthand  string
+	Usage      Usage
+	Hidden     bool
+	Deprecated *Deprecator
 }
 
 // Usage represents the details of a flag's usage
