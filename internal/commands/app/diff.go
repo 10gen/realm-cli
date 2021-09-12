@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -193,9 +192,9 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
 		if i.IncludeNodeModules {
-			return errors.New(fmt.Sprintf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeNodeModules))
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeNodeModules)
 		}
-		return errors.New(fmt.Sprintf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeDependencies))
+		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeDependencies)
 	}
 
 	searchPath := i.LocalPath
