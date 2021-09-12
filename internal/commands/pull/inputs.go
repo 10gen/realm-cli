@@ -14,9 +14,15 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
+const (
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeDependencies = "include-dependencies"
+
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
+)
+
 var (
 	errConfigVersionMismatch  = errors.New("must export an app with the same config version as found in the current project directory")
-	errDependencyFlagConflict = errors.New(`cannot use both "--include-package-json" and "--include-node-modules" at the same time`)
 )
 
 type inputs struct {
@@ -33,8 +39,11 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if i.IncludeNodeModules && i.IncludePackageJSON {
-		return errDependencyFlagConflict
+	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
+		}
+		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
 	}
 
 	wd := i.LocalPath

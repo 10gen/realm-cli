@@ -1,7 +1,7 @@
 package push
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -11,8 +11,8 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 )
 
-var (
-	errDependencyFlagConflict = errors.New(`cannot use both "--include-package-json" and "--include-node-modules" at the same time`)
+const (
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
 )
 
 type appRemote struct {
@@ -33,8 +33,11 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if i.IncludeNodeModules && i.IncludePackageJSON {
-		return errDependencyFlagConflict
+	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
+		}
+		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
 	}
 
 	searchPath := i.LocalPath

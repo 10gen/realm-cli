@@ -100,7 +100,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 					Description: "Include Realm app dependencies in the diff from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecated: &flags.Deprecator{FirstUnsupportedVersion: "3.0", To: flagIncludeNodeModules},
+				Deprecate: fmt.Sprintf("support will be removed in v3.x, please use %q instead", flagIncludeNodeModules),
 			},
 		},
 		flags.BoolFlag{
@@ -192,9 +192,9 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
 		if i.IncludeNodeModules {
-			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeNodeModules)
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
 		}
-		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeDependencies)
+		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
 	}
 
 	searchPath := i.LocalPath

@@ -80,7 +80,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		},
 		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
 				Shorthand: "d",
@@ -88,7 +88,7 @@ func (cmd *Command) Flags() []flags.Flag {
 					Description: "Export and include Realm app dependencies from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecated: &flags.Deprecator{FirstUnsupportedVersion: "3.0", To: flagIncludeNodeModules},
+				Deprecate: fmt.Sprintf("support will be removed in v3.x, please use %q instead", flagIncludeNodeModules),
 			},
 		},
 		flags.BoolFlag{
@@ -195,10 +195,10 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
-	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
-		logStr := "as a package.json file"
-		if cmd.inputs.IncludeNodeModules {
-			logStr = "as a node_modules archive"
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
+		logStr := "as a node_modules archive"
+		if cmd.inputs.IncludePackageJSON {
+			logStr = "as a package.json file"
 		}
 
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)

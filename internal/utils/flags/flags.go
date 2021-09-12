@@ -25,7 +25,7 @@ type Meta struct {
 	Shorthand  string
 	Usage      Usage
 	Hidden     bool
-	Deprecated *Deprecator
+	Deprecate  string
 }
 
 // Usage represents the details of a flag's usage
@@ -103,7 +103,9 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 		fs.BoolVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if !f.Deprecate(fs) && f.Hidden {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -122,7 +124,9 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 		fs.VarP(f.Value, f.Name, f.Shorthand, f.Usage.String())
 	}
 
-	if !f.Deprecate(fs) && f.Hidden {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -193,7 +197,9 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 		fs.StringVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if !f.Deprecate(fs) && f.Hidden {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -213,7 +219,9 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 		fs.StringArrayVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if !f.Deprecate(fs) && f.Hidden {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -233,7 +241,9 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 		fs.StringSliceVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if !f.Deprecate(fs) && f.Hidden {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -246,28 +256,10 @@ func MarkHidden(fs *pflag.FlagSet, name string) {
 	fs.MarkHidden(name) //nolint: errcheck
 }
 
-// Deprecator is used to mark a flag for deprecation with Message, if To is provided a forwarding message will
-// be generated and used as Message.
-type Deprecator struct {
-	FirstUnsupportedVersion string
-	To                      string
-}
-
-// Deprecate returns true if the flag needs deprecation, and prints deprecation message based on Deprecator information
-// in Meta. It returns false if no deprecation is needed.
-func (m Meta) Deprecate(fs *pflag.FlagSet) bool {
-	if m.Deprecated == nil {
-		return false
-	}
-
-	deprecationMessage := fmt.Sprintf(
-		"it will be removed at version %s",
-		m.Deprecated.FirstUnsupportedVersion)
-
-	if m.Deprecated.To != "" {
-		deprecationMessage = fmt.Sprintf("%s, instead please use '%s'", deprecationMessage, m.Deprecated.To)
-	}
-
-	fs.MarkDeprecated(m.Name, deprecationMessage) //nolint: errcheck
-	return true
+// MarkDeprecated marks the specified flag as deprecated from the provided flag set
+// TODO(REALMC-8369): this method should go away if/when we can get
+// golangci-lint to play nicely with errcheck and our exclude .errcheck file
+// For now, we use this to isolate and minimize the nolint directives in this repo
+func MarkDeprecated(fs *pflag.FlagSet, name, message string) {
+	fs.MarkDeprecated(name, message) //nolint: errcheck
 }

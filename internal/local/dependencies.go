@@ -59,7 +59,8 @@ func FindPackageJSON(path string) (Dependencies, error) {
 		if os.IsNotExist(err) {
 			return Dependencies{}, fmt.Errorf("package.json not found at '%s'", rootDir)
 		}
+		return Dependencies{}, err
 	}
 
-	return Dependencies{rootDir, packageJSONPath}, err
+	return Dependencies{rootDir, packageJSONPath}, nil
 }

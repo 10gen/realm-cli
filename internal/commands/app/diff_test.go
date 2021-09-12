@@ -162,18 +162,16 @@ Modified Dependencies
 	})
 
 	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
-		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
-			_, ui := mock.NewUI()
+		_, ui := mock.NewUI()
 
+		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
-			assert.Equal(t, errors.New("cannot use both \"include-package-json\" and \"include-node-modules\" at the same time"), cmd.inputs.Resolve(nil, ui))
+			assert.Equal(t, errors.New("cannot use both \"include-node-modules\" and \"include-package-json\" at the same time"), cmd.inputs.Resolve(nil, ui))
 		})
 
 		t.Run("when include dependencies and include package json are both set", func(t *testing.T) {
-			_, ui := mock.NewUI()
-
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true, IncludePackageJSON: true}}
-			assert.Equal(t, errors.New("cannot use both \"include-package-json\" and \"include-dependencies\" at the same time"), cmd.inputs.Resolve(nil, ui))
+			assert.Equal(t, errors.New("cannot use both \"include-dependencies\" and \"include-package-json\" at the same time"), cmd.inputs.Resolve(nil, ui))
 		})
 	})
 
@@ -366,35 +364,4 @@ func TestAppDiffInputs(t *testing.T) {
 			tc.test(t, tc.inputs, profile)
 		})
 	}
-
-	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
-		t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
-			profile := mock.NewProfile(t)
-
-			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-			assert.Nil(t, consoleErr)
-			defer console.Close()
-
-			inputs := diffInputs{
-				IncludePackageJSON: true,
-				IncludeNodeModules: true,
-			}
-
-			assert.Equal(t, inputs.Resolve(profile, ui), errors.New("cannot use both \"include-package-json\" and \"include-node-modules\" at the same time"))
-		})
-		t.Run("should return error with include dependencies and include package json are both set", func(t *testing.T) {
-			profile := mock.NewProfile(t)
-
-			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-			assert.Nil(t, consoleErr)
-			defer console.Close()
-
-			inputs := diffInputs{
-				IncludePackageJSON:  true,
-				IncludeDependencies: true,
-			}
-
-			assert.Equal(t, inputs.Resolve(profile, ui), errors.New("cannot use both \"include-package-json\" and \"include-dependencies\" at the same time"))
-		})
-	})
 }

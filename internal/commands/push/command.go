@@ -86,7 +86,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		},
 		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
@@ -94,7 +94,7 @@ func (cmd *Command) Flags() []flags.Flag {
 					Description: "Include Realm app dependencies in the diff from a node_modules archive",
 					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
-				Deprecated: &flags.Deprecator{FirstUnsupportedVersion: "3.0", To: flagIncludeNodeModules},
+				Deprecate: fmt.Sprintf("support will be removed in v3.x, please use %q instead", flagIncludeNodeModules),
 			},
 		},
 		flags.BoolFlag{
@@ -186,7 +186,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
-	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON {
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
 		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
@@ -227,7 +227,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		diffs = append(diffs, appDiffs...)
 
-		if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON {
+		if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
 			diffs = append(diffs, dependenciesDiffs.Strings()...)
 		}
 
@@ -278,7 +278,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules {
+	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules || cmd.inputs.IncludeDependencies {
 		installDependencies := func() error {
 			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 			s.Suffix = " Installing dependencies: starting..."

@@ -111,9 +111,10 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 		)
 	})
 
-	t.Run("Should find a package.json", func(t *testing.T) {
+	t.Run("should find a package.json", func(t *testing.T) {
 		absPath, err := filepath.Abs(filepath.Join(testRoot, "json"))
 		assert.Nil(t, err)
+
 		t.Run("with an absolute path", func(t *testing.T) {
 			deps, err := FindPackageJSON(filepath.Join(testRoot, "json"))
 			assert.Nil(t, err)
