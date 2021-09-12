@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	errConfigVersionMismatch  = errors.New("must export an app with the same config version as found in the current project directory")
+	errConfigVersionMismatch = errors.New("must export an app with the same config version as found in the current project directory")
 )
 
 type inputs struct {
