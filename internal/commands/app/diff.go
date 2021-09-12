@@ -16,11 +16,13 @@ import (
 )
 
 const (
-	flagIncludeNodeModules = "include-node-modules"
+	flagIncludeNodeModules  = "include-node-modules"
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeDependencies = "include-dependencies"
 )
 
-var (
-	errDependencyFlagConflict = errors.New(`cannot use both "--include-package-json" and "--include-node-modules" at the same time`)
+const (
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
 )
 
 // CommandMetaDiff is the command meta
@@ -91,7 +93,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		},
 		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
 		flags.BoolFlag{
-			Value: &cmd.inputs.IncludeNodeModules,
+			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      "include-dependencies",
 				Shorthand: "d",
@@ -142,7 +144,7 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON {
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
 		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
@@ -189,8 +191,11 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if i.IncludeNodeModules && i.IncludePackageJSON {
-		return errDependencyFlagConflict
+	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return errors.New(fmt.Sprintf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeNodeModules))
+		}
+		return errors.New(fmt.Sprintf(errDependencyFlagConflictTemplate, flagIncludePackageJSON, flagIncludeDependencies))
 	}
 
 	searchPath := i.LocalPath

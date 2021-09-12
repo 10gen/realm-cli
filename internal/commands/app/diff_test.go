@@ -136,10 +136,17 @@ Removed Dependencies
 Modified Dependencies
   * underscore@1.9.1 -> underscore@1.9.2
 `
-
 		t.Run("with include node modules set it should diff function dependencies", func(t *testing.T) {
 			out, ui := mock.NewUI()
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
+			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+
+			assert.Equal(t, diffStr, out.String())
+		})
+
+		t.Run("with include dependencies set it should diff function dependencies", func(t *testing.T) {
+			out, ui := mock.NewUI()
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
 			assert.Equal(t, nil, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 			assert.Equal(t, diffStr, out.String())
@@ -154,61 +161,78 @@ Modified Dependencies
 		})
 	})
 
-	t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
-		_, ui := mock.NewUI()
+	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
+		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
+			_, ui := mock.NewUI()
 
-		realmClient := mock.RealmClient{}
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
+			assert.Equal(t, errors.New("cannot use both \"include-package-json\" and \"include-node-modules\" at the same time"), cmd.inputs.Resolve(nil, ui))
+		})
 
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return apps, nil
-		}
-		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
-			return realm.DependenciesDiff{}, errors.New("realm client error")
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{"diff1", "diff2"}, nil
-		}
+		t.Run("when include dependencies and include package json are both set", func(t *testing.T) {
+			_, ui := mock.NewUI()
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
-		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true, IncludePackageJSON: true}}
+			assert.Equal(t, errors.New("cannot use both \"include-package-json\" and \"include-dependencies\" at the same time"), cmd.inputs.Resolve(nil, ui))
+		})
 	})
 
-	t.Run("should return error with include node modules set and diff dependencies returns an error", func(t *testing.T) {
-		_, ui := mock.NewUI()
+	t.Run("should return error when diff dependencies returns an error", func(t *testing.T) {
+		t.Run("when include node modules", func(t *testing.T) {
+			_, ui := mock.NewUI()
 
-		realmClient := mock.RealmClient{}
+			realmClient := mock.RealmClient{}
 
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return apps, nil
-		}
-		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
-			return realm.DependenciesDiff{}, errors.New("realm client error")
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{"diff1", "diff2"}, nil
-		}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return apps, nil
+			}
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, errors.New("realm client error")
+			}
+			realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+				return []string{"diff1", "diff2"}, nil
+			}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
-		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-	})
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true}}
+			assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		})
 
-	t.Run("should return error with include dependencies set and diff dependencies returns an error", func(t *testing.T) {
-		_, ui := mock.NewUI()
+		t.Run("when include package json", func(t *testing.T) {
+			_, ui := mock.NewUI()
 
-		realmClient := mock.RealmClient{}
+			realmClient := mock.RealmClient{}
 
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return apps, nil
-		}
-		realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
-			return realm.DependenciesDiff{}, errors.New("realm client error")
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{"diff1", "diff2"}, nil
-		}
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return apps, nil
+			}
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, errors.New("realm client error")
+			}
+			realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+				return []string{"diff1", "diff2"}, nil
+			}
 
-		cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
-		assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
+			assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		})
+		t.Run("when include dependencies", func(t *testing.T) {
+			_, ui := mock.NewUI()
+
+			realmClient := mock.RealmClient{}
+
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				return apps, nil
+			}
+			realmClient.DiffDependenciesFn = func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error) {
+				return realm.DependenciesDiff{}, errors.New("realm client error")
+			}
+			realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+				return []string{"diff1", "diff2"}, nil
+			}
+
+			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true}}
+			assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		})
 	})
 
 	t.Run("with include hosting set should diff hosting assets", func(t *testing.T) {
@@ -343,18 +367,34 @@ func TestAppDiffInputs(t *testing.T) {
 		})
 	}
 
-	t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
-		profile := mock.NewProfile(t)
+	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
+		t.Run("should return error with include node modules and include package json are both set", func(t *testing.T) {
+			profile := mock.NewProfile(t)
 
-		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-		assert.Nil(t, consoleErr)
-		defer console.Close()
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
 
-		inputs := diffInputs{
-			IncludePackageJSON: true,
-			IncludeNodeModules: true,
-		}
+			inputs := diffInputs{
+				IncludePackageJSON: true,
+				IncludeNodeModules: true,
+			}
 
-		assert.Equal(t, inputs.Resolve(profile, ui), errDependencyFlagConflict)
+			assert.Equal(t, inputs.Resolve(profile, ui), errors.New("cannot use both \"include-package-json\" and \"include-node-modules\" at the same time"))
+		})
+		t.Run("should return error with include dependencies and include package json are both set", func(t *testing.T) {
+			profile := mock.NewProfile(t)
+
+			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			inputs := diffInputs{
+				IncludePackageJSON:  true,
+				IncludeDependencies: true,
+			}
+
+			assert.Equal(t, inputs.Resolve(profile, ui), errors.New("cannot use both \"include-package-json\" and \"include-dependencies\" at the same time"))
+		})
 	})
 }
