@@ -15,7 +15,8 @@ import (
 
 func TestPushInputsResolve(t *testing.T) {
 	t.Run("Should return an error if run from outside a project directory and no local flag is set", func(t *testing.T) {
-		profile := mock.NewProfile(t)
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
 
 		var i inputs
 		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
