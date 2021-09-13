@@ -198,10 +198,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	ui.Print(terminal.NewTextLog("Saved app to disk"))
 
 	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
-		logStr := "as a node_modules archive"
-		if cmd.inputs.IncludePackageJSON {
-			logStr = "as a package.json file"
-		}
+		logStr := "as a package.json file"
 
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = fmt.Sprintf(" Fetching dependencies %s...", logStr)
@@ -216,6 +213,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			if cmd.inputs.IncludePackageJSON && fileName != local.NamePackageJSON {
+				logStr = "as a node_modules archive"
 				ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead"))
 			}
 

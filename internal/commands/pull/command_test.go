@@ -367,7 +367,7 @@ Successfully pulled app down: app
 
 			assert.Equal(t, `Saved app to disk
 The package.json file was not found, exporting a node_modules archive instead
-Fetched dependencies as a package.json file
+Fetched dependencies as a node_modules archive
 Successfully pulled app down: app
 `, out.String())
 
