@@ -206,6 +206,8 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 		s.Suffix = fmt.Sprintf(" Fetching dependencies %s...", logStr)
 
+		var packageJSONMissing bool
+
 		exportDependencies := func() error {
 			s.Start()
 			defer s.Stop()
@@ -216,8 +218,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			if cmd.inputs.IncludePackageJSON && fileName != local.NamePackageJSON {
-				logStr = "as a node_modules archive"
-				ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead"))
+				packageJSONMissing = true
 			}
 
 			return local.WriteFile(
@@ -229,6 +230,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		if err := exportDependencies(); err != nil {
 			return err
+		}
+
+		if packageJSONMissing {
+			logStr = "as a node_modules archive"
+			ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead"))
 		}
 		ui.Print(terminal.NewTextLog("Fetched dependencies " + logStr))
 	}
