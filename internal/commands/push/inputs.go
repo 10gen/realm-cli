@@ -42,7 +42,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		}
 	}
 
-		searchPath := i.LocalPath
+	searchPath := i.LocalPath
 	if searchPath == "" {
 		searchPath = profile.WorkingDirectory
 	}

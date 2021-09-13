@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	flagIncludeNodeModules = "include-node-modules"
+	flagIncludeNodeModules  = "include-node-modules"
 	flagIncludePackageJSON  = "include-package-json"
 	flagIncludeDependencies = "include-dependencies"
 )

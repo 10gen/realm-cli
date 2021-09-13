@@ -365,7 +365,6 @@ Successfully pulled app down: app
 
 			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
 
-
 			assert.Equal(t, `Saved app to disk
 The package.json file was not found, exporting a node_modules archive instead
 Fetched dependencies as a package.json file
