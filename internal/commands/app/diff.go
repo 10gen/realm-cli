@@ -84,7 +84,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name: "include-package-json",
+				Name: flagIncludePackageJSON,
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a package.json file",
 				},
@@ -94,7 +94,7 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
+				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Include Realm app dependencies in the diff from a node_modules archive",
@@ -190,11 +190,13 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
+	if i.IncludePackageJSON {
 		if i.IncludeNodeModules {
 			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
 		}
-		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		if i.IncludeDependencies {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		}
 	}
 
 	searchPath := i.LocalPath

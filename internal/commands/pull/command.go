@@ -21,6 +21,8 @@ import (
 
 const (
 	flagIncludeNodeModules = "include-node-modules"
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeDependencies = "include-dependencies"
 )
 
 // CommandMeta is the command meta for the `pull` command
@@ -72,9 +74,9 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludePackageJSON,
 			Meta: flags.Meta{
-				Name: "include-package-json",
+				Name: flagIncludePackageJSON,
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff from a package.json file",
+					Description: "Export and include Realm app dependencies from a package.json file",
 				},
 			},
 		},
@@ -82,7 +84,7 @@ func (cmd *Command) Flags() []flags.Flag {
 		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
+				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
 					Description: "Export and include Realm app dependencies from a node_modules archive",
@@ -214,7 +216,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			}
 
 			if cmd.inputs.IncludePackageJSON && fileName != local.NamePackageJSON {
-				ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead."))
+				ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead"))
 			}
 
 			return local.WriteFile(

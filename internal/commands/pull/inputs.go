@@ -15,9 +15,6 @@ import (
 )
 
 const (
-	flagIncludePackageJSON  = "include-package-json"
-	flagIncludeDependencies = "include-dependencies"
-
 	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
 )
 
@@ -39,11 +36,13 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	if (i.IncludeNodeModules || i.IncludeDependencies) && i.IncludePackageJSON {
+	if i.IncludePackageJSON {
 		if i.IncludeNodeModules {
 			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
 		}
-		return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		if i.IncludeDependencies {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		}
 	}
 
 	wd := i.LocalPath

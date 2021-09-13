@@ -18,8 +18,7 @@ type Flag interface {
 	Register(fs *pflag.FlagSet)
 }
 
-// Meta represents the metadata of a flag. If Hidden is set to true and Deprecate is not a zero value string,
-// the flag will be marked as deprecated instead of being hidden.
+// Meta represents the metadata of a flag
 type Meta struct {
 	Name      string
 	Shorthand string
@@ -103,11 +102,7 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 		fs.BoolVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Deprecate != "" {
-		MarkDeprecated(fs, f.Name, f.Deprecate)
-	} else if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // CustomFlag is a custom flag
@@ -124,11 +119,7 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 		fs.VarP(f.Value, f.Name, f.Shorthand, f.Usage.String())
 	}
 
-	if f.Deprecate != "" {
-		MarkDeprecated(fs, f.Name, f.Deprecate)
-	} else if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringSetOptions are the options available when creating a new string set flag.
@@ -197,11 +188,7 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 		fs.StringVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Deprecate != "" {
-		MarkDeprecated(fs, f.Name, f.Deprecate)
-	} else if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringArrayFlag is a string array flag
@@ -219,11 +206,7 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 		fs.StringArrayVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Deprecate != "" {
-		MarkDeprecated(fs, f.Name, f.Deprecate)
-	} else if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringSliceFlag is a string slice flag
@@ -241,6 +224,10 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 		fs.StringSliceVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
+	registerFlag(fs, f.Meta)
+}
+
+func registerFlag(fs *pflag.FlagSet, f Meta) {
 	if f.Deprecate != "" {
 		MarkDeprecated(fs, f.Name, f.Deprecate)
 	} else if f.Hidden {
