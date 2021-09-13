@@ -162,16 +162,14 @@ Modified Dependencies
 	})
 
 	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
-		_, ui := mock.NewUI()
-
 		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
-			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), cmd.inputs.Resolve(nil, ui))
+			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), cmd.inputs.Resolve(nil, nil))
 		})
 
 		t.Run("when include dependencies and include package json are both set", func(t *testing.T) {
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeDependencies: true, IncludePackageJSON: true}}
-			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), cmd.inputs.Resolve(nil, ui))
+			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), cmd.inputs.Resolve(nil, nil))
 		})
 	})
 

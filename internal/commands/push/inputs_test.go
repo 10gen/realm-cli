@@ -22,17 +22,14 @@ func TestPushInputsResolve(t *testing.T) {
 	})
 
 	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
-		defer teardown()
-
 		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
 			i := inputs{IncludeNodeModules: true, IncludePackageJSON: true}
-			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), i.Resolve(profile, nil))
+			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), i.Resolve(nil, nil))
 		})
 
 		t.Run("when include dependencies and include package json are both set", func(t *testing.T) {
 			i := inputs{IncludeDependencies: true, IncludePackageJSON: true}
-			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), i.Resolve(profile, nil))
+			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), i.Resolve(nil, nil))
 		})
 	})
 
