@@ -18,10 +18,11 @@ type RealmClient struct {
 	ExportFn func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error)
 	ImportFn func(groupID, appID string, appData interface{}) error
 
-	ExportDependenciesFn func(groupID, appID string) (string, io.ReadCloser, error)
-	ImportDependenciesFn func(groupID, appID, uploadPath string) error
-	DiffDependenciesFn   func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
-	DependenciesStatusFn func(groupID, appID string) (realm.DependenciesStatus, error)
+	ExportDependenciesFn        func(groupID, appID string) (string, io.ReadCloser, error)
+	ExportDependenciesArchiveFn func(groupID, appID string) (string, io.ReadCloser, error)
+	ImportDependenciesFn        func(groupID, appID, uploadPath string) error
+	DiffDependenciesFn          func(groupID, appID, uploadPath string) (realm.DependenciesDiff, error)
+	DependenciesStatusFn        func(groupID, appID string) (realm.DependenciesStatus, error)
 
 	CreateAppFn      func(groupID, name string, meta realm.AppMeta) (realm.App, error)
 	DeleteAppFn      func(groupID, appID string) error
@@ -363,6 +364,16 @@ func (rc RealmClient) ExportDependencies(groupID, appID string) (string, io.Read
 		return rc.ExportDependenciesFn(groupID, appID)
 	}
 	return rc.Client.ExportDependencies(groupID, appID)
+}
+
+// ExportDependenciesArchive calls the mocked ExportDependenciesArchive implementation if provided,
+// otherwise the call falls back to the underlying realm.Client implementation.
+// NOTE: this may panic if the underlying realm.Client is left undefined
+func (rc RealmClient) ExportDependenciesArchive(groupID, appID string) (string, io.ReadCloser, error) {
+	if rc.ExportDependenciesArchiveFn != nil {
+		return rc.ExportDependenciesArchiveFn(groupID, appID)
+	}
+	return rc.Client.ExportDependenciesArchive(groupID, appID)
 }
 
 // ImportDependencies calls the mocked ImportDependencies implementation if provided,

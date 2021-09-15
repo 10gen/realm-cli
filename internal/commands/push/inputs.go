@@ -1,6 +1,8 @@
 package push
 
 import (
+	"fmt"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
@@ -10,12 +12,7 @@ import (
 )
 
 const (
-	flagLocalPath           = "local"
-	flagRemote              = "remote"
-	flagIncludeDependencies = "include-dependencies"
-	flagIncludeHosting      = "include-hosting"
-	flagResetCDNCache       = "reset-cdn-cache"
-	flagDryRun              = "dry-run"
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
 )
 
 type appRemote struct {
@@ -27,6 +24,8 @@ type inputs struct {
 	LocalPath           string
 	RemoteApp           string
 	Project             string
+	IncludeNodeModules  bool
+	IncludePackageJSON  bool
 	IncludeDependencies bool
 	IncludeHosting      bool
 	ResetCDNCache       bool
@@ -34,6 +33,15 @@ type inputs struct {
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
+		}
+		if i.IncludeDependencies {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		}
+	}
+
 	searchPath := i.LocalPath
 	if searchPath == "" {
 		searchPath = profile.WorkingDirectory
@@ -91,6 +99,12 @@ func (i inputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.IncludeDependencies {
 		args = append(args, flags.Arg{Name: flagIncludeDependencies})
+	}
+	if i.IncludeNodeModules {
+		args = append(args, flags.Arg{Name: flagIncludeNodeModules})
+	}
+	if i.IncludePackageJSON {
+		args = append(args, flags.Arg{Name: flagIncludePackageJSON})
 	}
 	if i.IncludeHosting {
 		args = append(args, flags.Arg{Name: flagIncludeHosting})

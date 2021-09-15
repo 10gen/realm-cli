@@ -142,7 +142,6 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go114"
-      - func: "fetch_baas_artifacts"
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -171,7 +170,6 @@ tasks:
     exec_timeout_secs: 3600
     commands:
       - func: "fetch_go114"
-      - func: "fetch_baas_artifacts"
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -260,7 +258,6 @@ tasks:
     patchable: false
     commands:
       - func: "fetch_go114"
-      - func: "fetch_baas_artifacts"
       - func: "setup_project"
       - command: shell.exec
         params:

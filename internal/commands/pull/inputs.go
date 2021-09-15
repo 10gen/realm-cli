@@ -14,6 +14,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
+const (
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
+)
+
 var (
 	errConfigVersionMismatch = errors.New("must export an app with the same config version as found in the current project directory")
 )
@@ -24,12 +28,23 @@ type inputs struct {
 	LocalPath           string
 	AppVersion          realm.AppConfigVersion
 	IncludeDependencies bool
+	IncludeNodeModules  bool
+	IncludePackageJSON  bool
 	IncludeHosting      bool
 	DryRun              bool
 	TemplateIDs         []string
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
+		}
+		if i.IncludeDependencies {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		}
+	}
+
 	wd := i.LocalPath
 	if wd == "" {
 		wd = profile.WorkingDirectory

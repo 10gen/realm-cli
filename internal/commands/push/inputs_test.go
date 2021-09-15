@@ -1,6 +1,7 @@
 package push
 
 import (
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -19,6 +20,18 @@ func TestPushInputsResolve(t *testing.T) {
 
 		var i inputs
 		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
+	})
+
+	t.Run("should return an error when more than one dependencies flag is set", func(t *testing.T) {
+		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
+			i := inputs{IncludeNodeModules: true, IncludePackageJSON: true}
+			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), i.Resolve(nil, nil))
+		})
+
+		t.Run("when include dependencies and include package json are both set", func(t *testing.T) {
+			i := inputs{IncludeDependencies: true, IncludePackageJSON: true}
+			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), i.Resolve(nil, nil))
+		})
 	})
 
 	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {

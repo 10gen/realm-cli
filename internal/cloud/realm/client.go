@@ -26,6 +26,7 @@ type Client interface {
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
 	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
+	ExportDependenciesArchive(groupID, appID string) (string, io.ReadCloser, error)
 	Import(groupID, appID string, appData interface{}) error
 	ImportDependencies(groupID, appID, uploadPath string) error
 	Diff(groupID, appID string, appData interface{}) ([]string, error)

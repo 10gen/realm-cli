@@ -46,6 +46,7 @@ const (
 	NameFunctions   = "functions"
 	nameNodeModules = "node_modules"
 	NameSource      = "source"
+	NamePackageJSON = "package.json"
 
 	// graphql
 	NameGraphQL         = "graphql"

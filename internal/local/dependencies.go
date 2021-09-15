@@ -2,17 +2,18 @@ package local
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 )
 
 // Dependencies holds the data related to a local Realm app's dependencies
 type Dependencies struct {
-	RootDir     string
-	ArchivePath string
+	RootDir  string
+	FilePath string
 }
 
-// FindAppDependencies finds the Realm app dependencies archive
-func FindAppDependencies(path string) (Dependencies, error) {
+// FindNodeModules finds the Realm app dependencies as a node_modules archive
+func FindNodeModules(path string) (Dependencies, error) {
 	app, appOK, appErr := FindApp(path)
 	if appErr != nil {
 		return Dependencies{}, appErr
@@ -37,4 +38,28 @@ func FindAppDependencies(path string) (Dependencies, error) {
 	}
 
 	return Dependencies{rootDir, archivePath}, nil
+}
+
+// FindPackageJSON finds the Realm app dependencies as a package.json file
+func FindPackageJSON(path string) (Dependencies, error) {
+	app, appOK, appErr := FindApp(path)
+	if appErr != nil {
+		return Dependencies{}, appErr
+	}
+	if !appOK {
+		return Dependencies{}, nil
+	}
+
+	rootDir := filepath.Join(app.RootDir, NameFunctions)
+
+	packageJSONPath := filepath.Join(rootDir, NamePackageJSON)
+
+	if _, err := os.Stat(packageJSONPath); err != nil {
+		if os.IsNotExist(err) {
+			return Dependencies{}, fmt.Errorf("package.json not found at '%s'", rootDir)
+		}
+		return Dependencies{}, err
+	}
+
+	return Dependencies{rootDir, packageJSONPath}, nil
 }

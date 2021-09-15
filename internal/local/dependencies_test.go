@@ -9,14 +9,14 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
-func TestDependenciesFind(t *testing.T) {
+func TestDependenciesFindNodeModules(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
 	testRoot := filepath.Join(wd, "testdata/dependencies")
 
 	t.Run("should return an empty data when run outside a project directory", func(t *testing.T) {
-		deps, err := FindAppDependencies(testRoot)
+		deps, err := FindNodeModules(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, Dependencies{}, deps)
 	})
@@ -24,7 +24,7 @@ func TestDependenciesFind(t *testing.T) {
 	t.Run("should return an error when a project has no node_modules archive", func(t *testing.T) {
 		dir := filepath.Join(testRoot, "empty")
 
-		_, err := FindAppDependencies(dir)
+		_, err := FindNodeModules(dir)
 		assert.Equal(t, fmt.Errorf("node_modules archive not found at '%s/functions'", dir), err)
 	})
 
@@ -78,7 +78,7 @@ func TestDependenciesFind(t *testing.T) {
 			absPath, err := filepath.Abs(tc.path)
 			assert.Nil(t, err)
 
-			deps, err := FindAppDependencies(tc.path)
+			deps, err := FindNodeModules(tc.path)
 			assert.Nil(t, err)
 			assert.Equal(t, Dependencies{
 				filepath.Join(absPath, "functions"),
@@ -86,4 +86,51 @@ func TestDependenciesFind(t *testing.T) {
 			}, deps)
 		})
 	}
+}
+
+func TestDependenciesFindPackageJSON(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	testRoot := filepath.Join(wd, "testdata/dependencies")
+
+	t.Run("should return an empty object when run outside a project directory", func(t *testing.T) {
+		deps, err := FindPackageJSON(testRoot)
+		assert.Nil(t, err)
+		assert.Equal(t, Dependencies{}, deps)
+	})
+
+	t.Run("should return an error when a project has no package.json file", func(t *testing.T) {
+		dir := filepath.Join(testRoot, "empty")
+
+		_, err := FindPackageJSON(dir)
+		assert.NotNil(t, err)
+		assert.Equal(t,
+			err.Error(),
+			fmt.Sprintf("package.json not found at '%s/functions'", dir),
+		)
+	})
+
+	t.Run("should find a package.json", func(t *testing.T) {
+		absPath, err := filepath.Abs(filepath.Join(testRoot, "json"))
+		assert.Nil(t, err)
+
+		t.Run("with an absolute path", func(t *testing.T) {
+			deps, err := FindPackageJSON(filepath.Join(testRoot, "json"))
+			assert.Nil(t, err)
+			assert.Equal(t, Dependencies{
+				filepath.Join(absPath, "functions"),
+				filepath.Join(absPath, "functions", "package.json"),
+			}, deps)
+		})
+
+		t.Run("with a relative path", func(t *testing.T) {
+			deps, err := FindPackageJSON("../local/testdata/dependencies/json")
+			assert.Nil(t, err)
+			assert.Equal(t, Dependencies{
+				filepath.Join(absPath, "functions"),
+				filepath.Join(absPath, "functions", "package.json"),
+			}, deps)
+		})
+	})
 }

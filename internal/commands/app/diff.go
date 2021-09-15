@@ -14,6 +14,16 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 )
 
+const (
+	flagIncludeNodeModules  = "include-node-modules"
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeDependencies = "include-dependencies"
+)
+
+const (
+	errDependencyFlagConflictTemplate = `cannot use both "%s" and "%s" at the same time`
+)
+
 // CommandMetaDiff is the command meta
 var CommandMetaDiff = cli.CommandMeta{
 	Use:         "diff",
@@ -35,6 +45,8 @@ type diffInputs struct {
 	RemoteApp           string
 	Project             string
 	IncludeDependencies bool
+	IncludeNodeModules  bool
+	IncludePackageJSON  bool
 	IncludeHosting      bool
 }
 
@@ -60,13 +72,35 @@ func (cmd *CommandDiff) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeNodeModules,
+			Meta: flags.Meta{
+				Name: flagIncludeNodeModules,
+				Usage: flags.Usage{
+					Description: "Include Realm app dependencies in the diff from a node_modules archive",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludePackageJSON,
+			Meta: flags.Meta{
+				Name: flagIncludePackageJSON,
+				Usage: flags.Usage{
+					Description: "Include Realm app dependencies in the diff from a package.json file",
+				},
+			},
+		},
+		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
+		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
-				Name:      "include-dependencies",
+				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Include Realm app dependencies in the diff",
+					Description: "Include Realm app dependencies in the diff from a node_modules archive",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
+				Deprecate: fmt.Sprintf("support will be removed in v3.x, please use %q instead", flagIncludeNodeModules),
 			},
 		},
 		flags.BoolFlag{
@@ -109,13 +143,13 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if cmd.inputs.IncludeDependencies {
-		appDependencies, err := local.FindAppDependencies(app.RootDir)
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
+		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
 
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.ArchivePath)
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.FilePath)
 		if err != nil {
 			return err
 		}
@@ -156,6 +190,15 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 }
 
 func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
+	if i.IncludePackageJSON {
+		if i.IncludeNodeModules {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeNodeModules, flagIncludePackageJSON)
+		}
+		if i.IncludeDependencies {
+			return fmt.Errorf(errDependencyFlagConflictTemplate, flagIncludeDependencies, flagIncludePackageJSON)
+		}
+	}
+
 	searchPath := i.LocalPath
 	if searchPath == "" {
 		searchPath = profile.WorkingDirectory
@@ -186,4 +229,11 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	return nil
+}
+
+func (i *diffInputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
+	if i.IncludePackageJSON {
+		return local.FindPackageJSON(rootDir)
+	}
+	return local.FindNodeModules(rootDir)
 }

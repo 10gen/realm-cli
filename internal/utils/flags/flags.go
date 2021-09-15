@@ -24,6 +24,7 @@ type Meta struct {
 	Shorthand string
 	Usage     Usage
 	Hidden    bool
+	Deprecate string
 }
 
 // Usage represents the details of a flag's usage
@@ -101,9 +102,7 @@ func (f BoolFlag) Register(fs *pflag.FlagSet) {
 		fs.BoolVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // CustomFlag is a custom flag
@@ -120,9 +119,7 @@ func (f CustomFlag) Register(fs *pflag.FlagSet) {
 		fs.VarP(f.Value, f.Name, f.Shorthand, f.Usage.String())
 	}
 
-	if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringSetOptions are the options available when creating a new string set flag.
@@ -191,9 +188,7 @@ func (f StringFlag) Register(fs *pflag.FlagSet) {
 		fs.StringVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringArrayFlag is a string array flag
@@ -211,9 +206,7 @@ func (f StringArrayFlag) Register(fs *pflag.FlagSet) {
 		fs.StringArrayVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Hidden {
-		MarkHidden(fs, f.Name)
-	}
+	registerFlag(fs, f.Meta)
 }
 
 // StringSliceFlag is a string slice flag
@@ -231,7 +224,13 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 		fs.StringSliceVarP(f.Value, f.Name, f.Shorthand, f.DefaultValue, f.Usage.String())
 	}
 
-	if f.Hidden {
+	registerFlag(fs, f.Meta)
+}
+
+func registerFlag(fs *pflag.FlagSet, f Meta) {
+	if f.Deprecate != "" {
+		MarkDeprecated(fs, f.Name, f.Deprecate)
+	} else if f.Hidden {
 		MarkHidden(fs, f.Name)
 	}
 }
@@ -242,4 +241,12 @@ func (f StringSliceFlag) Register(fs *pflag.FlagSet) {
 // For now, we use this to isolate and minimize the nolint directives in this repo
 func MarkHidden(fs *pflag.FlagSet, name string) {
 	fs.MarkHidden(name) //nolint: errcheck
+}
+
+// MarkDeprecated marks the specified flag as deprecated from the provided flag set
+// TODO(REALMC-8369): this method should go away if/when we can get
+// golangci-lint to play nicely with errcheck and our exclude .errcheck file
+// For now, we use this to isolate and minimize the nolint directives in this repo
+func MarkDeprecated(fs *pflag.FlagSet, name, message string) {
+	fs.MarkDeprecated(name, message) //nolint: errcheck
 }

@@ -16,6 +16,17 @@ import (
 	"github.com/briandowns/spinner"
 )
 
+const (
+	flagLocalPath           = "local"
+	flagRemote              = "remote"
+	flagIncludeDependencies = "include-dependencies"
+	flagIncludeNodeModules  = "include-node-modules"
+	flagIncludePackageJSON  = "include-package-json"
+	flagIncludeHosting      = "include-hosting"
+	flagResetCDNCache       = "reset-cdn-cache"
+	flagDryRun              = "dry-run"
+)
+
 // CommandMeta is the command meta for the 'push' command
 var CommandMeta = cli.CommandMeta{
 	Use:         "push",
@@ -55,13 +66,35 @@ func (cmd *Command) Flags() []flags.Flag {
 			},
 		},
 		flags.BoolFlag{
+			Value: &cmd.inputs.IncludeNodeModules,
+			Meta: flags.Meta{
+				Name: flagIncludeNodeModules,
+				Usage: flags.Usage{
+					Description: "Import and include Realm app dependencies from a node_modules archive",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.IncludePackageJSON,
+			Meta: flags.Meta{
+				Name: flagIncludePackageJSON,
+				Usage: flags.Usage{
+					Description: "Import and include Realm app dependencies from a package.json file",
+				},
+			},
+		},
+		// TODO(REALMC-10088): Remove this flag in realm-cli 3.x
+		flags.BoolFlag{
 			Value: &cmd.inputs.IncludeDependencies,
 			Meta: flags.Meta{
 				Name:      flagIncludeDependencies,
 				Shorthand: "d",
 				Usage: flags.Usage{
-					Description: "Import and include Realm app dependencies",
+					Description: "Import and include Realm app dependencies in the diff from a node_modules archive",
+					Note:        "The allowed formats are as a directory or compressed into a .zip, .tar, .tar.gz, or .tgz file",
 				},
+				Deprecate: fmt.Sprintf("support will be removed in v3.x, please use %q instead", flagIncludeNodeModules),
 			},
 		},
 		flags.BoolFlag{
@@ -153,12 +186,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
-	if cmd.inputs.IncludeDependencies {
-		appDependencies, err := local.FindAppDependencies(app.RootDir)
+	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
+		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
 		if err != nil {
 			return err
 		}
-		uploadPathDependencies = appDependencies.ArchivePath
+		uploadPathDependencies = appDependencies.FilePath
 
 		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
 		if err != nil {
@@ -194,7 +227,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		diffs = append(diffs, appDiffs...)
 
-		if cmd.inputs.IncludeDependencies {
+		if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
 			diffs = append(diffs, dependenciesDiffs.Strings()...)
 		}
 
@@ -245,7 +278,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	if cmd.inputs.IncludeDependencies {
+	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules || cmd.inputs.IncludeDependencies {
 		installDependencies := func() error {
 			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
 			s.Suffix = " Installing dependencies: starting..."
@@ -328,6 +361,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 func (cmd *Command) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMeta.Use, cmd.inputs.args(omitDryRun))
+}
+
+func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, error) {
+	if i.IncludePackageJSON {
+		return local.FindPackageJSON(rootDir)
+	}
+	return local.FindNodeModules(rootDir)
 }
 
 type namer interface{ Name() string }

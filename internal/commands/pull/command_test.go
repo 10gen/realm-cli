@@ -175,7 +175,10 @@ Successfully pulled app down: app
 			return "app_20210101", &zipPkg.Reader, nil
 		}
 		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
-			return "", nil, errors.New("something bad happened")
+			return "", nil, errors.New("something bad happened with package json input")
+		}
+		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+			return "", nil, errors.New("something bad happened with node modules input")
 		}
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 			return nil, nil
@@ -196,25 +199,49 @@ Successfully pulled app down: app
 `, out.String())
 		})
 
-		t.Run("should return the error when exporting dependencies fails", func(t *testing.T) {
-			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
-			defer teardown()
+		t.Run("should return an error when exporting dependencies fails", func(t *testing.T) {
+			t.Run("when include package json is set", func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+				defer teardown()
 
-			_, ui := mock.NewUI()
+				_, ui := mock.NewUI()
 
-			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
+				cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludePackageJSON: true}}
 
-			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
-			assert.Equal(t, errors.New("something bad happened"), err)
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened with package json input"), err)
+
+			})
+
+			t.Run("when include node modules is set", func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+				defer teardown()
+
+				_, ui := mock.NewUI()
+
+				cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened with node modules input"), err)
+
+			})
+
+			t.Run("when include dependencies is set", func(t *testing.T) {
+				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+				defer teardown()
+
+				_, ui := mock.NewUI()
+
+				cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
+
+				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
+				assert.Equal(t, errors.New("something bad happened with node modules input"), err)
+
+			})
 		})
 	})
 
-	t.Run("with a realm client that successfully exports dependencies should write the archive file", func(t *testing.T) {
-		profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
-		defer teardown()
-
-		out, ui := mock.NewUI()
-
+	t.Run("with a realm client that successfully exports dependencies, should write the archive file", func(t *testing.T) {
 		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
 		assert.Nil(t, zipErr)
 		defer zipPkg.Close()
@@ -233,23 +260,120 @@ Successfully pulled app down: app
 		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
 			return "app_20210101", &zipPkg.Reader, nil
 		}
-		realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+		realmClient.ExportDependenciesArchiveFn = func(groupID, appID string) (string, io.ReadCloser, error) {
 			return "node_modules.zip", depsPkg, nil
 		}
 		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 			return nil, nil
 		}
 
-		cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
+		message := `Saved app to disk
+Fetched dependencies as a node_modules archive
+Successfully pulled app down: app
+`
 
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, `Saved app to disk
-Fetched dependencies archive
+		t.Run("when include node modules is set", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeNodeModules: true}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, message, out.String())
+
+			_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
+			assert.Nil(t, pkgErr)
+		})
+
+		t.Run("when include dependencies is set", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludeDependencies: true}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, message, out.String())
+
+			_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
+			assert.Nil(t, pkgErr)
+		})
+
+	})
+
+	t.Run("with a realm client that successfully exports dependencies should write the package.json", func(t *testing.T) {
+		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
+		assert.Nil(t, zipErr)
+		defer zipPkg.Close()
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", Name: "appName"}}, nil
+		}
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			return realm.App{ID: "appID", Name: "appName"}, nil
+		}
+		realmClient.ExportFn = func(groupID, appID string, req realm.ExportRequest) (string, *zip.Reader, error) {
+			return "app_20210101", &zipPkg.Reader, nil
+		}
+		realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+			return nil, nil
+		}
+
+		t.Run("when returning a package json", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+
+			depsPkg, err := os.Open("testdata/package.json")
+			assert.Nil(t, err)
+			defer depsPkg.Close()
+
+			realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+				return "package.json", depsPkg, nil
+			}
+
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludePackageJSON: true}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+			assert.Equal(t, `Saved app to disk
+Fetched dependencies as a package.json file
 Successfully pulled app down: app
 `, out.String())
 
-		_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
-		assert.Nil(t, pkgErr)
+			_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "package.json"))
+			assert.Nil(t, pkgErr)
+		})
+
+		t.Run("when returning a node modules zip", func(t *testing.T) {
+			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+
+			depsPkg, err := os.Open("testdata/node_modules.zip")
+			assert.Nil(t, err)
+			defer depsPkg.Close()
+
+			realmClient.ExportDependenciesFn = func(groupID, appID string) (string, io.ReadCloser, error) {
+				return "node_modules.zip", depsPkg, nil
+			}
+
+			cmd := &Command{inputs{Project: "elsewhere", LocalPath: "app", IncludePackageJSON: true}}
+
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+
+			assert.Equal(t, `Saved app to disk
+Fetched dependencies as a node_modules archive
+The package.json file was not found, a node_modules archive was written instead
+Successfully pulled app down: app
+`, out.String())
+
+			_, pkgErr := os.Stat(filepath.Join(profile.WorkingDirectory, "app", local.NameFunctions, "node_modules.zip"))
+			assert.Nil(t, pkgErr)
+		})
 	})
 
 	t.Run("with a realm client that fails to get hosting assets", func(t *testing.T) {
