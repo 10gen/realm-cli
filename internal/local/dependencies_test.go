@@ -94,7 +94,7 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 
 	testRoot := filepath.Join(wd, "testdata/dependencies")
 
-	t.Run("should return an empty data when run outside a project directory", func(t *testing.T) {
+	t.Run("should return an empty object when run outside a project directory", func(t *testing.T) {
 		deps, err := FindPackageJSON(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, Dependencies{}, deps)

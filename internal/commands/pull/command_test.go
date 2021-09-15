@@ -199,8 +199,8 @@ Successfully pulled app down: app
 `, out.String())
 		})
 
-		t.Run("should return the error when exporting dependencies fails", func(t *testing.T) {
-			t.Run("when include package json file", func(t *testing.T) {
+		t.Run("should return an error when exporting dependencies fails", func(t *testing.T) {
+			t.Run("when include package json is set", func(t *testing.T) {
 				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 				defer teardown()
 
@@ -213,7 +213,7 @@ Successfully pulled app down: app
 
 			})
 
-			t.Run("when include node modules", func(t *testing.T) {
+			t.Run("when include node modules is set", func(t *testing.T) {
 				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 				defer teardown()
 
@@ -226,7 +226,7 @@ Successfully pulled app down: app
 
 			})
 
-			t.Run("when include dependencies", func(t *testing.T) {
+			t.Run("when include dependencies is set", func(t *testing.T) {
 				profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 				defer teardown()
 
@@ -241,7 +241,7 @@ Successfully pulled app down: app
 		})
 	})
 
-	t.Run("with a realm client that successfully exports dependencies should write the archive file", func(t *testing.T) {
+	t.Run("with a realm client that successfully exports dependencies, should write the archive file", func(t *testing.T) {
 		zipPkg, zipErr := zip.OpenReader("testdata/test.zip")
 		assert.Nil(t, zipErr)
 		defer zipPkg.Close()
@@ -272,7 +272,7 @@ Fetched dependencies as a node_modules archive
 Successfully pulled app down: app
 `
 
-		t.Run("when include node modules", func(t *testing.T) {
+		t.Run("when include node modules is set", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
@@ -286,7 +286,7 @@ Successfully pulled app down: app
 			assert.Nil(t, pkgErr)
 		})
 
-		t.Run("when include dependencies", func(t *testing.T) {
+		t.Run("when include dependencies is set", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
@@ -321,7 +321,7 @@ Successfully pulled app down: app
 			return nil, nil
 		}
 
-		t.Run("when returns a package json", func(t *testing.T) {
+		t.Run("when returning a package json", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 
@@ -347,7 +347,7 @@ Successfully pulled app down: app
 			assert.Nil(t, pkgErr)
 		})
 
-		t.Run("when returns a node modules zip", func(t *testing.T) {
+		t.Run("when returning a node modules zip", func(t *testing.T) {
 			profile, teardown := mock.NewProfileFromTmpDir(t, "pull_handler_test")
 			defer teardown()
 

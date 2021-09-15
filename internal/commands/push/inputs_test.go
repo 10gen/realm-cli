@@ -22,7 +22,7 @@ func TestPushInputsResolve(t *testing.T) {
 		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
 	})
 
-	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
+	t.Run("should return an error when more than one dependencies flag is set", func(t *testing.T) {
 		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
 			i := inputs{IncludeNodeModules: true, IncludePackageJSON: true}
 			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), i.Resolve(nil, nil))

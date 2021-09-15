@@ -58,30 +58,7 @@ func TestRealmDependencies(t *testing.T) {
 			assert.Equal(t, realm.DependenciesStateSuccessful, currentStatus.State)
 
 			t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
-				deployments, err := client.Deployments(groupID, app.ID)
-				assert.Nil(t, err)
-
-				if len(deployments) == 0 {
-					return // no pending jobs to wait for, tests can proceed
-				}
-
-				var counter int
-				deployment := deployments[0]
-				for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
-					if counter > 100 {
-						t.Fatal("failed to wait for dependencies to deploy")
-					}
-					if counter%10 == 0 {
-						t.Logf("waiting for deployment (id: %s, current status: %s)", deployment.ID, deployment.Status)
-					}
-					time.Sleep(time.Second)
-
-					deployment, err = client.Deployment(groupID, app.ID, deployment.ID)
-					assert.Nil(t, err)
-
-					counter++
-				}
-				assert.Equal(t, realm.DeploymentStatusSuccessful, deployment.Status)
+				waitForDepDeployment(client, groupID, app.ID, t)
 			})
 		})
 
@@ -166,32 +143,8 @@ func TestRealmDependencies(t *testing.T) {
 			assert.Equal(t, realm.DependenciesStateSuccessful, currentStatus.State)
 
 			t.Run("and wait for those dependencies to be deployed to the app", func(t *testing.T) {
-				deployments, err := client.Deployments(groupID, app.ID)
-				assert.Nil(t, err)
-
-				if len(deployments) == 0 {
-					return // no pending jobs to wait for, tests can proceed
-				}
-
-				var counter int
-				deployment := deployments[0]
-				for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
-					if counter > 100 {
-						t.Fatal("failed to wait for dependencies to deploy")
-					}
-					if counter%10 == 0 {
-						t.Logf("waiting for deployment (id: %s, current status: %s)", deployment.ID, deployment.Status)
-					}
-					time.Sleep(time.Second)
-
-					deployment, err = client.Deployment(groupID, app.ID, deployment.ID)
-					assert.Nil(t, err)
-
-					counter++
-				}
-				assert.Equal(t, realm.DeploymentStatusSuccessful, deployment.Status)
+				waitForDepDeployment(client, groupID, app.ID, t)
 			})
-
 		})
 
 		t.Run("should successfully export a package.json", func(t *testing.T) {
@@ -226,7 +179,7 @@ func TestRealmDependencies(t *testing.T) {
 			wd, err := os.Getwd()
 			assert.Nil(t, err)
 
-			uploadPath := filepath.Join(wd, "testdata/package-diff.json")
+			uploadPath := filepath.Join(wd, "testdata/updated-package.json")
 			diff, err := client.DiffDependencies(groupID, app.ID, uploadPath)
 			assert.Nil(t, err)
 			assert.Equal(t, realm.DependenciesDiff{
@@ -236,7 +189,33 @@ func TestRealmDependencies(t *testing.T) {
 			}, diff)
 		})
 	})
+}
 
+func waitForDepDeployment(client realm.Client, groupID string, appID string, t *testing.T) {
+	deployments, err := client.Deployments(groupID, appID)
+	assert.Nil(t, err)
+
+	if len(deployments) == 0 {
+		return // no pending jobs to wait for, tests can proceed
+	}
+
+	var counter int
+	deployment := deployments[0]
+	for deployment.Status == realm.DeploymentStatusCreated || deployment.Status == realm.DeploymentStatusPending {
+		if counter > 100 {
+			t.Fatal("failed to wait for dependencies to deploy")
+		}
+		if counter%10 == 0 {
+			t.Logf("waiting for deployment (id: %s, current status: %s)", deployment.ID, deployment.Status)
+		}
+		time.Sleep(time.Second)
+
+		deployment, err = client.Deployment(groupID, appID, deployment.ID)
+		assert.Nil(t, err)
+
+		counter++
+	}
+	assert.Equal(t, realm.DeploymentStatusSuccessful, deployment.Status)
 }
 
 func getZipFileNames(t *testing.T, file *os.File) map[string]struct{} {

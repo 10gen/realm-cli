@@ -161,7 +161,7 @@ Modified Dependencies
 		})
 	})
 
-	t.Run("should return error when more than one dependencies flag is set", func(t *testing.T) {
+	t.Run("should return an error when more than one dependencies flag is set", func(t *testing.T) {
 		t.Run("when include node modules and include package json are both set", func(t *testing.T) {
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludeNodeModules: true, IncludePackageJSON: true}}
 			assert.Equal(t, errors.New(`cannot use both "include-node-modules" and "include-package-json" at the same time`), cmd.inputs.Resolve(nil, nil))
@@ -173,8 +173,8 @@ Modified Dependencies
 		})
 	})
 
-	t.Run("should return error when diff dependencies returns an error", func(t *testing.T) {
-		t.Run("when include node modules", func(t *testing.T) {
+	t.Run("should return an error when diff dependencies returns an error", func(t *testing.T) {
+		t.Run("when include node modules is set", func(t *testing.T) {
 			_, ui := mock.NewUI()
 
 			realmClient := mock.RealmClient{}
@@ -193,7 +193,7 @@ Modified Dependencies
 			assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		})
 
-		t.Run("when include package json", func(t *testing.T) {
+		t.Run("when include package json is set", func(t *testing.T) {
 			_, ui := mock.NewUI()
 
 			realmClient := mock.RealmClient{}
@@ -211,7 +211,7 @@ Modified Dependencies
 			cmd := &CommandDiff{diffInputs{LocalPath: "testdata/dependencies", IncludePackageJSON: true}}
 			assert.Equal(t, errors.New("realm client error"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 		})
-		t.Run("when include dependencies", func(t *testing.T) {
+		t.Run("when include dependencies is set", func(t *testing.T) {
 			_, ui := mock.NewUI()
 
 			realmClient := mock.RealmClient{}

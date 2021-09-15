@@ -234,9 +234,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		if packageJSONMissing {
 			logStr = "as a node_modules archive"
-			ui.Print(terminal.NewWarningLog("The package.json file was not found, exporting a node_modules archive instead"))
 		}
 		ui.Print(terminal.NewTextLog("Fetched dependencies " + logStr))
+		if packageJSONMissing {
+			ui.Print(terminal.NewWarningLog("The package.json file was not found, a node_modules archive was written instead"))
+		}
 	}
 
 	if cmd.inputs.IncludeHosting {

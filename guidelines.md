@@ -66,5 +66,6 @@ When choosing the status text to appear alongside the spinner, consider the foll
 
 * while the message can be updated to reflect progress, prefer having a consistent prefix to the message as it will appear less jarring to the user when switching between messages
 * the message (or at least the consistent prefix to the message) should be in the "present continuous tense" (e.g. "Downloading assets...", "Deploying app...")
+* avoid printing messages (with the "UI") _during_ the display of the spinner as it will lead to messages not appearing on their own line, instead defer the printing of any informational/warning messages until after the spinner has been stopped and removed
 
 When the spinner is finally closed, make sure to follow with a `ui.Print(terminal.NewTextLog(...))` where the message becomes the "past tense" version of the earlier status message (or at least the consistent prefix to the status message).
