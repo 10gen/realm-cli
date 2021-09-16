@@ -88,6 +88,7 @@ type EventSubscriptionSummary struct {
 	Enabled bool   `json:"enabled"`
 }
 
+// LogForwarderSummary is a short summary for a log forwarder model
 type LogForwarderSummary struct {
 	Name    string `json:"name"`
 	Enabled bool   `json:"enabled"`
