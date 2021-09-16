@@ -69,7 +69,7 @@ func TestRealmApps(t *testing.T) {
 					},
 					Environment:       "",
 					EventSubscription: []realm.EventSubscriptionSummary{},
-					LogForwarder:      []realm.LogForwarderSummary{},
+					LogForwarders:     []realm.LogForwarderSummary{},
 				}, appDesc)
 			})
 

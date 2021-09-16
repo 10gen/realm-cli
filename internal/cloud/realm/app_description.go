@@ -111,7 +111,7 @@ type AppDescription struct {
 	GraphQL           GraphQLSummary             `json:"graphql"`
 	Environment       string                     `json:"environment"`
 	EventSubscription []EventSubscriptionSummary `json:"event_subscription"`
-	LogForwarder      []LogForwarderSummary      `json:"log_forwarder"`
+	LogForwarders     []LogForwarderSummary      `json:"log_forwarders"`
 }
 
 func (c *client) AppDescription(groupID, appID string) (AppDescription, error) {
