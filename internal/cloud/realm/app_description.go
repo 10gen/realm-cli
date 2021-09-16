@@ -88,6 +88,12 @@ type EventSubscriptionSummary struct {
 	Enabled bool   `json:"enabled"`
 }
 
+// LogForwarderSummary is a short summary for a log forwarder model
+type LogForwarderSummary struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
 // AppDescription describes an App
 type AppDescription struct {
 	ClientAppID       string                     `json:"client_app_id"`
@@ -105,6 +111,7 @@ type AppDescription struct {
 	GraphQL           GraphQLSummary             `json:"graphql"`
 	Environment       string                     `json:"environment"`
 	EventSubscription []EventSubscriptionSummary `json:"event_subscription"`
+	LogForwarders     []LogForwarderSummary      `json:"log_forwarders"`
 }
 
 func (c *client) AppDescription(groupID, appID string) (AppDescription, error) {

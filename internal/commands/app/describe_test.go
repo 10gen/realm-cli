@@ -214,6 +214,12 @@ func TestAppDescribeHandler(t *testing.T) {
 						Enabled: true,
 					},
 				},
+				LogForwarders: []realm.LogForwarderSummary{
+					{
+						Name:    "logforwarder1",
+						Enabled: true,
+					},
+				},
 			}, nil
 		}
 
@@ -315,6 +321,12 @@ func TestAppDescribeHandler(t *testing.T) {
     {
       "name": "trigger1",
       "type": "DATABASE",
+      "enabled": true
+    }
+  ],
+  "log_forwarders": [
+    {
+      "name": "logforwarder1",
       "enabled": true
     }
   ]
