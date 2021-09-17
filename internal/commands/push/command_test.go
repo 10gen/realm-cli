@@ -248,6 +248,36 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, "draftID", capturedDraftID)
 	})
 
+	t.Run("should return an error if the command deploys a draft which fails", func(t *testing.T) {
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1"}, nil
+		}
+		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
+			return realm.AppDraft{ID: "draftID"}, nil
+		}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
+			return realm.AppDeployment{Status: realm.DeploymentStatusFailed, StatusErrorMessage: "something bad happened"}, nil
+		}
+
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("failed to deploy app: something bad happened"), err)
+	})
+
 	t.Run("with a realm client that successfully imports and deploys drafts", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
