@@ -560,6 +560,11 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 		return err
 	}
 
+	if deployment.Status == realm.DeploymentStatusFailed {
+		ui.Print(terminal.NewWarningLog("Deployment failed"))
+		return fmt.Errorf("failed to deploy app: %s", deployment.StatusErrorMessage)
+	}
+
 	ui.Print(terminal.NewTextLog("Deployment complete"))
 	return nil
 }

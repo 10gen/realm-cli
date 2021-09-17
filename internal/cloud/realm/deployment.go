@@ -15,8 +15,9 @@ const (
 
 // AppDeployment is a Realm app deployment
 type AppDeployment struct {
-	ID     string           `json:"_id"`
-	Status DeploymentStatus `json:"status"`
+	ID                 string           `json:"_id"`
+	Status             DeploymentStatus `json:"status"`
+	StatusErrorMessage string           `json:"status_error_message"`
 }
 
 // DeploymentStatus is the Realm application deployment status
