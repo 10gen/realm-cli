@@ -194,12 +194,18 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		if err != nil {
 			return err
 		}
-		uploadPathDependencies = appDependencies.FilePath
 
-		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPathDependencies)
+		uploadPath, cleanup, err := appDependencies.PrepareUpload()
 		if err != nil {
 			return err
 		}
+		defer cleanup()
+
+		dependenciesDiffs, err = clients.Realm.DiffDependencies(appRemote.GroupID, appRemote.AppID, uploadPath)
+		if err != nil {
+			return err
+		}
+		uploadPathDependencies = uploadPath
 	}
 
 	hosting, err := local.FindAppHosting(app.RootDir)
@@ -305,7 +311,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 				if err != nil {
 					return err
 				}
-				s.SetMessage(fmt.Sprintf("Installing dependencies: %s...", status.Message))
+
+				message := status.Message
+				if message == "" {
+					message = "finishing up"
+				}
+
+				s.SetMessage(fmt.Sprintf("Installing dependencies: %s...", message))
 				time.Sleep(time.Second)
 			}
 			if status.State == realm.DependenciesStateFailed {

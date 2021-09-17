@@ -1,9 +1,6 @@
 package local
 
 import (
-	"archive/tar"
-	"archive/zip"
-	"compress/gzip"
 	"fmt"
 	"io"
 	"os"
@@ -19,143 +16,77 @@ const (
 	extZip   = ".zip"
 )
 
+type archiveMatcher func(path, ext string) bool
+
+func isZip(_, ext string) bool {
+	return ext == extZip
+}
+
+func isTar(_, ext string) bool {
+	return ext == extTar
+}
+
+func isTarCompressed(path, ext string) bool {
+	return ext == extTgz || strings.HasSuffix(path, extTarGz)
+}
+
 var (
-	supportedExts = []string{extZip, extTar, extTgz, extTarGz}
+	preferredArchiveMatchers = []archiveMatcher{
+		isZip,
+		isTar,
+		isTarCompressed,
+	}
 )
 
-// ArchiveReader provides sequential access to the contents of the supported archive formats
-type ArchiveReader interface {
-	Next() (FileHeader, error)
-	Read(b []byte) (int, error)
+type archive struct {
+	path  string
+	isDir bool
 }
 
-// FileHeader holds the path and file information
-type FileHeader struct {
-	Path string
-	Info os.FileInfo
-}
+func selectArchive(archives []string) (archive, error) {
+	extCache := map[string]string{}
 
-func newArchiveReader(path string, file *os.File) (ArchiveReader, error) {
-	ext := strings.ToLower(filepath.Ext(path))
+	for _, archiveMatcher := range preferredArchiveMatchers {
+		for _, path := range archives {
+			ext := strings.ToLower(filepath.Ext(path))
 
-	if ext == extZip {
-		return newZipReader(file)
+			if archiveMatcher(path, ext) {
+				return archive{path: path}, nil
+			}
+
+			extCache[path] = ext
+		}
 	}
 
-	if ext == extTar {
-		return newTarReader(file), nil
+	for _, path := range archives {
+		ext, ok := extCache[path]
+		if !ok {
+			continue
+		}
+		if ext == "" {
+			return archive{path, true}, nil
+		}
 	}
 
-	if ext == extTgz || strings.HasSuffix(path, extTarGz) {
-		return newGzipReader(file)
-	}
-
-	if ext == "" {
-		return newDirReader(path)
-	}
-
-	return nil, errUnknownArchiveExtension(path)
-}
-
-func errUnknownArchiveExtension(path string) error {
-	return fmt.Errorf(
-		"failed to read archive file at %s: unsupported format, use one of [%s] instead",
-		path,
-		strings.Join(supportedExts, ", "),
+	return archive{}, fmt.Errorf(
+		"make sure file format is one of [%s, %s, %s, %s]",
+		extZip, extTar, extTgz, extTarGz,
 	)
 }
 
-type zipReader struct {
-	*zip.Reader
-
-	currFileIdx  int
-	currOpenFile io.ReadCloser
-}
-
-func newZipReader(f *os.File) (ArchiveReader, error) {
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-
-	zr, err := zip.NewReader(f, fi.Size())
-	if err != nil {
-		return nil, err
-	}
-
-	return &zipReader{Reader: zr, currFileIdx: -1}, nil
-}
-
-func (r *zipReader) Next() (FileHeader, error) {
-	if r.currOpenFile != nil {
-		r.currOpenFile.Close()
-		r.currOpenFile = nil
-	}
-
-	r.currFileIdx++
-	if r.currFileIdx >= len(r.Reader.File) {
-		return FileHeader{}, io.EOF
-	}
-
-	f := r.Reader.File[r.currFileIdx]
-
-	return FileHeader{f.Name, f.FileInfo()}, nil
-}
-
-func (r *zipReader) Read(b []byte) (int, error) {
-	if r.currFileIdx < 0 || r.currFileIdx >= len(r.Reader.File) {
-		return 0, io.EOF
-	}
-
-	if r.currOpenFile == nil {
-		f, err := r.Reader.File[r.currFileIdx].Open()
-		if err != nil {
-			return 0, err
-		}
-		r.currOpenFile = f
-	}
-
-	return r.currOpenFile.Read(b)
-}
-
-type tarReader struct {
-	*tar.Reader
-}
-
-func newTarReader(r io.Reader) ArchiveReader {
-	return &tarReader{Reader: tar.NewReader(r)}
-}
-
-func (r *tarReader) Next() (FileHeader, error) {
-	h, err := r.Reader.Next()
-	if err != nil {
-		return FileHeader{}, err
-	}
-
-	return FileHeader{h.Name, h.FileInfo()}, nil
-}
-
-func newGzipReader(r io.Reader) (ArchiveReader, error) {
-	gr, err := gzip.NewReader(r)
-	if err != nil {
-		return nil, err
-	}
-
-	tr := newTarReader(gr)
-	if err := gr.Close(); err != nil {
-		return nil, err
-	}
-	return tr, nil
+type fileHeader struct {
+	path string
+	info os.FileInfo
 }
 
 type dirReader struct {
-	files []FileHeader
+	files []fileHeader
 
 	currFileIdx  int
 	currOpenFile io.ReadCloser
 }
 
-func newDirReader(dir string) (ArchiveReader, error) {
+func newDirReader(dir string) (*dirReader, error) {
 	if _, err := os.Stat(dir); err != nil {
 		return nil, err
 	}
@@ -167,7 +98,7 @@ func newDirReader(dir string) (ArchiveReader, error) {
 			return nil
 		}
 
-		r.files = append(r.files, FileHeader{path, info})
+		r.files = append(r.files, fileHeader{path, info})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -176,7 +107,7 @@ func newDirReader(dir string) (ArchiveReader, error) {
 	return &r, nil
 }
 
-func (r *dirReader) Next() (FileHeader, error) {
+func (r *dirReader) Next() (fileHeader, error) {
 	if r.currOpenFile != nil {
 		r.currOpenFile.Close()
 		r.currOpenFile = nil
@@ -184,7 +115,7 @@ func (r *dirReader) Next() (FileHeader, error) {
 
 	r.currFileIdx++
 	if r.currFileIdx >= len(r.files) {
-		return FileHeader{}, io.EOF
+		return fileHeader{}, io.EOF
 	}
 
 	return r.files[r.currFileIdx], nil
@@ -196,7 +127,7 @@ func (r *dirReader) Read(b []byte) (int, error) {
 	}
 
 	if r.currOpenFile == nil {
-		f, err := os.Open(r.files[r.currFileIdx].Path)
+		f, err := os.Open(r.files[r.currFileIdx].path)
 		if err != nil {
 			return 0, err
 		}
