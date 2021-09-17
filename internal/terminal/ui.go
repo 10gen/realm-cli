@@ -16,18 +16,20 @@ type UI interface {
 	AskOne(answer interface{}, prompt survey.Prompt) error
 	Confirm(format string, args ...interface{}) (bool, error)
 	Print(logs ...Log)
+	Spinner(message string, opts SpinnerOptions) Spinner
 }
 
 // NewUI creates a new terminal UI
 func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
-	noColor := config.DisableColors
+	minimalUI := config.DisableColors
 	if config.OutputFormat == OutputFormatJSON {
-		noColor = true
+		minimalUI = true
 	}
-	color.NoColor = noColor
+	color.NoColor = minimalUI
 
 	return &ui{
 		config,
+		minimalUI,
 		fdReader{in},
 		fdWriter{out},
 		err,
@@ -35,10 +37,11 @@ func NewUI(config UIConfig, in io.Reader, out, err io.Writer) UI {
 }
 
 type ui struct {
-	config UIConfig
-	in     fdReader
-	out    fdWriter
-	err    io.Writer
+	config  UIConfig
+	minimal bool
+	in      fdReader
+	out     fdWriter
+	err     io.Writer
 }
 
 func (ui *ui) AutoConfirm() bool {
@@ -93,6 +96,13 @@ func (ui *ui) Print(logs ...Log) {
 			log.Print(output) // log the original output
 		}
 	}
+}
+
+func (ui *ui) Spinner(message string, opts SpinnerOptions) Spinner {
+	if ui.minimal {
+		return noopSpinner{}
+	}
+	return newUISpinner(message, opts)
 }
 
 // UIConfig holds the global config for the CLI ui

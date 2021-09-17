@@ -4,15 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/briandowns/spinner"
 )
 
 // CommandMetaRun is the command meta for the `function run` command
@@ -118,8 +115,7 @@ func (cmd *CommandRun) Handler(profile *user.Profile, ui terminal.UI, clients cl
 		}
 	}
 
-	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-	s.Suffix = fmt.Sprintf(" Running function %s with args %s...", cmd.inputs.Name, cmd.inputs.Args)
+	s := ui.Spinner(fmt.Sprintf("Running function %s with args %s...", cmd.inputs.Name, cmd.inputs.Args), terminal.SpinnerOptions{})
 
 	runFunction := func() (realm.ExecutionResults, error) {
 		s.Start()

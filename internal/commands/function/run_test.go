@@ -185,6 +185,8 @@ func TestFunctionHandler(t *testing.T) {
 		t.Run(tc.description, func(t *testing.T) {
 			profile := mock.NewProfile(t)
 
+			_, ui := mock.NewUI()
+
 			clients := cli.Clients{Realm: tc.realmClient}
 
 			cmd := &CommandRun{runInputs{
@@ -195,7 +197,7 @@ func TestFunctionHandler(t *testing.T) {
 				Name: "test",
 				Args: []string{"Hello world"},
 			}}
-			assert.Equal(t, tc.errorExpected, cmd.Handler(profile, nil, clients))
+			assert.Equal(t, tc.errorExpected, cmd.Handler(profile, ui, clients))
 		})
 	}
 }

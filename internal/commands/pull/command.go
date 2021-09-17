@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -15,8 +14,6 @@ import (
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/briandowns/spinner"
 )
 
 const (
@@ -203,8 +200,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			logStr = "as a package.json file"
 		}
 
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = fmt.Sprintf(" Fetching dependencies %s...", logStr)
+		s := ui.Spinner(fmt.Sprintf("Fetching dependencies %s...", logStr), terminal.SpinnerOptions{})
 
 		var packageJSONMissing bool
 
@@ -242,8 +238,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeHosting {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Fetching hosting assets..."
+		s := ui.Spinner("Fetching hosting assets...", terminal.SpinnerOptions{})
 
 		exportHostingAssets := func() error {
 			s.Start()
