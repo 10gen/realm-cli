@@ -269,11 +269,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		ui.Print(terminal.NewTextLog("Pushing changes"))
 		if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
+			discardDraft(ui, clients.Realm, appRemote, draft.ID)
 			return err
 		}
 
 		ui.Print(terminal.NewTextLog("Deploying draft"))
 		if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
+			discardDraft(ui, clients.Realm, appRemote, draft.ID)
 			return err
 		}
 	}
@@ -546,9 +548,6 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 
 			deployment, err = realmClient.Deployment(remote.GroupID, remote.AppID, deployment.ID)
 			if err != nil {
-				if e := realmClient.DiscardDraft(remote.GroupID, remote.AppID, draftID); e != nil {
-					ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
-				}
 				return err
 			}
 		}
@@ -567,4 +566,10 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 
 	ui.Print(terminal.NewTextLog("Deployment complete"))
 	return nil
+}
+
+func discardDraft(ui terminal.UI, realmClient realm.Client, remote appRemote, draftID string) {
+	if err := realmClient.DiscardDraft(remote.GroupID, remote.AppID, draftID); err != nil {
+		ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
+	}
 }
