@@ -3,6 +3,7 @@ package push
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -197,6 +198,12 @@ func TestPushHandler(t *testing.T) {
 			return errors.New("something bad happened")
 		}
 
+		var discardDraftCalled bool
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			discardDraftCalled = true
+			return nil
+		}
+
 		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
@@ -206,6 +213,45 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
 		assert.Equal(t, testApp.AppData, capturedAppData)
+
+		t.Log("and should attempt to discard the created draft")
+		assert.True(t, discardDraftCalled, "expected (realm.Client).DiscardDraft to be called")
+	})
+
+	t.Run("should return an error if the command fails to import and report when a draft is not discarded", func(t *testing.T) {
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1"}, nil
+		}
+		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
+			return realm.AppDraft{ID: "draftID"}, nil
+		}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return errors.New("something bad happened")
+		}
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			return errors.New("something worse happened")
+		}
+
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("something bad happened"), err)
+
+		assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Failed to discard the draft created for your deployment
+`, out.String())
 	})
 
 	t.Run("should return an error if the command fails to deploy the draft", func(t *testing.T) {
@@ -237,6 +283,12 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDeployment{}, errors.New("something bad happened")
 		}
 
+		var discardDraftCalled bool
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			discardDraftCalled = true
+			return nil
+		}
+
 		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
@@ -246,6 +298,49 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, "groupID", capturedGroupID)
 		assert.Equal(t, "appID", capturedAppID)
 		assert.Equal(t, "draftID", capturedDraftID)
+
+		t.Log("and should attempt to discard the created draft")
+		assert.True(t, discardDraftCalled, "expected (realm.Client).DiscardDraft to be called")
+	})
+
+	t.Run("should return an error if the command fails to deploy the draft and report when a draft is not discarded", func(t *testing.T) {
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1"}, nil
+		}
+		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
+			return realm.AppDraft{ID: "draftID"}, nil
+		}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
+			return realm.AppDeployment{}, errors.New("something bad happened")
+		}
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			return errors.New("something worse happened")
+		}
+
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("something bad happened"), err)
+
+		assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Failed to discard the draft created for your deployment
+`, out.String())
 	})
 
 	t.Run("should return an error if the command deploys a draft which fails", func(t *testing.T) {
@@ -272,10 +367,60 @@ func TestPushHandler(t *testing.T) {
 			return realm.AppDeployment{Status: realm.DeploymentStatusFailed, StatusErrorMessage: "something bad happened"}, nil
 		}
 
+		var discardDraftCalled bool
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			discardDraftCalled = true
+			return nil
+		}
+
 		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("failed to deploy app: something bad happened"), err)
+
+		t.Log("and should attempt to discard the created draft")
+		assert.True(t, discardDraftCalled, "expected (realm.Client).DiscardDraft to be called")
+	})
+
+	t.Run("should return an error if the command deploys a draft which fails and report when a draft is not discarded", func(t *testing.T) {
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{"diff1"}, nil
+		}
+		realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) {
+			return realm.AppDraft{ID: "draftID"}, nil
+		}
+		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
+			return nil
+		}
+		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
+			return realm.AppDeployment{Status: realm.DeploymentStatusFailed, StatusErrorMessage: "something bad happened"}, nil
+		}
+		realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
+			return errors.New("something worse happened")
+		}
+
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		assert.Equal(t, errors.New("failed to deploy app: something bad happened"), err)
+
+		assert.Equal(t, `Determining changes
+Creating draft
+Pushing changes
+Deploying draft
+Deployment failed
+Failed to discard the draft created for your deployment
+`, out.String())
 	})
 
 	t.Run("with a realm client that successfully imports and deploys drafts", func(t *testing.T) {
@@ -295,7 +440,6 @@ func TestPushHandler(t *testing.T) {
 		realmClient.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-
 		realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
 			return realm.AppDeployment{Status: realm.DeploymentStatusSuccessful}, nil
 		}
@@ -437,14 +581,19 @@ An error occurred while uploading hosting assets: failed to remove /deleteme.htm
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `Determining changes
+
+				output := out.String()
+				for _, line := range []string{
+					`Determining changes
 Creating draft
 Pushing changes
 Deploying draft
-Deployment complete
-An error occurred while uploading hosting assets: failed to update attributes for /404.html: something bad happened
-An error occurred while uploading hosting assets: failed to update attributes for /index.html: something bad happened
-`, out.String())
+Deployment complete`,
+					"An error occurred while uploading hosting assets: failed to update attributes for /404.html: something bad happened",
+					"An error occurred while uploading hosting assets: failed to update attributes for /index.html: something bad happened",
+				} {
+					assert.True(t, strings.Contains(output, line), fmt.Sprintf("expected output to contain: '%s'\nactual output:\n%s", line, output))
+				}
 			})
 		})
 
@@ -1439,37 +1588,15 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			return realm.AppDeployment{ID: "id", Status: realm.DeploymentStatusCreated}, nil
 		}
 
-		t.Run("but fails to get the deployment", func(t *testing.T) {
+		t.Run("but fails to get the deployment should return the error", func(t *testing.T) {
 			realmClient.DeploymentFn = func(groupID, appID, deploymentID string) (realm.AppDeployment, error) {
 				return realm.AppDeployment{}, errors.New("something bad happened")
 			}
 
-			for _, tc := range []struct {
-				description      string
-				discardDraftErr  error
-				expectedContents string
-			}{
-				{
-					description: "yet can successfully discard the draft should return the error",
-				},
-				{
-					description:      "and fails to discard the draft should return the deployment error and print a warning message",
-					discardDraftErr:  errors.New("failed to discard draft"),
-					expectedContents: "Failed to discard the draft created for your deployment\n",
-				},
-			} {
-				t.Run(tc.description, func(t *testing.T) {
-					realmClient.DiscardDraftFn = func(groupID, appID, draftID string) error {
-						return tc.discardDraftErr
-					}
+			_, ui := mock.NewUI()
 
-					out, ui := mock.NewUI()
-
-					err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID}, draftID)
-					assert.Equal(t, errors.New("something bad happened"), err)
-					assert.Equal(t, tc.expectedContents, out.String())
-				})
-			}
+			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID}, draftID)
+			assert.Equal(t, errors.New("something bad happened"), err)
 		})
 
 		t.Run("and successfully retrieves the deployment should eventually succeed", func(t *testing.T) {

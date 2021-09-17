@@ -27,6 +27,10 @@ const (
 	flagDryRun              = "dry-run"
 )
 
+var (
+	warnFailedToDiscardDraft = terminal.NewWarningLog("Failed to discard the draft created for your deployment")
+)
+
 // CommandMeta is the command meta for the 'push' command
 var CommandMeta = cli.CommandMeta{
 	Use:         "push",
@@ -269,11 +273,17 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 		ui.Print(terminal.NewTextLog("Pushing changes"))
 		if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
+			if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
+				ui.Print(warnFailedToDiscardDraft)
+			}
 			return err
 		}
 
 		ui.Print(terminal.NewTextLog("Deploying draft"))
 		if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
+			if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
+				ui.Print(warnFailedToDiscardDraft)
+			}
 			return err
 		}
 	}
@@ -546,9 +556,6 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 
 			deployment, err = realmClient.Deployment(remote.GroupID, remote.AppID, deployment.ID)
 			if err != nil {
-				if e := realmClient.DiscardDraft(remote.GroupID, remote.AppID, draftID); e != nil {
-					ui.Print(terminal.NewWarningLog("Failed to discard the draft created for your deployment"))
-				}
 				return err
 			}
 		}
