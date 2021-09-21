@@ -13,7 +13,6 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/briandowns/spinner"
 )
 
 const (
@@ -290,8 +289,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	if cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeNodeModules || cmd.inputs.IncludeDependencies {
 		installDependencies := func() error {
-			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-			s.Suffix = " Installing dependencies: starting..."
+			s := ui.Spinner("Installing dependencies: starting...", terminal.SpinnerOptions{})
 
 			s.Start()
 			defer s.Stop()
@@ -307,7 +305,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 				if err != nil {
 					return err
 				}
-				s.Suffix = fmt.Sprintf(" Installing dependencies: %s...", status.Message)
+				s.SetMessage(fmt.Sprintf("Installing dependencies: %s...", status.Message))
 				time.Sleep(time.Second)
 			}
 			if status.State == realm.DependenciesStateFailed {
@@ -324,8 +322,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if cmd.inputs.IncludeHosting {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Importing hosting assets..."
+		s := ui.Spinner("Importing hosting assets...", terminal.SpinnerOptions{})
 
 		importHosting := func() error {
 			s.Start()
@@ -348,8 +345,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewTextLog("Import hosting assets"))
 
 		if cmd.inputs.ResetCDNCache {
-			s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-			s.Suffix = " Resetting CDN cache..."
+			s := ui.Spinner("Resetting CDN cache...", terminal.SpinnerOptions{})
 
 			invalidateCache := func() error {
 				s.Start()
@@ -544,8 +540,7 @@ func deployDraftAndWait(ui terminal.UI, realmClient realm.Client, remote appRemo
 		return err
 	}
 
-	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-	s.Suffix = " Deploying app changes..."
+	s := ui.Spinner("Deploying app changes...", terminal.SpinnerOptions{})
 
 	waitForDeployment := func() error {
 		s.Start()

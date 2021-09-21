@@ -7,7 +7,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -16,8 +15,6 @@ import (
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
-
-	"github.com/briandowns/spinner"
 )
 
 // CommandMetaCreate is the command meta for the `app create` command
@@ -387,8 +384,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	}
 
 	createTemplateApp := func() (realm.App, error) {
-		s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-		s.Suffix = " Creating template app..."
+		s := ui.Spinner("Creating template app...", terminal.SpinnerOptions{})
 		s.Start()
 		defer s.Stop()
 
@@ -408,7 +404,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		return err
 	}
 
-	_, err = writeTemplateAppToLocal(clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, rootDir)
+	_, err = writeTemplateAppToLocal(ui, clients.Realm, appRealm.ID, appRealm.GroupID, cmd.inputs.Template, rootDir)
 	if err != nil {
 		return err
 	}
@@ -437,7 +433,7 @@ func (cmd *CommandCreate) display(omitDryRun bool) string {
 	return cli.CommandDisplay(CommandMetaCreate.Display, cmd.inputs.args(omitDryRun))
 }
 
-func writeTemplateAppToLocal(realmClient realm.Client, appID, groupID, templateID, rootDir string) (local.App, error) {
+func writeTemplateAppToLocal(ui terminal.UI, realmClient realm.Client, appID, groupID, templateID, rootDir string) (local.App, error) {
 	backendDir := filepath.Join(rootDir, local.BackendPath)
 	frontendDir := filepath.Join(rootDir, local.FrontendPath)
 
@@ -459,8 +455,7 @@ func writeTemplateAppToLocal(realmClient realm.Client, appID, groupID, templateI
 		return local.App{}, err
 	}
 
-	s := spinner.New(terminal.SpinnerCircles, 250*time.Millisecond)
-	s.Suffix = " Downloading client template..."
+	s := ui.Spinner("Downloading client template...", terminal.SpinnerOptions{})
 
 	downloadAndWriteClient := func() error {
 		s.Start()

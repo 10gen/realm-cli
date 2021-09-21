@@ -472,14 +472,18 @@ Failed to discard the draft created for your deployment
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `Determining changes
+				output := out.String()
+				for _, line := range []string{
+					`Determining changes
 Creating draft
 Pushing changes
 Deploying draft
-Deployment complete
-An error occurred while uploading hosting assets: failed to add /404.html: something bad happened
-An error occurred while uploading hosting assets: failed to add /index.html: something bad happened
-`, out.String())
+Deployment complete`,
+					"An error occurred while uploading hosting assets: failed to add /404.html: something bad happened",
+					"An error occurred while uploading hosting assets: failed to add /index.html: something bad happened",
+				} {
+					assert.True(t, strings.Contains(output, line), fmt.Sprintf("expected output to contain: '%s'\nactual output:\n%s", line, output))
+				}
 			})
 
 			t.Run("should return an error when modifying the body of a hosting asset", func(t *testing.T) {
@@ -497,14 +501,18 @@ An error occurred while uploading hosting assets: failed to add /index.html: som
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
-				assert.Equal(t, `Determining changes
+				output := out.String()
+				for _, line := range []string{
+					`Determining changes
 Creating draft
 Pushing changes
 Deploying draft
-Deployment complete
-An error occurred while uploading hosting assets: failed to update /404.html: something bad happened
-An error occurred while uploading hosting assets: failed to update /index.html: something bad happened
-`, out.String())
+Deployment complete`,
+					"An error occurred while uploading hosting assets: failed to update /404.html: something bad happened",
+					"An error occurred while uploading hosting assets: failed to update /index.html: something bad happened",
+				} {
+					assert.True(t, strings.Contains(output, line), fmt.Sprintf("expected output to contain: '%s'\nactual output:\n%s", line, output))
+				}
 			})
 		})
 
