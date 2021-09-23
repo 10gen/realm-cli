@@ -73,6 +73,7 @@ func FindPackageJSON(path string) (Dependencies, error) {
 	return Dependencies{rootDir, packageJSONPath, false}, nil
 }
 
+// PrepareUpload will prepare the dependencies for upload
 func (d Dependencies) PrepareUpload() (string, func(), error) {
 	if !d.isDirectory {
 		return d.FilePath, func() {}, nil
@@ -151,5 +152,8 @@ func (d Dependencies) PrepareUpload() (string, func(), error) {
 	if err != nil {
 		return "", func() {}, err
 	}
-	return tmpZip, func() { os.Remove(tmpZip) }, nil
+	return tmpZip, func() {
+		// TODO(REALMC-8369): remove the nolint directive once errcheck is fixed
+		os.Remove(tmpZip) //nolint: errcheck
+	}, nil
 }
