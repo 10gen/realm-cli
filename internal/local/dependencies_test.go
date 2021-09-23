@@ -9,13 +9,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestDependenciesFindNodeModules(t *testing.T) {
+	assert.RegisterOpts(reflect.TypeOf(Dependencies{}), cmp.AllowUnexported(Dependencies{}))
+
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
@@ -99,6 +104,8 @@ func TestDependenciesFindNodeModules(t *testing.T) {
 }
 
 func TestDependenciesFindPackageJSON(t *testing.T) {
+	assert.RegisterOpts(reflect.TypeOf(Dependencies{}), cmp.AllowUnexported(Dependencies{}))
+
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
