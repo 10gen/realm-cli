@@ -312,12 +312,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 					return err
 				}
 
-				message := status.Message
-				if message == "" {
-					message = "finishing up"
+				if status.State == realm.DependenciesStateSuccessful || status.State == realm.DependenciesStateFailed {
+					break
 				}
 
-				s.SetMessage(fmt.Sprintf("Installing dependencies: %s...", message))
+				s.SetMessage(fmt.Sprintf("Installing dependencies: %s...", status.Message))
 				time.Sleep(time.Second)
 			}
 			if status.State == realm.DependenciesStateFailed {
