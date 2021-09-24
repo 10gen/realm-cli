@@ -239,11 +239,15 @@ console.log('got heem!');
 		},
 		Triggers: []map[string]interface{}{
 			{
-				"name":          "yell",
-				"type":          "SCHEDULED",
-				"config":        map[string]interface{}{"schedule": "0 0 * * 1"},
-				"function_name": "test",
-				"disabled":      false,
+				"name":   "yell",
+				"type":   "SCHEDULED",
+				"config": map[string]interface{}{"schedule": "0 0 * * 1"},
+				"event_processors": map[string]interface{}{
+					"FUNCTION": map[string]interface{}{
+						"config": map[string]interface{}{"function_name": "test"},
+					},
+				},
+				"disabled": false,
 			},
 		},
 		GraphQL: local.GraphQLStructure{
@@ -357,15 +361,23 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"match":                       map[string]interface{}{},
 					"project":                     map[string]interface{}{},
 				},
-				"function_name": "test",
-				"disabled":      false,
+				"event_processors": map[string]interface{}{
+					"FUNCTION": map[string]interface{}{
+						"config": map[string]interface{}{"function_name": "test"},
+					},
+				},
+				"disabled": false,
 			},
 			{
-				"name":          "yell",
-				"type":          "SCHEDULED",
-				"config":        map[string]interface{}{"schedule": "0 0 * * 1"},
-				"function_name": "test",
-				"disabled":      false,
+				"name":   "yell",
+				"type":   "SCHEDULED",
+				"config": map[string]interface{}{"schedule": "0 0 * * 1"},
+				"event_processors": map[string]interface{}{
+					"FUNCTION": map[string]interface{}{
+						"config": map[string]interface{}{"function_name": "test"},
+					},
+				},
+				"disabled": false,
 			},
 		},
 		GraphQL: local.GraphQLStructure{
