@@ -64,7 +64,7 @@ func selectArchive(archives []string) (archive, error) {
 			continue
 		}
 		if ext == "" {
-			return archive{path, true}, nil
+			return archive{path: path, isDir: true}, nil
 		}
 	}
 
