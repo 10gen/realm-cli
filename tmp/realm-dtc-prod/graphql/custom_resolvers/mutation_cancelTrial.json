@@ -1,0 +1,9 @@
+{
+    "field_name": "cancelTrial",
+    "function_name": "cancelTrial",
+    "input_type": "string",
+    "input_type_format": "scalar",
+    "on_type": "Mutation",
+    "payload_type": "Newcustomer",
+    "payload_type_format": "generated"
+}

@@ -1,0 +1,23 @@
+exports = async (noteId) => {
+  /*
+    Accessing application's values:
+    var x = context.values.get("value_name");
+
+    Accessing a mongodb service:
+    var collection = context.services.get("mongodb-atlas").db("dbname").collection("coll_name");
+    var doc = collection.findOne({owner_id: context.user.id});
+
+    To call other named functions:
+    var result = context.functions.execute("function_name", arg1, arg2);
+
+    Try running in the console below.
+  */
+  const collection = context.services.get('mongodb-atlas').db('verbenergy').collection('newcustomers');
+  const _id = new BSON.ObjectId(noteId);
+  const customer = await collection.findOneAndUpdate({ 'notes._id': _id }, {
+    $set: { 'notes.$.status': 'Hide' },
+  }, { returnNewDocument: true });
+  // const customer = await collection.findOne({ _id });
+  console.log('UPDATED CUSTOMER', customer);
+  return JSON.parse(JSON.stringify(customer));
+};

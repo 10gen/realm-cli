@@ -1,0 +1,5 @@
+{
+    "name": "SLACK_API_TOKEN",
+    "value": "SLACK_API_TOKEN",
+    "from_secret": true
+}

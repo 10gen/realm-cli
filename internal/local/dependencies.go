@@ -73,7 +73,9 @@ func FindPackageJSON(path string) (Dependencies, error) {
 	return Dependencies{rootDir, packageJSONPath, false}, nil
 }
 
-// PrepareUpload will prepare the dependencies for upload
+// PrepareUpload will prepare the dependencies for upload and returns the file path
+// for the artifact to be uploaded along with a callback that will perform any cleanup
+// required for that upload artifact
 func (d Dependencies) PrepareUpload() (string, func(), error) {
 	if !d.isDirectory {
 		return d.FilePath, func() {}, nil

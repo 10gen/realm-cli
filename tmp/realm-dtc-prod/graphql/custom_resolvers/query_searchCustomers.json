@@ -1,0 +1,23 @@
+{
+    "field_name": "searchCustomers",
+    "function_name": "searchCustomers",
+    "input_type": {
+        "properties": {
+            "limit": {
+                "bsonType": "int"
+            },
+            "search": {
+                "bsonType": "string"
+            },
+            "skip": {
+                "bsonType": "int"
+            }
+        },
+        "title": "searchCustomers",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Query",
+    "payload_type": "Newcustomer",
+    "payload_type_format": "generated-list"
+}

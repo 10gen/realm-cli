@@ -1,0 +1,5 @@
+{
+    "name": "LOGGER_PRIVATE_API_KEY",
+    "value": "LOGGER_PRIVATE_API_KEY",
+    "from_secret": true
+}

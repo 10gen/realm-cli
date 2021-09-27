@@ -1,0 +1,67 @@
+{
+    "field_name": "newFlex",
+    "function_name": "newFlex",
+    "input_type": {
+        "properties": {
+            "customerId": {
+                "bsonType": "string"
+            },
+            "discounts": {
+                "bsonType": "array",
+                "items": {
+                    "properties": {
+                        "amount": {
+                            "bsonType": "int",
+                            "description": "passthrough field, will not be used for computation"
+                        },
+                        "code": {
+                            "bsonType": "string"
+                        },
+                        "discountType": {
+                            "bsonType": "string"
+                        },
+                        "flex": {
+                            "bsonType": "bool"
+                        },
+                        "value": {
+                            "bsonType": "double"
+                        }
+                    },
+                    "type": "object"
+                },
+                "required": [
+                    "code",
+                    "discountType",
+                    "value"
+                ]
+            },
+            "items": {
+                "bsonType": "array",
+                "items": {
+                    "bsonType": "object",
+                    "properties": {
+                        "id": {
+                            "bsonType": "string"
+                        },
+                        "quantity": {
+                            "bsonType": "int"
+                        }
+                    }
+                }
+            },
+            "source": {
+                "bsonType": "string"
+            }
+        },
+        "required": [
+            "customerId",
+            "items"
+        ],
+        "title": "newFlex",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Mutation",
+    "payload_type": "Newcustomer",
+    "payload_type_format": "generated"
+}

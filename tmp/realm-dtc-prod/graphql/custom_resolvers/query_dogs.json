@@ -1,0 +1,24 @@
+{
+    "field_name": "dogs",
+    "function_name": "dogs",
+    "input_type": {
+        "properties": {
+            "nPerPage": {
+                "bsonType": "int"
+            },
+            "pageNumber": {
+                "bsonType": "int"
+            }
+        },
+        "required": [
+            "pageNumber",
+            "nPerPage"
+        ],
+        "title": "paginatedDogMessagesInput",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Query",
+    "payload_type": "Message",
+    "payload_type_format": "generated-list"
+}

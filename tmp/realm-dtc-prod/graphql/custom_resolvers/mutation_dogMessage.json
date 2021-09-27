@@ -1,0 +1,23 @@
+{
+    "field_name": "dogMessage",
+    "function_name": "dogMessage",
+    "input_type": {
+        "properties": {
+            "dog": {
+                "bsonType": "boolean"
+            },
+            "messageId": {
+                "bsonType": "string"
+            }
+        },
+        "required": [
+            "messageId"
+        ],
+        "title": "dogMessage",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Mutation",
+    "payload_type": "Message",
+    "payload_type_format": "generated"
+}

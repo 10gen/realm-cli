@@ -1,0 +1,10 @@
+{
+    "id": "60b265d8e27faedfbba4fb07",
+    "name": "convertTrialJobScheduler",
+    "type": "SCHEDULED",
+    "config": {
+        "schedule": "*/1 * * * *"
+    },
+    "function_name": "scheduleTrialConversions",
+    "disabled": false
+}

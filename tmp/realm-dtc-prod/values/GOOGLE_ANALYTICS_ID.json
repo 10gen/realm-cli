@@ -1,0 +1,5 @@
+{
+    "name": "GOOGLE_ANALYTICS_ID",
+    "value": "GOOGLE_ANALYTICS_ID",
+    "from_secret": true
+}

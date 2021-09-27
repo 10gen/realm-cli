@@ -1,0 +1,20 @@
+{
+    "customer": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/newcustomers",
+        "source_key": "customer",
+        "foreign_key": "_id",
+        "is_list": false
+    },
+    "messages": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/messages",
+        "source_key": "messages",
+        "foreign_key": "_id",
+        "is_list": true
+    },
+    "users": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/users",
+        "source_key": "users",
+        "foreign_key": "_id",
+        "is_list": true
+    }
+}
