@@ -1,0 +1,5 @@
+{
+    "name": "DD_LOG_URL",
+    "value": "https://http-intake.logs.datadoghq.com/v1/input",
+    "from_secret": false
+}

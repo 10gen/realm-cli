@@ -1,0 +1,29 @@
+{
+    "field_name": "pageCustomers",
+    "function_name": "page",
+    "input_type": {
+        "properties": {
+            "collection": {
+                "bsonType": "string"
+            },
+            "limit": {
+                "bsonType": "int"
+            },
+            "skip": {
+                "bsonType": "int"
+            },
+            "sort": {
+                "bsonType": "int"
+            },
+            "sortField": {
+                "bsonType": "string"
+            }
+        },
+        "title": "PageInput",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Query",
+    "payload_type": "Newcustomer",
+    "payload_type_format": "generated-list"
+}

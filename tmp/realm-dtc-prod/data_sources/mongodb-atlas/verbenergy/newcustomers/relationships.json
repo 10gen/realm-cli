@@ -1,0 +1,20 @@
+{
+    "conversation": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/messages",
+        "source_key": "conversation",
+        "foreign_key": "_id",
+        "is_list": true
+    },
+    "flexPlans": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/flexplans",
+        "source_key": "flexPlans",
+        "foreign_key": "_id",
+        "is_list": true
+    },
+    "referId": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/refers",
+        "source_key": "referId",
+        "foreign_key": "_id",
+        "is_list": false
+    }
+}

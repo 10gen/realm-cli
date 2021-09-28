@@ -1,0 +1,14 @@
+{
+    "purchaserId": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/newcustomers",
+        "source_key": "purchaserId",
+        "foreign_key": "_id",
+        "is_list": false
+    },
+    "recipientId": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/newcustomers",
+        "source_key": "recipientId",
+        "foreign_key": "_id",
+        "is_list": false
+    }
+}

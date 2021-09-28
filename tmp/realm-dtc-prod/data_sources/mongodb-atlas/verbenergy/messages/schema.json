@@ -1,0 +1,79 @@
+{
+    "properties": {
+        "__v": {
+            "bsonType": "int"
+        },
+        "_id": {
+            "bsonType": "objectId"
+        },
+        "body": {
+            "bsonType": "string"
+        },
+        "customer": {
+            "bsonType": "string"
+        },
+        "customerId": {
+            "bsonType": "objectId"
+        },
+        "dog": {
+            "bsonType": "bool"
+        },
+        "firstName": {
+            "bsonType": "string"
+        },
+        "from": {
+            "bsonType": "string"
+        },
+        "intent": {
+            "bsonType": "object",
+            "properties": {
+                "confidence": {
+                    "bsonType": "double"
+                },
+                "model": {
+                    "bsonType": "string"
+                },
+                "name": {
+                    "bsonType": "string"
+                }
+            }
+        },
+        "lastName": {
+            "bsonType": "string"
+        },
+        "mediaURL": {
+            "bsonType": "string"
+        },
+        "messageType": {
+            "bsonType": "string"
+        },
+        "momentDate": {
+            "bsonType": "string"
+        },
+        "redirect": {
+            "bsonType": "bool"
+        },
+        "sender": {
+            "bsonType": "string"
+        },
+        "sentimentScore": {
+            "bsonType": "int"
+        },
+        "status": {
+            "bsonType": "string"
+        },
+        "timestamp": {
+            "bsonType": "date"
+        },
+        "to": {
+            "bsonType": "string"
+        },
+        "twilioId": {
+            "bsonType": "string"
+        },
+        "user": {
+            "bsonType": "objectId"
+        }
+    },
+    "title": "message"
+}

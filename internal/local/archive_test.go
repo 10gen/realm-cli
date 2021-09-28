@@ -1,73 +1,82 @@
 package local
 
 import (
-	"os"
-	"path/filepath"
+	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+
+	"github.com/google/go-cmp/cmp"
 )
 
-func TestArchiveReaderNew(t *testing.T) {
-	wd, wdErr := os.Getwd()
-	assert.Nil(t, wdErr)
+func TestSelectArchive(t *testing.T) {
+	assert.RegisterOpts(reflect.TypeOf(archive{}), cmp.AllowUnexported(archive{}))
 
-	testRoot := filepath.Join(wd, "testdata/dependencies")
-
-	t.Run("should return an error when a project has an unsupported node_modules archive", func(t *testing.T) {
-		archivePath := filepath.Join(testRoot, "7z/functions/node_modules.7z")
-
-		_, err := newArchiveReader(archivePath, nil)
-		assert.Equal(t, errUnknownArchiveExtension(archivePath), err)
+	t.Run("should return an error when no archive paths match a supported format", func(t *testing.T) {
+		_, err := selectArchive([]string{
+			"./node_modules.txt",
+			"./node_modules.7z",
+		})
+		assert.Equal(t, errors.New("make sure file format is one of [.zip, .tar, .tgz, .tar.gz]"), err)
 	})
 
 	for _, tc := range []struct {
-		description string
-		path        string
-		test        func(t *testing.T, r ArchiveReader)
+		description     string
+		archives        []string
+		expectedArchive archive
 	}{
 		{
-			description: "should find a zip node_modules archive and return its reader",
-			path:        filepath.Join(testRoot, "zip/functions/node_modules.zip"),
-			test: func(t *testing.T, r ArchiveReader) {
-				_, ok := r.(*zipReader)
-				assert.True(t, ok, "should be a zip reader")
+			description: "should select a zip format when other preferences are available",
+			archives: []string{
+				"./node_modules",
+				"./node_modules.tar.gz",
+				"./node_modules.tgz",
+				"./node_modules.tar",
+				"./node_modules.zip",
 			},
+			expectedArchive: archive{path: "./node_modules.zip"},
 		},
 		{
-			description: "should find find a tar node_modules archive and return its reader",
-			path:        filepath.Join(testRoot, "tar/functions/node_modules.tar"),
-			test: func(t *testing.T, r ArchiveReader) {
-				_, ok := r.(*tarReader)
-				assert.True(t, ok, "should be a tar reader")
+			description: "should select a tar format when other preferences are available",
+			archives: []string{
+				"./node_modules",
+				"./node_modules.tar.gz",
+				"./node_modules.tgz",
+				"./node_modules.tar",
 			},
+			expectedArchive: archive{path: "./node_modules.tar"},
 		},
 		{
-			description: "should find find a tgz node_modules archive and return its reader",
-			path:        filepath.Join(testRoot, "tgz/functions/node_modules.tar.gz"),
-			test: func(t *testing.T, r ArchiveReader) {
-				_, ok := r.(*tarReader)
-				assert.True(t, ok, "should be a tar reader")
+			description: "should select a tgz format when other preferences are available",
+			archives: []string{
+				"./node_modules",
+				"./node_modules.tgz",
 			},
+			expectedArchive: archive{path: "./node_modules.tgz"},
 		},
 		{
-			description: "should find find a node_modules directory and return its reader",
-			path:        filepath.Join(testRoot, "dir/functions/node_modules"),
-			test: func(t *testing.T, r ArchiveReader) {
-				_, ok := r.(*dirReader)
-				assert.True(t, ok, "should be a dir reader")
+			description: "should select a targz format when other preferences are available",
+			archives: []string{
+				"./node_modules",
+				"./node_modules.tar.gz",
 			},
+			expectedArchive: archive{path: "./node_modules.tar.gz"},
+		},
+		{
+			description: "should select a directory format when no other preferences are available",
+			archives: []string{
+				"./node_modules.txt",
+				"./node_modules.7z",
+				"./node_modules",
+			},
+			expectedArchive: archive{"./node_modules", true},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			file, fileErr := os.Open(tc.path)
-			assert.Nil(t, fileErr)
-			defer file.Close()
-
-			r, readerErr := newArchiveReader(tc.path, file)
-			assert.Nil(t, readerErr)
-
-			tc.test(t, r)
+			archive, err := selectArchive(tc.archives)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.expectedArchive, archive)
 		})
 	}
 }

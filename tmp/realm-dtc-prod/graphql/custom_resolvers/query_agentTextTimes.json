@@ -1,0 +1,93 @@
+{
+    "field_name": "agentTextTimes",
+    "function_name": "getAgentTextTimes",
+    "input_type": {
+        "properties": {
+            "days": {
+                "bsonType": "int",
+                "minimum": 0
+            },
+            "forDate": {
+                "bsonType": "date"
+            },
+            "offset": {
+                "bsonType": "int",
+                "minimum": 0
+            }
+        },
+        "title": "textTimeQuery",
+        "type": "object"
+    },
+    "input_type_format": "custom",
+    "on_type": "Query",
+    "payload_type": {
+        "items": {
+            "bsonType": "object",
+            "properties": {
+                "activeDays": {
+                    "bsonType": "int",
+                    "minimum": 0
+                },
+                "activeHours": {
+                    "bsonType": "int",
+                    "minimum": 0
+                },
+                "days": {
+                    "bsonType": "array",
+                    "items": {
+                        "bsonType": "object",
+                        "properties": {
+                            "_id": {
+                                "bsonType": "timestamp"
+                            },
+                            "count": {
+                                "bsonType": "int",
+                                "minimum": 0
+                            },
+                            "earliest": {
+                                "bsonType": "timestamp"
+                            },
+                            "latest": {
+                                "bsonType": "timestamp"
+                            }
+                        }
+                    }
+                },
+                "email": {
+                    "bsonType": "string"
+                },
+                "hours": {
+                    "bsonType": "array",
+                    "items": {
+                        "bsonType": "object",
+                        "properties": {
+                            "_id": {
+                                "bsonType": "timestamp"
+                            },
+                            "count": {
+                                "bsonType": "int",
+                                "minimum": 0
+                            },
+                            "earliest": {
+                                "bsonType": "timestamp"
+                            },
+                            "latest": {
+                                "bsonType": "timestamp"
+                            }
+                        }
+                    }
+                },
+                "name": {
+                    "bsonType": "string"
+                },
+                "sentMessages": {
+                    "bsonType": "int",
+                    "minimum": 0
+                }
+            }
+        },
+        "title": "textTimeData",
+        "type": "array"
+    },
+    "payload_type_format": "custom"
+}

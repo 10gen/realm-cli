@@ -1,0 +1,5 @@
+{
+    "name": "SLACK_API_BASE_URL",
+    "value": "https://slack.com/api",
+    "from_secret": false
+}

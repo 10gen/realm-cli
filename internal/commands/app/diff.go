@@ -149,7 +149,13 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 			return err
 		}
 
-		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, appDependencies.FilePath)
+		uploadPath, cleanup, err := appDependencies.PrepareUpload()
+		if err != nil {
+			return err
+		}
+		defer cleanup()
+
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
 		if err != nil {
 			return err
 		}

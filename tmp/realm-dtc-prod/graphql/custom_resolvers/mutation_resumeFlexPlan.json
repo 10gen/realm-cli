@@ -1,0 +1,9 @@
+{
+    "field_name": "resumeFlexPlan",
+    "function_name": "resumeFlexPlan",
+    "input_type": "string",
+    "input_type_format": "scalar",
+    "on_type": "Mutation",
+    "payload_type": "Flexplan",
+    "payload_type_format": "generated"
+}

@@ -1,0 +1,11 @@
+{
+    "properties": {
+        "_id": {
+            "bsonType": "objectId"
+        },
+        "num": {
+            "bsonType": "long"
+        }
+    },
+    "title": "invoicenumber"
+}

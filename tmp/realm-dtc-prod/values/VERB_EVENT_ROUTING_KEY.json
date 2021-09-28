@@ -1,0 +1,5 @@
+{
+    "name": "VERB_EVENT_ROUTING_KEY",
+    "value": "verb-event",
+    "from_secret": false
+}

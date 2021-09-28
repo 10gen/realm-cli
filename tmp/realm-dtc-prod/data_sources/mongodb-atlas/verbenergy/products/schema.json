@@ -1,0 +1,141 @@
+{
+    "properties": {
+        "__v": {
+            "bsonType": "int"
+        },
+        "_id": {
+            "bsonType": "objectId"
+        },
+        "bars": {
+            "bsonType": "int"
+        },
+        "categories": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "object",
+                "properties": {
+                    "displayName": {
+                        "bsonType": "string"
+                    },
+                    "id": {
+                        "bsonType": "string"
+                    }
+                }
+            }
+        },
+        "category": {
+            "bsonType": "string"
+        },
+        "cms": {
+            "bsonType": "object",
+            "properties": {
+                "display": {
+                    "bsonType": "object",
+                    "properties": {
+                        "crm": {
+                            "bsonType": "bool"
+                        },
+                        "site": {
+                            "bsonType": "bool"
+                        }
+                    }
+                },
+                "palette": {
+                    "bsonType": "object",
+                    "properties": {
+                        "contrast": {
+                            "bsonType": "string"
+                        },
+                        "primary": {
+                            "bsonType": "string"
+                        },
+                        "secondary": {
+                            "bsonType": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "crm": {
+            "bsonType": "bool"
+        },
+        "description": {
+            "bsonType": "string"
+        },
+        "discount": {
+            "bsonType": "int"
+        },
+        "flavors": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "object",
+                "properties": {
+                    "name": {
+                        "bsonType": "string"
+                    },
+                    "sku": {
+                        "bsonType": "string"
+                    }
+                }
+            }
+        },
+        "fulfillment": {
+            "bsonType": "array",
+            "items": {
+                "bsonType": "object",
+                "properties": {
+                    "quantity": {
+                        "bsonType": "int"
+                    },
+                    "sku": {
+                        "bsonType": "string"
+                    }
+                }
+            }
+        },
+        "group": {
+            "bsonType": "string"
+        },
+        "name": {
+            "bsonType": "string"
+        },
+        "price": {
+            "bsonType": "object",
+            "properties": {
+                "flex": {
+                    "bsonType": "int"
+                },
+                "normal": {
+                    "bsonType": "int"
+                },
+                "online": {
+                    "bsonType": "object",
+                    "properties": {
+                        "flex": {
+                            "bsonType": "int"
+                        },
+                        "normal": {
+                            "bsonType": "int"
+                        }
+                    }
+                },
+                "original": {
+                    "bsonType": "int"
+                },
+                "strikethrough": {
+                    "bsonType": "int"
+                },
+                "value": {
+                    "bsonType": "int"
+                }
+            }
+        },
+        "site": {
+            "bsonType": "bool"
+        },
+        "sku": {
+            "bsonType": "string"
+        }
+    },
+    "title": "product"
+}

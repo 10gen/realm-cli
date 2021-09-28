@@ -1,0 +1,14 @@
+{
+    "customerId": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/newcustomers",
+        "source_key": "customerId",
+        "foreign_key": "_id",
+        "is_list": false
+    },
+    "user": {
+        "ref": "#/relationship/mongodb-atlas/verbenergy/users",
+        "source_key": "user",
+        "foreign_key": "_id",
+        "is_list": false
+    }
+}

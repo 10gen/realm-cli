@@ -1,0 +1,5 @@
+{
+    "name": "CLOUDAMQP_PW",
+    "value": "CLOUDAMQP_PW",
+    "from_secret": true
+}

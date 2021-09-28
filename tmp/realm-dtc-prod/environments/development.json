@@ -1,0 +1,11 @@
+{
+    "values": {
+        "CLOUDAMQP_URL": "",
+        "CLOUDAMQP_USER": "",
+        "KLAVIYO_ENABLED": false,
+        "REALM_APP_ID": "601b4f13ab0d8d322141de48",
+        "REALM_PROJECT_ID": "601b4d8565a4ca6392e440e6",
+        "SLACK_CHANNEL_DOGS": "",
+        "SLACK_CHANNEL_ORDERS": ""
+    }
+}

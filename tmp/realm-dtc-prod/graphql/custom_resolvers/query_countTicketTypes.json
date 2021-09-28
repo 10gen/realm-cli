@@ -1,0 +1,26 @@
+{
+    "field_name": "countTicketTypes",
+    "function_name": "countTicketTypes",
+    "input_type": "TicketQueryInput",
+    "input_type_format": "generated",
+    "on_type": "Query",
+    "payload_type": {
+        "items": {
+            "bsonType": "object",
+            "properties": {
+                "_id": {
+                    "bsonType": "string"
+                },
+                "count": {
+                    "bsonType": "int"
+                },
+                "type": {
+                    "bsonType": "string"
+                }
+            }
+        },
+        "title": "countTicketTypes",
+        "type": "array"
+    },
+    "payload_type_format": "custom"
+}

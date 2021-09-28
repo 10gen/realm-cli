@@ -1,0 +1,9 @@
+{
+    "field_name": "pauseFlexPlan",
+    "function_name": "pauseFlexPlan",
+    "input_type": "string",
+    "input_type_format": "scalar",
+    "on_type": "Mutation",
+    "payload_type": "Flexplan",
+    "payload_type_format": "generated"
+}

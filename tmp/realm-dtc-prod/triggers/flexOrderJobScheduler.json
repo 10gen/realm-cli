@@ -1,0 +1,10 @@
+{
+    "id": "60a2d5ce17e1dfa4a3293398",
+    "name": "flexOrderJobScheduler",
+    "type": "SCHEDULED",
+    "config": {
+        "schedule": "*/1 * * * *"
+    },
+    "function_name": "scheduleFlexOrders",
+    "disabled": false
+}
