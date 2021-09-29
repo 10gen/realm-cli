@@ -1,5 +1,0 @@
-{
-    "name": "AUTH0_TOKEN_URL",
-    "value": "https://verb.auth0.com/oauth/token",
-    "from_secret": false
-}

@@ -1,5 +1,0 @@
-{
-    "name": "VERB_CRM_BASE_URL",
-    "value": "https://verb-crm-v2.herokuapp.com",
-    "from_secret": false
-}

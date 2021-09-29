@@ -1,9 +1,0 @@
-{
-    "field_name": "countCustomers",
-    "function_name": "countCustomers",
-    "input_type": "NewcustomerQueryInput",
-    "input_type_format": "generated",
-    "on_type": "Query",
-    "payload_type": "int",
-    "payload_type_format": "scalar"
-}

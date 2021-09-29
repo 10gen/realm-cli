@@ -1,5 +1,0 @@
-{
-    "name": "ADMIN_API_BASE_URL",
-    "value": "https://realm.mongodb.com/api/admin/v3.0",
-    "from_secret": false
-}

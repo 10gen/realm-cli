@@ -1,8 +1,0 @@
-{
-    "customer": {
-        "ref": "#/relationship/mongodb-atlas/verbenergy/newcustomers",
-        "source_key": "customer",
-        "foreign_key": "_id",
-        "is_list": false
-    }
-}

@@ -1,8 +1,0 @@
-{
-    "field_name": "dogsTotal",
-    "function_name": "dogsTotal",
-    "input_type_format": "",
-    "on_type": "Query",
-    "payload_type": "int",
-    "payload_type_format": "scalar"
-}

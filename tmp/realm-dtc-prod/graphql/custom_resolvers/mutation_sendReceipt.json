@@ -1,9 +1,0 @@
-{
-    "field_name": "sendReceipt",
-    "function_name": "sendReceipt",
-    "input_type": "string",
-    "input_type_format": "scalar",
-    "on_type": "Mutation",
-    "payload_type": "Neworder",
-    "payload_type_format": "generated"
-}

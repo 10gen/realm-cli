@@ -1,9 +1,0 @@
-{
-    "field_name": "hideCustomerNote",
-    "function_name": "hideCustomerNote",
-    "input_type": "string",
-    "input_type_format": "scalar",
-    "on_type": "Mutation",
-    "payload_type": "Newcustomer",
-    "payload_type_format": "generated"
-}
