@@ -1,7 +1,0 @@
-{
-    "name": "MINIMUM_ORDER_TOTAL",
-    "value": {
-        "$numberInt": "50"
-    },
-    "from_secret": false
-}

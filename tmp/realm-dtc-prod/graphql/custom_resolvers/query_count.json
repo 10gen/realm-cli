@@ -1,9 +1,0 @@
-{
-    "field_name": "count",
-    "function_name": "countTickets",
-    "input_type": "TicketQueryInput",
-    "input_type_format": "generated",
-    "on_type": "Query",
-    "payload_type": "int",
-    "payload_type_format": "scalar"
-}
