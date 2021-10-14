@@ -75,6 +75,9 @@ const (
 	// values
 	NameSecrets = "secrets"
 	NameValues  = "values"
+
+	// log forwarders
+	NameLogForwarders = "log_forwarders"
 )
 
 // set of supported local files

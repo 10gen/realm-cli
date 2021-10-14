@@ -410,3 +410,24 @@ func writeTriggers(rootDir string, triggers []map[string]interface{}) error {
 	}
 	return nil
 }
+
+func writeLogForwarders(rootDir string, logForwarders []map[string]interface{}) error {
+	for _, lf := range logForwarders {
+		name, ok := lf["name"].(string)
+		if !ok {
+			return errors.New("error writing log forwarders")
+		}
+		data, err := MarshalJSON(lf)
+		if err != nil {
+			return err
+		}
+		if err := WriteFile(
+			filepath.Join(rootDir, NameLogForwarders, name+extJSON),
+			0666,
+			bytes.NewReader(data),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
