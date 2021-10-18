@@ -656,6 +656,21 @@ exports = function({ query }) {
 		"collection_name":    "coll3",
 		"user_id_field":      "xref",
 	},
+	LogForwarders: []map[string]interface{}{
+		{
+			"name":         "forwarder",
+			"log_types":    []interface{}{"auth"},
+			"log_statuses": []interface{}{"error", "success"},
+			"policy": map[string]interface{}{
+				"type": "single",
+			},
+			"action": map[string]interface{}{
+				"type": "function",
+				"name": "test",
+			},
+			"disabled": false,
+		},
+	},
 }}}
 
 var appData20180301Local = AppDataV1{AppStructureV1{
