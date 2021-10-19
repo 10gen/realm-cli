@@ -260,6 +260,21 @@ console.log('got heem!');
 			},
 		},
 		Values: []map[string]interface{}{},
+		LogForwarders: []map[string]interface{}{
+			{
+				"name":         "forwarder",
+				"log_types":    []interface{}{"auth"},
+				"log_statuses": []interface{}{"error", "success"},
+				"policy": map[string]interface{}{
+					"type": "single",
+				},
+				"action": map[string]interface{}{
+					"type": "function",
+					"name": "test",
+				},
+				"disabled": false,
+			},
+		},
 	}}
 }
 
@@ -395,6 +410,21 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			},
 		},
 		Values: []map[string]interface{}{},
+		LogForwarders: []map[string]interface{}{
+			{
+				"name":         "forwarder",
+				"log_types":    []interface{}{"auth"},
+				"log_statuses": []interface{}{"error", "success"},
+				"policy": map[string]interface{}{
+					"type": "single",
+				},
+				"action": map[string]interface{}{
+					"type": "function",
+					"name": "test",
+				},
+				"disabled": false,
+			},
+		},
 	}}
 }
 
