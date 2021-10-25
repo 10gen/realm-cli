@@ -373,3 +373,99 @@ func TestWriteTriggers(t *testing.T) {
 `, string(key))
 	})
 }
+
+func TestWriteLogForwarders(t *testing.T) {
+	tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+	assert.Nil(t, err)
+	defer cleanupTmpDir()
+
+	t.Run("should write log forwarders to disk", func(t *testing.T) {
+		data := []map[string]interface{}{
+			{
+				"name": "lf1",
+				"log_types": []interface{}{
+					"auth",
+					"function",
+				},
+				"log_statuses": []interface{}{
+					"error",
+				},
+				"policy": map[string]interface{}{
+					"type": "single",
+				},
+				"action": map[string]interface{}{
+					"type": "function",
+					"name": "function0",
+				},
+				"disabled": false,
+			},
+			{
+				"name": "lf2",
+				"log_types": []interface{}{
+					"auth",
+					"graphql",
+				},
+				"log_statuses": []interface{}{
+					"error",
+					"success",
+				},
+				"policy": map[string]interface{}{
+					"type": "batch",
+				},
+				"action": map[string]interface{}{
+					"type": "function",
+					"name": "function0",
+				},
+				"disabled": false,
+			},
+		}
+
+		err := writeLogForwarders(tmpDir, data)
+		assert.Nil(t, err)
+
+		lf1, err := ioutil.ReadFile(filepath.Join(tmpDir, NameLogForwarders, "lf1"+extJSON))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "action": {
+        "name": "function0",
+        "type": "function"
+    },
+    "disabled": false,
+    "log_statuses": [
+        "error"
+    ],
+    "log_types": [
+        "auth",
+        "function"
+    ],
+    "name": "lf1",
+    "policy": {
+        "type": "single"
+    }
+}
+`, string(lf1))
+
+		lf2, err := ioutil.ReadFile(filepath.Join(tmpDir, NameLogForwarders, "lf2"+extJSON))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "action": {
+        "name": "function0",
+        "type": "function"
+    },
+    "disabled": false,
+    "log_statuses": [
+        "error",
+        "success"
+    ],
+    "log_types": [
+        "auth",
+        "graphql"
+    ],
+    "name": "lf2",
+    "policy": {
+        "type": "batch"
+    }
+}
+`, string(lf2))
+	})
+}

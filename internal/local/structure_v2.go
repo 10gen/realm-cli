@@ -32,6 +32,7 @@ type AppStructureV2 struct {
 	Hosting               map[string]interface{}            `json:"hosting,omitempty"`
 	Sync                  SyncStructure                     `json:"sync,omitempty"`
 	Secrets               SecretsStructure                  `json:"secrets,omitempty"`
+	LogForwarders         []map[string]interface{}          `json:"log_forwarders,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -167,6 +168,12 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 		return err
 	}
 	a.HTTPEndpoints = httpEndpoints
+
+	logForwarders, err := parseJSONFiles(filepath.Join(rootDir, NameLogForwarders))
+	if err != nil {
+		return err
+	}
+	a.LogForwarders = logForwarders
 
 	return nil
 }
@@ -410,6 +417,9 @@ func (a AppDataV2) WriteData(rootDir string) error {
 		return err
 	}
 	if err := writeTriggers(rootDir, a.Triggers); err != nil {
+		return err
+	}
+	if err := writeLogForwarders(rootDir, a.LogForwarders); err != nil {
 		return err
 	}
 	return nil

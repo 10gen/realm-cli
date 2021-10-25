@@ -30,6 +30,7 @@ type AppStructureV1 struct {
 	GraphQL              GraphQLStructure                  `json:"graphql,omitempty"`
 	Services             []ServiceStructure                `json:"services,omitempty"`
 	Values               []map[string]interface{}          `json:"values,omitempty"`
+	LogForwarders        []map[string]interface{}          `json:"log_forwarders,omitempty"`
 }
 
 // AppDataV1 is the v1 local Realm app data
@@ -117,6 +118,13 @@ func (a *AppDataV1) LoadData(rootDir string) error {
 		return err
 	}
 	a.Services = services
+
+	logForwarders, err := parseJSONFiles(filepath.Join(rootDir, NameLogForwarders))
+	if err != nil {
+		return err
+	}
+	a.LogForwarders = logForwarders
+
 	return nil
 }
 
@@ -171,6 +179,9 @@ func (a *AppDataV1) WriteData(rootDir string) error {
 		return err
 	}
 	if err := writeTriggers(rootDir, a.Triggers); err != nil {
+		return err
+	}
+	if err := writeLogForwarders(rootDir, a.LogForwarders); err != nil {
 		return err
 	}
 	return nil
