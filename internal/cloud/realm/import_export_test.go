@@ -425,6 +425,30 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				"disabled": false,
 			},
 		},
+		HTTPSEndpoints: local.HTTPSEndpointStructure{
+			Configs: []map[string]interface{}{
+				{
+					"create_user_on_auth":    true,
+					"disabled":               true,
+					"fetch_custom_user_data": true,
+					"function_name":          "test",
+					"http_method":            "GET",
+					"respond_result":         true,
+					"route":                  "/hello/world",
+					"validation_method":      "NO_VALIDATION",
+				},
+				{
+					"create_user_on_auth":    false,
+					"disabled":               false,
+					"fetch_custom_user_data": false,
+					"function_name":          "test",
+					"http_method":            "POST",
+					"respond_result":         false,
+					"route":                  "/hello/world",
+					"validation_method":      "NO_VALIDATION",
+				},
+			},
+		},
 	}}
 }
 

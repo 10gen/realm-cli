@@ -27,6 +27,7 @@ type AppStructureV2 struct {
 	Triggers              []map[string]interface{}          `json:"triggers,omitempty"`
 	DataSources           []DataSourceStructure             `json:"data_sources,omitempty"`
 	HTTPEndpoints         []HTTPEndpointStructure           `json:"http_endpoints,omitempty"`
+	HTTPSEndpoints        HTTPSEndpointStructure            `json:"https_endpoints,omitempty"`
 	Services              []ServiceStructure                `json:"services,omitempty"`
 	GraphQL               GraphQLStructure                  `json:"graphql,omitempty"`
 	Hosting               map[string]interface{}            `json:"hosting,omitempty"`
@@ -58,6 +59,11 @@ type HTTPEndpointStructure struct {
 	Config           map[string]interface{}   `json:"config,omitempty"`
 	IncomingWebhooks []map[string]interface{} `json:"incoming_webhooks,omitempty"`
 	Rules            []map[string]interface{} `json:"rules,omitempty"`
+}
+
+// HTTPSEndpointStructure represents the v2 Realm app http endpoint structure
+type HTTPSEndpointStructure struct {
+	Configs []map[string]interface{} `json:"config,omitempty"`
 }
 
 // SyncStructure represents the v2 Realm app sync structure
@@ -169,6 +175,12 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	}
 	a.HTTPEndpoints = httpEndpoints
 
+	httpsEndpoints, err := parseHTTPSEndpointsV2(rootDir)
+	if err != nil {
+		return err
+	}
+	a.HTTPSEndpoints = httpsEndpoints
+
 	logForwarders, err := parseJSONFiles(filepath.Join(rootDir, NameLogForwarders))
 	if err != nil {
 		return err
@@ -239,6 +251,24 @@ func parseFunctionsV2(rootDir string) (FunctionsStructure, error) {
 	}
 
 	return FunctionsStructure{configs, sources}, nil
+}
+
+func parseHTTPSEndpointsV2(rootDir string) (HTTPSEndpointStructure, error) {
+	dir := filepath.Join(rootDir, NameHTTPSEndpoints)
+
+	if _, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return HTTPSEndpointStructure{}, nil
+		}
+		return HTTPSEndpointStructure{}, err
+	}
+
+	configs, err := parseJSONArray(filepath.Join(dir, FileConfig.String()))
+	if err != nil {
+		return HTTPSEndpointStructure{}, err
+	}
+
+	return HTTPSEndpointStructure{configs}, nil
 }
 
 func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
@@ -414,6 +444,9 @@ func (a AppDataV2) WriteData(rootDir string) error {
 		return err
 	}
 	if err := writeHTTPEndpoints(rootDir, a.HTTPEndpoints); err != nil {
+		return err
+	}
+	if err := writeHTTPSEndpoints(rootDir, a.HTTPSEndpoints); err != nil {
 		return err
 	}
 	if err := writeTriggers(rootDir, a.Triggers); err != nil {

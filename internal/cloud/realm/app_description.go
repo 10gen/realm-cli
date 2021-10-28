@@ -31,6 +31,12 @@ type HTTPEndpointSummary struct {
 	IncomingWebhooks []IncomingWebhookSummary `json:"webhooks"`
 }
 
+// HTTPSEndpointSummary is a short summary for a https endpoint model
+type HTTPSEndpointSummary struct {
+	Route      string `json:"route"`
+	HTTPMethod string `json:"http_method"`
+}
+
 // ServiceSummary is a short summary for a service desc model
 type ServiceSummary struct {
 	Name             string                   `json:"name"`
@@ -101,6 +107,7 @@ type AppDescription struct {
 	RealmURL          string                     `json:"realm_url"`
 	DataSources       []DataSourceSummary        `json:"data_sources"`
 	HTTPEndpoints     []HTTPEndpointSummary      `json:"http_endpoints"`
+	HTTPSEndpoints    []HTTPSEndpointSummary     `json:"https_endpoints"`
 	ServiceDescs      []ServiceSummary           `json:"services"`
 	AuthProviders     []AuthProviderSummary      `json:"auth_providers"`
 	CustomUserData    CustomUserDataSummary      `json:"custom_user_data"`

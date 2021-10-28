@@ -78,6 +78,9 @@ const (
 
 	// log forwarders
 	NameLogForwarders = "log_forwarders"
+
+	// endpoints
+	NameHTTPSEndpoints = "https_endpoints"
 )
 
 // set of supported local files

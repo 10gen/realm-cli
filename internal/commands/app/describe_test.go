@@ -149,6 +149,16 @@ func TestAppDescribeHandler(t *testing.T) {
 						},
 					},
 				},
+				HTTPSEndpoints: []realm.HTTPSEndpointSummary{
+					{
+						Route:      "/bob/the/route/builder",
+						HTTPMethod: "GET",
+					},
+					{
+						Route:      "/bob/the/route/builder",
+						HTTPMethod: "*",
+					},
+				},
 				ServiceDescs: []realm.ServiceSummary{
 					{
 						Name:             "tw1",
@@ -257,6 +267,16 @@ func TestAppDescribeHandler(t *testing.T) {
           "url": "https://webhook-base.url/api/client/v2.0/app/todo-abcde/service/http/incoming_webhook/webhook0"
         }
       ]
+    }
+  ],
+  "https_endpoints": [
+    {
+      "route": "/bob/the/route/builder",
+      "http_method": "GET"
+    },
+    {
+      "route": "/bob/the/route/builder",
+      "http_method": "*"
     }
   ],
   "services": [

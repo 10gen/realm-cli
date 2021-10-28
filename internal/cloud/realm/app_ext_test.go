@@ -57,6 +57,7 @@ func TestRealmApps(t *testing.T) {
 					RealmURL:       fmt.Sprintf("%s/groups/%s/apps/%s/dashboard", u.RealmServerURL(), groupID, app.ID),
 					DataSources:    []realm.DataSourceSummary{},
 					HTTPEndpoints:  []realm.HTTPEndpointSummary{},
+					HTTPSEndpoints: []realm.HTTPSEndpointSummary{},
 					ServiceDescs:   []realm.ServiceSummary{},
 					AuthProviders:  []realm.AuthProviderSummary{{"api-key", "api-key", false}},
 					CustomUserData: realm.CustomUserDataSummary{},

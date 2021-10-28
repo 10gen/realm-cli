@@ -431,3 +431,18 @@ func writeLogForwarders(rootDir string, logForwarders []map[string]interface{}) 
 	}
 	return nil
 }
+
+func writeHTTPSEndpoints(rootDir string, httpsEndpoints HTTPSEndpointStructure) error {
+	data, err := MarshalJSON(httpsEndpoints)
+	if err != nil {
+		return err
+	}
+	if err := WriteFile(
+		filepath.Join(rootDir, NameHTTPSEndpoints, FileConfig.String()),
+		0666,
+		bytes.NewReader(data),
+	); err != nil {
+		return err
+	}
+	return nil
+}
