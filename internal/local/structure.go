@@ -433,7 +433,7 @@ func writeLogForwarders(rootDir string, logForwarders []map[string]interface{}) 
 }
 
 func writeHTTPSEndpoints(rootDir string, httpsEndpoints HTTPSEndpointStructure) error {
-	data, err := MarshalJSON(httpsEndpoints)
+	data, err := MarshalJSON(httpsEndpoints.Configs)
 	if err != nil {
 		return err
 	}

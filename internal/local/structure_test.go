@@ -503,27 +503,25 @@ func TestWriteHTTPSEndpoints(t *testing.T) {
 
 		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPSEndpoints, FileConfig.String()))
 		assert.Nil(t, err)
-		assert.Equal(t, `{
-    "config": [
-        {
-            "create_user_on_auth": true,
-            "disabled": true,
-            "fetch_custom_user_data": true,
-            "function_name": "test",
-            "http_method": "GET",
-            "respond_result": true,
-            "route": "/hello/world",
-            "secret_name": "super_secret",
-            "validation_method": "VERIFY_PAYLOAD"
-        },
-        {
-            "function_name": "test",
-            "http_method": "POST",
-            "route": "/hello/world",
-            "validation_method": "NO_VALIDATION"
-        }
-    ]
-}
+		assert.Equal(t, `[
+    {
+        "create_user_on_auth": true,
+        "disabled": true,
+        "fetch_custom_user_data": true,
+        "function_name": "test",
+        "http_method": "GET",
+        "respond_result": true,
+        "route": "/hello/world",
+        "secret_name": "super_secret",
+        "validation_method": "VERIFY_PAYLOAD"
+    },
+    {
+        "function_name": "test",
+        "http_method": "POST",
+        "route": "/hello/world",
+        "validation_method": "NO_VALIDATION"
+    }
+]
 `, string(config))
 	})
 }
