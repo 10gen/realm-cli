@@ -1236,7 +1236,7 @@ func TestFindDefaultPath(t *testing.T) {
 
 		//if file options 1-9 are exhausted, use hex
 		defaultPath := findDefaultPath(profile.WorkingDirectory, testAppName)
-		directoryID := strings.Trim(defaultPath, testAppName+"-")
+		directoryID := strings.TrimLeft(defaultPath, testAppName+"-")
 		assert.True(t, primitive.IsValidObjectID(directoryID), fmt.Sprintf("should be primitive object id, but found %s", directoryID))
 	})
 }
