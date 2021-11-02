@@ -19,7 +19,7 @@ func TestPushInputsResolve(t *testing.T) {
 		defer teardown()
 
 		var i inputs
-		assert.Equal(t, errProjectNotFound{}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectInvalid{path: profile.WorkingDirectory, pathExists: true}, i.Resolve(profile, nil))
 	})
 
 	t.Run("should return an error when more than one dependencies flag is set", func(t *testing.T) {
@@ -32,6 +32,37 @@ func TestPushInputsResolve(t *testing.T) {
 			i := inputs{IncludeDependencies: true, IncludePackageJSON: true}
 			assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), i.Resolve(nil, nil))
 		})
+	})
+
+	t.Run("should return an error when specified local path does not exist", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		localPath := "fakePath"
+
+		i := inputs{LocalPath: localPath}
+		assert.Equal(t, errProjectInvalid{path: localPath}, i.Resolve(profile, nil))
+	})
+
+	t.Run("should return an error when specified local path is an absolute path and it does not exist", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		localPath := "fakePath"
+		searchPathAbs, _ := filepath.Abs(localPath)
+
+		i := inputs{LocalPath: searchPathAbs}
+		assert.Equal(t, errProjectInvalid{path: searchPathAbs}, i.Resolve(profile, nil))
+	})
+
+	t.Run("should return an error when specified local path is not a realm app project", func(t *testing.T) {
+		localPath := "testdata"
+
+		profile, teardown := mock.NewProfileFromTmpDir(t, localPath)
+		defer teardown()
+
+		i := inputs{LocalPath: localPath}
+		assert.Equal(t, errProjectInvalid{path: localPath, pathExists: true}, i.Resolve(profile, nil))
 	})
 
 	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
