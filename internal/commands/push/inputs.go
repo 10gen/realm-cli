@@ -2,6 +2,8 @@ package push
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -47,15 +49,25 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		searchPath = profile.WorkingDirectory
 	}
 
+	searchPathAbs, err := filepath.Abs(searchPath)
+	if err != nil {
+		return err
+	}
+
+	if _, err = os.Stat(searchPathAbs); os.IsNotExist(err) {
+		return errProjectInvalid{path: searchPath}
+	}
+
 	app, err := local.LoadAppConfig(searchPath)
 	if err != nil {
 		return err
 	}
 
+	if app.RootDir == "" {
+		return errProjectInvalid{path: searchPath, pathExists: true}
+	}
+
 	if i.LocalPath == "" {
-		if app.RootDir == "" {
-			return errProjectNotFound{}
-		}
 		i.LocalPath = app.RootDir
 	}
 

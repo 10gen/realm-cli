@@ -1,10 +1,19 @@
 package push
 
-type errProjectNotFound struct {
+import (
+	"fmt"
+)
+
+type errProjectInvalid struct {
+	path       string
+	pathExists bool
 }
 
-func (err errProjectNotFound) Error() string {
-	return "must specify --local or run command from inside a Realm app directory"
+func (err errProjectInvalid) Error() string {
+	if !err.pathExists {
+		return fmt.Sprintf("directory '%s' does not exist", err.path)
+	}
+	return fmt.Sprintf("directory '%s' is not a supported Realm app project", err.path)
 }
 
-func (err errProjectNotFound) DisableUsage() struct{} { return struct{}{} }
+func (err errProjectInvalid) DisableUsage() struct{} { return struct{}{} }
