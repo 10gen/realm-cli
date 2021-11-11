@@ -323,7 +323,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				}},
 			},
 		},
-		HTTPEndpoints: []local.HTTPEndpointStructure{
+		HTTPServices: []local.HTTPServiceStructure{
 			{
 				Config: map[string]interface{}{"name": "api", "type": "http", "config": map[string]interface{}{}},
 				IncomingWebhooks: []map[string]interface{}{{
@@ -425,7 +425,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				"disabled": false,
 			},
 		},
-		HTTPSEndpoints: local.HTTPSEndpointStructure{
+		Endpoints: local.EndpointStructure{
 			Configs: []map[string]interface{}{
 				{
 					"create_user_on_auth":    true,

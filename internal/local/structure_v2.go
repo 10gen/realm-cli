@@ -26,8 +26,8 @@ type AppStructureV2 struct {
 	Functions             FunctionsStructure                `json:"functions,omitempty"`
 	Triggers              []map[string]interface{}          `json:"triggers,omitempty"`
 	DataSources           []DataSourceStructure             `json:"data_sources,omitempty"`
-	HTTPEndpoints         []HTTPEndpointStructure           `json:"http_endpoints,omitempty"`
-	HTTPSEndpoints        HTTPSEndpointStructure            `json:"https_endpoints,omitempty"`
+	HTTPServices          []HTTPServiceStructure            `json:"http_endpoints,omitempty"`
+	Endpoints             EndpointStructure                 `json:"endpoints,omitempty"`
 	Services              []ServiceStructure                `json:"services,omitempty"`
 	GraphQL               GraphQLStructure                  `json:"graphql,omitempty"`
 	Hosting               map[string]interface{}            `json:"hosting,omitempty"`
@@ -54,15 +54,15 @@ type FunctionsStructure struct {
 	Sources map[string]string        `json:"sources,omitempty"`
 }
 
-// HTTPEndpointStructure represents the v2 Realm app http endpoint structure
-type HTTPEndpointStructure struct {
+// HTTPServiceStructure represents the v2 Realm app http endpoint structure
+type HTTPServiceStructure struct {
 	Config           map[string]interface{}   `json:"config,omitempty"`
 	IncomingWebhooks []map[string]interface{} `json:"incoming_webhooks,omitempty"`
 	Rules            []map[string]interface{} `json:"rules,omitempty"`
 }
 
-// HTTPSEndpointStructure represents the v2 Realm app http endpoint structure
-type HTTPSEndpointStructure struct {
+// EndpointStructure represents the v2 Realm app http endpoint structure
+type EndpointStructure struct {
 	Configs []map[string]interface{} `json:"config,omitempty"`
 }
 
@@ -169,17 +169,17 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	}
 	a.DataSources = dataSources
 
-	httpEndpoints, err := parseHTTPEndpoints(rootDir)
+	httpServices, err := parseHTTPServices(rootDir)
 	if err != nil {
 		return err
 	}
-	a.HTTPEndpoints = httpEndpoints
+	a.HTTPServices = httpServices
 
-	httpsEndpoints, err := parseHTTPSEndpointsV2(rootDir)
+	endpoints, err := parseEndpointsV2(rootDir)
 	if err != nil {
 		return err
 	}
-	a.HTTPSEndpoints = httpsEndpoints
+	a.Endpoints = endpoints
 
 	logForwarders, err := parseJSONFiles(filepath.Join(rootDir, NameLogForwarders))
 	if err != nil {
@@ -253,22 +253,22 @@ func parseFunctionsV2(rootDir string) (FunctionsStructure, error) {
 	return FunctionsStructure{configs, sources}, nil
 }
 
-func parseHTTPSEndpointsV2(rootDir string) (HTTPSEndpointStructure, error) {
-	dir := filepath.Join(rootDir, NameHTTPSEndpoints)
+func parseEndpointsV2(rootDir string) (EndpointStructure, error) {
+	dir := filepath.Join(rootDir, NameHTTPEndpoints)
 
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return HTTPSEndpointStructure{}, nil
+			return EndpointStructure{}, nil
 		}
-		return HTTPSEndpointStructure{}, err
+		return EndpointStructure{}, err
 	}
 
 	configs, err := parseJSONArray(filepath.Join(dir, FileConfig.String()))
 	if err != nil {
-		return HTTPSEndpointStructure{}, err
+		return EndpointStructure{}, err
 	}
 
-	return HTTPSEndpointStructure{configs}, nil
+	return EndpointStructure{configs}, nil
 }
 
 func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
@@ -335,8 +335,8 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 	return out, nil
 }
 
-func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
-	var out []HTTPEndpointStructure
+func parseHTTPServices(rootDir string) ([]HTTPServiceStructure, error) {
+	var out []HTTPServiceStructure
 
 	dw := directoryWalker{
 		path:     filepath.Join(rootDir, NameHTTPEndpoints),
@@ -364,7 +364,7 @@ func parseHTTPEndpoints(rootDir string) ([]HTTPEndpointStructure, error) {
 			rules = []map[string]interface{}{}
 		}
 
-		out = append(out, HTTPEndpointStructure{config, webhooks, rules})
+		out = append(out, HTTPServiceStructure{config, webhooks, rules})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -440,13 +440,10 @@ func (a AppDataV2) WriteData(rootDir string) error {
 	if err := writeDataSources(rootDir, a.DataSources); err != nil {
 		return err
 	}
-	if err := writeHTTPEndpoints(rootDir, a.HTTPEndpoints); err != nil {
+	if err := writeHTTPServices(rootDir, a.HTTPServices); err != nil {
 		return err
 	}
-	if err := writeHTTPEndpoints(rootDir, a.HTTPEndpoints); err != nil {
-		return err
-	}
-	if err := writeHTTPSEndpoints(rootDir, a.HTTPSEndpoints); err != nil {
+	if err := writeEndpoints(rootDir, a.Endpoints); err != nil {
 		return err
 	}
 	if err := writeTriggers(rootDir, a.Triggers); err != nil {
@@ -622,17 +619,17 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 	return nil
 }
 
-func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) error {
+func writeHTTPServices(rootDir string, httpServices []HTTPServiceStructure) error {
 	dir := filepath.Join(rootDir, NameHTTPEndpoints)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		return err
 	}
-	for _, httpEndpoint := range httpEndpoints {
-		nameHTTPEndpoint, ok := httpEndpoint.Config["name"].(string)
+	for _, httpService := range httpServices {
+		nameHTTPEndpoint, ok := httpService.Config["name"].(string)
 		if !ok {
 			return errors.New("error writing http endpoints")
 		}
-		data, err := MarshalJSON(httpEndpoint.Config)
+		data, err := MarshalJSON(httpService.Config)
 		if err != nil {
 			return err
 		}
@@ -643,7 +640,7 @@ func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) e
 		); err != nil {
 			return err
 		}
-		for _, webhook := range httpEndpoint.IncomingWebhooks {
+		for _, webhook := range httpService.IncomingWebhooks {
 			src, ok := webhook[NameSource].(string)
 			if !ok {
 				return errors.New("error writing http endpoints")
@@ -677,7 +674,7 @@ func writeHTTPEndpoints(rootDir string, httpEndpoints []HTTPEndpointStructure) e
 				return err
 			}
 		}
-		for _, rule := range httpEndpoint.Rules {
+		for _, rule := range httpService.Rules {
 			data, err := MarshalJSON(rule)
 			if err != nil {
 				return err

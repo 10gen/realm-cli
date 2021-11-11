@@ -25,16 +25,57 @@ type IncomingWebhookSummary struct {
 	URL  string `json:"url"`
 }
 
-// HTTPEndpointSummary is a short summary for a http endpoint model
-type HTTPEndpointSummary struct {
+// HTTPServiceSummary is a short summary for a service webhook (http endpoint)
+type HTTPServiceSummary struct {
 	Name             string                   `json:"name"`
 	IncomingWebhooks []IncomingWebhookSummary `json:"webhooks"`
 }
 
-// HTTPSEndpointSummary is a short summary for a https endpoint model
-type HTTPSEndpointSummary struct {
+// EndpointSummary is a short summary for an endpoint
+type EndpointSummary struct {
 	Route      string `json:"route"`
 	HTTPMethod string `json:"http_method"`
+}
+
+// httpEndpointSummary is a short summary for an http service or endpoint
+type httpEndpointSummary struct {
+	HTTPServiceSummary
+	EndpointSummary
+}
+
+// HTTPEndpoints contains summaries for an http service or endpoint
+type HTTPEndpoints struct {
+	Summaries []interface{}
+}
+
+func (h HTTPEndpoints) MarshalJSON() ([]byte, error) {
+	return json.Marshal(h.Summaries)
+}
+
+func (h *HTTPEndpoints) UnmarshalJSON(data []byte) error {
+	var arr []json.RawMessage
+	if err := json.Unmarshal(data, &arr); err != nil {
+		return err
+	}
+
+	h.Summaries = make([]interface{}, 0, len(arr))
+	for _, m := range arr {
+		var t httpEndpointSummary
+		if err := json.Unmarshal(m, &t); err != nil {
+			return err
+		}
+		var summary interface{}
+		switch {
+		case t.Name != "":
+			summary = HTTPServiceSummary{t.Name, t.IncomingWebhooks}
+		case t.Route != "":
+			summary = EndpointSummary{t.Route, t.HTTPMethod}
+		default:
+			summary = t
+		}
+		h.Summaries = append(h.Summaries, summary)
+	}
+	return nil
 }
 
 // ServiceSummary is a short summary for a service desc model
@@ -106,8 +147,7 @@ type AppDescription struct {
 	Name              string                     `json:"name"`
 	RealmURL          string                     `json:"realm_url"`
 	DataSources       []DataSourceSummary        `json:"data_sources"`
-	HTTPEndpoints     []HTTPEndpointSummary      `json:"http_endpoints"`
-	HTTPSEndpoints    []HTTPSEndpointSummary     `json:"https_endpoints"`
+	HTTPEndpoints     HTTPEndpoints              `json:"http_endpoints"`
 	ServiceDescs      []ServiceSummary           `json:"services"`
 	AuthProviders     []AuthProviderSummary      `json:"auth_providers"`
 	CustomUserData    CustomUserDataSummary      `json:"custom_user_data"`

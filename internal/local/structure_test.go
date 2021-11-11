@@ -470,13 +470,13 @@ func TestWriteLogForwarders(t *testing.T) {
 	})
 }
 
-func TestWriteHTTPSEndpoints(t *testing.T) {
+func TestWriteEndpoints(t *testing.T) {
 	tmpDir, cleanupTmpDir, err := u.NewTempDir("")
 	assert.Nil(t, err)
 	defer cleanupTmpDir()
 
-	t.Run("should write https endpoints to disk", func(t *testing.T) {
-		data := HTTPSEndpointStructure{
+	t.Run("should write endpoints to disk", func(t *testing.T) {
+		data := EndpointStructure{
 			Configs: []map[string]interface{}{
 				{
 					"create_user_on_auth":    true,
@@ -498,10 +498,10 @@ func TestWriteHTTPSEndpoints(t *testing.T) {
 			},
 		}
 
-		err := writeHTTPSEndpoints(tmpDir, data)
+		err := writeEndpoints(tmpDir, data)
 		assert.Nil(t, err)
 
-		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPSEndpoints, FileConfig.String()))
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, FileConfig.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `[
     {
