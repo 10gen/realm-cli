@@ -37,7 +37,6 @@ type EndpointSummary struct {
 	HTTPMethod string `json:"http_method"`
 }
 
-// httpEndpointSummary is a short summary for an http service or endpoint
 type httpEndpointSummary struct {
 	HTTPServiceSummary
 	EndpointSummary
