@@ -47,10 +47,12 @@ type HTTPEndpoints struct {
 	Summaries []interface{}
 }
 
+// MarshalJSON marshals the inner HTTPEndpoints data to JSON
 func (h HTTPEndpoints) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.Summaries)
 }
 
+// UnmarshalJSON unmarshals JSON into HTTPEndpoints
 func (h *HTTPEndpoints) UnmarshalJSON(data []byte) error {
 	var arr []json.RawMessage
 	if err := json.Unmarshal(data, &arr); err != nil {
