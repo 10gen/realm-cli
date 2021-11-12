@@ -47,7 +47,7 @@ type HTTPEndpoints struct {
 	Summaries []interface{}
 }
 
-// MarshalJSON marshals the inner HTTPEndpoints data to JSON
+// MarshalJSON marshals the HTTPEndpoints data to JSON
 func (h HTTPEndpoints) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.Summaries)
 }

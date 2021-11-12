@@ -253,6 +253,7 @@ func parseFunctionsV2(rootDir string) (FunctionsStructure, error) {
 	return FunctionsStructure{configs, sources}, nil
 }
 
+// TODO (REALMC-10879): support endpoints in older config versions
 func parseEndpointsV2(rootDir string) (EndpointStructure, error) {
 	dir := filepath.Join(rootDir, NameHTTPEndpoints)
 
