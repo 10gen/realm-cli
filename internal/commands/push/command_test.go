@@ -480,9 +480,7 @@ Failed to discard the draft created for your deployment
 				for _, line := range []string{
 					`Determining changes
 Creating draft
-Pushing changes
-Deploying draft
-Deployment complete`,
+Pushing changes`,
 					"An error occurred while uploading hosting assets: failed to add /404.html: something bad happened",
 					"An error occurred while uploading hosting assets: failed to add /index.html: something bad happened",
 				} {
@@ -509,9 +507,7 @@ Deployment complete`,
 				for _, line := range []string{
 					`Determining changes
 Creating draft
-Pushing changes
-Deploying draft
-Deployment complete`,
+Pushing changes`,
 					"An error occurred while uploading hosting assets: failed to update /404.html: something bad happened",
 					"An error occurred while uploading hosting assets: failed to update /index.html: something bad happened",
 				} {
@@ -553,8 +549,6 @@ Deployment complete`,
 				assert.Equal(t, `Determining changes
 Creating draft
 Pushing changes
-Deploying draft
-Deployment complete
 An error occurred while uploading hosting assets: failed to remove /deleteme.html: something bad happened
 `, out.String())
 			})
@@ -598,9 +592,7 @@ An error occurred while uploading hosting assets: failed to remove /deleteme.htm
 				for _, line := range []string{
 					`Determining changes
 Creating draft
-Pushing changes
-Deploying draft
-Deployment complete`,
+Pushing changes`,
 					"An error occurred while uploading hosting assets: failed to update attributes for /404.html: something bad happened",
 					"An error occurred while uploading hosting assets: failed to update attributes for /index.html: something bad happened",
 				} {
@@ -647,9 +639,9 @@ Deployment complete`,
 			assert.Equal(t, `Determining changes
 Creating draft
 Pushing changes
+Import hosting assets
 Deploying draft
 Deployment complete
-Import hosting assets
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
 
@@ -717,10 +709,10 @@ Successfully pushed app up: eggcorn-abcde
 			assert.Equal(t, `Determining changes
 Creating draft
 Pushing changes
-Deploying draft
-Deployment complete
 Import hosting assets
 Reset CDN cache
+Deploying draft
+Deployment complete
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
@@ -811,9 +803,9 @@ Successfully pushed app up: eggcorn-abcde
 			assert.Equal(t, `Determining changes
 Creating draft
 Pushing changes
+Installed dependencies
 Deploying draft
 Deployment complete
-Installed dependencies
 Successfully pushed app up: eggcorn-abcde
 `, out.String())
 		})
