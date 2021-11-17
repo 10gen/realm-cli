@@ -268,7 +268,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	var draft realm.AppDraft
-	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 && hostingDiffs.Size() > 0 {
+	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 || hostingDiffs.Size() > 0 {
 		ui.Print(terminal.NewTextLog("Creating draft"))
 		draft, proceed, err = createNewDraft(ui, clients.Realm, appRemote)
 		if err != nil {
@@ -368,7 +368,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 && hostingDiffs.Size() > 0 {
+	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 || hostingDiffs.Size() > 0 {
 		ui.Print(terminal.NewTextLog("Deploying draft"))
 		if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
 			if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
