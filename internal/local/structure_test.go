@@ -469,3 +469,59 @@ func TestWriteLogForwarders(t *testing.T) {
 `, string(lf2))
 	})
 }
+
+func TestWriteEndpoints(t *testing.T) {
+	tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+	assert.Nil(t, err)
+	defer cleanupTmpDir()
+
+	t.Run("should write endpoints to disk", func(t *testing.T) {
+		data := EndpointStructure{
+			Configs: []map[string]interface{}{
+				{
+					"create_user_on_auth":    true,
+					"disabled":               true,
+					"fetch_custom_user_data": true,
+					"function_name":          "test",
+					"http_method":            "GET",
+					"respond_result":         true,
+					"route":                  "/hello/world",
+					"secret_name":            "super_secret",
+					"validation_method":      "VERIFY_PAYLOAD",
+				},
+				{
+					"function_name":     "test",
+					"http_method":       "POST",
+					"route":             "/hello/world",
+					"validation_method": "NO_VALIDATION",
+				},
+			},
+		}
+
+		err := writeEndpoints(tmpDir, data)
+		assert.Nil(t, err)
+
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, FileConfig.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `[
+    {
+        "create_user_on_auth": true,
+        "disabled": true,
+        "fetch_custom_user_data": true,
+        "function_name": "test",
+        "http_method": "GET",
+        "respond_result": true,
+        "route": "/hello/world",
+        "secret_name": "super_secret",
+        "validation_method": "VERIFY_PAYLOAD"
+    },
+    {
+        "function_name": "test",
+        "http_method": "POST",
+        "route": "/hello/world",
+        "validation_method": "NO_VALIDATION"
+    }
+]
+`, string(config))
+	})
+}

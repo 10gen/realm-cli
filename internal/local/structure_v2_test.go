@@ -249,7 +249,7 @@ func TestWriteHTTPEndpoints(t *testing.T) {
 	defer cleanupTmpDir()
 
 	t.Run("should write http endpoints to disk", func(t *testing.T) {
-		data := []HTTPEndpointStructure{{
+		data := []HTTPServiceStructure{{
 			Config: map[string]interface{}{
 				"name":    "http",
 				"type":    "http",
@@ -303,7 +303,7 @@ exports = function({ query }) {
 			}},
 		}}
 
-		err := writeHTTPEndpoints(tmpDir, data)
+		err := writeHTTPServices(tmpDir, data)
 		assert.Nil(t, err)
 
 		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameHTTPEndpoints, "http", FileConfig.String()))
