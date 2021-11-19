@@ -233,7 +233,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	if !ui.AutoConfirm() && !isNewApp {
-		diffs := make([]string, 0, len(appDiffs)+1+hostingDiffs.Cap())
+		diffs := make([]string, 0, len(appDiffs)+dependenciesDiffs.Len()+hostingDiffs.Cap())
 
 		diffs = append(diffs, appDiffs...)
 
