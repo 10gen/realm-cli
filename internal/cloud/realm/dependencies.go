@@ -182,7 +182,7 @@ func (c *client) DiffDependencies(groupID, appID, uploadPath string) (Dependenci
 		},
 	)
 	if err != nil {
-		return DependenciesDiff{}, err
+		return DependenciesDiff{}, fmt.Errorf("unable to upload dependencies from %s\n%w", uploadPath, err)
 	}
 	if res.StatusCode != http.StatusOK {
 		return DependenciesDiff{}, api.ErrUnexpectedStatusCode{"diff dependencies", res.StatusCode}

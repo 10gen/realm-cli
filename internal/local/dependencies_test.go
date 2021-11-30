@@ -109,31 +109,31 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
-	testRoot := filepath.Join(wd, "testdata/dependencies")
+	testRootDir := filepath.Join(wd, "testdata/dependencies")
 
 	t.Run("should return an empty object when run outside a project directory", func(t *testing.T) {
-		deps, err := FindPackageJSON(testRoot)
+		deps, err := FindPackageJSON(testRootDir)
 		assert.Nil(t, err)
 		assert.Equal(t, Dependencies{}, deps)
 	})
 
 	t.Run("should return an error when a project has no package.json file", func(t *testing.T) {
-		dir := filepath.Join(testRoot, "empty")
+		dir := filepath.Join(testRootDir, "empty")
 
 		_, err := FindPackageJSON(dir)
 		assert.NotNil(t, err)
 		assert.Equal(t,
 			err.Error(),
-			fmt.Sprintf("package.json not found at '%s/functions'", dir),
+			fmt.Sprintf("package.json not found at %s/functions or %s", dir, dir),
 		)
 	})
 
 	t.Run("should find a package.json", func(t *testing.T) {
-		absPath, err := filepath.Abs(filepath.Join(testRoot, "json"))
+		absPath, err := filepath.Abs(filepath.Join(testRootDir, "json"))
 		assert.Nil(t, err)
 
 		t.Run("with an absolute path", func(t *testing.T) {
-			deps, err := FindPackageJSON(filepath.Join(testRoot, "json"))
+			deps, err := FindPackageJSON(filepath.Join(testRootDir, "json"))
 			assert.Nil(t, err)
 			assert.Equal(t, Dependencies{
 				filepath.Join(absPath, "functions"),
@@ -148,6 +148,18 @@ func TestDependenciesFindPackageJSON(t *testing.T) {
 			assert.Equal(t, Dependencies{
 				filepath.Join(absPath, "functions"),
 				filepath.Join(absPath, "functions", "package.json"),
+				false,
+			}, deps)
+		})
+
+		t.Run("when the package.json is in the app structure root", func(t *testing.T) {
+			absPathWithRootPackage, err := filepath.Abs(filepath.Join(testRootDir, "root_json"))
+			assert.Nil(t, err)
+			deps, err := FindPackageJSON(filepath.Join(testRootDir, "root_json"))
+			assert.Nil(t, err)
+			assert.Equal(t, Dependencies{
+				absPathWithRootPackage,
+				filepath.Join(absPathWithRootPackage, "package.json"),
 				false,
 			}, deps)
 		})

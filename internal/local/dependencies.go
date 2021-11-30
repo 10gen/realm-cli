@@ -59,18 +59,27 @@ func FindPackageJSON(path string) (Dependencies, error) {
 		return Dependencies{}, nil
 	}
 
-	rootDir := filepath.Join(app.RootDir, NameFunctions)
+	functionsDir := filepath.Join(app.RootDir, NameFunctions)
+	packageJSONFunctionsPath := filepath.Join(functionsDir, NamePackageJSON)
+	packageJSONRootPath := filepath.Join(app.RootDir, NamePackageJSON)
 
-	packageJSONPath := filepath.Join(rootDir, NamePackageJSON)
+	// Take the package.json in the functions directory as the source of truth
+	if _, err := os.Stat(packageJSONFunctionsPath); err != nil {
+		if !os.IsNotExist(err) {
+			return Dependencies{}, err
+		}
+	} else {
+		return Dependencies{functionsDir, packageJSONFunctionsPath, false}, nil
+	}
 
-	if _, err := os.Stat(packageJSONPath); err != nil {
+	// If the package.json is not found in the functions directory, look in the root dir
+	if _, err := os.Stat(packageJSONRootPath); err != nil {
 		if os.IsNotExist(err) {
-			return Dependencies{}, fmt.Errorf("package.json not found at '%s'", rootDir)
+			return Dependencies{}, fmt.Errorf("package.json not found at %s or %s", functionsDir, app.RootDir)
 		}
 		return Dependencies{}, err
 	}
-
-	return Dependencies{rootDir, packageJSONPath, false}, nil
+	return Dependencies{app.RootDir, packageJSONRootPath, false}, nil
 }
 
 // PrepareUpload will prepare the dependencies for upload and returns the file path
