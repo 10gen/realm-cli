@@ -267,16 +267,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	var draft realm.AppDraft
-	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 || hostingDiffs.Size() > 0 {
-		ui.Print(terminal.NewTextLog("Creating draft"))
-		draft, proceed, err = createNewDraft(ui, clients.Realm, appRemote)
-		if err != nil {
-			return err
-		}
-		if !proceed {
-			return nil
-		}
+	ui.Print(terminal.NewTextLog("Creating draft"))
+	draft, proceed, err := createNewDraft(ui, clients.Realm, appRemote)
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return nil
 	}
 
 	if len(appDiffs) > 0 {
@@ -368,14 +365,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	if len(appDiffs) > 0 || dependenciesDiffs.Len() > 0 || hostingDiffs.Size() > 0 {
-		ui.Print(terminal.NewTextLog("Deploying draft"))
-		if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
-			if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
-				ui.Print(warnFailedToDiscardDraft)
-			}
-			return err
+	ui.Print(terminal.NewTextLog("Deploying draft"))
+	if err := deployDraftAndWait(ui, clients.Realm, appRemote, draft.ID); err != nil {
+		if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
+			ui.Print(warnFailedToDiscardDraft)
 		}
+		return err
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", appRemote.ClientAppID))
