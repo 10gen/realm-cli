@@ -35,6 +35,7 @@ type HTTPServiceSummary struct {
 type EndpointSummary struct {
 	Route      string `json:"route"`
 	HTTPMethod string `json:"http_method"`
+	URL        string `json:"url"`
 }
 
 type httpEndpointSummary struct {
@@ -70,7 +71,7 @@ func (h *HTTPEndpoints) UnmarshalJSON(data []byte) error {
 		case t.Name != "":
 			summary = HTTPServiceSummary{t.Name, t.IncomingWebhooks}
 		case t.Route != "":
-			summary = EndpointSummary{t.Route, t.HTTPMethod}
+			summary = EndpointSummary{t.Route, t.HTTPMethod, t.URL}
 		default:
 			summary = t
 		}

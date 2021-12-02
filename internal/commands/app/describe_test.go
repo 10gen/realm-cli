@@ -151,10 +151,12 @@ func TestAppDescribeHandler(t *testing.T) {
 					realm.EndpointSummary{
 						Route:      "/bob/the/route/builder",
 						HTTPMethod: "GET",
+						URL:        "https://endpoint-base.url/app/todo-abcde/endpoint/bob/the/route/builder",
 					},
 					realm.EndpointSummary{
 						Route:      "/bob/the/route/builder",
 						HTTPMethod: "*",
+						URL:        "https://endpoint-base.url/app/todo-abcde/endpoint/bob/the/route/builder",
 					},
 				}},
 				ServiceDescs: []realm.ServiceSummary{
@@ -268,11 +270,13 @@ func TestAppDescribeHandler(t *testing.T) {
     },
     {
       "route": "/bob/the/route/builder",
-      "http_method": "GET"
+      "http_method": "GET",
+      "url": "https://endpoint-base.url/app/todo-abcde/endpoint/bob/the/route/builder"
     },
     {
       "route": "/bob/the/route/builder",
-      "http_method": "*"
+      "http_method": "*",
+      "url": "https://endpoint-base.url/app/todo-abcde/endpoint/bob/the/route/builder"
     }
   ],
   "services": [
