@@ -18,8 +18,9 @@ const (
 )
 
 type appRemote struct {
-	GroupID string
-	AppID   string
+	GroupID     string
+	AppID       string
+	ClientAppID string
 }
 
 type inputs struct {
@@ -95,6 +96,7 @@ func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote
 
 	r.GroupID = app.GroupID
 	r.AppID = app.ID
+	r.ClientAppID = app.ClientAppID
 	return r, nil
 }
 
