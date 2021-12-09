@@ -1,0 +1,7 @@
+{
+    "config_version": 20210101,
+    "app_id": "eggcorn-edcba",
+    "name": "eggcorn",
+    "location": "US-VA",
+    "deployment_model": "GLOBAL"
+}

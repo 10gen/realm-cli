@@ -426,10 +426,10 @@ Failed to discard the draft created for your deployment
 	t.Run("with a realm client that successfully imports and deploys drafts", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+			return []realm.App{{ID: "appID", GroupID: "groupID", ClientAppID: "eggcorn-abcde"}}, nil
 		}
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			return realm.App{ID: "appID", GroupID: "groupID"}, nil
+			return realm.App{ID: "appID", GroupID: "groupID", ClientAppID: "eggcorn-abcde"}, nil
 		}
 		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
 			return []string{"diff1"}, nil
@@ -446,6 +446,10 @@ Failed to discard the draft created for your deployment
 
 		t.Run("should run import successfully", func(t *testing.T) {
 			runImport(t, realmClient, "testdata/project")
+		})
+
+		t.Run("should run import successfully when modifying a different remote app", func(t *testing.T) {
+			runImport(t, realmClient, "testdata/project-alt") // specifies a different app id
 		})
 
 		t.Run("but fails to upload a hosting asset", func(t *testing.T) {
@@ -1289,7 +1293,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 
 func TestPushCommandCreateNewDraft(t *testing.T) {
 	t.Run("should create and return the draft when initially successful", func(t *testing.T) {
-		groupID, appID := "groupID", "appID"
+		groupID, appID, clientAppID := "groupID", "appID", "client-app-id"
 		testDraft := realm.AppDraft{ID: "id"}
 
 		realmClient := mock.RealmClient{}
@@ -1301,7 +1305,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 			return testDraft, nil
 		}
 
-		draft, proceed, err := createNewDraft(nil, realmClient, appRemote{groupID, appID})
+		draft, proceed, err := createNewDraft(nil, realmClient, appRemote{groupID, appID, clientAppID})
 		assert.Nil(t, err)
 		assert.Equal(t, testDraft, draft)
 		assert.True(t, proceed, "expected draft to be created successfully")
@@ -1463,7 +1467,7 @@ func TestPushCommandCreateNewDraft(t *testing.T) {
 
 func TestPushCommandDiffDraft(t *testing.T) {
 	t.Run("with a client that fails to diff the draft should return the error", func(t *testing.T) {
-		groupID, appID, draftID := "groupID", "appID", "draftID"
+		groupID, appID, clientAppID, draftID := "groupID", "appID", "client-app-id", "draftID"
 
 		var realmClient mock.RealmClient
 
@@ -1475,7 +1479,7 @@ func TestPushCommandDiffDraft(t *testing.T) {
 			return realm.AppDraftDiff{}, errors.New("something bad happened")
 		}
 
-		err := diffDraft(nil, realmClient, appRemote{groupID, appID}, draftID)
+		err := diffDraft(nil, realmClient, appRemote{groupID, appID, clientAppID}, draftID)
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("and should properly pass through the expected inputs")
@@ -1569,7 +1573,7 @@ func TestPushCommandDiffDraft(t *testing.T) {
 }
 
 func TestPushCommandDeployDraftAndWait(t *testing.T) {
-	groupID, appID, draftID := "groupID", "appID", "draftID"
+	groupID, appID, clientAppID, draftID := "groupID", "appID", "client-app-id", "draftID"
 	t.Run("should return an error with a client that fails to deploy the draft", func(t *testing.T) {
 		realmClient := mock.RealmClient{}
 
@@ -1581,7 +1585,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 			return realm.AppDeployment{}, errors.New("something bad happened")
 		}
 
-		err := deployDraftAndWait(nil, realmClient, appRemote{groupID, appID}, draftID)
+		err := deployDraftAndWait(nil, realmClient, appRemote{groupID, appID, clientAppID}, draftID)
 		assert.Equal(t, errors.New("something bad happened"), err)
 
 		t.Log("and should properly pass through the expected inputs")
@@ -1603,7 +1607,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 
 			_, ui := mock.NewUI()
 
-			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID}, draftID)
+			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID, clientAppID}, draftID)
 			assert.Equal(t, errors.New("something bad happened"), err)
 		})
 
@@ -1621,7 +1625,7 @@ func TestPushCommandDeployDraftAndWait(t *testing.T) {
 
 			out, ui := mock.NewUI()
 
-			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID}, draftID)
+			err := deployDraftAndWait(ui, realmClient, appRemote{groupID, appID, clientAppID}, draftID)
 			assert.Nil(t, err)
 
 			assert.Equal(t, "Deployment complete\n", out.String())
@@ -1673,6 +1677,8 @@ func TestPushCommandDisplay(t *testing.T) {
 }
 
 func runImport(t *testing.T, realmClient realm.Client, appDirectory string) {
+	t.Helper()
+
 	out := new(bytes.Buffer)
 	ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
