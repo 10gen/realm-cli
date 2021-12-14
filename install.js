@@ -2,62 +2,70 @@ const fs = require('fs');
 const path = require('path');
 const request = require('request');
 
-const versionMetadata = require('./version');
+const packageMetadata = require('./package');
 
-const basedownloadURL = `https://s3.amazonaws.com/realm-clis/${versionMetadata.baseDirectory}`;
-const linuxdownloadURL = `${basedownloadURL}/linux-amd64/realm-cli`;
-const macdownloadURL = `${basedownloadURL}/macos-amd64/realm-cli`;
-const windowsdownloadURL = `${basedownloadURL}/windows-amd64/realm-cli.exe`;
+const manifestURL =
+  'https://s3.amazonaws.com/realm-clis/versions/cloud-prod/CURRENT';
 
-function getdownloadURL() {
-  const platform = process.platform;
-  let downloadURL;
+function fetchManifest() {
+  return new Promise((resolve, reject) => {
+    request.get(manifestURL, (err, _, body) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(JSON.parse(body));
+    });
+  });
+}
+
+function getDownloadURL({ past_releases: pastReleases = [], ...manifest }) {
+  const { arch, platform } = process;
+
+  let tag = '';
 
   if (platform === 'linux') {
-    if (process.arch === 'x64') {
-      downloadURL = linuxdownloadURL;
-    } else {
+    if (arch !== 'x64') {
       throw new Error('Only Linux 64 bits supported.');
     }
+    tag = 'linux-amd64';
   } else if (platform === 'darwin' || platform === 'freebsd') {
-    if (process.arch === 'x64' || process.arch === 'arm64') {
-      downloadURL = macdownloadURL;
-    } else {
+    if (arch !== 'x64' && arch !== 'arm64') {
       throw new Error('Only Mac 64 bits supported.');
     }
+    tag = 'macos-amd64';
   } else if (platform === 'win32') {
-    if (process.arch === 'x64') {
-      downloadURL = windowsdownloadURL;
-    } else {
+    if (arch !== 'x64') {
       throw new Error('Only Windows 64 bits supported.');
     }
-  } else {
-    throw new Error(`Unexpected platform or architecture: ${process.platform} ${process.arch}`);
+    tag = 'windows-amd64';
   }
 
-  return downloadURL;
-}
+  if (tag === '') {
+    throw new Error(`Unexpected platform or architecture: ${platform} ${arch}`);
+  }
 
-function fixFilePermissions(filePath) {
-  // Check that the binary is user-executable and fix it if it isn't
-  if (process.platform !== 'win32') {
-    const stat = fs.statSync(filePath);
-    // 64 == 0100 (no octal literal in strict mode)
-    // eslint-disable-next-line no-bitwise
-    if (!(stat.mode & 64)) {
-      fs.chmodSync(filePath, '755');
+  if (manifest.version !== packageMetadata.version) {
+    for (let i = 0; i < pastReleases.length; i++) {
+      const pastRelease = pastReleases[i];
+      if (pastRelease.version === packageMetadata.version) {
+        return pastRelease.info[tag].url;
+      }
     }
   }
+
+  return manifest.info[tag].url;
 }
 
-function requstBinary(downloadURL, baseName) {
+function requstBinary(downloadURL, baseName = 'realm-cli') {
   console.log(`downloading "${baseName}" from "${downloadURL}"`);
 
   return new Promise((resolve, reject) => {
     let count = 0;
     let notifiedCount = 0;
 
-    const binaryName = process.platform === 'win32' ? baseName + '.exe' : baseName;
+    const binaryName =
+      process.platform === 'win32' ? baseName + '.exe' : baseName;
     const filePath = path.join(process.cwd(), binaryName);
     const outFile = fs.openSync(filePath, 'w');
 
@@ -67,11 +75,11 @@ function requstBinary(downloadURL, baseName) {
     };
     const client = request(requestOptions);
 
-    client.on('error', err => {
+    client.on('error', (err) => {
       reject(new Error(`Error with http(s) request: ${err}`));
     });
 
-    client.on('data', data => {
+    client.on('data', (data) => {
       fs.writeSync(outFile, data, 0, data.length, null);
       count += data.length;
       if (count - notifiedCount > 800000) {
@@ -89,16 +97,22 @@ function requstBinary(downloadURL, baseName) {
   });
 }
 
-// Install script starts here
-let downloadURL;
-try {
-  downloadURL = getdownloadURL();
-} catch (err) {
-  console.error('Realm CLI installation failed:', err);
-  process.exit(1);
+function fixFilePermissions(filePath) {
+// Check that the binary is user-executable and fix it if it isn't
+if (process.platform !== 'win32') {
+  const stat = fs.statSync(filePath);
+  // 64 == 0100 (no octal literal in strict mode)
+  // eslint-disable-next-line no-bitwise
+  if (!(stat.mode & 64)) {
+    fs.chmodSync(filePath, '755');
+  }
+}
 }
 
-requstBinary(downloadURL, 'realm-cli').catch(err => {
-  console.error('failed to download Realm CLI:', err);
-  process.exit(1);
-});
+fetchManifest()
+  .then(getDownloadURL)
+  .then(requstBinary)
+  .catch((err) => {
+    console.error('failed to download Realm CLI:', err);
+    process.exit(1);
+  });
