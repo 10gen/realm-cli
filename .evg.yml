@@ -265,7 +265,6 @@ tasks:
         params:
           shell: "bash"
           script: |
-            set -v
             set -e
             export ROOT_DIR=`pwd`
             export PATH="$ROOT_DIR:$PATH"
@@ -273,7 +272,9 @@ tasks:
             export PATH=$GOROOT/bin:$PATH
 
             cd $ROOT_DIR/realm-cli
-            export VERSION="${cli_version}"
+            curl https://stedolan.github.io/jq/download/linux64/jq > jq && chmod +x jq
+            export VERSION=`cat package.json | ./jq '.version' | sed -e 's/^"//' -e 's/"$//'`
+
             export GOARCH=amd64
             export SEGMENT_WRITE_KEY="${realm_cli_segment_write_key}"
 
@@ -346,20 +347,23 @@ tasks:
           script: |
             set -e
             cd realm-cli
+            curl https://stedolan.github.io/jq/download/linux64/jq > jq && chmod +x jq
+            export VERSION=`cat package.json | ./jq '.version' | sed -e 's/^"//' -e 's/"$//'`
+
             if [ "${branch_name}" != "master" ]; then
               echo "skipping release: not on master branch"
               exit 0
             fi
-            if [ $(git tag -l "v${cli_version}") ]; then
+            if [ $(git tag -l "v$VERSION") ]; then
               echo "skipping release: tag already exists"
               exit 0
             fi
             echo "updating manifest"
-            ./realm-cli/contrib/manifest.js ${build_id} ${cli_version} manifest.json
-            echo "tagging release: v${cli_version}"
+            ./contrib/manifest.js ${build_id} $VERSION ../manifest.json
+            echo "tagging release: v$VERSION"
             PREVIOUS_VERSION=$(git describe --tags $(git rev-list --tags --max-count=1))
             BODY=$(git log --no-merges $PREVIOUS_VERSION..HEAD --pretty="format:%s (%h); %an" | sed '$d')
-            git tag -a -m "Changelog since $PREVIOUS_VERSION:" -m "$BODY" "v${cli_version}"
+            git tag -a -m "Changelog since $PREVIOUS_VERSION:" -m "$BODY" "v$VERSION"
             git push origin master --tags
       - command: s3.put
         params:
