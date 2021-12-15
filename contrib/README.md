@@ -19,7 +19,12 @@ Make sure to also consider the following minor changes:
 
 ## Publishing a version
 
-1. Create a JIRA ticket for the corresponding release (e.g. "Release CLI <version>")
+1. Create a JIRA ticket for the corresponding release (e.g. "Release CLI <version>") and create a branch:
+```bash
+git checkout -b REALMC-XXXXX
+```
+
+> NOTE: The branch name is significant here, as the version bump script assumes it to be the JIRA ticket associated with the CLI release.
 
 2. Update the CLI version field in `.evg.yml` to the next desired version (make sure to consult the Semantic Versioning summary above):
   ```yaml
@@ -30,19 +35,14 @@ Make sure to also consider the following minor changes:
       cli_version: <next_version>
   ```
 
-3. Run the `bump_version.bash` script to update the CLI's `package.json`:
+3. Run the `bump_version.bash` script to update the CLI's `package.json` and commit the changes:
   ```bash
   ./contrib/bump_version.bash
   ```
 
-4. Add and commit the changes
-  ```bash
-  git add .evg.yml package* && git commit -m "REALMC-XXXXX: Bump version to <next_version>"
-  ```
-
-5. Push to your fork and create a PR
+4. Push to your fork and create a PR
   ```bash
   git push origin HEAD
   ```
 
-6. After merging your PR, wait for Evergreen to complete the `release_tag` task on `master`.  At that point, the new CLI should be available through `npm` and `s3` updated accordingly.
+5. After merging your PR, wait for Evergreen to complete the `release_tag` task on `master`.  At that point, the new CLI should be available through `npm` and `s3` updated accordingly.

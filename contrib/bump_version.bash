@@ -14,5 +14,8 @@ echo "Bumping CLI v$LAST_VERSION to v$NEXT_VERSION"
 
 npm version $NEXT_VERSION --no-git-tag-version
 
-git diff
-git status
+JIRA_TICKET=`git branch --show-current`
+
+git add .evg.yml package* && git commit -m "$JIRA_TICKET: Bump version to $NEXT_VERSION"
+
+git log -p -1
