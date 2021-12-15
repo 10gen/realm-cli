@@ -6,13 +6,19 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 cd ..
 
-NEXT_VERSION=`cat .evg.yml | grep cli_version: | awk '{ print $2 }' | tail -n 1`
+BUMP_TYPE=$1
+if [ "$BUMP_TYPE" != "patch" ] && [ "$BUMP_TYPE" != "minor" ] && [ "$BUMP_TYPE" != "major" ]; then
+	echo $"Usage: $0 <patch|minor|major>"
+	exit 1
+fi
 
 LAST_VERSION=`node -e 'console.log(require("./package.json").version)'`
 
-echo "Bumping CLI v$LAST_VERSION to v$NEXT_VERSION"
+echo "Bumping CLI v$LAST_VERSION to"
 
-npm version $NEXT_VERSION --no-git-tag-version
+npm version $BUMP_TYPE --no-git-tag-version
+
+NEXT_VERSION=`node -e 'console.log(require("./package.json").version)'`
 
 JIRA_TICKET=`git branch --show-current`
 
