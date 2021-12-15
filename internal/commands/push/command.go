@@ -169,7 +169,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
-		app, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.LocalPath, appRemote.GroupID, app.AppData)
+		newApp, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.LocalPath, appRemote.GroupID, app.AppData)
 		if err != nil {
 			return err
 		}
@@ -177,7 +177,8 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
-		appRemote.AppID = app.ID
+		appRemote.AppID = newApp.ID
+		appRemote.ClientAppID = newApp.ClientAppID
 		isNewApp = true
 	}
 
@@ -372,7 +373,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 	}
 
-	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", app.ID()))
+	ui.Print(terminal.NewTextLog("Successfully pushed app up: %s", appRemote.ClientAppID))
 	return nil
 }
 

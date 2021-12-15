@@ -111,7 +111,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 		f, err := i.resolveRemoteApp(nil, client)
 		assert.Nil(t, err)
 
-		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID}, f)
+		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID, ClientAppID: app.ClientAppID}, f)
 		assert.Equal(t, realm.AppFilter{GroupID: app.GroupID, App: app.ClientAppID}, appFilter)
 	})
 }
