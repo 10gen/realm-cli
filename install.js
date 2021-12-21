@@ -1,3 +1,5 @@
+"use strict";
+
 const fs = require('fs');
 const path = require('path');
 const request = require('request');
@@ -8,8 +10,8 @@ const manifestURL =
   'https://s3.amazonaws.com/realm-clis/versions/cloud-prod/CURRENT';
 
 function fetchManifest() {
-  return new Promise((resolve, reject) => {
-    request.get(manifestURL, (err, _, body) => {
+  return new Promise(function(resolve, reject) {
+    request.get(manifestURL, function(err, _, body) {
       if (err) {
         reject(err);
         return;
@@ -19,30 +21,30 @@ function fetchManifest() {
   });
 }
 
-function getDownloadURL({ past_releases: pastReleases = [], ...manifest }) {
-  const { arch, platform } = process;
+function getDownloadURL(manifest) {
+  const pastReleases = manifest.past_releases || [];
 
   let tag = '';
 
-  if (platform === 'linux') {
-    if (arch !== 'x64') {
+  if (process.platform === 'linux') {
+    if (process.arch !== 'x64') {
       throw new Error('Only Linux 64 bits supported.');
     }
     tag = 'linux-amd64';
-  } else if (platform === 'darwin' || platform === 'freebsd') {
-    if (arch !== 'x64' && arch !== 'arm64') {
+  } else if (process.platform === 'darwin' || process.platform === 'freebsd') {
+    if (process.arch !== 'x64' && process.arch !== 'arm64') {
       throw new Error('Only Mac 64 bits supported.');
     }
     tag = 'macos-amd64';
-  } else if (platform === 'win32') {
-    if (arch !== 'x64') {
+  } else if (process.platform === 'win32') {
+    if (process.arch !== 'x64') {
       throw new Error('Only Windows 64 bits supported.');
     }
     tag = 'windows-amd64';
   }
 
   if (tag === '') {
-    throw new Error(`Unexpected platform or architecture: ${platform} ${arch}`);
+    throw new Error(`Unexpected platform or architecture: ${process.platform} ${process.arch}`);
   }
 
   if (manifest.version !== packageMetadata.version) {
@@ -57,10 +59,12 @@ function getDownloadURL({ past_releases: pastReleases = [], ...manifest }) {
   return manifest.info[tag].url;
 }
 
-function requstBinary(downloadURL, baseName = 'realm-cli') {
+function requstBinary(downloadURL, baseName) {
+  baseName = baseName ||  'realm-cli';
+
   console.log(`downloading "${baseName}" from "${downloadURL}"`);
 
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
     let count = 0;
     let notifiedCount = 0;
 
@@ -75,11 +79,11 @@ function requstBinary(downloadURL, baseName = 'realm-cli') {
     };
     const client = request(requestOptions);
 
-    client.on('error', (err) => {
+    client.on('error', function(err) {
       reject(new Error(`Error with http(s) request: ${err}`));
     });
 
-    client.on('data', (data) => {
+    client.on('data', function(data) {
       fs.writeSync(outFile, data, 0, data.length, null);
       count += data.length;
       if (count - notifiedCount > 800000) {
@@ -88,7 +92,7 @@ function requstBinary(downloadURL, baseName = 'realm-cli') {
       }
     });
 
-    client.on('end', () => {
+    client.on('end', function() {
       console.log(`Received ${Math.floor(count / 1024)} K total.`);
       fs.closeSync(outFile);
       fixFilePermissions(filePath);
@@ -112,7 +116,7 @@ if (process.platform !== 'win32') {
 fetchManifest()
   .then(getDownloadURL)
   .then(requstBinary)
-  .catch((err) => {
+  .catch(function(err) {
     console.error('failed to download Realm CLI:', err);
     process.exit(1);
   });

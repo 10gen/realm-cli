@@ -25,7 +25,7 @@ function fileExists(file) {
 
 function removeFolder(dir) {
   if (!fs.existsSync(dir)) return;
-  fs.readdirSync(dir).forEach(file => {
+  fs.readdirSync(dir).forEach(function(file) {
     const curPath = dir + path.sep + file;
     if (fs.lstatSync(curPath).isDirectory()) {
       removeFolder(curPath);
