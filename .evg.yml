@@ -365,6 +365,7 @@ tasks:
             BODY=$(git log --no-merges $PREVIOUS_VERSION..HEAD --pretty="format:%s (%h); %an" | sed '$d')
             git tag -a -m "Changelog since $PREVIOUS_VERSION:" -m "$BODY" "v$VERSION"
             git push origin master --tags
+            touch release.true
       - command: s3.put
         params:
           aws_key: ${artifacts_aws_key}
