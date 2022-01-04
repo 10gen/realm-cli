@@ -3,7 +3,7 @@ module github.com/10gen/realm-cli
 go 1.14
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.2.2
+	github.com/AlecAivazis/survey/v2 v2.2.3
 	github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
