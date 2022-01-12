@@ -2,15 +2,20 @@ package realm
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/utils/api"
 )
 
 const (
-	authenticatePath = adminAPI + "/auth/providers/mongodb-cloud/login"
-	authProfilePath  = adminAPI + "/auth/profile"
-	authSessionPath  = adminAPI + "/auth/session"
+	authenticatePathPattern = adminAPI + "/auth/providers/%s/login"
+	authProfilePath         = adminAPI + "/auth/profile"
+	authSessionPath         = adminAPI + "/auth/session"
+
+	AuthTypeCloud = "mongodb-cloud"
+	AuthTypeLocal = "local-userpass"
 )
 
 // Session is the Realm session
@@ -19,16 +24,29 @@ type Session struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
-type authenticateRequest struct {
+type authRequestCloud struct {
 	PublicAPIKey  string `json:"username"`
 	PrivateAPIKey string `json:"apiKey"`
 }
 
-func (c *client) Authenticate(publicAPIKey, privateAPIKey string) (Session, error) {
+type authRequestLocal struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func (c *client) Authenticate(authType string, creds user.Credentials) (Session, error) {
+	var payload interface{}
+	switch authType {
+	case AuthTypeCloud:
+		payload = authRequestCloud{creds.PublicAPIKey, creds.PrivateAPIKey}
+	case AuthTypeLocal:
+		payload = authRequestLocal{creds.Username, creds.Password}
+	}
+
 	res, resErr := c.doJSON(
 		http.MethodPost,
-		authenticatePath,
-		authenticateRequest{publicAPIKey, privateAPIKey},
+		fmt.Sprintf(authenticatePathPattern, authType),
+		payload,
 		api.RequestOptions{NoAuth: true, PreventRefresh: true},
 	)
 	if resErr != nil {

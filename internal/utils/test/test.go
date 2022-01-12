@@ -137,7 +137,10 @@ var SkipUnlessAtlasServerRunning = func() func(t *testing.T) {
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())
 			return
 		}
-		client := atlas.NewAuthClient(AtlasServerURL(), user.Credentials{CloudUsername(), CloudAPIKey()})
+		client := atlas.NewAuthClient(AtlasServerURL(), user.Credentials{
+			PublicAPIKey:  CloudUsername(),
+			PrivateAPIKey: CloudAPIKey(),
+		})
 		if err := client.Status(); err != nil {
 			atlasServerNotRunning = true
 			MustSkipf(t, "Atlas server not running at %s", AtlasServerURL())

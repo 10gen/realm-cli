@@ -138,3 +138,90 @@ c, err := expect.NewConsole(expect.WithStdout(out))
 assert.Nil(t, err)
 defer c.Close()
 ```
+
+## Undocumented Features and Flags
+
+### Global Flags
+
+#### Using `--realm-url` and `--atlas-url`
+
+At some point, you may wish to configure which Realm and Atlas servers the CLI is connecting to.  By default, these URLs point to the Production instances of Realm and Atlas, which should be sufficient for most use cases.
+
+However, you can set `--realm-url` and `--atlas-url` to any URLs you know a respective server instance is running at.  If you are configuring one, chances are you'll want to configure both of these.
+
+### Pseudo-Global Flags
+
+#### Using `--project`
+
+At some point, you may wish to target a specific "project id" (a.k.a. "group id") when performing any sort of app lookup.  By default, the project id is derived from the list of projects available to the logged in user, which should be sufficient for most use cases (but may force a prompt for a project selection, thus breaking typical CI/CD setups).  The impact of this setting effects only the prompts presented by the CLI (and the data found within them) to allow the user to select a project (and ultimately an app) to work with.
+
+However, you can set `--project` to any known project id.  Most commands which interact with a specific app support the use of `--project`:
+
+* `accesslist create`
+* `accesslist delete`
+* `accesslist list`
+* `accesslist update`
+* `app create`
+* `app delete`
+* `app describe`
+* `app diff`
+* `app init`
+* `apps list`
+* `function run`
+* `logs list`
+* `pull`
+* `push`
+* `schema models`
+* `secrets create`
+* `secret delete`
+* `secrets list`
+* `secret update`
+* `user create`
+* `user delete`
+* `user disable`
+* `user enable`
+* `users list`
+* `user revoke`
+
+#### Using `--config-version`
+
+At some point, you may wish to target a specific "config version" of an app.  By default, the config version chosen is the latest and most up-to-date, which should be sufficient for most use cases.
+
+However, you can set `--config-version` to any previously supported config version.  The supported values can be found at `internal/cloud/realm/realm.go`.  The following commands support the use of `--config-version`:
+
+* `app create`
+* `app init`
+* `pull`/`export`
+
+#### Using `--product`
+
+At some point, you may wish to target a specific "product type" when performing any sort of app lookup.  By default, the product types queried for include `"standard"` and `"atlas"`, which should be sufficient for most use cases.  The impact of this setting effects only the prompts presented by the CLI (and the data found within them) to allow the user to select an app to work with.
+
+However, you can set `--product` to any known app product type.  Most commands which interact with a specific app support the use of `--product`:
+
+* `accesslist create`
+* `accesslist delete`
+* `accesslist list`
+* `accesslist update`
+* `app describe`
+* `apps list`
+* `function run`
+* `logs list`
+* `schema models`
+* `secrets create`
+* `secret delete`
+* `secrets list`
+* `secret update`
+* `user create`
+* `user delete`
+* `user disable`
+* `user enable`
+* `users list`
+
+### Login Flags
+
+The `login` command supports multiple ways of authenticating with Realm.  By default, the CLI will authenticate against MongoDB Cloud Atlas using a programmatic API Key, which should be sufficient (and even recommended) for most use cases.
+
+However, you can set `--auth-type` to any other supported authentication type.  The supported values can be found at `internal/commands/login/inputs.go`.
+
+If you are using the `"local"` auth type, you will also need to specify both `--username` and `--password`.  If you do not specify these as flags, the CLI will prompt you for these inputs.  The username and password must correspond to a `local-userpass` user known to exist on the Realm server the CLI is configured to talk to.

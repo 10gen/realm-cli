@@ -24,7 +24,7 @@ func TestAtlasGroups(t *testing.T) {
 		},
 		{
 			description: "With a client with bad credentials",
-			client:      atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{"username", "password"}),
+			client:      atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{PublicAPIKey: "username", PrivateAPIKey: "password"}),
 			expectedErr: atlas.ErrUnauthorized{"You are not authorized for this resource."},
 		},
 	} {
@@ -44,5 +44,8 @@ func TestAtlasGroups(t *testing.T) {
 }
 
 func newAuthClient(t *testing.T) atlas.Client {
-	return atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{u.CloudUsername(), u.CloudAPIKey()})
+	return atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{
+		PublicAPIKey:  u.CloudUsername(),
+		PrivateAPIKey: u.CloudAPIKey(),
+	})
 }

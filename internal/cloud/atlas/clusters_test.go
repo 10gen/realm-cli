@@ -24,7 +24,7 @@ func TestClusters(t *testing.T) {
 		},
 		{
 			description: "with a client with bad credentials",
-			client:      atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{"username", "password"}),
+			client:      atlas.NewAuthClient(u.AtlasServerURL(), user.Credentials{PublicAPIKey: "username", PrivateAPIKey: "password"}),
 			expectedErr: atlas.ErrUnauthorized{"You are not authorized for this resource."},
 		},
 	} {

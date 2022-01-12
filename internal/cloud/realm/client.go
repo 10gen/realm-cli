@@ -22,7 +22,7 @@ const (
 // Client is a Realm client
 type Client interface {
 	AuthProfile() (AuthProfile, error)
-	Authenticate(publicAPIKey, privateAPIKey string) (Session, error)
+	Authenticate(authType string, credentials user.Credentials) (Session, error)
 
 	Export(groupID, appID string, req ExportRequest) (string, *zip.Reader, error)
 	ExportDependencies(groupID, appID string) (string, io.ReadCloser, error)
