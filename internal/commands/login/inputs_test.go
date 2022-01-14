@@ -72,9 +72,7 @@ func TestLoginInputs(t *testing.T) {
 				PrivateAPIKey: "password",
 			},
 			prepareProfile: func(p *user.Profile) {},
-			procedure: func(c *expect.Console) {
-				// c.ExpectEOF()
-			},
+			procedure:      func(c *expect.Console) {},
 			test: func(t *testing.T, i inputs) {
 				assert.Equal(t, "username", i.PublicAPIKey)
 				assert.Equal(t, "password", i.PrivateAPIKey)
@@ -149,9 +147,7 @@ func TestLoginInputs(t *testing.T) {
 				Password: "password",
 			},
 			prepareProfile: func(p *user.Profile) {},
-			procedure: func(c *expect.Console) {
-				// c.ExpectEOF()
-			},
+			procedure:      func(c *expect.Console) {},
 			test: func(t *testing.T, i inputs) {
 				assert.Equal(t, "username", i.Username)
 				assert.Equal(t, "password", i.Password)
