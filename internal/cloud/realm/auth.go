@@ -13,7 +13,10 @@ const (
 	authenticatePathPattern = adminAPI + "/auth/providers/%s/login"
 	authProfilePath         = adminAPI + "/auth/profile"
 	authSessionPath         = adminAPI + "/auth/session"
+)
 
+// set of supported auth types
+const (
 	AuthTypeCloud = "mongodb-cloud"
 	AuthTypeLocal = "local-userpass"
 )
