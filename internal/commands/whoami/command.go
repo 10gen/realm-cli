@@ -25,19 +25,31 @@ type Command struct{}
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	user := profile.Credentials()
-	session := profile.Session()
+	u := profile.Credentials()
+	sess := profile.Session()
 
-	if user.PrivateAPIKey == "" {
+	if u.PrivateAPIKey == "" && u.Password == "" {
 		ui.Print(terminal.NewTextLog("No user is currently logged in"))
 		return nil
 	}
 
-	if session.AccessToken == "" {
-		ui.Print(terminal.NewTextLog("The user, %s, is not currently logged in", user.PublicAPIKey))
+	userDisplay := u.PublicAPIKey
+	if userDisplay == "" {
+		userDisplay = u.Username
+	}
+
+	if sess.AccessToken == "" {
+		ui.Print(terminal.NewTextLog("The user, %s, is not currently logged in", userDisplay))
 		return nil
 	}
 
-	ui.Print(terminal.NewTextLog("Currently logged in user: %s (%s)", user.PublicAPIKey, user.RedactedPrivateAPIKey()))
+	var userSecret string
+	if u.PublicAPIKey == "" {
+		userSecret = u.RedactedPassword()
+	} else {
+		userSecret = u.RedactedPrivateAPIKey()
+	}
+
+	ui.Print(terminal.NewTextLog("Currently logged in user: %s (%s)", userDisplay, userSecret))
 	return nil
 }
