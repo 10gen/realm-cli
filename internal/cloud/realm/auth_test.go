@@ -10,21 +10,40 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
-func TestRealmAuthenticate(t *testing.T) {
+func TestRealmAuthenticateCloud(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
 	client := realm.NewClient(u.RealmServerURL())
 
-	t.Run("Should fail with invalid credentials", func(t *testing.T) {
-		_, err := client.Authenticate("username", "apiKey")
+	t.Run("Should fail with invalid cloud credentials", func(t *testing.T) {
+		_, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{PublicAPIKey: "username", PrivateAPIKey: "apiKey"})
 		assert.Equal(t,
 			realm.ServerError{Message: "failed to authenticate with MongoDB Cloud API: You are not authorized for this resource."},
 			err,
 		)
 	})
 
-	t.Run("Should return session details with valid credentials", func(t *testing.T) {
-		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+	t.Run("Should return session details with valid cloud credentials", func(t *testing.T) {
+		session, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{
+			PublicAPIKey:  u.CloudUsername(),
+			PrivateAPIKey: u.CloudAPIKey(),
+		})
+		assert.Nil(t, err)
+		assert.NotEqual(t, "", session.AccessToken, "access token must not be blank")
+		assert.NotEqual(t, "", session.RefreshToken, "refresh token must not be blank")
+	})
+}
+
+func TestRealmAuthenticateLocal(t *testing.T) {
+	t.Skip("this test needs to run with a local Realm server configured to support the local-userpass auth provider")
+
+	client := realm.NewClient(u.RealmServerURL())
+
+	t.Run("Should return session details with valid local credentials", func(t *testing.T) {
+		session, err := client.Authenticate(realm.AuthTypeLocal, user.Credentials{
+			Username: "unique_user@domain.com",
+			Password: "password",
+		})
 		assert.Nil(t, err)
 		assert.NotEqual(t, "", session.AccessToken, "access token must not be blank")
 		assert.NotEqual(t, "", session.RefreshToken, "refresh token must not be blank")
@@ -57,7 +76,10 @@ func TestRealmAuthRefresh(t *testing.T) {
 	t.Run("Does not refresh auth if request does not return invalid session code", func(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
-		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+		session, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{
+			PublicAPIKey:  u.CloudUsername(),
+			PrivateAPIKey: u.CloudAPIKey(),
+		})
 		assert.Equal(t, nil, err)
 
 		// invalidate the session's access token
@@ -75,7 +97,10 @@ func TestRealmAuthRefresh(t *testing.T) {
 	t.Run("Should return the invalid session error when credentials are invalid", func(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
-		session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+		session, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{
+			PublicAPIKey:  u.CloudUsername(),
+			PrivateAPIKey: u.CloudAPIKey(),
+		})
 		assert.Equal(t, nil, err)
 
 		// invalidate the session's tokens
@@ -94,7 +119,11 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 		t.Run("should use the refresh token to generate a new access token", func(t *testing.T) {
 			client := realm.NewClient(u.RealmServerURL())
-			session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+
+			session, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{
+				PublicAPIKey:  u.CloudUsername(),
+				PrivateAPIKey: u.CloudAPIKey(),
+			})
 			assert.Nil(t, err)
 
 			profile, teardown := mock.NewProfileFromTmpDir(t, "auth_refresh_test")
@@ -139,7 +168,10 @@ func newAuthClient(t *testing.T) realm.Client {
 
 	client := realm.NewClient(u.RealmServerURL())
 
-	session, err := client.Authenticate(u.CloudUsername(), u.CloudAPIKey())
+	session, err := client.Authenticate(realm.AuthTypeCloud, user.Credentials{
+		PublicAPIKey:  u.CloudUsername(),
+		PrivateAPIKey: u.CloudAPIKey(),
+	})
 	assert.Nil(t, err)
 
 	profile := mock.NewProfileWithSession(t, session)

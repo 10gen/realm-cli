@@ -182,6 +182,8 @@ func (p Profile) Path() string {
 const (
 	keyPublicAPIKey  = "public_api_key"
 	keyPrivateAPIKey = "private_api_key"
+	keyUsername      = "username"
+	keyPassword      = "password"
 	keyAccessToken   = "access_token"
 	keyRefreshToken  = "refresh_token"
 
@@ -199,8 +201,10 @@ func (p Profile) TelemetryMode() telemetry.Mode {
 // Credentials gets the CLI profile credentials
 func (p Profile) Credentials() Credentials {
 	return Credentials{
-		p.GetString(keyPublicAPIKey),
-		p.GetString(keyPrivateAPIKey),
+		PublicAPIKey:  p.GetString(keyPublicAPIKey),
+		PrivateAPIKey: p.GetString(keyPrivateAPIKey),
+		Username:      p.GetString(keyUsername),
+		Password:      p.GetString(keyPassword),
 	}
 }
 
@@ -208,12 +212,16 @@ func (p Profile) Credentials() Credentials {
 func (p Profile) SetCredentials(creds Credentials) {
 	p.SetString(keyPublicAPIKey, creds.PublicAPIKey)
 	p.SetString(keyPrivateAPIKey, creds.PrivateAPIKey)
+	p.SetString(keyUsername, creds.Username)
+	p.SetString(keyPassword, creds.Password)
 }
 
 // ClearCredentials clears the CLI profile credentials
 func (p Profile) ClearCredentials() {
 	p.Clear(keyPublicAPIKey)
 	p.Clear(keyPrivateAPIKey)
+	p.Clear(keyUsername)
+	p.Clear(keyPassword)
 }
 
 // Session gets the CLI profile session

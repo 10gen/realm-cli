@@ -23,22 +23,41 @@ func TestWhoamiFeedback(t *testing.T) {
 				},
 			},
 			{
-				description: "with a user that has no active session",
+				description: "with a user that has no active session with cloud credentials",
 				setup: func(t *testing.T, profile *user.Profile) {
-					profile.SetCredentials(user.Credentials{"username", "my-super-secret-key"})
+					profile.SetCredentials(user.Credentials{PublicAPIKey: "apiKey", PrivateAPIKey: "my-super-secret-key"})
+				},
+				test: func(t *testing.T, output string) {
+					assert.Equal(t, "The user, apiKey, is not currently logged in\n", output)
+				},
+			},
+			{
+				description: "with a user fully logged in with cloud credentials",
+				setup: func(t *testing.T, profile *user.Profile) {
+					profile.SetCredentials(user.Credentials{PublicAPIKey: "apiKey", PrivateAPIKey: "my-super-secret-key"})
+					profile.SetSession(user.Session{"accessToken", "refreshToken"})
+				},
+				test: func(t *testing.T, output string) {
+					assert.Equal(t, "Currently logged in user: apiKey (**-*****-******-key)\n", output)
+				},
+			},
+			{
+				description: "with a user that has no active session with local credentials",
+				setup: func(t *testing.T, profile *user.Profile) {
+					profile.SetCredentials(user.Credentials{Username: "username", Password: "my-super-secret-pwd"})
 				},
 				test: func(t *testing.T, output string) {
 					assert.Equal(t, "The user, username, is not currently logged in\n", output)
 				},
 			},
 			{
-				description: "with a user fully logged in",
+				description: "with a user fully logged in with local credentials",
 				setup: func(t *testing.T, profile *user.Profile) {
-					profile.SetCredentials(user.Credentials{"username", "my-super-secret-key"})
+					profile.SetCredentials(user.Credentials{Username: "username", Password: "my-super-secret-pwd"})
 					profile.SetSession(user.Session{"accessToken", "refreshToken"})
 				},
 				test: func(t *testing.T, output string) {
-					assert.Equal(t, "Currently logged in user: username (**-*****-******-key)\n", output)
+					assert.Equal(t, "Currently logged in user: username (*******************)\n", output)
 				},
 			},
 		} {

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"io"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
 
@@ -11,7 +12,7 @@ import (
 type RealmClient struct {
 	realm.Client
 
-	AuthenticateFn func(publicAPIKey, privateAPIKey string) (realm.Session, error)
+	AuthenticateFn func(authType string, creds user.Credentials) (realm.Session, error)
 	AuthProfileFn  func() (realm.AuthProfile, error)
 
 	DiffFn   func(groupID, appID string, appData interface{}) ([]string, error)
@@ -79,11 +80,11 @@ type RealmClient struct {
 // Authenticate calls the mocked Authenticate implementation if provided,
 // otherwise the call falls back to the underlying realm.Client implementation.
 // NOTE: this may panic if the underlying realm.Client is left undefined
-func (rc RealmClient) Authenticate(publicAPIKey, privateAPIKey string) (realm.Session, error) {
+func (rc RealmClient) Authenticate(authType string, creds user.Credentials) (realm.Session, error) {
 	if rc.AuthenticateFn != nil {
-		return rc.AuthenticateFn(publicAPIKey, privateAPIKey)
+		return rc.AuthenticateFn(authType, creds)
 	}
-	return rc.Client.Authenticate(publicAPIKey, privateAPIKey)
+	return rc.Client.Authenticate(authType, creds)
 }
 
 // AuthProfile calls the mocked AuthProfile implementation if provided,

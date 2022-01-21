@@ -24,22 +24,33 @@ func TestLogoutHandler(t *testing.T) {
 
 		profile := mock.NewProfile(t)
 
-		profile.SetCredentials(user.Credentials{"username", "password"})
-		profile.SetSession(user.Session{"accessToken", "refreshToken"})
+		existingCreds := user.Credentials{
+			PublicAPIKey:  "publicAPIKey",
+			PrivateAPIKey: "privateAPIKey",
+			Username:      "username",
+			Password:      "password",
+		}
+
+		existingSess := user.Session{"accessToken", "refreshToken"}
+
+		profile.SetCredentials(existingCreds)
+		profile.SetSession(existingSess)
 		assert.Nil(t, profile.Save())
 
 		creds := profile.Credentials()
 		session := profile.Session()
-		assert.Equal(t, user.Credentials{"username", "password"}, creds)
-		assert.Equal(t, user.Session{"accessToken", "refreshToken"}, session)
+		assert.Equal(t, existingCreds, creds)
+		assert.Equal(t, existingSess, session)
 
 		out, err := ioutil.ReadFile(profile.Path())
 		assert.Nil(t, err)
 		assert.True(t, strings.Contains(string(out), fmt.Sprintf(`%s:
   access_token: accessToken
-  private_api_key: password
-  public_api_key: username
+  password: password
+  private_api_key: privateAPIKey
+  public_api_key: publicAPIKey
   refresh_token: refreshToken
+  username: username
 `, profile.Name)), "profile must contain the expected contents")
 
 		_, ui := mock.NewUI()
@@ -55,9 +66,11 @@ func TestLogoutHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.True(t, strings.Contains(string(out), fmt.Sprintf(`%s:
   access_token: ""
+  password: ""
   private_api_key: ""
   public_api_key: ""
   refresh_token: ""
+  username: ""
 `, profile.Name)), "profile must contain the expected contents")
 	})
 }
