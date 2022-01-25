@@ -14,6 +14,10 @@ import (
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 )
 
+var (
+	nilMap map[string]interface{}
+)
+
 func TestRealmImportExportRoundTrip(t *testing.T) {
 	u.SkipUnlessRealmServerRunning(t)
 
@@ -318,8 +322,8 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				Rules: []map[string]interface{}{{
 					"database":      "db",
 					"collection":    "coll",
-					"schema":        map[string]interface{}{},
-					"relationships": map[string]interface{}{},
+					"schema":        nilMap,
+					"relationships": nilMap,
 				}},
 			},
 		},
