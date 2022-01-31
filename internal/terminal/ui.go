@@ -118,7 +118,7 @@ type FileDescriptor interface {
 	Fd() uintptr
 }
 
-// fdReader wraps an io.Reader and exposes the FileDesriptor interface on it
+// fdReader wraps an io.Reader and exposes the FileDescriptor interface on it
 // the underlying io.Reader's Fd() implementation will be used if it exists
 type fdReader struct {
 	io.Reader
