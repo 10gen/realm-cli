@@ -47,6 +47,8 @@ git checkout -b REALMC-XXXXX
 ./contrib/bump_version.bash <patch|minor|major>
 ```
 
+> NOTE: The version bump script reqiures git version 2.22 or above
+
 3. Push to your fork and create a PR
 ```bash
 git push origin HEAD
