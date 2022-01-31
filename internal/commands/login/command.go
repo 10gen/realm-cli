@@ -3,7 +3,6 @@ package login
 import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
-	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 )
@@ -28,7 +27,7 @@ func (cmd *Command) Flags() []flags.Flag {
 	return []flags.Flag{
 		flags.StringFlag{
 			Value:        &cmd.inputs.AuthType,
-			DefaultValue: realm.AuthTypeCloud,
+			DefaultValue: authTypeCloud,
 			Meta: flags.Meta{
 				Name:   "auth-type",
 				Hidden: true,
