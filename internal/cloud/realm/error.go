@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/10gen/realm-cli/internal/cli/user"
+	"github.com/10gen/realm-cli/internal/utils/cli"
 )
 
 // set of known error codes
@@ -22,19 +23,13 @@ var (
 )
 
 // ErrInvalidSession is an invalid session error
-type ErrInvalidSession struct {
-	profileName string
-}
-
-func (err ErrInvalidSession) Error() string { return "invalid session" }
-
-// Suggestions returns a list of commands to run to remedy an invalid session error
-func (err ErrInvalidSession) Suggestions() []interface{} {
+func ErrInvalidSession(profileName string) error {
 	suggestion := "realm-cli login"
-	if err.profileName != user.DefaultProfile {
-		suggestion += " --profile " + err.profileName
+	if profileName != user.DefaultProfile {
+		suggestion += " --profile " + profileName
 	}
-	return []interface{}{suggestion}
+
+	return cli.NewErr(errors.New("invalid session"), cli.ErrSuggestion{suggestion})
 }
 
 // ServerError is a Realm server error

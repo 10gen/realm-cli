@@ -3,6 +3,8 @@ package atlas
 import (
 	"errors"
 	"fmt"
+
+	"github.com/10gen/realm-cli/internal/utils/cli"
 )
 
 var (
@@ -45,16 +47,9 @@ func (err ErrUnauthorized) Error() string {
 	return fmt.Sprintf("%s: %s", errCommonUnauthorized, err.Reason)
 }
 
-type errForbidden struct {
-	status string
-}
-
-func (err errForbidden) Error() string {
-	return fmt.Sprintf("(%s) %s", err.status, errCommonForbidden)
-}
-
-func (err errForbidden) ReferenceLinks() []interface{} {
-	return []interface{}{
-		"https://cloud.mongodb.com/v2#/account/publicApi",
-	}
+func errForbidden(status string) error {
+	return cli.NewErr(
+		fmt.Errorf("(%s) %s", status, errCommonForbidden),
+		cli.ErrReferenceLink{"https://cloud.mongodb.com/v2#/account/publicApi"},
+	)
 }

@@ -57,7 +57,7 @@ func TestRealmAuthProfile(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.AuthProfile()
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("With an active session should return session details with valid credentials", func(t *testing.T) {
@@ -111,7 +111,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 		client = realm.NewAuthClient(profile.RealmBaseURL(), profile)
 		_, err = client.AuthProfile()
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(profile.Name), err)
 	})
 
 	t.Run("with an expired access token", func(t *testing.T) {
@@ -152,7 +152,7 @@ func TestRealmAuthRefresh(t *testing.T) {
 
 			client := realm.NewAuthClient(profile.RealmBaseURL(), profile)
 			_, err := client.AuthProfile()
-			assert.Equal(t, realm.ErrInvalidSession{}, err)
+			assert.Equal(t, realm.ErrInvalidSession(profile.Name), err)
 
 			session := profile.Session()
 

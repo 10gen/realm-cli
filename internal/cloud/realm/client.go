@@ -161,9 +161,9 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	if refreshErr := c.refreshAuth(); refreshErr != nil {
 		c.profile.ClearSession()
 		if err := c.profile.Save(); err != nil {
-			return nil, ErrInvalidSession{}
+			return nil, ErrInvalidSession(c.profile.Name)
 		}
-		return nil, ErrInvalidSession{}
+		return nil, ErrInvalidSession(c.profile.Name)
 	}
 
 	options.PreventRefresh = true

@@ -3,6 +3,7 @@ package realm_test
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -15,7 +16,7 @@ func TestRealmSchemaModels(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.SchemaModels("", "", realm.DataModelLanguageJava)
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("with an active session", func(t *testing.T) {

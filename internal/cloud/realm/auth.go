@@ -100,20 +100,20 @@ func (c *client) getAuthToken(options api.RequestOptions) (string, error) {
 
 	if requiresAccessToken || requiresRefreshToken {
 		if c.profile == nil {
-			return "", ErrInvalidSession{}
+			return "", ErrInvalidSession(user.DefaultProfile)
 		}
 
 		session := c.profile.Session()
 		if requiresRefreshToken {
 			if session.RefreshToken == "" {
-				return "", ErrInvalidSession{}
+				return "", ErrInvalidSession(c.profile.Name)
 			}
 			return session.RefreshToken, nil
 		}
 
 		if requiresAccessToken {
 			if session.AccessToken == "" {
-				return "", ErrInvalidSession{}
+				return "", ErrInvalidSession(c.profile.Name)
 			}
 			return session.AccessToken, nil
 		}
@@ -132,7 +132,7 @@ func (c *client) refreshAuth() error {
 		return resErr
 	}
 	if res.StatusCode != http.StatusCreated {
-		return ErrInvalidSession{}
+		return ErrInvalidSession(c.profile.Name)
 	}
 	defer res.Body.Close()
 

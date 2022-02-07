@@ -154,7 +154,7 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		}
 
 		_, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
-		assert.Equal(t, errProjectNotFound{}, err)
+		assert.Equal(t, errProjectNotFound, err)
 	})
 
 	t.Run("should return an error when the atlas client fails to find groups", func(t *testing.T) {

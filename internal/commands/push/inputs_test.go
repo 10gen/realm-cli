@@ -19,7 +19,7 @@ func TestPushInputsResolve(t *testing.T) {
 		defer teardown()
 
 		var i inputs
-		assert.Equal(t, errProjectInvalid{path: profile.WorkingDirectory, pathExists: true}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectInvalid(profile.WorkingDirectory, true), i.Resolve(profile, nil))
 	})
 
 	t.Run("should return an error when more than one dependencies flag is set", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestPushInputsResolve(t *testing.T) {
 		localPath := "fakePath"
 
 		i := inputs{LocalPath: localPath}
-		assert.Equal(t, errProjectInvalid{path: localPath}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectInvalid(localPath, false), i.Resolve(profile, nil))
 	})
 
 	t.Run("should return an error when specified local path is an absolute path and it does not exist", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestPushInputsResolve(t *testing.T) {
 		searchPathAbs, _ := filepath.Abs(localPath)
 
 		i := inputs{LocalPath: searchPathAbs}
-		assert.Equal(t, errProjectInvalid{path: searchPathAbs}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectInvalid(searchPathAbs, false), i.Resolve(profile, nil))
 	})
 
 	t.Run("should return an error when specified local path is not a realm app project", func(t *testing.T) {
@@ -62,7 +62,7 @@ func TestPushInputsResolve(t *testing.T) {
 		defer teardown()
 
 		i := inputs{LocalPath: localPath}
-		assert.Equal(t, errProjectInvalid{path: localPath, pathExists: true}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectInvalid(localPath, true), i.Resolve(profile, nil))
 	})
 
 	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {

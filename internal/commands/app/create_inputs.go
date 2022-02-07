@@ -105,7 +105,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 		return "", err
 	}
 	if appOK {
-		return "", errProjectExists{wd}
+		return "", errProjectExists(wd)
 	}
 
 	if i.LocalPath == "" {
@@ -144,7 +144,7 @@ func (i *createInputs) resolveLocalPath(ui terminal.UI, wd string) (string, erro
 			return "", err
 		}
 		if appOK {
-			return "", errProjectExists{newDir}
+			return "", errProjectExists(newDir)
 		}
 
 		i.LocalPath = newDir

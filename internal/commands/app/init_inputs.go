@@ -19,7 +19,7 @@ func (i *initInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return appErr
 	}
 	if app.RootDir != "" {
-		return errProjectExists{}
+		return errProjectExists("")
 	}
 
 	if i.RemoteApp == "" {

@@ -2,18 +2,17 @@ package push
 
 import (
 	"fmt"
+
+	"github.com/10gen/realm-cli/internal/utils/cli"
 )
 
-type errProjectInvalid struct {
-	path       string
-	pathExists bool
-}
-
-func (err errProjectInvalid) Error() string {
-	if !err.pathExists {
-		return fmt.Sprintf("directory '%s' does not exist", err.path)
+func errProjectInvalid(path string, pathExists bool) error {
+	var cause error
+	if !pathExists {
+		cause = fmt.Errorf("directory '%s' does not exist", path)
+	} else {
+		cause = fmt.Errorf("directory '%s' is not a supported Realm app project", path)
 	}
-	return fmt.Sprintf("directory '%s' is not a supported Realm app project", err.path)
-}
 
-func (err errProjectInvalid) DisableUsage() struct{} { return struct{}{} }
+	return cli.NewErr(cause, cli.ErrNoUsage{})
+}

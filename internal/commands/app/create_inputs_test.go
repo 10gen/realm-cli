@@ -250,7 +250,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		existingDir := filepath.Join(profile.WorkingDirectory, existingApp.Name)
 		dir, err := inputs.resolveLocalPath(ui, existingDir)
 
-		assert.Equal(t, errProjectExists{existingDir}, err)
+		assert.Equal(t, errProjectExists(existingDir), err)
 		assert.Equal(t, dir, "")
 	})
 
@@ -303,7 +303,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		assert.Equal(t, errProjectExists{existingApp.Name}, err)
+		assert.Equal(t, errProjectExists(existingApp.Name), err)
 		assert.Equal(t, dir, "")
 
 	})

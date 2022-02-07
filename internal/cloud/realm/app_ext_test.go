@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -17,7 +18,7 @@ func TestRealmApps(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.FindApps(realm.AppFilter{})
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("with an active session", func(t *testing.T) {

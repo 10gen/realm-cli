@@ -92,7 +92,7 @@ func (c *client) do(method, path string, options api.RequestOptions) (*http.Resp
 	}
 
 	if res.StatusCode == http.StatusForbidden {
-		return nil, errForbidden{res.Status}
+		return nil, errForbidden(res.Status)
 	}
 
 	return res, nil
