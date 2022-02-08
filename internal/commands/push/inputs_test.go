@@ -65,13 +65,13 @@ func TestPushInputsResolve(t *testing.T) {
 		assert.Equal(t, errProjectInvalid{path: localPath, pathExists: true}, i.Resolve(profile, nil))
 	})
 
-	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
+	t.Run("should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
-			[]byte(`{"app_id": "eggcorn-abcde", "name":"eggcorn"}`),
+			[]byte(`{"config_version": 20210101,"app_id": "eggcorn-abcde", "name":"eggcorn"}`),
 			0666,
 		))
 

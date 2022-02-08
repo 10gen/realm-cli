@@ -20,7 +20,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
-			[]byte(`{"name":"eggcorn"}`),
+			[]byte(`{"config_version": 20210101,"name":"eggcorn"}`),
 			0666,
 		))
 

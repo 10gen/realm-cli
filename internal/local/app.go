@@ -1,12 +1,14 @@
 package local
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -236,6 +238,33 @@ func (a *App) LoadConfig() error {
 	return nil
 }
 
+// ConfigContainsVersion returns true if the app root config file contains a version
+func (a *App) ConfigContainsVersion() bool {
+	switch a.Config {
+	case FileRealmConfig:
+		a.AppData = &AppRealmConfigJSON{}
+	case FileConfig:
+		a.AppData = &AppConfigJSON{}
+	case FileStitch:
+		a.AppData = &AppStitchJSON{}
+	}
+
+	path := filepath.Join(a.RootDir, a.Config.String())
+	file, openErr := os.Open(path)
+	if openErr != nil {
+		return false
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), a.AppData.ConfigVersion().String()) {
+			return true
+		}
+	}
+	return false
+}
+
 // LoadApp will load the local app data
 func LoadApp(path string) (App, error) {
 	app, appErr := LoadAppConfig(path)
@@ -288,7 +317,13 @@ func FindApp(path string) (App, bool, error) {
 				}
 				return App{}, false, err
 			}
-			return App{RootDir: wd, Config: config}, true, nil
+
+			app := App{RootDir: wd, Config: config}
+			// if no config version is found then continue searching for the app's root directory config
+			if !app.ConfigContainsVersion() {
+				continue
+			}
+			return app, true, nil
 		}
 		if wd == "/" {
 			break
