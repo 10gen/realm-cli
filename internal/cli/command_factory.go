@@ -123,7 +123,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 			)
 
 			err := command.Command.Handler(factory.profile, factory.ui, Clients{
-				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile), // TODO(REALMC-8185): make this accept factory.profile.Session()
+				Realm:        realm.NewAuthClient(factory.profile.RealmBaseURL(), factory.profile),
 				Atlas:        atlas.NewAuthClient(factory.profile.AtlasBaseURL(), factory.profile.Credentials()),
 				HostingAsset: http.DefaultClient,
 			})
