@@ -144,6 +144,7 @@ func (c *client) refreshAuth() error {
 	session := c.profile.Session()
 	session.AccessToken = s.AccessToken
 	c.profile.SetSession(session)
+	
 	return c.profile.Save()
 }
 
