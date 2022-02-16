@@ -126,7 +126,7 @@ func (c *client) refreshAuth() error {
 	res, resErr := c.do(
 		http.MethodPost,
 		authSessionPath,
-		api.RequestOptions{RefreshAuth: true},
+		api.RequestOptions{RefreshAuth: true, PreventRefresh: true},
 	)
 	if resErr != nil {
 		return resErr
