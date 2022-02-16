@@ -123,17 +123,6 @@ func TestFindApp(t *testing.T) {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
 			testRoot := filepath.Join(wd, "testdata", config.version.String())
 
-			t.Run("should fail to find app with no valid config file", func(t *testing.T) {
-				path := filepath.Join(testRoot, config.invalidAppData.Name())
-				_, foundApp, err := FindApp(path)
-				assert.Nil(t, err)
-				assert.False(t, foundApp, "should not be found")
-
-				app, err := LoadApp(path)
-				assert.Nil(t, err)
-				assert.Equal(t, App{}, app)
-			})
-
 			t.Run("and a working directory outside of the project root returns empty data", func(t *testing.T) {
 				_, insideProject, err := FindApp(testRoot)
 				assert.Nil(t, err)
@@ -167,7 +156,7 @@ func TestFindApp(t *testing.T) {
 				})
 			}
 
-			t.Run("and an empty project should fail when finding app", func(t *testing.T) {
+			t.Run("and an empty project should return an error when finding app", func(t *testing.T) {
 				projectRoot := filepath.Join(testRoot, "empty")
 
 				_, insideProject, err := FindApp(projectRoot)
@@ -176,6 +165,17 @@ func TestFindApp(t *testing.T) {
 
 				app, err := LoadApp(projectRoot)
 				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
+				assert.Equal(t, App{}, app)
+			})
+
+			t.Run("and an invalid project should fail to find app", func(t *testing.T) {
+				path := filepath.Join(testRoot, config.invalidAppData.Name())
+				_, foundApp, err := FindApp(path)
+				assert.Nil(t, err)
+				assert.False(t, foundApp, "should not be found")
+
+				app, err := LoadApp(path)
+				assert.Nil(t, err)
 				assert.Equal(t, App{}, app)
 			})
 		})
