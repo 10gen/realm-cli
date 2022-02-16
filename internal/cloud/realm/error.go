@@ -6,8 +6,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/10gen/realm-cli/internal/cli/feedback"
 	"github.com/10gen/realm-cli/internal/cli/user"
-	"github.com/10gen/realm-cli/internal/utils/cli"
 )
 
 // set of known error codes
@@ -29,7 +29,7 @@ func ErrInvalidSession(profileName string) error {
 		suggestion += " --profile " + profileName
 	}
 
-	return cli.NewErr(errors.New("invalid session"), cli.ErrSuggestion{suggestion})
+	return feedback.NewErr(errors.New("invalid session"), feedback.ErrSuggestion{suggestion})
 }
 
 // ServerError is a Realm server error

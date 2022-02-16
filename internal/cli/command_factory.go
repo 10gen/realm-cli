@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/10gen/realm-cli/internal/cli/feedback"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/telemetry"
 	"github.com/10gen/realm-cli/internal/terminal"
-	"github.com/10gen/realm-cli/internal/utils/cli"
 	"github.com/10gen/realm-cli/internal/utils/flags"
 
 	"github.com/spf13/cobra"
@@ -105,7 +105,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 		if command, ok := command.Command.(CommandInputs); ok {
 			cmd.PreRunE = func(c *cobra.Command, a []string) error {
 				if err := command.Inputs().Resolve(factory.profile, factory.ui); err != nil {
-					return cli.WrapErr(display+" setup failed: %w", err)
+					return feedback.WrapErr(display+" setup failed: %w", err)
 				}
 				return nil
 			}
@@ -132,7 +132,7 @@ func (factory *CommandFactory) Build(command CommandDefinition) *cobra.Command {
 					telemetry.EventTypeCommandError,
 					append(additionalFields, telemetry.EventDataError(err)...)...,
 				)
-				return cli.WrapErr(display+" failed: %w", err, cli.ErrNoUsage{})
+				return feedback.WrapErr(display+" failed: %w", err, feedback.ErrNoUsage{})
 			}
 
 			factory.telemetryService.TrackEvent(
@@ -162,12 +162,12 @@ func (factory *CommandFactory) Run(cmd *cobra.Command) int {
 	} else {
 		logs := []terminal.Log{terminal.NewErrorLog(err)}
 
-		var suggester cli.ErrSuggester
+		var suggester feedback.ErrSuggester
 		if errors.As(err, &suggester) && len(suggester.Suggestions()) > 0 {
 			logs = append(logs, terminal.NewFollowupLog(terminal.MsgSuggestions, suggester.Suggestions()...))
 		}
 
-		var linkReferrer cli.ErrLinkReferrer
+		var linkReferrer feedback.ErrLinkReferrer
 		if errors.As(err, &linkReferrer) && len(linkReferrer.ReferenceLinks()) > 0 {
 			logs = append(logs, terminal.NewFollowupLog(terminal.MsgReferenceLinks, linkReferrer.ReferenceLinks()...))
 		}
@@ -285,7 +285,7 @@ func (factory *CommandFactory) ensureUI() {
 }
 
 func handleUsage(cmd *cobra.Command, err error) {
-	var usageHider cli.ErrUsageHider
+	var usageHider feedback.ErrUsageHider
 	if errors.As(err, &usageHider) {
 		if usageHider.HideUsage() {
 			return

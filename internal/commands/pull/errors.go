@@ -3,12 +3,12 @@ package pull
 import (
 	"errors"
 
-	"github.com/10gen/realm-cli/internal/utils/cli"
+	"github.com/10gen/realm-cli/internal/cli/feedback"
 )
 
 var (
-	errProjectNotFound = cli.NewErr(
+	errProjectNotFound = feedback.NewErr(
 		errors.New("must specify --remote or run command from inside a Realm app directory"),
-		cli.ErrNoUsage{},
+		feedback.ErrNoUsage{},
 	)
 )

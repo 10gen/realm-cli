@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/10gen/realm-cli/internal/utils/cli"
+	"github.com/10gen/realm-cli/internal/cli/feedback"
 )
 
 var (
@@ -48,8 +48,8 @@ func (err ErrUnauthorized) Error() string {
 }
 
 func errForbidden(status string) error {
-	return cli.NewErr(
+	return feedback.NewErr(
 		fmt.Errorf("(%s) %s", status, errCommonForbidden),
-		cli.ErrReferenceLink{"https://cloud.mongodb.com/v2#/account/publicApi"},
+		feedback.ErrReferenceLink{"https://cloud.mongodb.com/v2#/account/publicApi"},
 	)
 }

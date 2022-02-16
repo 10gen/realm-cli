@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 
-	"github.com/10gen/realm-cli/internal/utils/cli"
+	"github.com/10gen/realm-cli/internal/cli/feedback"
 )
 
 func errProjectExists(path string) error {
@@ -11,5 +11,5 @@ func errProjectExists(path string) error {
 	if path != "" {
 		suffix = " at " + path
 	}
-	return cli.NewErr(errors.New("a project already exists"+suffix), cli.ErrNoUsage{})
+	return feedback.NewErr(errors.New("a project already exists"+suffix), feedback.ErrNoUsage{})
 }
