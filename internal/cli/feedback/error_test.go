@@ -98,7 +98,8 @@ func TestErrWrap(t *testing.T) {
 					errors.New("something bad happened"),
 					ErrNoUsage{}, ErrSuggestion{"suggestion"}, ErrReferenceLink{"ref.link"},
 				),
-				errWithUsage{}, ErrSuggestion{"a better suggestion"}, ErrReferenceLink{"a better ref.link"}),
+				errWithUsage{}, ErrSuggestion{"a better suggestion"}, ErrReferenceLink{"a better ref.link"},
+			),
 		)
 	})
 
