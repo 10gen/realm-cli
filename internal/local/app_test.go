@@ -88,36 +88,51 @@ func TestFindApp(t *testing.T) {
 	assert.Nil(t, wdErr)
 
 	for _, config := range []struct {
-		version       realm.AppConfigVersion
-		file          File
-		appDataLocal  AppData
-		remoteAppData AppData
-		nestedAppData AppData
+		version        realm.AppConfigVersion
+		file           File
+		appDataLocal   AppData
+		remoteAppData  AppData
+		nestedAppData  AppData
+		invalidAppData AppData
 	}{
 		{
-			version:       realm.AppConfigVersion20180301,
-			file:          FileStitch,
-			appDataLocal:  &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "local")},
-			remoteAppData: &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "remote")},
-			nestedAppData: &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "nested")},
+			version:        realm.AppConfigVersion20180301,
+			file:           FileStitch,
+			appDataLocal:   &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "local")},
+			remoteAppData:  &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "remote")},
+			nestedAppData:  &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "nested")},
+			invalidAppData: &AppStitchJSON{createAppDataV1(1, "invalid")},
 		},
 		{
-			version:       realm.AppConfigVersion20200603,
-			file:          FileConfig,
-			appDataLocal:  &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "local")},
-			remoteAppData: &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "remote")},
-			nestedAppData: &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "nested")},
+			version:        realm.AppConfigVersion20200603,
+			file:           FileConfig,
+			appDataLocal:   &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "local")},
+			remoteAppData:  &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "remote")},
+			nestedAppData:  &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "nested")},
+			invalidAppData: &AppConfigJSON{createAppDataV1(1, "invalid")},
 		},
 		{
-			version:       realm.AppConfigVersion20210101,
-			file:          FileRealmConfig,
-			appDataLocal:  &AppRealmConfigJSON{appData20210101Local},
-			remoteAppData: &AppRealmConfigJSON{appData20210101Remote},
-			nestedAppData: &AppRealmConfigJSON{appData20210101Nested},
+			version:        realm.AppConfigVersion20210101,
+			file:           FileRealmConfig,
+			appDataLocal:   &AppRealmConfigJSON{appData20210101Local},
+			remoteAppData:  &AppRealmConfigJSON{appData20210101Remote},
+			nestedAppData:  &AppRealmConfigJSON{appData20210101Nested},
+			invalidAppData: &AppRealmConfigJSON{appData20210101Invalid},
 		},
 	} {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
 			testRoot := filepath.Join(wd, "testdata", config.version.String())
+
+			t.Run("should fail to find app with no valid config file", func(t *testing.T) {
+				path := filepath.Join(testRoot, config.invalidAppData.Name())
+				_, foundApp, err := FindApp(path)
+				assert.Nil(t, err)
+				assert.False(t, foundApp, "should not be found")
+
+				app, err := LoadApp(path)
+				assert.Nil(t, err)
+				assert.Equal(t, App{}, app)
+			})
 
 			t.Run("and a working directory outside of the project root returns empty data", func(t *testing.T) {
 				_, insideProject, err := FindApp(testRoot)
@@ -148,6 +163,7 @@ func TestFindApp(t *testing.T) {
 					app, err := LoadApp(path)
 					assert.Nil(t, err)
 					assert.Equal(t, tcInner.appData, app.AppData)
+					assert.Equal(t, tcInner.appData.ConfigVersion(), app.ConfigVersion())
 				})
 			}
 
@@ -155,8 +171,11 @@ func TestFindApp(t *testing.T) {
 				projectRoot := filepath.Join(testRoot, "empty")
 
 				_, insideProject, err := FindApp(projectRoot)
-				assert.Nil(t, err)
 				assert.False(t, insideProject, "should not be found")
+
+				app, err := LoadApp(projectRoot)
+				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
+				assert.Equal(t, App{}, app)
 			})
 		})
 	}
@@ -742,3 +761,5 @@ var appData20210101Nested = AppDataV2{AppStructureV2{
 		},
 	},
 }}
+
+var appData20210101Invalid = AppDataV2{AppStructureV2{}}
