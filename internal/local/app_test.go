@@ -171,6 +171,7 @@ func TestFindApp(t *testing.T) {
 				projectRoot := filepath.Join(testRoot, "empty")
 
 				_, insideProject, err := FindApp(projectRoot)
+				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
 				assert.False(t, insideProject, "should not be found")
 
 				app, err := LoadApp(projectRoot)

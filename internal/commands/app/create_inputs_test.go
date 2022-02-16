@@ -248,6 +248,12 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
 
 		existingDir := filepath.Join(profile.WorkingDirectory, existingApp.Name)
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(existingDir, local.FileRealmConfig.String()),
+			[]byte(`{"config_version":20210101,"app_id":"existing-app-abcde","name":"existing-app"}`),
+			0666,
+		))
+
 		dir, err := inputs.resolveLocalPath(ui, existingDir)
 
 		assert.Equal(t, errProjectExists{existingDir}, err)
@@ -286,6 +292,12 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}}
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
+
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, existingApp.Name, local.FileRealmConfig.String()),
+			[]byte(`{"config_version":20210101,"app_id":"existing-app-abcde","name":"existing-app"}`),
+			0666,
+		))
 
 		doneCh := make(chan (struct{}))
 		go func() {
