@@ -3,6 +3,7 @@ package realm_test
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -27,7 +28,7 @@ func TestRealmDrafts(t *testing.T) {
 			t.Run(tc.description, func(t *testing.T) {
 				client := realm.NewClient(u.RealmServerURL())
 
-				assert.Equal(t, realm.ErrInvalidSession{}, tc.call(client))
+				assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), tc.call(client))
 			})
 		}
 	})

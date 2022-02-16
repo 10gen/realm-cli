@@ -1,10 +1,14 @@
 package pull
 
-type errProjectNotFound struct {
-}
+import (
+	"errors"
 
-func (err errProjectNotFound) Error() string {
-	return "must specify --remote or run command from inside a Realm app directory"
-}
+	"github.com/10gen/realm-cli/internal/cli/feedback"
+)
 
-func (err errProjectNotFound) DisableUsage() struct{} { return struct{}{} }
+var (
+	errProjectNotFound = feedback.NewErr(
+		errors.New("must specify --remote or run command from inside a Realm app directory"),
+		feedback.ErrNoUsage{},
+	)
+)

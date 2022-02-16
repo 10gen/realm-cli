@@ -3,6 +3,7 @@ package realm_test
 import (
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
@@ -16,7 +17,7 @@ func TestFunctions(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.Functions(u.CloudGroupID(), "test-app-1234")
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("should return list of functions associated with app", func(t *testing.T) {
@@ -70,7 +71,7 @@ func TestAppDebugExecuteFunction(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.AppDebugExecuteFunction(u.CloudGroupID(), "test-app-1234", "", "test-function", nil)
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("should execute function", func(t *testing.T) {

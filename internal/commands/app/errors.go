@@ -1,15 +1,15 @@
 package app
 
-type errProjectExists struct {
-	path string
-}
+import (
+	"errors"
 
-func (err errProjectExists) Error() string {
+	"github.com/10gen/realm-cli/internal/cli/feedback"
+)
+
+func errProjectExists(path string) error {
 	var suffix string
-	if err.path != "" {
-		suffix = " at " + err.path
+	if path != "" {
+		suffix = " at " + path
 	}
-	return "a project already exists" + suffix
+	return feedback.NewErr(errors.New("a project already exists"+suffix), feedback.ErrNoUsage{})
 }
-
-func (err errProjectExists) DisableUsage() struct{} { return struct{}{} }

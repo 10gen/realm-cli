@@ -94,7 +94,7 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 	app, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); ok {
-			return realm.App{}, errProjectNotFound{}
+			return realm.App{}, errProjectNotFound
 		}
 		return realm.App{}, err
 	}

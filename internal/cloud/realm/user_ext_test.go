@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	u "github.com/10gen/realm-cli/internal/utils/test"
@@ -19,7 +20,7 @@ func TestRealmUsers(t *testing.T) {
 		client := realm.NewClient(u.RealmServerURL())
 
 		_, err := client.FindUsers(primitive.NewObjectID().Hex(), primitive.NewObjectID().Hex(), realm.UserFilter{})
-		assert.Equal(t, realm.ErrInvalidSession{}, err)
+		assert.Equal(t, realm.ErrInvalidSession(user.DefaultProfile), err)
 	})
 
 	t.Run("With an active session", func(t *testing.T) {

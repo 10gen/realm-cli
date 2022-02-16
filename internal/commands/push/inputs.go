@@ -56,7 +56,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	if _, err = os.Stat(searchPathAbs); os.IsNotExist(err) {
-		return errProjectInvalid{path: searchPath}
+		return errProjectInvalid(searchPath, false)
 	}
 
 	app, err := local.LoadAppConfig(searchPath)
@@ -65,7 +65,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	}
 
 	if app.RootDir == "" {
-		return errProjectInvalid{path: searchPath, pathExists: true}
+		return errProjectInvalid(searchPath, true)
 	}
 
 	if i.LocalPath == "" {

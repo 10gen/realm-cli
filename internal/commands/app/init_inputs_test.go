@@ -25,7 +25,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		))
 
 		var i initInputs
-		assert.Equal(t, errProjectExists{}, i.Resolve(profile, nil))
+		assert.Equal(t, errProjectExists(""), i.Resolve(profile, nil))
 	})
 
 	for _, tc := range []struct {
