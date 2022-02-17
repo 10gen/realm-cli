@@ -218,8 +218,6 @@ func (a *App) Load() error {
 
 // LoadConfig will load the local app's config
 func (a *App) LoadConfig() error {
-	path := filepath.Join(a.RootDir, a.Config.String())
-
 	switch a.Config {
 	case FileRealmConfig:
 		a.AppData = &AppRealmConfigJSON{}
@@ -231,6 +229,7 @@ func (a *App) LoadConfig() error {
 		return errInvalidConfigFile(a.Config.String())
 	}
 
+	path := filepath.Join(a.RootDir, a.Config.String())
 	data, dataErr := ioutil.ReadFile(path)
 	if dataErr != nil {
 		return errFailedToParseAppConfig(path)

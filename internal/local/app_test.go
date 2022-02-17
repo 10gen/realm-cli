@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 
-	t.Run("should error with invalid config file name", func(t *testing.T) {
+	t.Run("should error with invalid config file", func(t *testing.T) {
 		projectRoot := filepath.Join(wd, "testdata", "full_project")
 		testApp := App{RootDir: projectRoot, Config: File{"bogus", ".json"}}
 
