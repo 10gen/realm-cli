@@ -1,6 +1,5 @@
 {
     "config_version": 20210101,
-    "app_id": "20210101-nested-abcde",
     "name": "20210101-nested",
     "location": "US-VA",
     "deployment_model": "GLOBAL",

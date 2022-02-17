@@ -727,7 +727,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 						Project:         "123",
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
-						ConfigVersion:   realm.AppConfigVersion20210101,
+						ConfigVersion:   realm.DefaultAppConfigVersion,
 					},
 					Clusters:             tc.clusters,
 					ClusterServiceNames:  tc.clusterServiceNames,

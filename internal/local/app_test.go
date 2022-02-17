@@ -83,41 +83,67 @@ func TestLoadApp(t *testing.T) {
 	assert.Equal(t, expectedAppLocal, app)
 }
 
+func TestLoadConfig(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	for _, config := range []struct {
+		version realm.AppConfigVersion
+		file    File
+	}{
+		{realm.AppConfigVersion20180301, FileStitch},
+		{realm.AppConfigVersion20200603, FileConfig},
+		{realm.AppConfigVersion20210101, FileRealmConfig},
+	} {
+		t.Run(fmt.Sprintf("should successfully load config file with version %d", config.version), func(t *testing.T) {
+			projectRoot := filepath.Join(wd, "testdata", config.version.String(), "local")
+			testApp := App{RootDir: projectRoot, Config: config.file}
+
+			err := testApp.LoadConfig()
+			assert.Nil(t, err)
+		})
+	}
+
+	t.Run("should error with invalid config file name", func(t *testing.T) {
+		projectRoot := filepath.Join(wd, "testdata", "full_project")
+		testApp := App{RootDir: projectRoot, Config: File{"bogus", ".json"}}
+
+		err := testApp.LoadConfig()
+		assert.Equal(t, errInvalidConfigFile("bogus.json"), err)
+	})
+}
+
 func TestFindApp(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
 	for _, config := range []struct {
-		version        realm.AppConfigVersion
-		file           File
-		appDataLocal   AppData
-		remoteAppData  AppData
-		nestedAppData  AppData
-		invalidAppData AppData
+		version       realm.AppConfigVersion
+		file          File
+		appDataLocal  AppData
+		remoteAppData AppData
+		nestedAppData AppData
 	}{
 		{
-			version:        realm.AppConfigVersion20180301,
-			file:           FileStitch,
-			appDataLocal:   &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "local")},
-			remoteAppData:  &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "remote")},
-			nestedAppData:  &AppStitchJSON{createAppDataV1(realm.AppConfigVersion20180301, "nested")},
-			invalidAppData: &AppStitchJSON{createAppDataV1(1, "invalid")},
+			version:       realm.AppConfigVersion20180301,
+			file:          FileStitch,
+			appDataLocal:  &AppStitchJSON{appData20180301Local},
+			remoteAppData: &AppStitchJSON{appData20180301Remote},
+			nestedAppData: &AppStitchJSON{appData20180301Nested},
 		},
 		{
-			version:        realm.AppConfigVersion20200603,
-			file:           FileConfig,
-			appDataLocal:   &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "local")},
-			remoteAppData:  &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "remote")},
-			nestedAppData:  &AppConfigJSON{createAppDataV1(realm.AppConfigVersion20200603, "nested")},
-			invalidAppData: &AppConfigJSON{createAppDataV1(1, "invalid")},
+			version:       realm.AppConfigVersion20200603,
+			file:          FileConfig,
+			appDataLocal:  &AppConfigJSON{appData20200603Local},
+			remoteAppData: &AppConfigJSON{appData20200603Remote},
+			nestedAppData: &AppConfigJSON{appData20200603Nested},
 		},
 		{
-			version:        realm.AppConfigVersion20210101,
-			file:           FileRealmConfig,
-			appDataLocal:   &AppRealmConfigJSON{appData20210101Local},
-			remoteAppData:  &AppRealmConfigJSON{appData20210101Remote},
-			nestedAppData:  &AppRealmConfigJSON{appData20210101Nested},
-			invalidAppData: &AppRealmConfigJSON{appData20210101Invalid},
+			version:       realm.AppConfigVersion20210101,
+			file:          FileRealmConfig,
+			appDataLocal:  &AppRealmConfigJSON{appData20210101Local},
+			remoteAppData: &AppRealmConfigJSON{appData20210101Remote},
+			nestedAppData: &AppRealmConfigJSON{appData20210101Nested},
 		},
 	} {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
@@ -152,7 +178,6 @@ func TestFindApp(t *testing.T) {
 					app, err := LoadApp(path)
 					assert.Nil(t, err)
 					assert.Equal(t, tcInner.appData, app.AppData)
-					assert.Equal(t, tcInner.appData.ConfigVersion(), app.ConfigVersion())
 				})
 			}
 
@@ -169,7 +194,7 @@ func TestFindApp(t *testing.T) {
 			})
 
 			t.Run("and an invalid project should fail to find app", func(t *testing.T) {
-				path := filepath.Join(testRoot, config.invalidAppData.Name())
+				path := filepath.Join(testRoot, "invalid")
 				_, foundApp, err := FindApp(path)
 				assert.Nil(t, err)
 				assert.False(t, foundApp, "should not be found")
@@ -698,46 +723,107 @@ exports = function({ query }) {
 	},
 }}}
 
-func createAppDataV1(version realm.AppConfigVersion, name string) AppDataV1 {
-	app := AppDataV1{AppStructureV1{
-		ConfigVersion:   version,
-		Name:            version.String() + "-" + name,
-		Location:        realm.LocationVirginia,
-		DeploymentModel: realm.DeploymentModelGlobal,
-		Security:        map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}},
-		Hosting: map[string]interface{}{
-			"enabled":            true,
-			"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
-		},
-		CustomUserDataConfig: map[string]interface{}{
-			"enabled":            true,
-			"mongo_service_name": "mongodb-atlas",
-			"database_name":      "test",
-			"collection_name":    "coll3",
-			"user_id_field":      "xref",
-		},
-		Sync: map[string]interface{}{"development_mode_enabled": false},
-	}}
+var allowedRequestOrigins = []string{"http://localhost:8080"}
 
-	switch name {
-	case "remote":
-		app.AppStructureV1.ID = version.String() + "-" + name + "-" + "abcde"
-	case "nested":
-		app.AppStructureV1.GraphQL = GraphQLStructure{
-			Config: map[string]interface{}{
-				"use_natural_pluralization": true,
-			},
-		}
-	}
-	return app
+var appSecurity = map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}}
+
+var appHosting = map[string]interface{}{
+	"enabled":            true,
+	"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
 }
+
+var appSync = map[string]interface{}{"development_mode_enabled": false}
+
+var appCustomUserDataConfig = map[string]interface{}{
+	"enabled":            true,
+	"mongo_service_name": "mongodb-atlas",
+	"database_name":      "test",
+	"collection_name":    "coll3",
+	"user_id_field":      "xref",
+}
+
+var appGraphQLStructure = GraphQLStructure{
+	Config: map[string]interface{}{
+		"use_natural_pluralization": true,
+	},
+}
+
+var appData20180301Local = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	Name:                 "20180301-local",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20180301Remote = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	ID:                   "20180301-remote-abcde",
+	Name:                 "20180301-remote",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20180301Nested = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	Name:                 "20180301-nested",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+	GraphQL:              appGraphQLStructure,
+}}
+
+var appData20200603Local = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	Name:                 "20200603-local",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20200603Remote = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	ID:                   "20200603-remote-abcde",
+	Name:                 "20200603-remote",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20200603Nested = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	Name:                 "20200603-nested",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+	GraphQL:              appGraphQLStructure,
+}}
 
 var appData20210101Local = AppDataV2{AppStructureV2{
 	ConfigVersion:         realm.AppConfigVersion20210101,
 	Name:                  "20210101-local",
 	Location:              realm.LocationVirginia,
 	DeploymentModel:       realm.DeploymentModelGlobal,
-	AllowedRequestOrigins: []string{"http://localhost:8080"},
+	AllowedRequestOrigins: allowedRequestOrigins,
 }}
 
 var appData20210101Remote = AppDataV2{AppStructureV2{
@@ -746,21 +832,14 @@ var appData20210101Remote = AppDataV2{AppStructureV2{
 	Name:                  "20210101-remote",
 	Location:              realm.LocationVirginia,
 	DeploymentModel:       realm.DeploymentModelGlobal,
-	AllowedRequestOrigins: []string{"http://localhost:8080"},
+	AllowedRequestOrigins: allowedRequestOrigins,
 }}
 
 var appData20210101Nested = AppDataV2{AppStructureV2{
 	ConfigVersion:         realm.AppConfigVersion20210101,
-	ID:                    "20210101-nested-abcde",
 	Name:                  "20210101-nested",
 	Location:              realm.LocationVirginia,
 	DeploymentModel:       realm.DeploymentModelGlobal,
-	AllowedRequestOrigins: []string{"http://localhost:8080"},
-	GraphQL: GraphQLStructure{
-		Config: map[string]interface{}{
-			"use_natural_pluralization": true,
-		},
-	},
+	AllowedRequestOrigins: allowedRequestOrigins,
+	GraphQL:               appGraphQLStructure,
 }}
-
-var appData20210101Invalid = AppDataV2{AppStructureV2{}}

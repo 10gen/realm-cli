@@ -26,6 +26,10 @@ func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }
 
+func errInvalidConfigFile(fileName string) error {
+	return errors.New("invalid config file " + fileName)
+}
+
 // App is the Realm app data represented on the local filesystem
 type App struct {
 	RootDir string
@@ -214,6 +218,8 @@ func (a *App) Load() error {
 
 // LoadConfig will load the local app's config
 func (a *App) LoadConfig() error {
+	path := filepath.Join(a.RootDir, a.Config.String())
+
 	switch a.Config {
 	case FileRealmConfig:
 		a.AppData = &AppRealmConfigJSON{}
@@ -221,9 +227,9 @@ func (a *App) LoadConfig() error {
 		a.AppData = &AppConfigJSON{}
 	case FileStitch:
 		a.AppData = &AppStitchJSON{}
+	default:
+		return errInvalidConfigFile(a.Config.String())
 	}
-
-	path := filepath.Join(a.RootDir, a.Config.String())
 
 	data, dataErr := ioutil.ReadFile(path)
 	if dataErr != nil {
