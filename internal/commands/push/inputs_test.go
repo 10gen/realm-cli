@@ -2,6 +2,7 @@ package push
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -71,7 +72,7 @@ func TestPushInputsResolve(t *testing.T) {
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
-			[]byte(`{"config_version": 20210101,"app_id": "eggcorn-abcde", "name":"eggcorn"}`),
+			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id": "eggcorn-abcde", "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))
 

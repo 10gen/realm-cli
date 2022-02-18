@@ -250,7 +250,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		existingDir := filepath.Join(profile.WorkingDirectory, existingApp.Name)
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(existingDir, local.FileRealmConfig.String()),
-			[]byte(`{"config_version":20210101,"app_id":"existing-app-abcde","name":"existing-app"}`),
+			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id":"existing-app-abcde","name":"existing-app"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))
 
@@ -295,7 +295,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, existingApp.Name, local.FileRealmConfig.String()),
-			[]byte(`{"config_version":20210101,"app_id":"existing-app-abcde","name":"existing-app"}`),
+			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id":"existing-app-abcde","name":"existing-app"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))
 
