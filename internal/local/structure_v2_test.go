@@ -45,7 +45,7 @@ func TestParseDataSources(t *testing.T) {
 	testRoot := filepath.Join(wd, "testdata/data_sources")
 
 	t.Run("should return the parsed data sources directory with nested rules and schema", func(t *testing.T) {
-		dataSources, err := parseDataSources(testRoot)
+		dataSources, schemas, err := parseDataSources(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, []DataSourceStructure{{
 			Config: map[string]interface{}{
@@ -55,26 +55,76 @@ func TestParseDataSources(t *testing.T) {
 			},
 			Rules: []map[string]interface{}{
 				{
-					"database":      "foo",
-					"collection":    "bar",
-					"schema":        map[string]interface{}{"title": "foo.bar schema"},
-					"relationships": map[string]interface{}{},
+					"database":   "foo",
+					"collection": "bar",
+				},
+				{
+					"database":   "foo",
+					"collection": "onlyRulesColl",
 				},
 				{
 					"database":   "test",
 					"collection": "test",
-					"schema":     map[string]interface{}{"title": "test.test schema"},
-					"relationships": map[string]interface{}{
-						"user_id": map[string]interface{}{
-							"ref":         "#/relationship/mongodb-atlas/foo/bar",
-							"source_key":  "user_id",
-							"foreign_key": "user_id",
-							"is_list":     false,
-						},
-					},
 				},
 			},
 		}}, dataSources)
+		assert.Equal(t, []map[string]interface{}{
+			{
+				"metadata": map[string]interface{}{
+					"data_source": "mongodb-atlas",
+					"database":    "foo",
+					"collection":  "bar",
+				},
+				"schema":        map[string]interface{}{"title": "foo.bar schema"},
+				"relationships": map[string]interface{}{},
+			},
+			{
+				"metadata": map[string]interface{}{
+					"data_source": "mongodb-atlas",
+					"database":    "foo",
+					"collection":  "onlySchemasColl",
+				},
+				"schema": map[string]interface{}{
+					"title": "soloSchema",
+					"properties": map[string]interface{}{
+						"name": map[string]interface{}{
+							"bsonType": "string",
+						},
+						"country": map[string]interface{}{
+							"bsonType": "string",
+						},
+					},
+				},
+				"relationships": map[string]interface{}{
+					"name": map[string]interface{}{
+						"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+						"foreign_key": "country",
+						"is_list":     false,
+					},
+					"country": map[string]interface{}{
+						"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+						"foreign_key": "name",
+						"is_list":     false,
+					},
+				},
+			},
+			{
+				"metadata": map[string]interface{}{
+					"data_source": "mongodb-atlas",
+					"database":    "test",
+					"collection":  "test",
+				},
+				"schema": map[string]interface{}{"title": "test.test schema"},
+				"relationships": map[string]interface{}{
+					"user_id": map[string]interface{}{
+						"ref":         "#/relationship/mongodb-atlas/foo/bar",
+						"source_key":  "user_id",
+						"foreign_key": "user_id",
+						"is_list":     false,
+					},
+				},
+			},
+		}, schemas)
 	})
 }
 
@@ -187,17 +237,6 @@ func TestWriteDataSources(t *testing.T) {
 				{
 					"database":   "foo",
 					"collection": "bar",
-					"schema": map[string]interface{}{
-						"title": "foo.bar schema",
-					},
-					"relationships": map[string]interface{}{
-						"user_id": map[string]interface{}{
-							"ref":         "#/relationship/another/db/coll",
-							"source_key":  "user_id",
-							"foreign_key": "user_id",
-							"is_list":     false,
-						},
-					},
 				},
 			},
 		}}
@@ -224,6 +263,38 @@ func TestWriteDataSources(t *testing.T) {
     "database": "foo"
 }
 `, string(rule))
+	})
+}
+
+func TestWriteSchemas(t *testing.T) {
+	tmpDir, cleanupTmpDir, err := u.NewTempDir("")
+	assert.Nil(t, err)
+	defer cleanupTmpDir()
+
+	t.Run("should write schemas to disk", func(t *testing.T) {
+		data := []map[string]interface{}{
+			{
+				"schema": map[string]interface{}{
+					"title": "foo.bar schema",
+				},
+				"metadata": map[string]interface{}{
+					"data_source": "mongodb-atlas",
+					"database":    "foo",
+					"collection":  "bar",
+				},
+				"relationships": map[string]interface{}{
+					"user_id": map[string]interface{}{
+						"ref":         "#/relationship/another/db/coll",
+						"source_key":  "user_id",
+						"foreign_key": "user_id",
+						"is_list":     false,
+					},
+				},
+			},
+		}
+
+		err := writeSchemas(tmpDir, data)
+		assert.Nil(t, err)
 
 		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
 		assert.Nil(t, err)

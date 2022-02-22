@@ -34,6 +34,7 @@ type AppStructureV2 struct {
 	Sync                  SyncStructure                     `json:"sync,omitempty"`
 	Secrets               SecretsStructure                  `json:"secrets,omitempty"`
 	LogForwarders         []map[string]interface{}          `json:"log_forwarders,omitempty"`
+	Schemas               []map[string]interface{}          `json:"schemas,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -163,11 +164,12 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	}
 	a.Services = services
 
-	dataSources, err := parseDataSources(rootDir)
+	dataSources, schemas, err := parseDataSources(rootDir)
 	if err != nil {
 		return err
 	}
 	a.DataSources = dataSources
+	a.Schemas = schemas
 
 	httpServices, err := parseHTTPServices(rootDir)
 	if err != nil {
@@ -272,8 +274,9 @@ func parseEndpointsV2(rootDir string) (EndpointStructure, error) {
 	return EndpointStructure{configs}, nil
 }
 
-func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
+func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]interface{}, error) {
 	var out []DataSourceStructure
+	var schemas []map[string]interface{}
 
 	dw := directoryWalker{
 		path:     filepath.Join(rootDir, NameDataSources),
@@ -292,33 +295,55 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 
 			colls := directoryWalker{path: dbPath, onlyDirs: true}
 			if err := colls.walk(func(coll os.FileInfo, collPath string) error {
+				// A valid data sources folder contains at least one of:
+				// - a rules.json file
+				// - a pair of files, schema.json and relationships.json
+				// If neither of these conditions are true (e.g. there is only a schema.json
+				// file, or there are no files in the directory at all), we should error
 
-				rulePath := filepath.Join(collPath, FileRules.String())
-				if _, err := os.Stat(rulePath); err != nil {
-					if os.IsNotExist(err) {
-						return nil // skip directories that do not contain `rules.json`
-					}
-					return err
-				}
+				// If we are not using app schemas, a valid data sources folder should contain all of
+				// these files and we should error otherwise
 
-				rule, err := parseJSON(rulePath)
+				rule, err := parseJSON(filepath.Join(collPath, FileRules.String()))
 				if err != nil {
 					return err
 				}
 
-				schema, err := parseJSON(filepath.Join(collPath, FileSchema.String()))
+				schemaBody, err := parseJSON(filepath.Join(collPath, FileSchema.String()))
 				if err != nil {
 					return err
 				}
-				rule[NameSchema] = schema
 
 				relationships, err := parseJSON(filepath.Join(collPath, FileRelationships.String()))
 				if err != nil {
 					return err
 				}
-				rule[NameRelationships] = relationships
 
-				rules = append(rules, rule)
+				if rule == nil && (schemaBody == nil || relationships == nil) {
+					return fmt.Errorf("collection dir %s should contain a rules.json file and/or both schema.json and relationships.json files", collPath)
+				}
+
+				if rule != nil {
+					if len(rule) == 0 {
+						return errors.New("rules file cannot be empty")
+					}
+
+					rules = append(rules, rule)
+				}
+
+				if schemaBody != nil && relationships != nil {
+					schema := map[string]interface{}{
+						NameSchema:        schemaBody,
+						NameRelationships: relationships,
+						"metadata": map[string]interface{}{
+							"data_source": file.Name(),
+							"database":    db.Name(),
+							"collection":  coll.Name(),
+						},
+					}
+
+					schemas = append(schemas, schema)
+				}
 				return nil
 			}); err != nil {
 				return err
@@ -331,9 +356,9 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 		out = append(out, DataSourceStructure{config, rules})
 		return nil
 	}); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return out, nil
+	return out, schemas, nil
 }
 
 func parseHTTPServices(rootDir string) ([]HTTPServiceStructure, error) {
@@ -441,6 +466,9 @@ func (a AppDataV2) WriteData(rootDir string) error {
 	if err := writeDataSources(rootDir, a.DataSources); err != nil {
 		return err
 	}
+	if err := writeSchemas(rootDir, a.Schemas); err != nil {
+		return err
+	}
 	if err := writeHTTPServices(rootDir, a.HTTPServices); err != nil {
 		return err
 	}
@@ -534,6 +562,70 @@ func writeSync(rootDir string, sync SyncStructure) error {
 	)
 }
 
+func writeSchemas(rootDir string, schemas []map[string]interface{}) error {
+	dir := filepath.Join(rootDir, NameDataSources)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		return err
+	}
+	for _, schema := range schemas {
+		schemaBody := schema[NameSchema]
+		if schemaBody == nil {
+			schemaBody = map[string]interface{}{}
+		}
+		dataSchema, err := MarshalJSON(schemaBody)
+		if err != nil {
+			return err
+		}
+		relationships := schema[NameRelationships]
+		if relationships == nil {
+			relationships = map[string]interface{}{}
+		}
+		dataRelationships, err := MarshalJSON(relationships)
+		if err != nil {
+			return err
+		}
+
+		metadata := schema["metadata"].(map[string]interface{})
+		if metadata == nil {
+			metadata = map[string]interface{}{}
+		}
+		var dataSource, database, collection string
+		if ds, ok := metadata["data_source"]; ok {
+			if ds, ok := ds.(string); ok {
+				dataSource = ds
+			}
+		}
+		if db, ok := metadata["database"]; ok {
+			if db, ok := db.(string); ok {
+				database = db
+			}
+		}
+		if coll, ok := metadata["collection"]; ok {
+			if coll, ok := coll.(string); ok {
+				collection = coll
+			}
+		}
+
+		schemaDir := filepath.Join(dir, dataSource, database, collection)
+		if err := WriteFile(
+			filepath.Join(schemaDir, FileSchema.String()),
+			0666,
+			bytes.NewReader(dataSchema),
+		); err != nil {
+			return err
+		}
+		if err := WriteFile(
+			filepath.Join(schemaDir, FileRelationships.String()),
+			0666,
+			bytes.NewReader(dataRelationships),
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 	dir := filepath.Join(rootDir, NameDataSources)
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
@@ -556,29 +648,7 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			return err
 		}
 		for _, rule := range ds.Rules {
-			schema := rule[NameSchema]
-			if schema == nil {
-				schema = map[string]interface{}{}
-			}
-			dataSchema, err := MarshalJSON(schema)
-			if err != nil {
-				return err
-			}
-			relationships := rule[NameRelationships]
-			if relationships == nil {
-				relationships = map[string]interface{}{}
-			}
-			dataRelationships, err := MarshalJSON(relationships)
-			if err != nil {
-				return err
-			}
-			ruleTemp := map[string]interface{}{}
-			for k, v := range rule {
-				ruleTemp[k] = v
-			}
-			delete(ruleTemp, NameSchema)
-			delete(ruleTemp, NameRelationships)
-			dataRule, err := MarshalJSON(ruleTemp)
+			dataRule, err := MarshalJSON(rule)
 			if err != nil {
 				return err
 			}
@@ -598,20 +668,6 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 				filepath.Join(ruleDir, FileRules.String()),
 				0666,
 				bytes.NewReader(dataRule),
-			); err != nil {
-				return err
-			}
-			if err := WriteFile(
-				filepath.Join(ruleDir, FileSchema.String()),
-				0666,
-				bytes.NewReader(dataSchema),
-			); err != nil {
-				return err
-			}
-			if err := WriteFile(
-				filepath.Join(ruleDir, FileRelationships.String()),
-				0666,
-				bytes.NewReader(dataRelationships),
 			); err != nil {
 				return err
 			}
