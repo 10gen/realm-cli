@@ -45,7 +45,7 @@ func TestParseDataSources(t *testing.T) {
 	testRoot := filepath.Join(wd, "testdata/data_sources")
 
 	t.Run("should return the parsed data sources directory with nested rules and schema", func(t *testing.T) {
-		dataSources, schemas, err := parseDataSources(testRoot)
+		dataSources, err := parseDataSources(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, []DataSourceStructure{{
 			Config: map[string]interface{}{
@@ -67,6 +67,33 @@ func TestParseDataSources(t *testing.T) {
 					"relationships": map[string]interface{}{},
 				},
 				{
+					"database":   "foo",
+					"collection": "onlySchemasColl",
+					"schema": map[string]interface{}{
+						"title": "soloSchema",
+						"properties": map[string]interface{}{
+							"name": map[string]interface{}{
+								"bsonType": "string",
+							},
+							"country": map[string]interface{}{
+								"bsonType": "string",
+							},
+						},
+					},
+					"relationships": map[string]interface{}{
+						"name": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+							"foreign_key": "country",
+							"is_list":     false,
+						},
+						"country": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+							"foreign_key": "name",
+							"is_list":     false,
+						},
+					},
+				},
+				{
 					"database":   "test",
 					"collection": "test",
 					"schema":     map[string]interface{}{"title": "test.test schema"},
@@ -81,38 +108,6 @@ func TestParseDataSources(t *testing.T) {
 				},
 			},
 		}}, dataSources)
-		assert.Equal(t, []map[string]interface{}{
-			{
-				"metadata": map[string]interface{}{
-					"data_source": "mongodb-atlas",
-					"database":    "foo",
-					"collection":  "onlySchemasColl",
-				},
-				"schema": map[string]interface{}{
-					"title": "soloSchema",
-					"properties": map[string]interface{}{
-						"name": map[string]interface{}{
-							"bsonType": "string",
-						},
-						"country": map[string]interface{}{
-							"bsonType": "string",
-						},
-					},
-				},
-				"relationships": map[string]interface{}{
-					"name": map[string]interface{}{
-						"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
-						"foreign_key": "country",
-						"is_list":     false,
-					},
-					"country": map[string]interface{}{
-						"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
-						"foreign_key": "name",
-						"is_list":     false,
-					},
-				},
-			},
-		}, schemas)
 	})
 }
 
@@ -304,54 +299,6 @@ func TestWriteDataSources(t *testing.T) {
     "database": "foo"
 }
 `, string(rule))
-
-		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
-		assert.Nil(t, err)
-		assert.Equal(t, "{\n    \"title\": \"foo.bar schema\"\n}\n", string(schema))
-
-		relationships, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
-		assert.Nil(t, err)
-		assert.Equal(t, `{
-    "user_id": {
-        "foreign_key": "user_id",
-        "is_list": false,
-        "ref": "#/relationship/another/db/coll",
-        "source_key": "user_id"
-    }
-}
-`, string(relationships))
-	})
-}
-
-func TestWriteSchemas(t *testing.T) {
-	tmpDir, cleanupTmpDir, err := u.NewTempDir("")
-	assert.Nil(t, err)
-	defer cleanupTmpDir()
-
-	t.Run("should write schemas to disk", func(t *testing.T) {
-		data := []map[string]interface{}{
-			{
-				"schema": map[string]interface{}{
-					"title": "foo.bar schema",
-				},
-				"metadata": map[string]interface{}{
-					"data_source": "mongodb-atlas",
-					"database":    "foo",
-					"collection":  "bar",
-				},
-				"relationships": map[string]interface{}{
-					"user_id": map[string]interface{}{
-						"ref":         "#/relationship/another/db/coll",
-						"source_key":  "user_id",
-						"foreign_key": "user_id",
-						"is_list":     false,
-					},
-				},
-			},
-		}
-
-		err := writeSchemas(tmpDir, data)
-		assert.Nil(t, err)
 
 		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
 		assert.Nil(t, err)

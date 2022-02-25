@@ -164,12 +164,11 @@ func (a *AppDataV2) LoadData(rootDir string) error {
 	}
 	a.Services = services
 
-	dataSources, schemas, err := parseDataSources(rootDir)
+	dataSources, err := parseDataSources(rootDir)
 	if err != nil {
 		return err
 	}
 	a.DataSources = dataSources
-	a.Schemas = schemas
 
 	httpServices, err := parseHTTPServices(rootDir)
 	if err != nil {
@@ -274,9 +273,8 @@ func parseEndpointsV2(rootDir string) (EndpointStructure, error) {
 	return EndpointStructure{configs}, nil
 }
 
-func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]interface{}, error) {
+func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 	var out []DataSourceStructure
-	var schemas []map[string]interface{}
 
 	dw := directoryWalker{
 		path:     filepath.Join(rootDir, NameDataSources),
@@ -330,26 +328,19 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]inter
 						return fmt.Errorf("collection dir %s should contain a rules.json file and/or both schema.json and relationships.json files", collPath)
 					}
 
-					schema := map[string]interface{}{
-						NameSchema:        schemaBody,
-						NameRelationships: relationships,
-						NameMetadata: map[string]interface{}{
-							"data_source": file.Name(),
-							"database":    db.Name(),
-							"collection":  coll.Name(),
-						},
+					rule = map[string]interface{}{
+						"database":   db.Name(),
+						"collection": coll.Name(),
 					}
-
-					schemas = append(schemas, schema)
 				} else {
 					if len(rule) == 0 {
 						return errors.New("rules file cannot be empty")
 					}
-
-					rule[NameSchema] = schemaBody
-					rule[NameRelationships] = relationships
-					rules = append(rules, rule)
 				}
+
+				rule[NameSchema] = schemaBody
+				rule[NameRelationships] = relationships
+				rules = append(rules, rule)
 
 				return nil
 			}); err != nil {
@@ -363,9 +354,9 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]inter
 		out = append(out, DataSourceStructure{config, rules})
 		return nil
 	}); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return out, schemas, nil
+	return out, nil
 }
 
 func parseHTTPServices(rootDir string) ([]HTTPServiceStructure, error) {
@@ -473,9 +464,6 @@ func (a AppDataV2) WriteData(rootDir string) error {
 	if err := writeDataSources(rootDir, a.DataSources); err != nil {
 		return err
 	}
-	if err := writeSchemas(rootDir, a.Schemas); err != nil {
-		return err
-	}
 	if err := writeHTTPServices(rootDir, a.HTTPServices); err != nil {
 		return err
 	}
@@ -567,64 +555,6 @@ func writeSync(rootDir string, sync SyncStructure) error {
 		0666,
 		bytes.NewReader(data),
 	)
-}
-
-func writeSchemas(rootDir string, schemas []map[string]interface{}) error {
-	dir := filepath.Join(rootDir, NameDataSources)
-	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		return err
-	}
-	for _, schema := range schemas {
-		schemaBody := schema[NameSchema]
-		if schemaBody == nil {
-			schemaBody = map[string]interface{}{}
-		}
-		dataSchema, err := MarshalJSON(schemaBody)
-		if err != nil {
-			return err
-		}
-		relationships := schema[NameRelationships]
-		if relationships == nil {
-			relationships = map[string]interface{}{}
-		}
-		dataRelationships, err := MarshalJSON(relationships)
-		if err != nil {
-			return err
-		}
-
-		metadata, ok := schema["metadata"].(map[string]interface{})
-		if !ok {
-			return errors.New("error writing schemas")
-		}
-		if metadata == nil {
-			metadata = map[string]interface{}{}
-		}
-
-		dataSource, _ := metadata["data_source"].(string)
-		database, _ := metadata["database"].(string)
-		collection, _ := metadata["collection"].(string)
-
-		schemaDir := filepath.Join(dir, dataSource, database, collection)
-		if err := os.MkdirAll(schemaDir, os.ModePerm); err != nil {
-			return err
-		}
-		if err := WriteFile(
-			filepath.Join(schemaDir, FileSchema.String()),
-			0666,
-			bytes.NewReader(dataSchema),
-		); err != nil {
-			return err
-		}
-		if err := WriteFile(
-			filepath.Join(schemaDir, FileRelationships.String()),
-			0666,
-			bytes.NewReader(dataRelationships),
-		); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
