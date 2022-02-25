@@ -313,29 +313,27 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]inter
 				if err != nil {
 					return err
 				}
+				if schemaBody == nil {
+					schemaBody = map[string]interface{}{}
+				}
 
 				relationships, err := parseJSON(filepath.Join(collPath, FileRelationships.String()))
 				if err != nil {
 					return err
 				}
-
-				if rule == nil && (schemaBody == nil || relationships == nil) {
-					return fmt.Errorf("collection dir %s should contain a rules.json file and/or both schema.json and relationships.json files", collPath)
+				if relationships == nil {
+					relationships = map[string]interface{}{}
 				}
 
-				if rule != nil {
-					if len(rule) == 0 {
-						return errors.New("rules file cannot be empty")
+				if rule == nil {
+					if schemaBody == nil || relationships == nil {
+						return fmt.Errorf("collection dir %s should contain a rules.json file and/or both schema.json and relationships.json files", collPath)
 					}
 
-					rules = append(rules, rule)
-				}
-
-				if schemaBody != nil && relationships != nil {
 					schema := map[string]interface{}{
 						NameSchema:        schemaBody,
 						NameRelationships: relationships,
-						"metadata": map[string]interface{}{
+						NameMetadata: map[string]interface{}{
 							"data_source": file.Name(),
 							"database":    db.Name(),
 							"collection":  coll.Name(),
@@ -343,7 +341,16 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, []map[string]inter
 					}
 
 					schemas = append(schemas, schema)
+				} else {
+					if len(rule) == 0 {
+						return errors.New("rules file cannot be empty")
+					}
+
+					rule[NameSchema] = schemaBody
+					rule[NameRelationships] = relationships
+					rules = append(rules, rule)
 				}
+
 				return nil
 			}); err != nil {
 				return err
@@ -585,28 +592,22 @@ func writeSchemas(rootDir string, schemas []map[string]interface{}) error {
 			return err
 		}
 
-		metadata := schema["metadata"].(map[string]interface{})
+		metadata, ok := schema["metadata"].(map[string]interface{})
+		if !ok {
+			return errors.New("error writing schemas")
+		}
 		if metadata == nil {
 			metadata = map[string]interface{}{}
 		}
-		var dataSource, database, collection string
-		if ds, ok := metadata["data_source"]; ok {
-			if ds, ok := ds.(string); ok {
-				dataSource = ds
-			}
-		}
-		if db, ok := metadata["database"]; ok {
-			if db, ok := db.(string); ok {
-				database = db
-			}
-		}
-		if coll, ok := metadata["collection"]; ok {
-			if coll, ok := coll.(string); ok {
-				collection = coll
-			}
-		}
+
+		dataSource, _ := metadata["data_source"].(string)
+		database, _ := metadata["database"].(string)
+		collection, _ := metadata["collection"].(string)
 
 		schemaDir := filepath.Join(dir, dataSource, database, collection)
+		if err := os.MkdirAll(schemaDir, os.ModePerm); err != nil {
+			return err
+		}
 		if err := WriteFile(
 			filepath.Join(schemaDir, FileSchema.String()),
 			0666,
@@ -648,7 +649,29 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			return err
 		}
 		for _, rule := range ds.Rules {
-			dataRule, err := MarshalJSON(rule)
+			schema := rule[NameSchema]
+			if schema == nil {
+				schema = map[string]interface{}{}
+			}
+			dataSchema, err := MarshalJSON(schema)
+			if err != nil {
+				return err
+			}
+			relationships := rule[NameRelationships]
+			if relationships == nil {
+				relationships = map[string]interface{}{}
+			}
+			dataRelationships, err := MarshalJSON(relationships)
+			if err != nil {
+				return err
+			}
+			ruleTemp := map[string]interface{}{}
+			for k, v := range rule {
+				ruleTemp[k] = v
+			}
+			delete(ruleTemp, NameSchema)
+			delete(ruleTemp, NameRelationships)
+			dataRule, err := MarshalJSON(ruleTemp)
 			if err != nil {
 				return err
 			}
@@ -668,6 +691,20 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 				filepath.Join(ruleDir, FileRules.String()),
 				0666,
 				bytes.NewReader(dataRule),
+			); err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(ruleDir, FileSchema.String()),
+				0666,
+				bytes.NewReader(dataSchema),
+			); err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(ruleDir, FileRelationships.String()),
+				0666,
+				bytes.NewReader(dataRelationships),
 			); err != nil {
 				return err
 			}

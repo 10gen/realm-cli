@@ -55,29 +55,33 @@ func TestParseDataSources(t *testing.T) {
 			},
 			Rules: []map[string]interface{}{
 				{
-					"database":   "foo",
-					"collection": "bar",
+					"database":      "foo",
+					"collection":    "bar",
+					"schema":        map[string]interface{}{"title": "foo.bar schema"},
+					"relationships": map[string]interface{}{},
 				},
 				{
-					"database":   "foo",
-					"collection": "onlyRulesColl",
+					"database":      "foo",
+					"collection":    "onlyRulesColl",
+					"schema":        map[string]interface{}{},
+					"relationships": map[string]interface{}{},
 				},
 				{
 					"database":   "test",
 					"collection": "test",
+					"schema":     map[string]interface{}{"title": "test.test schema"},
+					"relationships": map[string]interface{}{
+						"user_id": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/foo/bar",
+							"source_key":  "user_id",
+							"foreign_key": "user_id",
+							"is_list":     false,
+						},
+					},
 				},
 			},
 		}}, dataSources)
 		assert.Equal(t, []map[string]interface{}{
-			{
-				"metadata": map[string]interface{}{
-					"data_source": "mongodb-atlas",
-					"database":    "foo",
-					"collection":  "bar",
-				},
-				"schema":        map[string]interface{}{"title": "foo.bar schema"},
-				"relationships": map[string]interface{}{},
-			},
 			{
 				"metadata": map[string]interface{}{
 					"data_source": "mongodb-atlas",
@@ -104,22 +108,6 @@ func TestParseDataSources(t *testing.T) {
 					"country": map[string]interface{}{
 						"ref":         "#/relationship/mongodb-atlas/foo/onlySchemasColl",
 						"foreign_key": "name",
-						"is_list":     false,
-					},
-				},
-			},
-			{
-				"metadata": map[string]interface{}{
-					"data_source": "mongodb-atlas",
-					"database":    "test",
-					"collection":  "test",
-				},
-				"schema": map[string]interface{}{"title": "test.test schema"},
-				"relationships": map[string]interface{}{
-					"user_id": map[string]interface{}{
-						"ref":         "#/relationship/mongodb-atlas/foo/bar",
-						"source_key":  "user_id",
-						"foreign_key": "user_id",
 						"is_list":     false,
 					},
 				},
@@ -263,6 +251,75 @@ func TestWriteDataSources(t *testing.T) {
     "database": "foo"
 }
 `, string(rule))
+	})
+
+	t.Run("should write schemas and relationships to disk if they are included in the rule object", func(t *testing.T) {
+		data := []DataSourceStructure{{
+			Config: map[string]interface{}{
+				"name": "mongodb-atlas",
+				"type": "mongodb-atlas",
+				"config": map[string]interface{}{
+					"clusterName":         "Cluster0",
+					"wireProtocolEnabled": true,
+				},
+			},
+			Rules: []map[string]interface{}{
+				{
+					"database":   "foo",
+					"collection": "bar",
+					"schema": map[string]interface{}{
+						"title": "foo.bar schema",
+					},
+					"relationships": map[string]interface{}{
+						"user_id": map[string]interface{}{
+							"ref":         "#/relationship/another/db/coll",
+							"source_key":  "user_id",
+							"foreign_key": "user_id",
+							"is_list":     false,
+						},
+					},
+				},
+			},
+		}}
+
+		err := writeDataSources(tmpDir, data)
+		assert.Nil(t, err)
+
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", FileConfig.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "config": {
+        "clusterName": "Cluster0",
+        "wireProtocolEnabled": true
+    },
+    "name": "mongodb-atlas",
+    "type": "mongodb-atlas"
+}
+`, string(config))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRules.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "collection": "bar",
+    "database": "foo"
+}
+`, string(rule))
+
+		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, "{\n    \"title\": \"foo.bar schema\"\n}\n", string(schema))
+
+		relationships, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "user_id": {
+        "foreign_key": "user_id",
+        "is_list": false,
+        "ref": "#/relationship/another/db/coll",
+        "source_key": "user_id"
+    }
+}
+`, string(relationships))
 	})
 }
 

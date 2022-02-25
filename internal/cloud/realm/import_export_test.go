@@ -318,6 +318,31 @@ func appDataV2(app realm.App) local.AppDataV2 {
 				Rules: []map[string]interface{}{{
 					"database":   "db",
 					"collection": "coll",
+					"schema": map[string]interface{}{
+						"title": "schemaTitle",
+						"properties": map[string]interface{}{
+							"name": map[string]interface{}{
+								"bsonType": "string",
+							},
+							"country": map[string]interface{}{
+								"bsonType": "string",
+							},
+						},
+					},
+					"relationships": map[string]interface{}{
+						"name": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/db/coll",
+							"source_key":  "name",
+							"foreign_key": "country",
+							"is_list":     false,
+						},
+						"country": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/db/coll",
+							"source_key":  "country",
+							"foreign_key": "name",
+							"is_list":     false,
+						},
+					},
 				}},
 			},
 		},
@@ -444,40 +469,6 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"respond_result":         false,
 					"route":                  "/hello/world",
 					"validation_method":      "NO_VALIDATION",
-				},
-			},
-		},
-		Schemas: []map[string]interface{}{
-			{
-				"metadata": map[string]interface{}{
-					"data_source": "mdb",
-					"database":    "db",
-					"collection":  "coll",
-				},
-				"schema": map[string]interface{}{
-					"title": "schemaTitle",
-					"properties": map[string]interface{}{
-						"name": map[string]interface{}{
-							"bsonType": "string",
-						},
-						"country": map[string]interface{}{
-							"bsonType": "string",
-						},
-					},
-				},
-				"relationships": map[string]interface{}{
-					"name": map[string]interface{}{
-						"ref":         "#/relationship/mongodb-atlas/db/coll",
-						"source_key":  "name",
-						"foreign_key": "country",
-						"is_list":     false,
-					},
-					"country": map[string]interface{}{
-						"ref":         "#/relationship/mongodb-atlas/db/coll",
-						"source_key":  "country",
-						"foreign_key": "name",
-						"is_list":     false,
-					},
 				},
 			},
 		},
