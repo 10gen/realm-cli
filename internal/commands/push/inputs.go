@@ -59,7 +59,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return errProjectInvalid{path: searchPath}
 	}
 
-	app, err := local.LoadAppConfig(searchPath)
+	app, _, err := local.FindApp(searchPath)
 	if err != nil {
 		return err
 	}

@@ -200,17 +200,21 @@ func (a App) WriteConfig() error {
 	return WriteFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
 }
 
-// Load will load the entire local app's data
-func (a *App) Load() error {
-	if a.AppData == nil {
-		if err := a.LoadConfig(); err != nil {
-			return err
-		}
+// LoadApp will load the local app data and app config
+func LoadApp(path string) (App, error) {
+	app, appOK, appErr := FindApp(path)
+	if appErr != nil {
+		return App{}, appErr
 	}
-	if err := a.AppData.LoadData(a.RootDir); err != nil {
-		return err
+	if !appOK {
+		return App{}, nil
 	}
-	return nil
+
+	if err := app.AppData.LoadData(app.RootDir); err != nil {
+		return App{}, err
+	}
+
+	return app, nil
 }
 
 // LoadConfig will load the local app's config
@@ -237,32 +241,6 @@ func (a *App) LoadConfig() error {
 		return errFailedToParseAppConfig(path)
 	}
 	return nil
-}
-
-// LoadApp will load the local app data
-func LoadApp(path string) (App, error) {
-	app, appErr := LoadAppConfig(path)
-	if appErr != nil {
-		return App{}, appErr
-	}
-	if app.AppData != nil {
-		if err := app.Load(); err != nil {
-			return App{}, err
-		}
-	}
-	return app, nil
-}
-
-// LoadAppConfig will load the local app config
-func LoadAppConfig(path string) (App, error) {
-	app, appOK, appErr := FindApp(path)
-	if appErr != nil {
-		return App{}, appErr
-	}
-	if !appOK {
-		return App{}, nil
-	}
-	return app, nil
 }
 
 var (

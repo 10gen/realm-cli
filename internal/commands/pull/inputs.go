@@ -50,7 +50,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		wd = profile.WorkingDirectory
 	}
 
-	app, appErr := local.LoadAppConfig(wd)
+	app, _, appErr := local.FindApp(wd)
 	if appErr != nil {
 		return appErr
 	}

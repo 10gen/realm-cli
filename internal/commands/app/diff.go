@@ -210,7 +210,7 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		searchPath = profile.WorkingDirectory
 	}
 
-	app, err := local.LoadAppConfig(searchPath)
+	app, _, err := local.FindApp(searchPath)
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 			return err
 		}
 
-		app, err = local.LoadAppConfig(i.LocalPath)
+		app, _, err = local.FindApp(i.LocalPath)
 		if err != nil {
 			return err
 		}
