@@ -72,7 +72,7 @@ func TestPushInputsResolve(t *testing.T) {
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
-			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id": "eggcorn-abcde", "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
+			[]byte(fmt.Sprintf(`{"config_version": %d, "app_id": "eggcorn-abcde", "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))
 

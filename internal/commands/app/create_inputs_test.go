@@ -241,19 +241,14 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
-			Name:    existingApp.Name,
-			Project: existingApp.GroupID,
+			Name:          existingApp.Name,
+			Project:       existingApp.GroupID,
+			ConfigVersion: realm.DefaultAppConfigVersion,
 		}}
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
 
 		existingDir := filepath.Join(profile.WorkingDirectory, existingApp.Name)
-		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(existingDir, local.FileRealmConfig.String()),
-			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id":"existing-app-abcde","name":"existing-app"}`, realm.DefaultAppConfigVersion)),
-			0666,
-		))
-
 		dir, err := inputs.resolveLocalPath(ui, existingDir)
 
 		assert.Equal(t, errProjectExists{existingDir}, err)
@@ -287,17 +282,12 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
-			Name:    existingApp.Name,
-			Project: existingApp.GroupID,
+			Name:          existingApp.Name,
+			Project:       existingApp.GroupID,
+			ConfigVersion: realm.DefaultAppConfigVersion,
 		}}
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
-
-		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(profile.WorkingDirectory, existingApp.Name, local.FileRealmConfig.String()),
-			[]byte(fmt.Sprintf(`{"config_version":%d,"app_id":"existing-app-abcde","name":"existing-app"}`, realm.DefaultAppConfigVersion)),
-			0666,
-		))
 
 		doneCh := make(chan (struct{}))
 		go func() {

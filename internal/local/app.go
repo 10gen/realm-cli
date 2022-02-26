@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,10 +25,6 @@ const (
 
 func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
-}
-
-func errInvalidConfigFile(fileName string) error {
-	return errors.New("invalid config file " + fileName)
 }
 
 // App is the Realm app data represented on the local filesystem
@@ -226,10 +223,11 @@ func (a *App) LoadConfig() error {
 	case FileStitch:
 		a.AppData = &AppStitchJSON{}
 	default:
-		return errInvalidConfigFile(a.Config.String())
+		return fmt.Errorf("invalid config file: %s", a.Config.String())
 	}
 
 	path := filepath.Join(a.RootDir, a.Config.String())
+
 	data, dataErr := ioutil.ReadFile(path)
 	if dataErr != nil {
 		return errFailedToParseAppConfig(path)

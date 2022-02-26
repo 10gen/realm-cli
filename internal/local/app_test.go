@@ -2,6 +2,7 @@ package local
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -99,8 +100,7 @@ func TestLoadConfig(t *testing.T) {
 			projectRoot := filepath.Join(wd, "testdata", config.version.String(), "local")
 			testApp := App{RootDir: projectRoot, Config: config.file}
 
-			err := testApp.LoadConfig()
-			assert.Nil(t, err)
+			assert.Nil(t, testApp.LoadConfig())
 		})
 	}
 
@@ -108,8 +108,7 @@ func TestLoadConfig(t *testing.T) {
 		projectRoot := filepath.Join(wd, "testdata", "full_project")
 		testApp := App{RootDir: projectRoot, Config: File{"bogus", ".json"}}
 
-		err := testApp.LoadConfig()
-		assert.Equal(t, errInvalidConfigFile("bogus.json"), err)
+		assert.Equal(t, errors.New("invalid config file: bogus.json"), testApp.LoadConfig())
 	})
 }
 
@@ -181,8 +180,8 @@ func TestFindApp(t *testing.T) {
 				})
 			}
 
-			t.Run("and an empty project should return an error when finding app", func(t *testing.T) {
-				projectRoot := filepath.Join(testRoot, "empty")
+			t.Run("and a config file with invalid json should return an error when finding app", func(t *testing.T) {
+				projectRoot := filepath.Join(testRoot, "invalid")
 
 				_, insideProject, err := FindApp(projectRoot)
 				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
@@ -193,8 +192,8 @@ func TestFindApp(t *testing.T) {
 				assert.Equal(t, App{}, app)
 			})
 
-			t.Run("and an invalid project should fail to find app", func(t *testing.T) {
-				path := filepath.Join(testRoot, "invalid")
+			t.Run("and missing the version in the config file should fail to find app", func(t *testing.T) {
+				path := filepath.Join(testRoot, "no_version")
 				_, foundApp, err := FindApp(path)
 				assert.Nil(t, err)
 				assert.False(t, foundApp, "should not be found")
