@@ -246,6 +246,15 @@ func TestWriteDataSources(t *testing.T) {
     "database": "foo"
 }
 `, string(rule))
+
+		// the rule in this data source doesn't contain a schema or relationships, so assert that those files are not present
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
+		assert.NotNil(t, err)
+		assert.True(t, os.IsNotExist(err), "schema.json must not exist")
+
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
+		assert.NotNil(t, err)
+		assert.True(t, os.IsNotExist(err), "relationships.json must not exist")
 	})
 
 	t.Run("should write schemas and relationships to disk if they are included in the rule object", func(t *testing.T) {

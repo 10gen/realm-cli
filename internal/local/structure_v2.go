@@ -34,7 +34,6 @@ type AppStructureV2 struct {
 	Sync                  SyncStructure                     `json:"sync,omitempty"`
 	Secrets               SecretsStructure                  `json:"secrets,omitempty"`
 	LogForwarders         []map[string]interface{}          `json:"log_forwarders,omitempty"`
-	Schemas               []map[string]interface{}          `json:"schemas,omitempty"`
 }
 
 // AuthStructure represents the v2 Realm app auth structure
@@ -579,22 +578,6 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			return err
 		}
 		for _, rule := range ds.Rules {
-			schema := rule[NameSchema]
-			if schema == nil {
-				schema = map[string]interface{}{}
-			}
-			dataSchema, err := MarshalJSON(schema)
-			if err != nil {
-				return err
-			}
-			relationships := rule[NameRelationships]
-			if relationships == nil {
-				relationships = map[string]interface{}{}
-			}
-			dataRelationships, err := MarshalJSON(relationships)
-			if err != nil {
-				return err
-			}
 			ruleTemp := map[string]interface{}{}
 			for k, v := range rule {
 				ruleTemp[k] = v
@@ -624,19 +607,35 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 			); err != nil {
 				return err
 			}
-			if err := WriteFile(
-				filepath.Join(ruleDir, FileSchema.String()),
-				0666,
-				bytes.NewReader(dataSchema),
-			); err != nil {
-				return err
+
+			schema := rule[NameSchema]
+			if schema != nil {
+				dataSchema, err := MarshalJSON(schema)
+				if err != nil {
+					return err
+				}
+				if err := WriteFile(
+					filepath.Join(ruleDir, FileSchema.String()),
+					0666,
+					bytes.NewReader(dataSchema),
+				); err != nil {
+					return err
+				}
 			}
-			if err := WriteFile(
-				filepath.Join(ruleDir, FileRelationships.String()),
-				0666,
-				bytes.NewReader(dataRelationships),
-			); err != nil {
-				return err
+
+			relationships := rule[NameRelationships]
+			if relationships != nil {
+				dataRelationships, err := MarshalJSON(relationships)
+				if err != nil {
+					return err
+				}
+				if err := WriteFile(
+					filepath.Join(ruleDir, FileRelationships.String()),
+					0666,
+					bytes.NewReader(dataRelationships),
+				); err != nil {
+					return err
+				}
 			}
 		}
 	}
