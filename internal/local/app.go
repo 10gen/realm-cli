@@ -27,6 +27,7 @@ func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }
 
+// ErrFailedToFindApp is returned when an app does not exist at the given path
 func ErrFailedToFindApp(path string) error {
 	return errors.New("failed to find app at " + path)
 }
