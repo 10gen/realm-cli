@@ -69,19 +69,29 @@ func TestNewApp(t *testing.T) {
 func TestLoadApp(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
-
 	testRoot := wd
-	projectRoot := filepath.Join(testRoot, "testdata", "full_project")
 
-	expectedAppLocal := App{
-		RootDir: projectRoot,
-		Config:  FileConfig,
-		AppData: fullProject,
-	}
+	t.Run("loading an app with a valid path should succeed", func(t *testing.T) {
+		projectRoot := filepath.Join(testRoot, "testdata", "full_project")
 
-	app, appErr := LoadApp(projectRoot)
-	assert.Nil(t, appErr)
-	assert.Equal(t, expectedAppLocal, app)
+		expectedAppLocal := App{
+			RootDir: projectRoot,
+			Config:  FileConfig,
+			AppData: fullProject,
+		}
+
+		app, appErr := LoadApp(projectRoot)
+		assert.Nil(t, appErr)
+		assert.Equal(t, expectedAppLocal, app)
+	})
+
+	t.Run("loading an app from an invalid path should error", func(t *testing.T) {
+		invalidAppPath := filepath.Join(testRoot, "testdata")
+
+		app, appErr := LoadApp(invalidAppPath)
+		assert.Equal(t, appErr, ErrFailedToFindApp(invalidAppPath))
+		assert.Equal(t, App{}, app)
+	})
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -148,14 +158,10 @@ func TestFindApp(t *testing.T) {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
 			testRoot := filepath.Join(wd, "testdata", config.version.String())
 
-			t.Run("and a working directory outside of the project root returns empty data", func(t *testing.T) {
+			t.Run("and a working directory outside of the project root should fail to find app", func(t *testing.T) {
 				_, insideProject, err := FindApp(testRoot)
 				assert.Nil(t, err)
 				assert.False(t, insideProject, "should be outside project")
-
-				app, err := LoadApp(testRoot)
-				assert.Nil(t, err)
-				assert.Equal(t, App{}, app)
 			})
 
 			for _, tcInner := range []struct {
@@ -197,10 +203,6 @@ func TestFindApp(t *testing.T) {
 				_, foundApp, err := FindApp(path)
 				assert.Nil(t, err)
 				assert.False(t, foundApp, "should not be found")
-
-				app, err := LoadApp(path)
-				assert.Nil(t, err)
-				assert.Equal(t, App{}, app)
 			})
 		})
 	}

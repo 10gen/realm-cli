@@ -27,6 +27,10 @@ func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }
 
+func ErrFailedToFindApp(path string) error {
+	return errors.New("failed to find app at " + path)
+}
+
 // App is the Realm app data represented on the local filesystem
 type App struct {
 	RootDir string
@@ -207,10 +211,10 @@ func LoadApp(path string) (App, error) {
 		return App{}, appErr
 	}
 	if !appOK {
-		return App{}, nil
+		return App{}, ErrFailedToFindApp(path)
 	}
 
-	if err := app.AppData.LoadData(app.RootDir); err != nil {
+	if err := app.LoadData(app.RootDir); err != nil {
 		return App{}, err
 	}
 

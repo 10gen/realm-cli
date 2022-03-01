@@ -129,10 +129,6 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	if app.RootDir == "" {
-		return fmt.Errorf("no app directory found at %s", cmd.inputs.LocalPath)
-	}
-
 	appToDiff, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
 	if err != nil {
 		return err
