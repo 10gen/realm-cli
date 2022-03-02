@@ -316,7 +316,7 @@ func (cmd CommandCreate) handleCreateApp(
 		return err
 	}
 
-	if err := appLocal.LoadData(rootDir); err != nil {
+	if err := appLocal.LoadData(appLocal.RootDir); err != nil {
 		return err
 	}
 

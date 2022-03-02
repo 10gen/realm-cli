@@ -88,9 +88,8 @@ func TestLoadApp(t *testing.T) {
 	t.Run("loading an app from an invalid path should error", func(t *testing.T) {
 		invalidAppPath := filepath.Join(testRoot, "testdata")
 
-		app, appErr := LoadApp(invalidAppPath)
-		assert.Equal(t, appErr, ErrFailedToFindApp(invalidAppPath))
-		assert.Equal(t, App{}, app)
+		_, appErr := LoadApp(invalidAppPath)
+		assert.Equal(t, appErr, errors.New("failed to find app at "+invalidAppPath))
 	})
 }
 
@@ -98,19 +97,21 @@ func TestLoadConfig(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
 
-	for _, config := range []struct {
-		version realm.AppConfigVersion
-		file    File
+	for _, tc := range []struct {
+		configVersion realm.AppConfigVersion
+		configFile    File
+		appData       AppData
 	}{
-		{realm.AppConfigVersion20180301, FileStitch},
-		{realm.AppConfigVersion20200603, FileConfig},
-		{realm.AppConfigVersion20210101, FileRealmConfig},
+		{realm.AppConfigVersion20180301, FileStitch, &AppStitchJSON{appData20180301Local}},
+		{realm.AppConfigVersion20200603, FileConfig, &AppConfigJSON{appData20200603Local}},
+		{realm.AppConfigVersion20210101, FileRealmConfig, &AppRealmConfigJSON{appData20210101Local}},
 	} {
-		t.Run(fmt.Sprintf("should successfully load config file with version %d", config.version), func(t *testing.T) {
-			projectRoot := filepath.Join(wd, "testdata", config.version.String(), "local")
-			testApp := App{RootDir: projectRoot, Config: config.file}
+		t.Run(fmt.Sprintf("should successfully load config file with version %d", tc.configVersion), func(t *testing.T) {
+			projectRoot := filepath.Join(wd, "testdata", tc.configVersion.String(), "local")
+			testApp := App{RootDir: projectRoot, Config: tc.configFile}
 
 			assert.Nil(t, testApp.LoadConfig())
+			assert.Equal(t, testApp.AppData, tc.appData)
 		})
 	}
 

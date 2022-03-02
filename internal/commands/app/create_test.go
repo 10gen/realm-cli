@@ -381,7 +381,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 
 		appPath := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name)
 		_, err = local.LoadApp(appPath)
-		assert.Equal(t, err, local.ErrFailedToFindApp(appPath))
+		assert.Equal(t, err, errors.New("failed to find app at "+appPath))
 
 		// we expect for the command to have created a default app. we will assert that realm_config.json exists and that
 		// backend/ and frontend/ do not exist in the directory.

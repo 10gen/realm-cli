@@ -8,7 +8,6 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
-	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/api"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
@@ -106,7 +105,7 @@ func TestAppDiffHandler(t *testing.T) {
 		_, ui := mock.NewUI()
 
 		cmd := &CommandDiff{diffInputs{LocalPath: "./some/path"}}
-		assert.Equal(t, local.ErrFailedToFindApp("./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
+		assert.Equal(t, errors.New("failed to find app at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
 	})
 
 	t.Run("diff function dependencies", func(t *testing.T) {
