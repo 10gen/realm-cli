@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,6 +25,10 @@ const (
 
 func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
+}
+
+func errFailedToFindApp(path string) error {
+	return errors.New("failed to find app at " + path)
 }
 
 // App is the Realm app data represented on the local filesystem
@@ -199,17 +204,21 @@ func (a App) WriteConfig() error {
 	return WriteFile(filepath.Join(a.RootDir, a.Config.String()), 0666, bytes.NewReader(data))
 }
 
-// Load will load the entire local app's data
-func (a *App) Load() error {
-	if a.AppData == nil {
-		if err := a.LoadConfig(); err != nil {
-			return err
-		}
+// LoadApp will load the local app data and app config
+func LoadApp(path string) (App, error) {
+	app, appOK, appErr := FindApp(path)
+	if appErr != nil {
+		return App{}, appErr
 	}
-	if err := a.AppData.LoadData(a.RootDir); err != nil {
-		return err
+	if !appOK {
+		return App{}, errFailedToFindApp(path)
 	}
-	return nil
+
+	if err := app.LoadData(app.RootDir); err != nil {
+		return App{}, err
+	}
+
+	return app, nil
 }
 
 // LoadConfig will load the local app's config
@@ -221,6 +230,8 @@ func (a *App) LoadConfig() error {
 		a.AppData = &AppConfigJSON{}
 	case FileStitch:
 		a.AppData = &AppStitchJSON{}
+	default:
+		return fmt.Errorf("invalid config file: %s", a.Config.String())
 	}
 
 	path := filepath.Join(a.RootDir, a.Config.String())
@@ -234,36 +245,6 @@ func (a *App) LoadConfig() error {
 		return errFailedToParseAppConfig(path)
 	}
 	return nil
-}
-
-// LoadApp will load the local app data
-func LoadApp(path string) (App, error) {
-	app, appErr := LoadAppConfig(path)
-	if appErr != nil {
-		return App{}, appErr
-	}
-	if app.AppData != nil {
-		if err := app.Load(); err != nil {
-			return App{}, err
-		}
-	}
-	return app, nil
-}
-
-// LoadAppConfig will load the local app config
-func LoadAppConfig(path string) (App, error) {
-	app, appOK, appErr := FindApp(path)
-	if appErr != nil {
-		return App{}, appErr
-	}
-	if !appOK {
-		return App{}, nil
-	}
-
-	if err := app.LoadConfig(); err != nil {
-		return App{}, err
-	}
-	return app, nil
 }
 
 var (
@@ -288,7 +269,17 @@ func FindApp(path string) (App, bool, error) {
 				}
 				return App{}, false, err
 			}
-			return App{RootDir: wd, Config: config}, true, nil
+
+			app := App{RootDir: wd, Config: config}
+			if err := app.LoadConfig(); err != nil {
+				return App{}, false, err
+			}
+
+			// if no config version is found then continue searching for the app's root directory config
+			if app.ConfigVersion() == 0 {
+				continue
+			}
+			return app, true, nil
 		}
 		if wd == "/" {
 			break

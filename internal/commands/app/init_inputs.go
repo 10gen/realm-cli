@@ -14,7 +14,7 @@ type initInputs struct {
 }
 
 func (i *initInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
-	app, appErr := local.LoadAppConfig(profile.WorkingDirectory)
+	app, _, appErr := local.FindApp(profile.WorkingDirectory)
 	if appErr != nil {
 		return appErr
 	}

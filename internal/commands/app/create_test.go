@@ -379,8 +379,9 @@ Check out your app: cd ./test-app && realm-cli app describe
 
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient}))
 
-		_, err = local.LoadApp(filepath.Join(profile.WorkingDirectory, cmd.inputs.Name))
-		assert.Nil(t, err)
+		appPath := filepath.Join(profile.WorkingDirectory, cmd.inputs.Name)
+		_, err = local.LoadApp(appPath)
+		assert.Equal(t, err, errors.New("failed to find app at "+appPath))
 
 		// we expect for the command to have created a default app. we will assert that realm_config.json exists and that
 		// backend/ and frontend/ do not exist in the directory.
@@ -727,6 +728,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
 						Project:         "123",
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
+						ConfigVersion:   realm.DefaultAppConfigVersion,
 					},
 					Clusters:             tc.clusters,
 					ClusterServiceNames:  tc.clusterServiceNames,
