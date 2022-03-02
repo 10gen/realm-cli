@@ -26,7 +26,7 @@ func (i ProjectInputs) Filter() realm.AppFilter {
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
 func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) error {
-	app, appErr := local.LoadAppConfig(wd)
+	app, _, appErr := local.FindApp(wd)
 	if appErr != nil {
 		return appErr
 	}

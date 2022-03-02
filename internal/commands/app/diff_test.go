@@ -105,7 +105,7 @@ func TestAppDiffHandler(t *testing.T) {
 		_, ui := mock.NewUI()
 
 		cmd := &CommandDiff{diffInputs{LocalPath: "./some/path"}}
-		assert.Equal(t, errors.New("no app directory found at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
+		assert.Equal(t, errors.New("failed to find app at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
 	})
 
 	t.Run("diff function dependencies", func(t *testing.T) {

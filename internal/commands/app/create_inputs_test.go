@@ -241,8 +241,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
-			Name:    existingApp.Name,
-			Project: existingApp.GroupID,
+			Name:          existingApp.Name,
+			Project:       existingApp.GroupID,
+			ConfigVersion: realm.DefaultAppConfigVersion,
 		}}
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))
@@ -281,8 +282,9 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 		}
 
 		inputs := createInputs{newAppInputs: newAppInputs{
-			Name:    existingApp.Name,
-			Project: existingApp.GroupID,
+			Name:          existingApp.Name,
+			Project:       existingApp.GroupID,
+			ConfigVersion: realm.DefaultAppConfigVersion,
 		}}
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc}))

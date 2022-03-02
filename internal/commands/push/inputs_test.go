@@ -2,6 +2,7 @@ package push
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -65,13 +66,13 @@ func TestPushInputsResolve(t *testing.T) {
 		assert.Equal(t, errProjectInvalid(localPath, true), i.Resolve(profile, nil))
 	})
 
-	t.Run("Should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
+	t.Run("should set the app data if no flags are set but is run from inside a project directory", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
 			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
-			[]byte(`{"app_id": "eggcorn-abcde", "name":"eggcorn"}`),
+			[]byte(fmt.Sprintf(`{"config_version": %d, "app_id": "eggcorn-abcde", "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))
 

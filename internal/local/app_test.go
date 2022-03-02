@@ -2,6 +2,7 @@ package local
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -68,19 +69,58 @@ func TestNewApp(t *testing.T) {
 func TestLoadApp(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)
-
 	testRoot := wd
-	projectRoot := filepath.Join(testRoot, "testdata", "full_project")
 
-	expectedAppLocal := App{
-		RootDir: projectRoot,
-		Config:  FileConfig,
-		AppData: fullProject,
+	t.Run("loading an app with a valid path should succeed", func(t *testing.T) {
+		projectRoot := filepath.Join(testRoot, "testdata", "full_project")
+
+		expectedAppLocal := App{
+			RootDir: projectRoot,
+			Config:  FileConfig,
+			AppData: fullProject,
+		}
+
+		app, appErr := LoadApp(projectRoot)
+		assert.Nil(t, appErr)
+		assert.Equal(t, expectedAppLocal, app)
+	})
+
+	t.Run("loading an app from an invalid path should error", func(t *testing.T) {
+		invalidAppPath := filepath.Join(testRoot, "testdata")
+
+		_, appErr := LoadApp(invalidAppPath)
+		assert.Equal(t, appErr, errors.New("failed to find app at "+invalidAppPath))
+	})
+}
+
+func TestLoadConfig(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	for _, tc := range []struct {
+		configVersion realm.AppConfigVersion
+		configFile    File
+		appData       AppData
+	}{
+		{realm.AppConfigVersion20180301, FileStitch, &AppStitchJSON{appData20180301Local}},
+		{realm.AppConfigVersion20200603, FileConfig, &AppConfigJSON{appData20200603Local}},
+		{realm.AppConfigVersion20210101, FileRealmConfig, &AppRealmConfigJSON{appData20210101Local}},
+	} {
+		t.Run(fmt.Sprintf("should successfully load config file with version %d", tc.configVersion), func(t *testing.T) {
+			projectRoot := filepath.Join(wd, "testdata", tc.configVersion.String(), "local")
+			testApp := App{RootDir: projectRoot, Config: tc.configFile}
+
+			assert.Nil(t, testApp.LoadConfig())
+			assert.Equal(t, testApp.AppData, tc.appData)
+		})
 	}
 
-	app, appErr := LoadApp(projectRoot)
-	assert.Nil(t, appErr)
-	assert.Equal(t, expectedAppLocal, app)
+	t.Run("should error with invalid config file", func(t *testing.T) {
+		projectRoot := filepath.Join(wd, "testdata", "full_project")
+		testApp := App{RootDir: projectRoot, Config: File{"bogus", ".json"}}
+
+		assert.Equal(t, errors.New("invalid config file: bogus.json"), testApp.LoadConfig())
+	})
 }
 
 func TestFindApp(t *testing.T) {
@@ -92,66 +132,78 @@ func TestFindApp(t *testing.T) {
 		file          File
 		appDataLocal  AppData
 		remoteAppData AppData
+		nestedAppData AppData
 	}{
-		{realm.AppConfigVersion20180301, FileStitch, &AppStitchJSON{appData20180301Local}, &AppStitchJSON{appData20180301Remote}},
-		{realm.AppConfigVersion20200603, FileConfig, &AppConfigJSON{appData20200603Local}, &AppConfigJSON{appData20200603Remote}},
-		{realm.AppConfigVersion20210101, FileRealmConfig, &AppRealmConfigJSON{appData20210101Local}, &AppRealmConfigJSON{appData20210101Remote}},
+		{
+			version:       realm.AppConfigVersion20180301,
+			file:          FileStitch,
+			appDataLocal:  &AppStitchJSON{appData20180301Local},
+			remoteAppData: &AppStitchJSON{appData20180301Remote},
+			nestedAppData: &AppStitchJSON{appData20180301Nested},
+		},
+		{
+			version:       realm.AppConfigVersion20200603,
+			file:          FileConfig,
+			appDataLocal:  &AppConfigJSON{appData20200603Local},
+			remoteAppData: &AppConfigJSON{appData20200603Remote},
+			nestedAppData: &AppConfigJSON{appData20200603Nested},
+		},
+		{
+			version:       realm.AppConfigVersion20210101,
+			file:          FileRealmConfig,
+			appDataLocal:  &AppRealmConfigJSON{appData20210101Local},
+			remoteAppData: &AppRealmConfigJSON{appData20210101Remote},
+			nestedAppData: &AppRealmConfigJSON{appData20210101Nested},
+		},
 	} {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
 			testRoot := filepath.Join(wd, "testdata", config.version.String())
 
-			t.Run("And a working directory outside of the project root returns empty data", func(t *testing.T) {
+			t.Run("and a working directory outside of the project root should fail to find app", func(t *testing.T) {
 				_, insideProject, err := FindApp(testRoot)
 				assert.Nil(t, err)
 				assert.False(t, insideProject, "should be outside project")
-
-				app, err := LoadApp(testRoot)
-				assert.Nil(t, err)
-				assert.Equal(t, App{}, app)
 			})
 
 			for _, tcInner := range []struct {
-				name    string
-				appData AppData
+				description string
+				name        string
+				appData     AppData
 			}{
-				{"local", config.appDataLocal},
-				{"remote", config.remoteAppData},
+				{"and a working directory at the root of a local project", "local", config.appDataLocal},
+				{"and a working directory at the root of a remote project", "remote", config.remoteAppData},
+				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData},
 			} {
-				t.Run(fmt.Sprintf("and a working directory at the root of a %s project", tcInner.name), func(t *testing.T) {
-					projectRoot := filepath.Join(testRoot, tcInner.name)
+				t.Run(tcInner.description, func(t *testing.T) {
+					path := filepath.Join(testRoot, tcInner.name)
 
-					_, insideProject, err := FindApp(projectRoot)
+					_, insideProject, err := FindApp(path)
 					assert.Nil(t, err)
 					assert.True(t, insideProject, "should be inside project")
 
-					app, err := LoadApp(projectRoot)
+					app, err := LoadApp(path)
 					assert.Nil(t, err)
 					assert.Equal(t, tcInner.appData, app.AppData)
 				})
 			}
 
-			t.Run("And a working directory at the project root return the correct data", func(t *testing.T) {
-				projectRoot := filepath.Join(testRoot, "empty")
+			t.Run("and a config file with invalid json should return an error when finding app", func(t *testing.T) {
+				projectRoot := filepath.Join(testRoot, "invalid")
 
 				_, insideProject, err := FindApp(projectRoot)
-				assert.Nil(t, err)
-				assert.True(t, insideProject, "should be inside project")
+				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
+				assert.False(t, insideProject, "should not be found")
 
 				app, err := LoadApp(projectRoot)
 				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
 				assert.Equal(t, App{}, app)
 			})
 
-			t.Run("And an empty project should return an error when loading app", func(t *testing.T) {
-				projectRoot := filepath.Join(testRoot, "empty")
-
-				_, insideProject, err := FindApp(projectRoot)
+			t.Run("and missing the version in the config file should fail to find app", func(t *testing.T) {
+				path := filepath.Join(testRoot, "no_version")
+				_, foundApp, err := FindApp(path)
 				assert.Nil(t, err)
-				assert.True(t, insideProject, "should be inside project")
-
-				app, err := LoadApp(projectRoot)
-				assert.Equal(t, errFailedToParseAppConfig(filepath.Join(projectRoot, config.file.String())), err)
-				assert.Equal(t, App{}, app)
+				assert.False(t, foundApp, "should not be found")
 			})
 		})
 	}
@@ -673,86 +725,99 @@ exports = function({ query }) {
 	},
 }}}
 
+var allowedRequestOrigins = []string{"http://localhost:8080"}
+
+var appSecurity = map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}}
+
+var appHosting = map[string]interface{}{
+	"enabled":            true,
+	"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
+}
+
+var appSync = map[string]interface{}{"development_mode_enabled": false}
+
+var appCustomUserDataConfig = map[string]interface{}{
+	"enabled":            true,
+	"mongo_service_name": "mongodb-atlas",
+	"database_name":      "test",
+	"collection_name":    "coll3",
+	"user_id_field":      "xref",
+}
+
+var appGraphQLStructure = GraphQLStructure{
+	Config: map[string]interface{}{
+		"use_natural_pluralization": true,
+	},
+}
+
 var appData20180301Local = AppDataV1{AppStructureV1{
-	ConfigVersion:   realm.AppConfigVersion20180301,
-	Name:            "20180301-local",
-	Location:        realm.LocationVirginia,
-	DeploymentModel: realm.DeploymentModelGlobal,
-	Security:        map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}},
-	Hosting: map[string]interface{}{
-		"enabled":            true,
-		"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
-	},
-	CustomUserDataConfig: map[string]interface{}{
-		"enabled":            true,
-		"mongo_service_name": "mongodb-atlas",
-		"database_name":      "test",
-		"collection_name":    "coll3",
-		"user_id_field":      "xref",
-	},
-	Sync: map[string]interface{}{"development_mode_enabled": false},
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	Name:                 "20180301-local",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
 }}
 
 var appData20180301Remote = AppDataV1{AppStructureV1{
-	ConfigVersion:   realm.AppConfigVersion20180301,
-	ID:              "20180301-remote-abcde",
-	Name:            "20180301-remote",
-	Location:        realm.LocationVirginia,
-	DeploymentModel: realm.DeploymentModelGlobal,
-	Security:        map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}},
-	Hosting: map[string]interface{}{
-		"enabled":            true,
-		"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
-	},
-	CustomUserDataConfig: map[string]interface{}{
-		"enabled":            true,
-		"mongo_service_name": "mongodb-atlas",
-		"database_name":      "test",
-		"collection_name":    "coll3",
-		"user_id_field":      "xref",
-	},
-	Sync: map[string]interface{}{"development_mode_enabled": false},
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	ID:                   "20180301-remote-abcde",
+	Name:                 "20180301-remote",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20180301Nested = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20180301,
+	Name:                 "20180301-nested",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+	GraphQL:              appGraphQLStructure,
 }}
 
 var appData20200603Local = AppDataV1{AppStructureV1{
-	ConfigVersion:   realm.AppConfigVersion20200603,
-	Name:            "20200603-local",
-	Location:        realm.LocationVirginia,
-	DeploymentModel: realm.DeploymentModelGlobal,
-	Security:        map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}},
-	Hosting: map[string]interface{}{
-		"enabled":            true,
-		"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
-	},
-	CustomUserDataConfig: map[string]interface{}{
-		"enabled":            true,
-		"mongo_service_name": "mongodb-atlas",
-		"database_name":      "test",
-		"collection_name":    "coll3",
-		"user_id_field":      "xref",
-	},
-	Sync: map[string]interface{}{"development_mode_enabled": false},
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	Name:                 "20200603-local",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
 }}
 
 var appData20200603Remote = AppDataV1{AppStructureV1{
-	ConfigVersion:   realm.AppConfigVersion20200603,
-	ID:              "20200603-remote-abcde",
-	Name:            "20200603-remote",
-	Location:        realm.LocationVirginia,
-	DeploymentModel: realm.DeploymentModelGlobal,
-	Security:        map[string]interface{}{"allowed_request_origins": []interface{}{"http://localhost:8080"}},
-	Hosting: map[string]interface{}{
-		"enabled":            true,
-		"app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc",
-	},
-	CustomUserDataConfig: map[string]interface{}{
-		"enabled":            true,
-		"mongo_service_name": "mongodb-atlas",
-		"database_name":      "test",
-		"collection_name":    "coll3",
-		"user_id_field":      "xref",
-	},
-	Sync: map[string]interface{}{"development_mode_enabled": false},
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	ID:                   "20200603-remote-abcde",
+	Name:                 "20200603-remote",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+}}
+
+var appData20200603Nested = AppDataV1{AppStructureV1{
+	ConfigVersion:        realm.AppConfigVersion20200603,
+	Name:                 "20200603-nested",
+	Location:             realm.LocationVirginia,
+	DeploymentModel:      realm.DeploymentModelGlobal,
+	Security:             appSecurity,
+	Hosting:              appHosting,
+	CustomUserDataConfig: appCustomUserDataConfig,
+	Sync:                 appSync,
+	GraphQL:              appGraphQLStructure,
 }}
 
 var appData20210101Local = AppDataV2{AppStructureV2{
@@ -760,7 +825,7 @@ var appData20210101Local = AppDataV2{AppStructureV2{
 	Name:                  "20210101-local",
 	Location:              realm.LocationVirginia,
 	DeploymentModel:       realm.DeploymentModelGlobal,
-	AllowedRequestOrigins: []string{"http://localhost:8080"},
+	AllowedRequestOrigins: allowedRequestOrigins,
 }}
 
 var appData20210101Remote = AppDataV2{AppStructureV2{
@@ -769,5 +834,14 @@ var appData20210101Remote = AppDataV2{AppStructureV2{
 	Name:                  "20210101-remote",
 	Location:              realm.LocationVirginia,
 	DeploymentModel:       realm.DeploymentModelGlobal,
-	AllowedRequestOrigins: []string{"http://localhost:8080"},
+	AllowedRequestOrigins: allowedRequestOrigins,
+}}
+
+var appData20210101Nested = AppDataV2{AppStructureV2{
+	ConfigVersion:         realm.AppConfigVersion20210101,
+	Name:                  "20210101-nested",
+	Location:              realm.LocationVirginia,
+	DeploymentModel:       realm.DeploymentModelGlobal,
+	AllowedRequestOrigins: allowedRequestOrigins,
+	GraphQL:               appGraphQLStructure,
 }}
