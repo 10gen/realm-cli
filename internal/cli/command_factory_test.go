@@ -166,6 +166,6 @@ func (client mockVersionClient) Get(_ string) (*http.Response, error) {
 		Body: ioutil.NopCloser(strings.NewReader(fmt.Sprintf(`{
   "version": %q,
   "info": { %q: { "url": %q } }
-}`, version, osArch, url))),
+}`, version, OSArch, url))),
 	}, nil
 }

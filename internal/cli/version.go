@@ -17,8 +17,8 @@ var (
 	// Version represents the CLI version
 	Version = "0.0.0" // value will be injected at build-time
 
-	// osArch represents the CLI os architecture; used for locating the correct CLI URL
-	osArch string // value will be injected at build-time
+	// OSArch represents the CLI os architecture; used for locating the correct CLI URL
+	OSArch string // value will be injected at build-time
 )
 
 const (
@@ -70,9 +70,9 @@ func checkVersion(client VersionManifestClient) (buildInfo, error) {
 		return buildInfo{}, nil // version is up-to-date
 	}
 
-	osInfo, ok := manifest.Info[osArch]
+	osInfo, ok := manifest.Info[OSArch]
 	if !ok {
-		return buildInfo{}, fmt.Errorf("unrecognized CLI OS build: %s", osArch)
+		return buildInfo{}, fmt.Errorf("unrecognized CLI OS build: %s", OSArch)
 	}
 
 	return buildInfo{versionNext.String(), osInfo.URL}, nil

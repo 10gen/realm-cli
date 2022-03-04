@@ -255,7 +255,7 @@ func (factory *CommandFactory) checkForNewVersion(client VersionManifestClient) 
 		terminal.NewFollowupLog(
 			"To install",
 			fmt.Sprintf("npm install -g mongodb-%s@v%s", Name, v.Semver),
-			fmt.Sprintf("curl -o ./mongodb-%s %s && chmod +x ./mongodb-%s", Name, v.URL, Name),
+			fmt.Sprintf("curl -o ./%s %s && chmod +x ./%s", Name, v.URL, Name),
 		),
 	)
 

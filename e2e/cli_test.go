@@ -2,6 +2,7 @@ package e2e
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2/core"
 	"github.com/Netflix/go-expect"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // TestCLI is responsible for ensuring each command can successfully compile and execute
@@ -207,5 +209,61 @@ func TestCLI(t *testing.T) {
 			)
 		})
 	}
+}
 
+func TestCLIVersionCheck(t *testing.T) {
+	for _, tc := range []struct {
+		osArch string
+		ext    string
+	}{
+		{osArch: "linux-amd64"},
+		{osArch: "macos-amd64"},
+		{"windows-amd64", ".exe"},
+	} {
+		t.Run(fmt.Sprintf("should display instrutions for installing latest cli when version is outdated for %s os", tc.osArch), func(t *testing.T) {
+			out := new(bytes.Buffer)
+
+			console, err := expect.NewConsole(expect.WithStdout(out))
+			assert.Nil(t, err)
+
+			go func() {
+				console.ExpectEOF()
+			}()
+
+			cmd := exec.Command(
+				"go",
+				"run",
+				"-ldflags",
+				fmt.Sprintf("-X github.com/10gen/realm-cli/internal/cli.Version=0.0.1 -X github.com/10gen/realm-cli/internal/cli.OSArch=%s", tc.osArch),
+				"../main.go",
+				"whoami",
+				"--profile",
+				primitive.NewObjectID().Hex(), // ensure "no user is currently logged in"
+			)
+			cmd.Stdin = console.Tty()
+			cmd.Stdout = console.Tty()
+			cmd.Stderr = console.Tty()
+
+			assert.Nil(t, cmd.Start())
+			assert.Nil(t, cmd.Wait())
+
+			console.Close() // flush the writers
+
+			lines := strings.Split(out.String(), "\r\n")
+			url := fmt.Sprintf("https://s3.amazonaws.com/realm-clis/realm_cli_rhel70_c61061f62167023c81195fd09ba42bd5cdfade6e_22_03_02_20_09_42/%s/realm-cli%s", tc.osArch, tc.ext)
+
+			assert.True(t, strings.HasPrefix(lines[0], "New version (v"), "first line must indicate the new version")
+			assert.True(t, strings.HasSuffix(lines[0], ") of CLI available: "+url), "first line must point to the new url")
+
+			assert.Equal(t, "Note: This is the only time this alert will display today", lines[1])
+
+			assert.Equal(t, "To install", lines[2])
+
+			assert.True(t, strings.HasPrefix(lines[3], "  npm install -g mongodb-realm-cli@v"), "fourth line must print out the npm install command")
+
+			assert.Equal(t, fmt.Sprintf("  curl -o ./realm-cli %s && chmod +x ./realm-cli", url), lines[4])
+
+			assert.Equal(t, "No user is currently logged in", lines[5])
+		})
+	}
 }
