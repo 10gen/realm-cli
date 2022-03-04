@@ -608,31 +608,31 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 				return err
 			}
 
-			schema := rule[NameSchema]
-			if schema != nil {
-				dataSchema, err := MarshalJSON(schema)
+			schema, ok := rule[NameSchema]
+			if ok {
+				data, err := MarshalJSON(schema)
 				if err != nil {
 					return err
 				}
 				if err := WriteFile(
 					filepath.Join(ruleDir, FileSchema.String()),
 					0666,
-					bytes.NewReader(dataSchema),
+					bytes.NewReader(data),
 				); err != nil {
 					return err
 				}
 			}
 
-			relationships := rule[NameRelationships]
-			if relationships != nil {
-				dataRelationships, err := MarshalJSON(relationships)
+			relationships, ok := rule[NameRelationships]
+			if ok {
+				data, err := MarshalJSON(relationships)
 				if err != nil {
 					return err
 				}
 				if err := WriteFile(
 					filepath.Join(ruleDir, FileRelationships.String()),
 					0666,
-					bytes.NewReader(dataRelationships),
+					bytes.NewReader(data),
 				); err != nil {
 					return err
 				}
