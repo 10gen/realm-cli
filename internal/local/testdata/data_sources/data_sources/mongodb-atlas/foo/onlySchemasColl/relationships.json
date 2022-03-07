@@ -1,0 +1,12 @@
+{
+  "name": {
+    "ref": "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+    "foreign_key": "country",
+    "is_list": false
+  },
+  "country": {
+    "ref": "#/relationship/mongodb-atlas/foo/onlySchemasColl",
+    "foreign_key": "name",
+    "is_list": false
+  }
+}
