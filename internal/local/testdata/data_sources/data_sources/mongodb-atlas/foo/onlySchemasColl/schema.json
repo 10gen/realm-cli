@@ -1,0 +1,11 @@
+{
+  "title": "soloSchema",
+  "properties": {
+    "name": {
+      "bsonType": "string"
+    },
+    "country": {
+      "bsonType": "string"
+    }
+  }
+}

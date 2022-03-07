@@ -316,10 +316,33 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"wireProtocolEnabled": false,
 				}},
 				Rules: []map[string]interface{}{{
-					"database":      "db",
-					"collection":    "coll",
-					"schema":        map[string]interface{}{},
-					"relationships": map[string]interface{}{},
+					"database":   "db",
+					"collection": "coll",
+					"schema": map[string]interface{}{
+						"title": "schemaTitle",
+						"properties": map[string]interface{}{
+							"name": map[string]interface{}{
+								"bsonType": "string",
+							},
+							"country": map[string]interface{}{
+								"bsonType": "string",
+							},
+						},
+					},
+					"relationships": map[string]interface{}{
+						"name": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/db/coll",
+							"source_key":  "name",
+							"foreign_key": "country",
+							"is_list":     false,
+						},
+						"country": map[string]interface{}{
+							"ref":         "#/relationship/mongodb-atlas/db/coll",
+							"source_key":  "country",
+							"foreign_key": "name",
+							"is_list":     false,
+						},
+					},
 				}},
 			},
 		},

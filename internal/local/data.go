@@ -63,6 +63,7 @@ const (
 	NameIncomingWebhooks = "incoming_webhooks"
 	NameRules            = "rules"
 	NameSchema           = "schema"
+	NameSchemas          = "schemas"
 	NameServices         = "services"
 	NameRelationships    = "relationships"
 
