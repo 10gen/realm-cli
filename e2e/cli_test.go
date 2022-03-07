@@ -220,7 +220,7 @@ func TestCLIVersionCheck(t *testing.T) {
 		{osArch: "macos-amd64"},
 		{"windows-amd64", ".exe"},
 	} {
-		t.Run(fmt.Sprintf("should display instrutions for installing latest cli when version is outdated for %s os", tc.osArch), func(t *testing.T) {
+		t.Run(fmt.Sprintf("should display instructions for installing latest cli when version is outdated for %s os", tc.osArch), func(t *testing.T) {
 			out := new(bytes.Buffer)
 
 			console, err := expect.NewConsole(expect.WithStdout(out))
