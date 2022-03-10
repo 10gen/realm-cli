@@ -106,7 +106,7 @@ func TestCommandFactoryVersionCheck(t *testing.T) {
 Note: This is the only time this alert will display today
 To install
   npm install -g mongodb-realm-cli@v0.1.0
-  curl -o ./mongodb-realm-cli http://somewhere.com && chmod +x ./mongodb-realm-cli
+  curl -o ./realm-cli http://somewhere.com && chmod +x ./realm-cli
 `, out.String())
 
 		assert.True(t, lastVersionCheck.Before(profile.LastVersionCheck()), "version check time should be updated")
