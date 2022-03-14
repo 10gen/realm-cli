@@ -36,7 +36,7 @@ go build -ldflags "-X github.com/10gen/realm-cli/internal/cli.Version=0.0.0-loca
 
 This will create a CLI build that will print `0.0.0-local` when `--version` is invoked.  Other configurable build options include:
 
-* `-X github.com/10gen/realm-cli/internal/cli.osArch=macos-amd64`
+* `-X github.com/10gen/realm-cli/internal/cli.OSArch=macos-amd64`
 * `-X github.com/10gen/realm-cli/internal/telemetry.segmentWriteKey=${segment_write_key}`
 
 > NOTE: `${segment_write_key}` is a dynamic value you would need to replace with something valid.  If it is left blank, then events will simply not be sent to Segment.
