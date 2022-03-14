@@ -13,9 +13,9 @@ import (
 )
 
 func TestVersionCheck(t *testing.T) {
-	origOSArch := osArch
-	osArch = "macos-amd64"
-	defer func() { osArch = origOSArch }()
+	origOSArch := OSArch
+	OSArch = "macos-amd64"
+	defer func() { OSArch = origOSArch }()
 
 	for _, tc := range []struct {
 		description     string
@@ -35,7 +35,7 @@ func TestVersionCheck(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			client := testClient{http.StatusOK, tc.nextVersion, osArch, "http://whatever.com/test"}
+			client := testClient{http.StatusOK, tc.nextVersion, OSArch, "http://whatever.com/test"}
 
 			v, err := checkVersion(client)
 			assert.Nil(t, err)
@@ -80,7 +80,7 @@ func TestVersionCheck(t *testing.T) {
 		client := testClient{statusCode: http.StatusOK, version: "0.1.0", osArch: "some-other-arch"}
 
 		_, err := checkVersion(client)
-		assert.Equal(t, fmt.Errorf("unrecognized CLI OS build: %s", osArch), err)
+		assert.Equal(t, fmt.Errorf("unrecognized CLI OS build: %s", OSArch), err)
 	})
 }
 
