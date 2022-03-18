@@ -169,7 +169,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
-		newApp, proceed, err := createNewApp(ui, clients.Realm, cmd.inputs.LocalPath, appRemote.GroupID, app.AppData)
+		newApp, proceed, err := createNewApp(ui, clients.Realm, app.RootDir, appRemote.GroupID, app.AppData)
 		if err != nil {
 			return err
 		}
