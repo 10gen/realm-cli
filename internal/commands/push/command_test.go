@@ -1027,6 +1027,47 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		assert.Nil(t, err)
 	})
+
+	t.Run("with local path in nested directory", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{
+				GroupID: groupID,
+				ID:      primitive.NewObjectID().Hex(),
+				Name:    name,
+				AppMeta: meta,
+			}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		out := new(bytes.Buffer)
+		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+
+		cmd := &Command{inputs{LocalPath: filepath.Join(testApp.RootDir, "functions"), RemoteApp: "appID"}}
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		defer os.Remove(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
+
+		assert.Nil(t, err)
+		configData, readErr := ioutil.ReadFile(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
+
+		assert.Nil(t, readErr)
+		assert.Equal(t, `{
+    "config_version": 20210101,
+    "name": "eggcorn",
+    "location": "US-VA",
+    "deployment_model": "GLOBAL"
+}
+`, string(configData))
+
+		// Verify that a config file was not created in the nested directory, either.
+		_, fileErr := os.Stat(filepath.Join(testApp.RootDir, "functions", local.FileRealmConfig.String()))
+		assert.NotNil(t, fileErr)
+	})
 }
 
 func TestPushCommandCreateNewApp(t *testing.T) {
