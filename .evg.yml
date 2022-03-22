@@ -1,5 +1,5 @@
 functions:
-  "fetch_go114":
+  "fetch_go":
     - command: shell.exec
       params:
         shell: "bash"
@@ -141,7 +141,9 @@ tasks:
   - name: test_unit
     exec_timeout_secs: 3600
     commands:
-      - func: "fetch_go114"
+      - func: "fetch_go"
+        vars:
+          go_url: ${go_115_url}
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -169,7 +171,9 @@ tasks:
   - name: test_e2e
     exec_timeout_secs: 3600
     commands:
-      - func: "fetch_go114"
+      - func: "fetch_go"
+        vars:
+          go_url: ${go_115_url}
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -198,7 +202,9 @@ tasks:
   - name: test_with_cloud
     exec_timeout_secs: 3600
     commands:
-      - func: "fetch_go114"
+      - func: "fetch_go"
+        vars:
+          go_url: ${go_117_url}
       - func: "fetch_baas_artifacts"
       - func: "setup_node"
       - func: "setup_project"
@@ -239,7 +245,9 @@ tasks:
 
   - name: lint
     commands:
-      - func: "fetch_go114"
+      - func: "fetch_go"
+        vars:
+          go_url: ${go_115_url}
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -259,7 +267,9 @@ tasks:
       - name: test_e2e
     patchable: false
     commands:
-      - func: "fetch_go114"
+      - func: "fetch_go"
+        vars:
+          go_url: ${go_115_url}
       - func: "setup_project"
       - command: shell.exec
         params:
@@ -418,8 +428,9 @@ buildvariants:
   expansions:
     atlas_server_url: "https://cloud-dev.mongodb.com"
     baas_supportlib_url: "https://s3.amazonaws.com/stitch-artifacts/stitch-support/stitch-support-rhel-70-4.3.2-721-ge791a2e-patch-5e2a6ad2a4cf473ae2e67b09.tgz"
-    go_url: "https://dl.google.com/go/go1.15.11.linux-amd64.tar.gz"
-    libmongo_url: "https://s3.amazonaws.com//stitch-artifacts/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_20e2e4201581e8a98e0f1eb87c62e23e985c7e15_608c2a54c9ec44445262d94b_21_04_30_16_03_33/libmongo.so"
+    go_115_url: "https://dl.google.com/go/go1.15.11.linux-amd64.tar.gz"
+    go_117_url: "https://dl.google.com/go/go1.17.2.linux-amd64.tar.gz"
+    libmongo_url: "https://stitch-artifacts.s3.amazonaws.com/stitch-mongo-libs/stitch_mongo_libs_linux_64_patch_f323e4411e1b2d9011b88d7f6855654c8432f2ee_6179e0e92a60ed55e5ecc820_21_10_27_23_30_03/libmongo.so"
     mongodb_url: "https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-4.0.2.tgz"
     realm_server_url: "http://localhost:9090"
     yarn_url: "https://s3.amazonaws.com/stitch-artifacts/yarn/latest.tar.gz"
