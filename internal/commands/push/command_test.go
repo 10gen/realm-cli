@@ -1036,6 +1036,7 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{
 				GroupID: groupID,
+				ClientAppID: "eggcorn-abcde",
 				ID:      primitive.NewObjectID().Hex(),
 				Name:    name,
 				AppMeta: meta,
@@ -1058,6 +1059,7 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 		assert.Nil(t, readErr)
 		assert.Equal(t, `{
     "config_version": 20210101,
+    "app_id": "eggcorn-abcde",
     "name": "eggcorn",
     "location": "US-VA",
     "deployment_model": "GLOBAL"
