@@ -1220,6 +1220,9 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
+						c.ExpectString("Are these settings correct?")
+						c.SendLine("y")
+
 						c.ExpectEOF()
 					},
 					test: func(t *testing.T, configPath string) {
@@ -1245,6 +1248,38 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						},
 					},
 					expectedProceed: true,
+				},
+				{
+					description: "should not create app if user does not confirm configuration",
+					procedure: func(c *expect.Console) {
+
+						c.ExpectString("Do you wish to create a new app?")
+						c.SendLine("y")
+
+						c.ExpectString("App Name")
+						c.SendLine("testApp")
+
+						c.ExpectString("App Location")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("App Deployment Model")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("App Environment")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("Are these settings correct?")
+						c.SendLine("")
+
+						c.ExpectEOF()
+					},
+					test: func(t *testing.T, configPath string) {
+						_, err := os.Stat(configPath)
+						assert.True(t, os.IsNotExist(err), "expected config path to not exist, but err was: %s", err)
+					},
 				},
 				{
 					description: "should still prompt for name with all missing data but auto confirm set to true",

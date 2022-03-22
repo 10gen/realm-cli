@@ -468,6 +468,12 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		}
 	}
 
+	if proceed, err := ui.Confirm("Are these settings correct?"); err != nil {
+		return realm.App{}, false, err
+	} else if !proceed {
+		return realm.App{}, false, nil
+	}
+
 	app, err := realmClient.CreateApp(
 		groupID,
 		name,
