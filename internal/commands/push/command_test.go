@@ -1027,6 +1027,48 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		assert.Nil(t, err)
 	})
+
+	t.Run("should not confirm diff when creating a new app with auto-confirm", func(t *testing.T) {
+		var realmClient mock.RealmClient
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{{GroupID: "groupID"}}, nil
+		}
+		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+			return realm.App{ID: "appID", GroupID: "groupID", ClientAppID: "eggcorn-abcde"}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		out := new(bytes.Buffer)
+		console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			console.ExpectString("Determining changes")
+			console.ExpectString("Creating draft")
+			console.ExpectString("Deploying draft")
+			console.ExpectString("Deployment complete")
+			console.ExpectString("Successfully pushed app up: eggcorn-abcde")
+			console.ExpectEOF()
+		}()
+
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+		defer os.Remove(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
+		console.Tty().Close()
+		<-doneCh
+
+		assert.Nil(t, err)
+
+		// Verify that a config file was not created in the nested directory, either.
+		_, fileErr := os.Stat(filepath.Join(testApp.RootDir, "functions", local.FileRealmConfig.String()))
+		assert.NotNil(t, fileErr)
+	})
 }
 
 func TestPushHandlerCreateNewApp(t *testing.T) {

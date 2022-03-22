@@ -259,12 +259,14 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	proceed, err := ui.Confirm("Please confirm the changes shown above")
-	if err != nil {
-		return err
-	}
-	if !proceed {
-		return nil
+	if !isNewApp {
+		proceed, err := ui.Confirm("Please confirm the changes shown above")
+		if err != nil {
+			return err
+		}
+		if !proceed {
+			return nil
+		}
 	}
 
 	if len(appDiffs) > 0 {
