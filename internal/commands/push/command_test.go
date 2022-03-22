@@ -1066,7 +1066,7 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		// Verify that a config file was not created in the nested directory, either.
 		_, fileErr := os.Stat(filepath.Join(testApp.RootDir, "functions", local.FileRealmConfig.String()))
-		assert.NotNil(t, fileErr)
+		assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but fileErr was: %s", fileErr)
 	})
 }
 
