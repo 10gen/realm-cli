@@ -1035,11 +1035,11 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 		}
 		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
 			return realm.App{
-				GroupID: groupID,
+				GroupID:     groupID,
 				ClientAppID: "eggcorn-abcde",
-				ID:      primitive.NewObjectID().Hex(),
-				Name:    name,
-				AppMeta: meta,
+				ID:          primitive.NewObjectID().Hex(),
+				Name:        name,
+				AppMeta:     meta,
 			}, nil
 		}
 		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
