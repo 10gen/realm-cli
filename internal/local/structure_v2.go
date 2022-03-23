@@ -310,16 +310,10 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 				if err != nil {
 					return err
 				}
-				if schemaBody == nil {
-					schemaBody = map[string]interface{}{}
-				}
 
 				relationships, err := parseJSON(filepath.Join(collPath, FileRelationships.String()))
 				if err != nil {
 					return err
-				}
-				if relationships == nil {
-					relationships = map[string]interface{}{}
 				}
 
 				if rule == nil {
@@ -337,8 +331,12 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 					}
 				}
 
-				rule[NameSchema] = schemaBody
-				rule[NameRelationships] = relationships
+				if schemaBody != nil {
+					rule[NameSchema] = schemaBody
+				}
+				if relationships != nil {
+					rule[NameRelationships] = relationships
+				}
 				rules = append(rules, rule)
 
 				return nil
