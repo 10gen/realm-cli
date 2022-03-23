@@ -1027,48 +1027,163 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		assert.Nil(t, err)
 	})
+}
 
-	t.Run("with local path in nested directory", func(t *testing.T) {
-		var realmClient mock.RealmClient
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{{GroupID: "groupID"}}, nil
-		}
-		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			return realm.App{
-				GroupID:     groupID,
-				ClientAppID: "eggcorn-abcde",
-				ID:          primitive.NewObjectID().Hex(),
-				Name:        name,
-				AppMeta:     meta,
-			}, nil
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{}, nil
-		}
+func TestPushHandlerUseCreateNewApp(t *testing.T) {
+	groupID := "groupID"
+	appID := "eggcorn-abcde"
+
+	realmClient := mock.RealmClient{}
+	realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+		return []realm.App{{GroupID: groupID, ClientAppID: appID}}, nil
+	}
+	realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+		return realm.App{
+			GroupID:     groupID,
+			ClientAppID: "eggcorn-abcde",
+			ID:          appID,
+			Name:        name,
+			AppMeta:     meta,
+		}, nil
+	}
+	realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+		return []string{}, nil
+	}
+
+	t.Run("with a realm_config.json", func(t *testing.T) {
+		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+		assert.Nil(t, tmpDirErr)
+		defer teardown()
+
+		app := local.App{RootDir: tmpDir, Config: local.FileRealmConfig, AppData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.AppConfigVersion20210101,
+			Name:            "eggcorn",
+			Location:        realm.Location("location"),
+			DeploymentModel: realm.DeploymentModel("deployment_model"),
+			Environment:     realm.Environment("environment"),
+		}}}}
+
+		app.WriteConfig()
 
 		out := new(bytes.Buffer)
-		ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		assert.Nil(t, consoleErr)
+		defer console.Close()
 
-		cmd := &Command{inputs{LocalPath: filepath.Join(testApp.RootDir, "functions"), RemoteApp: "appID"}}
-		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
-		defer os.Remove(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
+		// Run handler method on both root directory and nested directory.
+		for _, localPath := range []string{tmpDir, filepath.Join(tmpDir, "nested_directory")} {
+			cmd := &Command{inputs{LocalPath: localPath, RemoteApp: "appID"}}
+			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
-		assert.Nil(t, err)
-		configData, readErr := ioutil.ReadFile(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
-
-		assert.Nil(t, readErr)
-		assert.Equal(t, `{
+			assert.Nil(t, err)
+			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, local.FileRealmConfig.String()))
+			assert.Nil(t, readErr)
+			assert.Equal(t, `{
     "config_version": 20210101,
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
-    "location": "US-VA",
-    "deployment_model": "GLOBAL"
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment"
 }
 `, string(configData))
+		}
+	})
 
-		// Verify that a config file was not created in the nested directory, either.
-		_, fileErr := os.Stat(filepath.Join(testApp.RootDir, "functions", local.FileRealmConfig.String()))
-		assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but fileErr was: %s", fileErr)
+	t.Run("with a config.json", func(t *testing.T) {
+		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+		assert.Nil(t, tmpDirErr)
+		defer teardown()
+
+		app := local.App{RootDir: tmpDir, Config: local.FileConfig, AppData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+			ConfigVersion:   realm.AppConfigVersion20200603,
+			Name:            "eggcorn",
+			Location:        realm.Location("location"),
+			DeploymentModel: realm.DeploymentModel("deployment_model"),
+			Environment:     realm.Environment("environment"),
+		}}}}
+
+		app.WriteConfig()
+
+		out := new(bytes.Buffer)
+		console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		// Run handler method on both root directory and nested directory.
+		for _, localPath := range []string{tmpDir, filepath.Join(tmpDir, "nested_directory")} {
+			cmd := &Command{inputs{LocalPath: localPath, RemoteApp: "appID"}}
+			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+
+			assert.Nil(t, err)
+			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, local.FileConfig.String()))
+			fmt.Println(tmpDir)
+			assert.Nil(t, readErr)
+			assert.Equal(t, `{
+    "config_version": 20200603,
+    "app_id": "eggcorn-abcde",
+    "name": "eggcorn",
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment",
+    "security": null,
+    "custom_user_data_config": {
+        "enabled": false
+    },
+    "sync": {
+        "development_mode_enabled": false
+    }
+}
+`, string(configData))
+		}
+	})
+
+	t.Run("with a stitch.json", func(t *testing.T) {
+		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+		assert.Nil(t, tmpDirErr)
+		defer teardown()
+
+		app := local.App{RootDir: tmpDir, Config: local.FileStitch, AppData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+			ConfigVersion:   realm.AppConfigVersion20180301,
+			Name:            "eggcorn",
+			Location:        realm.Location("location"),
+			DeploymentModel: realm.DeploymentModel("deployment_model"),
+			Environment:     realm.Environment("environment"),
+		}}}}
+
+		app.WriteConfig()
+
+		out := new(bytes.Buffer)
+		console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		// Run handler method on both root directory and nested directory.
+		for _, localPath := range []string{tmpDir, filepath.Join(tmpDir, "nested_directory")} {
+			cmd := &Command{inputs{LocalPath: localPath, RemoteApp: "appID"}}
+			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+
+			assert.Nil(t, err)
+			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, local.FileStitch.String()))
+			fmt.Println(tmpDir)
+			assert.Nil(t, readErr)
+			assert.Equal(t, `{
+    "config_version": 20180301,
+    "app_id": "eggcorn-abcde",
+    "name": "eggcorn",
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment",
+    "security": null,
+    "custom_user_data_config": {
+        "enabled": false
+    },
+    "sync": {
+        "development_mode_enabled": false
+    }
+}
+`, string(configData))
+		}
 	})
 }
 
@@ -1077,6 +1192,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 	appID := primitive.NewObjectID().Hex()
 
 	fullPkg := &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+		ConfigVersion:   realm.AppConfigVersion20200603,
 		Name:            "name",
 		Location:        realm.Location("location"),
 		DeploymentModel: realm.DeploymentModel("deployment_model"),
@@ -1223,13 +1339,30 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
 			for _, tc := range []struct {
-				description     string
-				appData         interface{}
-				expectedAppMeta realm.AppMeta
+				description       string
+				appData           interface{}
+				expectedAppMeta   realm.AppMeta
+				expectedAppConfig local.File
 			}{
 				{
-					description: "should use the package name when present and zero values for app meta",
-					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
+					description:       "should use the package name when present and zero values for app meta",
+					appData:           local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{ConfigVersion: realm.AppConfigVersion20200603, Name: "name"}}},
+					expectedAppConfig: local.FileConfig,
+				},
+				{
+					description:       "should use realm_config when config version is not specified in appData",
+					appData:           &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
+					expectedAppConfig: local.FileRealmConfig,
+				},
+				{
+					description:       "should downgrade to stitch config when specified in appData",
+					appData:           local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{ConfigVersion: realm.AppConfigVersion20180301, Name: "name"}}},
+					expectedAppConfig: local.FileStitch,
+				},
+				{
+					description:       "should upgrade to realm config when specified in appData",
+					appData:           local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{ConfigVersion: realm.AppConfigVersion20210101, Name: "name"}}},
+					expectedAppConfig: local.FileRealmConfig,
 				},
 				{
 					description: "should use the package name location deployment model and environment when present",
@@ -1239,6 +1372,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						DeploymentModel: realm.DeploymentModel("deployment_model"),
 						Environment:     realm.Environment("environment"),
 					},
+					expectedAppConfig: local.FileConfig,
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -1257,6 +1391,9 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					assert.Nil(t, err)
 					assert.True(t, proceed, "should proceed")
 					assert.Equal(t, expectedApp, app)
+
+					_, fileErr := os.Stat(filepath.Join(tmpDir, tc.expectedAppConfig.String()))
+					assert.Nil(t, fileErr)
 				})
 			}
 		})

@@ -65,6 +65,7 @@ func NewApp(rootDir, clientAppID, name string, location realm.Location, deployme
 // AsApp converts the realm.App into a local app
 func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) App {
 	var appData AppData
+	var config File
 	switch configVersion {
 	case realm.AppConfigVersion20180301:
 		appData = &AppStitchJSON{AppDataV1{AppStructureV1{
@@ -99,6 +100,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 				},
 			},
 		}}}
+		config = FileStitch
 	case realm.AppConfigVersion20200603:
 		appData = &AppConfigJSON{AppDataV1{AppStructureV1{
 			ConfigVersion:        configVersion,
@@ -132,6 +134,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 				},
 			},
 		}}}
+		config = FileConfig
 	default:
 		appData = &AppRealmConfigJSON{AppDataV2{AppStructureV2{
 			ConfigVersion:   configVersion,
@@ -173,10 +176,11 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 				CustomResolvers: []map[string]interface{}{},
 			},
 		}}}
+		config = FileRealmConfig
 	}
 	return App{
 		RootDir: rootDir,
-		Config:  FileRealmConfig,
+		Config:  config,
 		AppData: appData,
 	}
 }

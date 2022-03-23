@@ -392,6 +392,7 @@ type namer interface{ Name() string }
 type locationer interface{ Location() realm.Location }
 type deploymentModeler interface{ DeploymentModel() realm.DeploymentModel }
 type environmenter interface{ Environment() realm.Environment }
+type configVersioner interface{ ConfigVersion() realm.AppConfigVersion }
 
 func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupID string, appData interface{}) (realm.App, bool, error) {
 	if proceed, err := ui.Confirm("Do you wish to create a new app?"); err != nil {
@@ -401,6 +402,7 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 	}
 
 	var name, location, deploymentModel, environment string
+	appConfigVersion := realm.DefaultAppConfigVersion
 	if appData != nil {
 		if n, ok := appData.(namer); ok {
 			name = n.Name()
@@ -416,6 +418,10 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 
 		if e, ok := appData.(environmenter); ok {
 			environment = e.Environment().String()
+		}
+
+		if cv, ok := appData.(configVersioner); ok {
+			appConfigVersion = cv.ConfigVersion()
 		}
 	}
 
@@ -475,7 +481,7 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		return realm.App{}, false, err
 	}
 
-	if err := local.AsApp(appDirectory, app, realm.DefaultAppConfigVersion).WriteConfig(); err != nil {
+	if err := local.AsApp(appDirectory, app, appConfigVersion).WriteConfig(); err != nil {
 		return realm.App{}, false, err
 	}
 	return app, true, nil
