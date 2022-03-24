@@ -49,6 +49,20 @@ func (a App) Option() string {
 	return a.AppData.Name()
 }
 
+// HasValidConfigVersion returns whether or not the config file and version number match
+func (a App) HasValidConfigVersion() bool {
+	switch a.ConfigVersion() {
+	case realm.AppConfigVersion20180301:
+		return a.Config == FileStitch
+	case realm.AppConfigVersion20200603:
+		return a.Config == FileConfig
+	case realm.AppConfigVersion20210101:
+		return a.Config == FileRealmConfig
+	default:
+		return false
+	}
+}
+
 // NewApp returns a new local app
 func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel, environment realm.Environment, configVersion realm.AppConfigVersion) App {
 	return AsApp(rootDir, realm.App{
@@ -280,7 +294,7 @@ func FindApp(path string) (App, bool, error) {
 			}
 
 			// if no config version is found then continue searching for the app's root directory config
-			if app.ConfigVersion() == 0 {
+			if app.ConfigVersion() == 0 || !app.HasValidConfigVersion() {
 				continue
 			}
 			return app, true, nil
