@@ -49,8 +49,8 @@ func (a App) Option() string {
 	return a.AppData.Name()
 }
 
-// HasValidConfigVersion returns whether or not the config file and version number match
-func (a App) HasValidConfigVersion() bool {
+// hasValidConfigVersion returns whether or not the config file and version number match
+func (a App) hasValidConfigVersion() bool {
 	switch a.ConfigVersion() {
 	case realm.AppConfigVersion20180301:
 		return a.Config == FileStitch
@@ -294,7 +294,7 @@ func FindApp(path string) (App, bool, error) {
 			}
 
 			// if no config version is found then continue searching for the app's root directory config
-			if app.ConfigVersion() == 0 || !app.HasValidConfigVersion() {
+			if app.ConfigVersion() == 0 || !app.hasValidConfigVersion() {
 				continue
 			}
 			return app, true, nil

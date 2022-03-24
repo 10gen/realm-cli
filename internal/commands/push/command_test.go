@@ -1051,7 +1051,6 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		description    string
 		appConfig      local.File
 		appData        local.AppData
 		expectedConfig string
