@@ -20,7 +20,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		defer teardown()
 
 		assert.Nil(t, ioutil.WriteFile(
-			filepath.Join(profile.WorkingDirectory, local.FileConfig.String()),
+			filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()),
 			[]byte(fmt.Sprintf(`{"config_version": %d, "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
 			0666,
 		))

@@ -1029,11 +1029,138 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 	})
 }
 
+func TestPushHandlerCreateNewApp(t *testing.T) {
+	groupID := "groupID"
+	appID := "eggcorn-abcde"
+
+	realmClient := mock.RealmClient{}
+	realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+		return []realm.App{{GroupID: groupID, ClientAppID: appID}}, nil
+	}
+	realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
+		return realm.App{
+			GroupID:     groupID,
+			ClientAppID: "eggcorn-abcde",
+			ID:          appID,
+			Name:        name,
+			AppMeta:     meta,
+		}, nil
+	}
+	realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+		return []string{}, nil
+	}
+
+	for _, tc := range []struct {
+		appConfig      local.File
+		appData        local.AppData
+		expectedConfig string
+	}{
+		{
+			appConfig: local.FileRealmConfig,
+			appData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+				ConfigVersion:   realm.AppConfigVersion20210101,
+				Name:            "eggcorn",
+				Location:        realm.Location("location"),
+				DeploymentModel: realm.DeploymentModel("deployment_model"),
+				Environment:     realm.Environment("environment"),
+			}}},
+			expectedConfig: `{
+    "config_version": 20210101,
+    "app_id": "eggcorn-abcde",
+    "name": "eggcorn",
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment"
+}
+`,
+		},
+		{
+			appConfig: local.FileConfig,
+			appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+				ConfigVersion:   realm.AppConfigVersion20200603,
+				Name:            "eggcorn",
+				Location:        realm.Location("location"),
+				DeploymentModel: realm.DeploymentModel("deployment_model"),
+				Environment:     realm.Environment("environment"),
+			}}},
+			expectedConfig: `{
+    "config_version": 20200603,
+    "app_id": "eggcorn-abcde",
+    "name": "eggcorn",
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment",
+    "security": null,
+    "custom_user_data_config": {
+        "enabled": false
+    },
+    "sync": {
+        "development_mode_enabled": false
+    }
+}
+`,
+		},
+		{
+			appConfig: local.FileStitch,
+			appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+				ConfigVersion:   realm.AppConfigVersion20180301,
+				Name:            "eggcorn",
+				Location:        realm.Location("location"),
+				DeploymentModel: realm.DeploymentModel("deployment_model"),
+				Environment:     realm.Environment("environment"),
+			}}},
+			expectedConfig: `{
+    "config_version": 20180301,
+    "app_id": "eggcorn-abcde",
+    "name": "eggcorn",
+    "location": "location",
+    "deployment_model": "deployment_model",
+    "environment": "environment",
+    "security": null,
+    "custom_user_data_config": {
+        "enabled": false
+    },
+    "sync": {
+        "development_mode_enabled": false
+    }
+}
+`,
+		},
+	} {
+		t.Run(fmt.Sprintf("with a %s config file and nested local path", tc.appConfig.String()), func(t *testing.T) {
+			tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+			assert.Nil(t, tmpDirErr)
+			defer teardown()
+
+			app := local.App{RootDir: tmpDir, Config: tc.appConfig, AppData: tc.appData}
+
+			app.WriteConfig()
+
+			out := new(bytes.Buffer)
+			console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+			assert.Nil(t, consoleErr)
+			defer console.Close()
+
+			cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
+			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+
+			assert.Nil(t, err)
+			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
+			assert.Nil(t, readErr)
+			assert.Equal(t, tc.expectedConfig, string(configData))
+
+			_, fileErr := os.Stat(filepath.Join(tmpDir, "nested", tc.appConfig.String()))
+			assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
+		})
+	}
+}
+
 func TestPushCommandCreateNewApp(t *testing.T) {
 	groupID := "groupID"
 	appID := primitive.NewObjectID().Hex()
 
 	fullPkg := &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+		ConfigVersion:   realm.AppConfigVersion20200603,
 		Name:            "name",
 		Location:        realm.Location("location"),
 		DeploymentModel: realm.DeploymentModel("deployment_model"),
@@ -1180,13 +1307,15 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 			ui := mock.NewUIWithOptions(mock.UIOptions{AutoConfirm: true}, out)
 
 			for _, tc := range []struct {
-				description     string
-				appData         interface{}
-				expectedAppMeta realm.AppMeta
+				description       string
+				appData           interface{}
+				expectedAppMeta   realm.AppMeta
+				expectedAppConfig local.File
 			}{
 				{
-					description: "should use the package name when present and zero values for app meta",
-					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Name: "name"}}},
+					description:       "should use the package name when present and zero values for app meta",
+					appData:           local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{ConfigVersion: realm.AppConfigVersion20200603, Name: "name"}}},
+					expectedAppConfig: local.FileConfig,
 				},
 				{
 					description: "should use the package name location deployment model and environment when present",
@@ -1196,6 +1325,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						DeploymentModel: realm.DeploymentModel("deployment_model"),
 						Environment:     realm.Environment("environment"),
 					},
+					expectedAppConfig: local.FileConfig,
 				},
 			} {
 				t.Run(tc.description, func(t *testing.T) {
@@ -1214,6 +1344,9 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					assert.Nil(t, err)
 					assert.True(t, proceed, "should proceed")
 					assert.Equal(t, expectedApp, app)
+
+					_, fileErr := os.Stat(filepath.Join(tmpDir, tc.expectedAppConfig.String()))
+					assert.Nil(t, fileErr)
 				})
 			}
 		})

@@ -205,6 +205,13 @@ func TestFindApp(t *testing.T) {
 				assert.Nil(t, err)
 				assert.False(t, foundApp, "should not be found")
 			})
+
+			t.Run("and a mismatched version in the config file should fail to find app", func(t *testing.T) {
+				path := filepath.Join(testRoot, "mismatch_version")
+				_, foundApp, err := FindApp(path)
+				assert.Nil(t, err)
+				assert.False(t, foundApp, "should not be found")
+			})
 		})
 	}
 }
@@ -376,7 +383,7 @@ func TestAppWrite20180301(t *testing.T) {
 
 		assert.Nil(t, app.Write())
 
-		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileRealmConfig.String()))
+		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileStitch.String()))
 		assert.Nil(t, readErr)
 
 		var config AppStitchJSON
@@ -434,17 +441,17 @@ func TestAppWrite20200603(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20180301)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20200603)
 
 		assert.Nil(t, app.Write())
 
-		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileRealmConfig.String()))
+		data, readErr := ioutil.ReadFile(filepath.Join(tmpDir, FileConfig.String()))
 		assert.Nil(t, readErr)
 
 		var config AppConfigJSON
 		assert.Nil(t, json.Unmarshal(data, &config))
 		assert.Equal(t, AppConfigJSON{AppDataV1{AppStructureV1{
-			ConfigVersion:        realm.AppConfigVersion20180301,
+			ConfigVersion:        realm.AppConfigVersion20200603,
 			ID:                   "test-app-abcde",
 			Name:                 "test-app",
 			Location:             realm.LocationIreland,
@@ -506,7 +513,7 @@ func TestAppWrite20210101(t *testing.T) {
 		var config AppRealmConfigJSON
 		assert.Nil(t, json.Unmarshal(data, &config))
 		assert.Equal(t, AppRealmConfigJSON{AppDataV2{AppStructureV2{
-			ConfigVersion:   realm.DefaultAppConfigVersion,
+			ConfigVersion:   realm.AppConfigVersion20210101,
 			ID:              "test-app-abcde",
 			Name:            "test-app",
 			Location:        realm.LocationIreland,

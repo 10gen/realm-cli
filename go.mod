@@ -9,13 +9,13 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/briandowns/spinner v1.12.0
 	github.com/edaniels/digest v0.0.0-20170923160545-b81e9c4ee11c
-	github.com/edaniels/golinters v0.0.3
+	github.com/edaniels/golinters v0.0.3 // indirect
 	github.com/fatih/color v1.10.0
-	github.com/golangci/golangci-lint v1.32.2
+	github.com/golangci/golangci-lint v1.32.2 // indirect
 	github.com/google/go-cmp v0.5.2
 	github.com/hinshun/vt10x v0.0.0-20180616224451-1954e6464174
 	github.com/iancoleman/orderedmap v0.1.0
-	github.com/kr/pretty v0.2.1
+	github.com/kr/pretty v0.2.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
 	github.com/spf13/afero v1.1.2
