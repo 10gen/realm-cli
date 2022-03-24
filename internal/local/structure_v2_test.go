@@ -61,10 +61,8 @@ func TestParseDataSources(t *testing.T) {
 					"relationships": map[string]interface{}{},
 				},
 				{
-					"database":      "foo",
-					"collection":    "onlyRulesColl",
-					"schema":        map[string]interface{}{},
-					"relationships": map[string]interface{}{},
+					"database":   "foo",
+					"collection": "onlyRulesColl",
 				},
 				{
 					"database":   "foo",
