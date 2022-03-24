@@ -1027,48 +1027,6 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 
 		assert.Nil(t, err)
 	})
-
-	t.Run("should not confirm diff when creating a new app with auto-confirm", func(t *testing.T) {
-		var realmClient mock.RealmClient
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			return []realm.App{{GroupID: "groupID"}}, nil
-		}
-		realmClient.CreateAppFn = func(groupID, name string, meta realm.AppMeta) (realm.App, error) {
-			return realm.App{ID: "appID", GroupID: "groupID", ClientAppID: "eggcorn-abcde"}, nil
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{}, nil
-		}
-
-		out := new(bytes.Buffer)
-		console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-		assert.Nil(t, consoleErr)
-		defer console.Close()
-
-		doneCh := make(chan (struct{}))
-		go func() {
-			defer close(doneCh)
-			console.ExpectString("Determining changes")
-			console.ExpectString("Creating draft")
-			console.ExpectString("Deploying draft")
-			console.ExpectString("Deployment complete")
-			console.ExpectString("Successfully pushed app up: eggcorn-abcde")
-			console.ExpectEOF()
-		}()
-
-		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
-
-		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
-		defer os.Remove(filepath.Join(testApp.RootDir, local.FileRealmConfig.String()))
-		console.Tty().Close()
-		<-doneCh
-
-		assert.Nil(t, err)
-
-		// Verify that a config file was not created in the nested directory, either.
-		_, fileErr := os.Stat(filepath.Join(testApp.RootDir, "functions", local.FileRealmConfig.String()))
-		assert.NotNil(t, fileErr)
-	})
 }
 
 func TestPushHandlerCreateNewApp(t *testing.T) {
@@ -1195,6 +1153,70 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
 		})
 	}
+
+	t.Run("should not confirm diff when creating a new app and a ui not set to autoconfirm", func(t *testing.T) {
+		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+		assert.Nil(t, tmpDirErr)
+		defer teardown()
+
+		app := local.App{RootDir: tmpDir, Config: local.FileRealmConfig, AppData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+			ConfigVersion:   realm.AppConfigVersion20210101,
+			Name:            "eggcorn",
+			Location:        realm.Location("location"),
+			DeploymentModel: realm.DeploymentModel("deployment_model"),
+			Environment:     realm.Environment("environment"),
+		}}}}
+
+		app.WriteConfig()
+
+		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+
+			console.ExpectString("Do you wish to create a new app?")
+			console.SendLine("y")
+
+			console.ExpectString("App Name")
+			console.SendLine("testApp")
+
+			console.ExpectString("App Location")
+			console.Send(string(terminal.KeyArrowDown))
+			console.SendLine("")
+
+			console.ExpectString("App Deployment Model")
+			console.Send(string(terminal.KeyArrowDown))
+			console.SendLine("")
+
+			console.ExpectString("App Environment")
+			console.Send(string(terminal.KeyArrowDown))
+			console.SendLine("")
+
+			console.ExpectString("Are these settings correct?")
+			console.SendLine("y")
+
+			console.ExpectString("Determining changes")
+			console.ExpectString("Creating draft")
+			console.ExpectString("Deploying draft")
+			console.ExpectString("Deployment complete")
+			console.ExpectString("Successfully pushed app up: eggcorn-abcde")
+
+			console.ExpectEOF()
+		}()
+
+		cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		assert.Nil(t, err)
+		_, fileErr := os.Stat(filepath.Join(tmpDir, local.FileRealmConfig.String()))
+		assert.Nil(t, fileErr)
+	})
 }
 
 func TestPushCommandCreateNewApp(t *testing.T) {
