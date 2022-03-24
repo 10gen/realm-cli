@@ -1029,7 +1029,7 @@ Try instead: realm-cli push --local testdata/dependencies --remote appID --inclu
 	})
 }
 
-func TestPushHandlerUseCreateNewApp(t *testing.T) {
+func TestPushHandlerCreateNewApp(t *testing.T) {
 	groupID := "groupID"
 	appID := "eggcorn-abcde"
 
@@ -1142,7 +1142,7 @@ func TestPushHandlerUseCreateNewApp(t *testing.T) {
 			assert.Nil(t, consoleErr)
 			defer console.Close()
 
-			cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
+			cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
 			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
 			assert.Nil(t, err)
