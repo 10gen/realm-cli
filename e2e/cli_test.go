@@ -250,7 +250,7 @@ func TestCLIVersionCheck(t *testing.T) {
 			console.Close() // flush the writers
 
 			lines := strings.Split(out.String(), "\r\n")
-			url := fmt.Sprintf("https://s3.amazonaws.com/realm-clis/realm_cli_rhel70_c61061f62167023c81195fd09ba42bd5cdfade6e_22_03_02_20_09_42/%s/realm-cli%s", tc.osArch, tc.ext)
+			url := lines[0][strings.Index(lines[0], ": ")+2:]
 
 			assert.True(t, strings.HasPrefix(lines[0], "New version (v"), "first line must indicate the new version")
 			assert.True(t, strings.HasSuffix(lines[0], ") of CLI available: "+url), "first line must point to the new url")
