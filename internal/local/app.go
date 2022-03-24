@@ -49,7 +49,6 @@ func (a App) Option() string {
 	return a.AppData.Name()
 }
 
-// hasValidConfigVersion returns whether or not the config file and version number match
 func (a App) hasValidConfigVersion() bool {
 	switch a.ConfigVersion() {
 	case realm.AppConfigVersion20180301:

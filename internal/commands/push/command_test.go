@@ -1127,7 +1127,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 `,
 		},
 	} {
-		t.Run(fmt.Sprintf("with a %s config file", tc.appConfig.String()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("with a %s config file and nested local path", tc.appConfig.String()), func(t *testing.T) {
 			tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
 			assert.Nil(t, tmpDirErr)
 			defer teardown()
@@ -1148,6 +1148,9 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
 			assert.Nil(t, readErr)
 			assert.Equal(t, tc.expectedConfig, string(configData))
+
+			_, fileErr := os.Stat(filepath.Join(tmpDir, "nested", tc.appConfig.String()))
+			assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
 		})
 	}
 }
