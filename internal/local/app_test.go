@@ -205,13 +205,6 @@ func TestFindApp(t *testing.T) {
 				assert.Nil(t, err)
 				assert.False(t, foundApp, "should not be found")
 			})
-
-			t.Run("and a mismatched version in the config file should fail to find app", func(t *testing.T) {
-				path := filepath.Join(testRoot, "mismatch_version")
-				_, foundApp, err := FindApp(path)
-				assert.Nil(t, err)
-				assert.False(t, foundApp, "should not be found")
-			})
 		})
 	}
 }
