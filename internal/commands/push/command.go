@@ -159,7 +159,6 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		appRemote.GroupID = groupID
 	}
 
-	var isNewApp bool
 	if appRemote.AppID == "" {
 		if cmd.inputs.DryRun {
 			ui.Print(
@@ -177,9 +176,10 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
+		ui.Print(terminal.NewTextLog("App created successfully"))
+
 		appRemote.AppID = newApp.ID
 		appRemote.ClientAppID = newApp.ClientAppID
-		isNewApp = true
 	}
 
 	ui.Print(terminal.NewTextLog("Determining changes"))
@@ -232,7 +232,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	if !ui.AutoConfirm() && !isNewApp {
+	if !ui.AutoConfirm() {
 		diffs := make([]string, 0, len(appDiffs)+1+hostingDiffs.Cap())
 
 		diffs = append(diffs, appDiffs...)
@@ -259,14 +259,12 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return nil
 	}
 
-	if !isNewApp {
-		proceed, err := ui.Confirm("Please confirm the changes shown above")
-		if err != nil {
-			return err
-		}
-		if !proceed {
-			return nil
-		}
+	proceed, err := ui.Confirm("Please confirm the changes shown above")
+	if err != nil {
+		return err
+	}
+	if !proceed {
+		return nil
 	}
 
 	if len(appDiffs) > 0 {
@@ -470,7 +468,7 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		}
 	}
 
-	if proceed, err := ui.Confirm("Are these settings correct?"); err != nil {
+	if proceed, err := ui.Confirm("Please confirm the new app details shown above"); err != nil {
 		return realm.App{}, false, err
 	} else if !proceed {
 		return realm.App{}, false, nil

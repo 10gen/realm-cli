@@ -1046,25 +1046,32 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			AppMeta:     meta,
 		}, nil
 	}
-	realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-		return []string{}, nil
+	realmClient.CreateDraftFn = func(groupID, appID string) (realm.AppDraft, error) { return realm.AppDraft{ID: "id"}, nil }
+	realmClient.ImportFn = func(groupID, appID string, appData interface{}) error { return nil }
+	realmClient.DeployDraftFn = func(groupID, appID, draftID string) (realm.AppDeployment, error) {
+		return realm.AppDeployment{Status: realm.DeploymentStatusSuccessful}, nil
 	}
 
-	for _, tc := range []struct {
-		appConfig      local.File
-		appData        local.AppData
-		expectedConfig string
-	}{
-		{
-			appConfig: local.FileRealmConfig,
-			appData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-				ConfigVersion:   realm.AppConfigVersion20210101,
-				Name:            "eggcorn",
-				Location:        realm.Location("location"),
-				DeploymentModel: realm.DeploymentModel("deployment_model"),
-				Environment:     realm.Environment("environment"),
-			}}},
-			expectedConfig: `{
+	t.Run("should successfully push with local path in a nested directory", func(t *testing.T) {
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		for _, tc := range []struct {
+			appConfig      local.File
+			appData        local.AppData
+			expectedConfig string
+		}{
+			{
+				appConfig: local.FileRealmConfig,
+				appData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+					ConfigVersion:   realm.AppConfigVersion20210101,
+					Name:            "eggcorn",
+					Location:        realm.Location("location"),
+					DeploymentModel: realm.DeploymentModel("deployment_model"),
+					Environment:     realm.Environment("environment"),
+				}}},
+				expectedConfig: `{
     "config_version": 20210101,
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
@@ -1073,17 +1080,17 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     "environment": "environment"
 }
 `,
-		},
-		{
-			appConfig: local.FileConfig,
-			appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
-				ConfigVersion:   realm.AppConfigVersion20200603,
-				Name:            "eggcorn",
-				Location:        realm.Location("location"),
-				DeploymentModel: realm.DeploymentModel("deployment_model"),
-				Environment:     realm.Environment("environment"),
-			}}},
-			expectedConfig: `{
+			},
+			{
+				appConfig: local.FileConfig,
+				appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+					ConfigVersion:   realm.AppConfigVersion20200603,
+					Name:            "eggcorn",
+					Location:        realm.Location("location"),
+					DeploymentModel: realm.DeploymentModel("deployment_model"),
+					Environment:     realm.Environment("environment"),
+				}}},
+				expectedConfig: `{
     "config_version": 20200603,
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
@@ -1099,17 +1106,17 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     }
 }
 `,
-		},
-		{
-			appConfig: local.FileStitch,
-			appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
-				ConfigVersion:   realm.AppConfigVersion20180301,
-				Name:            "eggcorn",
-				Location:        realm.Location("location"),
-				DeploymentModel: realm.DeploymentModel("deployment_model"),
-				Environment:     realm.Environment("environment"),
-			}}},
-			expectedConfig: `{
+			},
+			{
+				appConfig: local.FileStitch,
+				appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+					ConfigVersion:   realm.AppConfigVersion20180301,
+					Name:            "eggcorn",
+					Location:        realm.Location("location"),
+					DeploymentModel: realm.DeploymentModel("deployment_model"),
+					Environment:     realm.Environment("environment"),
+				}}},
+				expectedConfig: `{
     "config_version": 20180301,
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
@@ -1125,97 +1132,135 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     }
 }
 `,
-		},
-	} {
-		t.Run(fmt.Sprintf("with a %s config file and nested local path", tc.appConfig.String()), func(t *testing.T) {
-			tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
-			assert.Nil(t, tmpDirErr)
-			defer teardown()
+			},
+		} {
+			t.Run(fmt.Sprintf("and a %s config file", tc.appConfig.String()), func(t *testing.T) {
+				tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+				assert.Nil(t, tmpDirErr)
+				defer teardown()
 
-			app := local.App{RootDir: tmpDir, Config: tc.appConfig, AppData: tc.appData}
+				app := local.App{RootDir: tmpDir, Config: tc.appConfig, AppData: tc.appData}
 
-			app.WriteConfig()
+				app.WriteConfig()
 
-			out := new(bytes.Buffer)
-			console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
-			assert.Nil(t, consoleErr)
-			defer console.Close()
+				out := new(bytes.Buffer)
+				console, ui, consoleErr := mock.NewConsoleWithOptions(mock.UIOptions{AutoConfirm: true}, out)
+				assert.Nil(t, consoleErr)
+				defer console.Close()
 
-			cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
-			err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
-			assert.Nil(t, err)
-			configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
-			assert.Nil(t, readErr)
-			assert.Equal(t, tc.expectedConfig, string(configData))
+				assert.Nil(t, err)
+				configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
+				assert.Nil(t, readErr)
+				assert.Equal(t, tc.expectedConfig, string(configData))
 
-			_, fileErr := os.Stat(filepath.Join(tmpDir, "nested", tc.appConfig.String()))
-			assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
-		})
-	}
+				_, fileErr := os.Stat(filepath.Join(tmpDir, "nested", tc.appConfig.String()))
+				assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
+			})
+		}
+	})
 
-	t.Run("should skip diff when creating a new app", func(t *testing.T) {
-		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
-		assert.Nil(t, tmpDirErr)
-		defer teardown()
+	t.Run("should compare the local app to the created app", func(t *testing.T) {
+		for _, tc := range []struct {
+			description string
+			diffFn      func(groupId, appID string, appData interface{}) ([]string, error)
+			procedure   func(c *expect.Console)
+		}{
+			{
+				description: "with an identical dif",
+				diffFn:      func(groupId, appID string, appData interface{}) ([]string, error) { return []string{}, nil },
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Determining changes")
+					c.ExpectString("Deployed app is identical to proposed version, nothing to do")
+				},
+			},
+			{
+				description: "with a diff which is accepted by the user",
+				diffFn:      func(groupId, appID string, appData interface{}) ([]string, error) { return []string{"diff"}, nil },
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Please confirm the changes shown above")
+					c.SendLine("y")
 
-		app := local.App{RootDir: tmpDir, Config: local.FileRealmConfig, AppData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
-			ConfigVersion:   realm.AppConfigVersion20210101,
-			Name:            "eggcorn",
-			Location:        realm.Location("location"),
-			DeploymentModel: realm.DeploymentModel("deployment_model"),
-			Environment:     realm.Environment("environment"),
-		}}}}
+					c.ExpectString("Determining changes")
+					c.ExpectString("Creating draft")
+					c.ExpectString("Deploying draft")
+					c.ExpectString("Deployment complete")
+					c.ExpectString("Successfully pushed app up: eggcorn-abcde")
+				},
+			},
+			{
+				description: "with a diff which is rejected by the user",
+				diffFn:      func(groupId, appID string, appData interface{}) ([]string, error) { return []string{"diff"}, nil },
+				procedure: func(c *expect.Console) {
+					c.ExpectString("Please confirm the changes")
+					c.SendLine("")
+				},
+			},
+		} {
+			t.Run(tc.description, func(t *testing.T) {
+				realmClient.DiffFn = tc.diffFn
+				tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
+				assert.Nil(t, tmpDirErr)
+				defer teardown()
 
-		app.WriteConfig()
+				app := local.App{RootDir: tmpDir, Config: local.FileRealmConfig, AppData: &local.AppRealmConfigJSON{local.AppDataV2{local.AppStructureV2{
+					ConfigVersion:   realm.AppConfigVersion20210101,
+					Name:            "eggcorn",
+					Location:        realm.Location("location"),
+					DeploymentModel: realm.DeploymentModel("deployment_model"),
+					Environment:     realm.Environment("environment"),
+				}}}}
 
-		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
-		assert.Nil(t, consoleErr)
-		defer console.Close()
+				app.WriteConfig()
 
-		doneCh := make(chan (struct{}))
-		go func() {
-			defer close(doneCh)
+				_, console, _, ui, consoleErr := mock.NewVT10XConsole()
+				assert.Nil(t, consoleErr)
+				defer console.Close()
 
-			console.ExpectString("Do you wish to create a new app?")
-			console.SendLine("y")
+				doneCh := make(chan (struct{}))
+				go func() {
+					defer close(doneCh)
+					console.ExpectString("Do you wish to create a new app?")
+					console.SendLine("y")
 
-			console.ExpectString("App Name")
-			console.SendLine("testApp")
+					console.ExpectString("App Name")
+					console.SendLine("testApp")
 
-			console.ExpectString("App Location")
-			console.Send(string(terminal.KeyArrowDown))
-			console.SendLine("")
+					console.ExpectString("App Location")
+					console.Send(string(terminal.KeyArrowDown))
+					console.SendLine("")
 
-			console.ExpectString("App Deployment Model")
-			console.Send(string(terminal.KeyArrowDown))
-			console.SendLine("")
+					console.ExpectString("App Deployment Model")
+					console.Send(string(terminal.KeyArrowDown))
+					console.SendLine("")
 
-			console.ExpectString("App Environment")
-			console.Send(string(terminal.KeyArrowDown))
-			console.SendLine("")
+					console.ExpectString("App Environment")
+					console.Send(string(terminal.KeyArrowDown))
+					console.SendLine("")
 
-			console.ExpectString("Are these settings correct?")
-			console.SendLine("y")
+					console.ExpectString("Please confirm the new app details shown above")
+					console.SendLine("y")
 
-			console.ExpectString("Determining changes")
-			console.ExpectString("Creating draft")
-			console.ExpectString("Deploying draft")
-			console.ExpectString("Deployment complete")
-			console.ExpectString("Successfully pushed app up: eggcorn-abcde")
+					console.ExpectString("App created successfully")
 
-			console.ExpectEOF()
-		}()
+					tc.procedure(console)
 
-		cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
-		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+					console.ExpectEOF()
+				}()
 
-		console.Tty().Close() // flush the writers
-		<-doneCh              // wait for procedure to complete
+				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
+				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 
-		assert.Nil(t, err)
-		_, fileErr := os.Stat(filepath.Join(tmpDir, local.FileRealmConfig.String()))
-		assert.Nil(t, fileErr)
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
+				assert.Nil(t, err)
+				_, fileErr := os.Stat(filepath.Join(tmpDir, local.FileRealmConfig.String()))
+				assert.Nil(t, fileErr)
+			})
+		}
 	})
 }
 
@@ -1284,7 +1329,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
-						c.ExpectString("Are these settings correct?")
+						c.ExpectString("Please confirm the new app details shown above")
 						c.SendLine("y")
 
 						c.ExpectEOF()
@@ -1314,7 +1359,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					expectedProceed: true,
 				},
 				{
-					description: "should confirm app configuration before creating",
+					description: "should return empty data if user rejects app configuration",
 					procedure: func(c *expect.Console) {
 
 						c.ExpectString("Do you wish to create a new app?")
@@ -1335,7 +1380,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
-						c.ExpectString("Are these settings correct?")
+						c.ExpectString("Please confirm the new app details shown above")
 						c.SendLine("")
 
 						c.ExpectEOF()
