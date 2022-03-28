@@ -1154,7 +1154,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 		})
 	}
 
-	t.Run("should not confirm diff when creating a new app and a ui not set to autoconfirm", func(t *testing.T) {
+	t.Run("should skip diff when creating a new app", func(t *testing.T) {
 		tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
 		assert.Nil(t, tmpDirErr)
 		defer teardown()
@@ -1314,7 +1314,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					expectedProceed: true,
 				},
 				{
-					description: "should not create app if user does not confirm configuration",
+					description: "should confirm app configuration before creating",
 					procedure: func(c *expect.Console) {
 
 						c.ExpectString("Do you wish to create a new app?")
