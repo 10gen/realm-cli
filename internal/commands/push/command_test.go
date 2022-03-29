@@ -1169,7 +1169,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			procedure   func(c *expect.Console)
 		}{
 			{
-				description: "with an identical dif",
+				description: "with an identical diff",
 				diffFn:      func(groupId, appID string, appData interface{}) ([]string, error) { return []string{}, nil },
 				procedure: func(c *expect.Console) {
 					c.ExpectString("Determining changes")
