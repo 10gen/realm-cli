@@ -1149,9 +1149,8 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				defer console.Close()
 
 				cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
-				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
-				assert.Nil(t, err)
 				configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
 				assert.Nil(t, readErr)
 				assert.Equal(t, tc.expectedConfig, string(configData))
@@ -1251,12 +1250,11 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				}()
 
 				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
-				err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
+				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 				console.Tty().Close() // flush the writers
 				<-doneCh              // wait for procedure to complete
 
-				assert.Nil(t, err)
 				_, fileErr := os.Stat(filepath.Join(tmpDir, local.FileRealmConfig.String()))
 				assert.Nil(t, fileErr)
 			})
@@ -1361,7 +1359,6 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 				{
 					description: "should return empty data if user rejects app configuration",
 					procedure: func(c *expect.Console) {
-
 						c.ExpectString("Do you wish to create a new app?")
 						c.SendLine("y")
 
