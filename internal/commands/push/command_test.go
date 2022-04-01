@@ -1156,7 +1156,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				assert.Equal(t, tc.expectedConfig, string(configData))
 
 				_, fileErr := os.Stat(filepath.Join(tmpDir, "nested", tc.appConfig.String()))
-				assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", err)
+				assert.True(t, os.IsNotExist(fileErr), "expected nested config path to not exist, but err was: %s", fileErr)
 			})
 		}
 	})
