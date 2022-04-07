@@ -35,6 +35,7 @@ func errFailedToFindApp(path string) error {
 type App struct {
 	RootDir string
 	Config  File
+	AppMeta AppMeta
 	AppData
 }
 
@@ -251,6 +252,34 @@ func (a *App) LoadConfig() error {
 	return nil
 }
 
+// LoadAppMeta will load the local app's data from .mdb/realm_cli.json
+func (a *App) LoadAppMeta() error {
+	path := filepath.Join(a.RootDir, dirMDB, FileCliConfig.String())
+	data, dataErr := ioutil.ReadFile(path)
+	if dataErr != nil {
+		return errFailedToParseAppConfig(path) // TODO: Is this the right error?
+	}
+
+	if err := json.Unmarshal(data, &a.AppMeta); err != nil {
+		return errFailedToParseAppConfig(path)
+	}
+
+	switch a.AppMeta.ConfigVersion {
+	case realm.AppConfigVersion20180301:
+		a.Config = FileStitch
+	case realm.AppConfigVersion20200603:
+		a.Config = FileConfig
+	case realm.AppConfigVersion20210101:
+		a.Config = FileRealmConfig
+	default:
+		return fmt.Errorf("invalid config version: %s", a.AppMeta.ConfigVersion.String())
+	}
+
+	a.LoadConfig()
+
+	return nil
+}
+
 var (
 	allConfigFiles = []File{FileRealmConfig, FileConfig, FileStitch}
 )
@@ -265,26 +294,25 @@ func FindApp(path string) (App, bool, error) {
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		for _, config := range allConfigFiles {
-			_, err := os.Stat(filepath.Join(wd, config.String()))
-			if err != nil {
-				if os.IsNotExist(err) {
-					continue
+		if _, err := os.Stat(filepath.Join(wd, dirMDB, FileCliConfig.String())); err != nil {
+			if os.IsNotExist(err) {
+				// .mdb/realm_cli.json may not exist, so we check whether a regular config file exists.
+				if app, proceed, err := checkForConfigFile(wd); proceed || err != nil {
+					return app, proceed, err
 				}
+			} else {
 				return App{}, false, err
 			}
-
-			app := App{RootDir: wd, Config: config}
-			if err := app.LoadConfig(); err != nil {
-				return App{}, false, err
-			}
-
-			// if no config version is found then continue searching for the app's root directory config
-			if app.ConfigVersion() == 0 {
-				continue
+		} else {
+			// wd is the app root, so return the app no matter what
+			app := App{RootDir: wd}
+			if err := app.LoadAppMeta(); err != nil {
+				return App{}, false, nil
 			}
 			return app, true, nil
 		}
+
+		// No config file or cli file was found, so go up a directory
 		if wd == "/" {
 			break
 		}
@@ -292,4 +320,29 @@ func FindApp(path string) (App, bool, error) {
 	}
 
 	return App{}, false, nil
+}
+
+// Check for a config file at the path and determine whether or not to exit execution or not.
+func checkForConfigFile(path string) (App, bool, error) {
+	for _, config := range allConfigFiles {
+		_, err := os.Stat(filepath.Join(path, config.String()))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return App{}, false, err
+		}
+		app := App{RootDir: path, Config: config}
+		if err := app.LoadConfig(); err != nil {
+			return App{}, false, err
+		}
+
+		if app.ConfigVersion() == 0 {
+			continue
+		}
+
+		return app, true, nil
+	}
+
+	return App{}, false, nil // No valid config file
 }
