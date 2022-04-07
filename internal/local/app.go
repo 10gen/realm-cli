@@ -35,7 +35,7 @@ func errFailedToFindApp(path string) error {
 type App struct {
 	RootDir string
 	Config  File
-	AppMeta AppMeta
+	AppMeta MdbAppMeta
 	AppData
 }
 
@@ -183,6 +183,11 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 		RootDir: rootDir,
 		Config:  config,
 		AppData: appData,
+		AppMeta: MdbAppMeta{
+			ConfigVersion: configVersion,
+			AppID:         app.ID,
+			GroupID:       app.GroupID,
+		},
 	}
 }
 
@@ -252,9 +257,9 @@ func (a *App) LoadConfig() error {
 	return nil
 }
 
-// LoadAppMeta will load the local app's data from .mdb/realm_cli.json
+// LoadAppMeta will load the local app's data from .mdb/app_meta.json
 func (a *App) LoadAppMeta() error {
-	path := filepath.Join(a.RootDir, dirMDB, FileCliConfig.String())
+	path := filepath.Join(a.RootDir, FileMdbAppMeta.String())
 	data, dataErr := ioutil.ReadFile(path)
 	if dataErr != nil {
 		return errFailedToParseAppConfig(path) // TODO: Is this the right error?
@@ -294,9 +299,9 @@ func FindApp(path string) (App, bool, error) {
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		if _, err := os.Stat(filepath.Join(wd, dirMDB, FileCliConfig.String())); err != nil {
+		if _, err := os.Stat(filepath.Join(wd, FileMdbAppMeta.String())); err != nil {
 			if os.IsNotExist(err) {
-				// .mdb/realm_cli.json may not exist, so we check whether a regular config file exists.
+				// .mdb/app_meta.json may not exist, so we check whether a regular config file exists.
 				if app, proceed, err := checkForConfigFile(wd); proceed || err != nil {
 					return app, proceed, err
 				}

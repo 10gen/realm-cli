@@ -23,8 +23,8 @@ type AppData interface {
 	WriteData(rootDir string) error
 }
 
-// AppMeta represents the .mdb/realm_cli.json config
-type AppMeta struct {
+// MdbAppMeta represents the .mdb/app_meta.json config
+type MdbAppMeta struct {
 	ConfigVersion realm.AppConfigVersion `json:"config_version"`
 	GroupID       string                 `json:"group_id"`
 	AppID         string                 `json:"app_id"`
@@ -43,7 +43,7 @@ const (
 	NameRealmConfig = "realm_config"
 	NameConfig      = "config"
 	NameStitch      = "stitch"
-	NameCliConfig   = "realm_cli"
+	NameAppMeta   = "app_meta"
 
 	// environments
 	NameEnvironments = "environments"
@@ -99,7 +99,7 @@ var (
 	FileRealmConfig = File{NameRealmConfig, extJSON}
 	FileConfig      = File{NameConfig, extJSON}
 	FileStitch      = File{NameStitch, extJSON}
-	FileCliConfig   = File{NameCliConfig, extJSON}
+	FileMdbAppMeta   = File{filepath.Join(dirMDB, NameAppMeta), extJSON}
 
 	// auth
 	FileCustomUserData = File{NameCustomUserData, extJSON}
