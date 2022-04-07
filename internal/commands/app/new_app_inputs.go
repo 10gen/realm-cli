@@ -27,7 +27,7 @@ type newAppInputs struct {
 func (i *newAppInputs) resolveRemoteApp(ui terminal.UI, rc realm.Client) (realm.App, error) {
 	var ra realm.App
 	if i.RemoteApp != "" {
-		app, err := cli.ResolveApp(ui, rc, realm.AppFilter{App: i.RemoteApp})
+		app, err := cli.ResolveApp(ui, rc, cli.AppOptions{Filter: realm.AppFilter{App: i.RemoteApp}})
 		if err != nil {
 			return realm.App{}, err
 		}

@@ -141,11 +141,6 @@ func (cmd *Command) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	app, err := local.LoadApp(cmd.inputs.LocalPath)
-	if err != nil {
-		return err
-	}
-
 	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm)
 	if err != nil {
 		return err
@@ -168,7 +163,13 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 			return nil
 		}
 
-		newApp, proceed, err := createNewApp(ui, clients.Realm, app.RootDir, appRemote.GroupID, app.AppData)
+		newApp, proceed, err := createNewApp(
+			ui,
+			clients.Realm,
+			cmd.inputs.appLocal.RootDir,
+			appRemote.GroupID,
+			cmd.inputs.appLocal.AppData,
+		)
 		if err != nil {
 			return err
 		}
@@ -183,7 +184,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	}
 
 	ui.Print(terminal.NewTextLog("Determining changes"))
-	appDiffs, err := clients.Realm.Diff(appRemote.GroupID, appRemote.AppID, app.AppData)
+	appDiffs, err := clients.Realm.Diff(appRemote.GroupID, appRemote.AppID, cmd.inputs.appLocal.AppData)
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 	var uploadPathDependencies string
 	var dependenciesDiffs realm.DependenciesDiff
 	if cmd.inputs.IncludeNodeModules || cmd.inputs.IncludePackageJSON || cmd.inputs.IncludeDependencies {
-		appDependencies, err := cmd.inputs.resolveAppDependencies(app.RootDir)
+		appDependencies, err := cmd.inputs.resolveAppDependencies(cmd.inputs.appLocal.RootDir)
 		if err != nil {
 			return err
 		}
@@ -209,7 +210,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		uploadPathDependencies = uploadPath
 	}
 
-	hosting, err := local.FindAppHosting(app.RootDir)
+	hosting, err := local.FindAppHosting(cmd.inputs.appLocal.RootDir)
 	if err != nil {
 		return err
 	}
@@ -278,7 +279,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		}
 
 		ui.Print(terminal.NewTextLog("Pushing changes"))
-		if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, app.AppData); err != nil {
+		if err := clients.Realm.Import(appRemote.GroupID, appRemote.AppID, cmd.inputs.appLocal.AppData); err != nil {
 			if err := clients.Realm.DiscardDraft(appRemote.GroupID, appRemote.AppID, draft.ID); err != nil {
 				ui.Print(warnFailedToDiscardDraft)
 			}

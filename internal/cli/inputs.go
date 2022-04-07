@@ -17,6 +17,7 @@ type ProjectInputs struct {
 	Project  string
 	App      string
 	Products []string
+	AppMeta  local.AppMeta
 }
 
 // Filter returns a realm.AppFlter based on the inputs
@@ -26,15 +27,16 @@ func (i ProjectInputs) Filter() realm.AppFilter {
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
 func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) error {
-	app, _, appErr := local.FindApp(wd)
-	if appErr != nil {
-		return appErr
+	app, _, err := local.FindApp(wd)
+	if err != nil {
+		return err
 	}
 
 	if i.App == "" {
 		var appOption string
 
 		if app.RootDir != "" {
+			i.AppMeta = app.Meta
 			appOption = app.Option()
 		} else {
 			if !skipAppPrompt {
@@ -45,7 +47,6 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) e
 		}
 		i.App = appOption
 	}
-
 	return nil
 }
 
@@ -68,16 +69,31 @@ var (
 	ErrGroupNotFound = errors.New("failed to find group")
 )
 
-// ResolveApp will use the provided Realm client to resolve the app specified by the filter
-func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
-	apps, err := client.FindApps(filter)
+// AppOptions are the parameters for resolving app
+type AppOptions struct {
+	AppMeta      local.AppMeta
+	Filter       realm.AppFilter
+	FetchDetails bool
+}
+
+// ResolveApp will use the provided Realm client to resolve the app specified by the options
+func ResolveApp(ui terminal.UI, client realm.Client, opts AppOptions) (realm.App, error) {
+	// if no flags were set and the optional .mdb/app_meta.json file is present
+	if opts.Filter.GroupID == "" && opts.Filter.App == "" && opts.AppMeta.ConfigVersion != 0 {
+		if opts.FetchDetails {
+			return client.FindApp(opts.AppMeta.GroupID, opts.AppMeta.AppID)
+		}
+		return realm.App{ID: opts.AppMeta.AppID, GroupID: opts.AppMeta.GroupID}, nil
+	}
+
+	apps, err := client.FindApps(opts.Filter)
 	if err != nil {
 		return realm.App{}, err
 	}
 
 	switch len(apps) {
 	case 0:
-		return realm.App{}, ErrAppNotFound{filter.App}
+		return realm.App{}, ErrAppNotFound{opts.Filter.App}
 	case 1:
 		return apps[0], nil
 	}

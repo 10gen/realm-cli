@@ -53,7 +53,10 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	app, appErr := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	app, appErr := cli.ResolveApp(ui, clients.Realm, cli.AppOptions{
+		AppMeta: cmd.inputs.AppMeta,
+		Filter:  cmd.inputs.Filter(),
+	})
 	if appErr != nil {
 		return appErr
 	}

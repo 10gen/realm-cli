@@ -101,10 +101,15 @@ func TestPushHandler(t *testing.T) {
 			return realm.App{}, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+		localPath, err := filepath.Abs("testdata/project")
+		assert.Nil(t, err)
 
-		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
-		assert.Equal(t, errors.New("something bad happened"), err)
+		appLocal, err := local.LoadApp(localPath)
+		assert.Nil(t, err)
+
+		cmd := &Command{inputs{RemoteApp: "appID", appLocal: appLocal}}
+
+		assert.Equal(t, errors.New("something bad happened"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
@@ -130,7 +135,10 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+		i := inputs{LocalPath: "testdata/project", RemoteApp: "appID"}
+		assert.Nil(t, i.Resolve(nil, nil))
+
+		cmd := &Command{i}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -204,7 +212,10 @@ func TestPushHandler(t *testing.T) {
 			return nil
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
+		i := inputs{LocalPath: "testdata/project", RemoteApp: "appID"}
+		assert.Nil(t, i.Resolve(nil, nil))
+
+		cmd := &Command{i}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -472,7 +483,10 @@ Failed to discard the draft created for your deployment
 					return nil, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
+				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
+				assert.Nil(t, i.Resolve(nil, nil))
+
+				cmd := &Command{i}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -501,7 +515,10 @@ Deployment complete`,
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
+				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
+				assert.Nil(t, i.Resolve(nil, nil))
+
+				cmd := &Command{i}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -546,7 +563,10 @@ Deployment complete`,
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
+				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
+				assert.Nil(t, i.Resolve(nil, nil))
+
+				cmd := &Command{i}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("1 error(s) occurred while importing hosting assets"), err)
@@ -589,7 +609,10 @@ An error occurred while uploading hosting assets: failed to remove /deleteme.htm
 					}, nil
 				}
 
-				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
+				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
+				assert.Nil(t, i.Resolve(nil, nil))
+
+				cmd := &Command{i}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -640,7 +663,10 @@ Deployment complete`,
 				}, nil
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
+			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
+			assert.Nil(t, i.Resolve(nil, nil))
+
+			cmd := &Command{i}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -681,7 +707,10 @@ Successfully pushed app up: eggcorn-abcde
 				return errors.New("something bad happened")
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
+			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}
+			assert.Nil(t, i.Resolve(nil, nil))
+
+			cmd := &Command{i}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -710,7 +739,10 @@ Successfully pushed app up: eggcorn-abcde
 				return nil
 			}
 
-			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
+			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}
+			assert.Nil(t, i.Resolve(nil, nil))
+
+			cmd := &Command{i}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -914,6 +946,40 @@ Deployed app is identical to proposed version, nothing to do
 `, out.String())
 	})
 
+	t.Run("with app meta should skip resolving app", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		var realmClient mock.RealmClient
+		var findAppsCalled bool
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			findAppsCalled = true
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		var atlasClient mock.AtlasClient
+		var groupsCalled bool
+		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			groupsCalled = true
+			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
+		}
+
+		i := inputs{LocalPath: "testdata/project-meta", DryRun: true}
+		assert.Nil(t, i.Resolve(nil, nil))
+
+		cmd := &Command{i}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient})
+		assert.Nil(t, err)
+		assert.False(t, findAppsCalled, "Expected to skip resolve app ID")
+		assert.False(t, groupsCalled, "Expected to skip resolve group ID")
+		assert.Equal(t, `Determining changes
+Deployed app is identical to proposed version, nothing to do
+`, out.String())
+	})
+
 	t.Run("with diffs generated from the app but is a dry run", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -1109,7 +1175,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			},
 			{
 				appConfig: local.FileStitch,
-				appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+				appData: &local.AppStitchJSON{local.AppDataV1{local.AppStructureV1{
 					ConfigVersion:   realm.AppConfigVersion20180301,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
@@ -1139,6 +1205,8 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				assert.Nil(t, tmpDirErr)
 				defer teardown()
 
+				assert.Nil(t, os.Mkdir(filepath.Join(tmpDir, "nested"), os.ModePerm))
+
 				app := local.App{RootDir: tmpDir, Config: tc.appConfig, AppData: tc.appData}
 
 				app.WriteConfig()
@@ -1148,7 +1216,10 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				assert.Nil(t, consoleErr)
 				defer console.Close()
 
-				cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
+				i := inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}
+				assert.Nil(t, i.Resolve(nil, nil))
+
+				cmd := &Command{i}
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 				configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
@@ -1249,7 +1320,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					console.ExpectEOF()
 				}()
 
-				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
+				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID", appLocal: app}}
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 				console.Tty().Close() // flush the writers

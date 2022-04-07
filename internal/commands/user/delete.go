@@ -45,7 +45,10 @@ func (cmd *CommandDelete) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandDelete) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	app, err := cli.ResolveApp(ui, clients.Realm, cli.AppOptions{
+		AppMeta: cmd.inputs.AppMeta,
+		Filter:  cmd.inputs.Filter(),
+	})
 	if err != nil {
 		return err
 	}
