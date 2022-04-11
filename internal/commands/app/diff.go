@@ -142,7 +142,6 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		appID = appToDiff.ID
 	}
 
-
 	diffs, err := clients.Realm.Diff(groupID, appID, app.AppData)
 	if err != nil {
 		return err

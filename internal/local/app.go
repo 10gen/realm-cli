@@ -262,7 +262,7 @@ func (a *App) LoadAppMeta() error {
 	path := filepath.Join(a.RootDir, FileMdbAppMeta.String())
 	data, dataErr := ioutil.ReadFile(path)
 	if dataErr != nil {
-		return errFailedToParseAppConfig(path) // TODO: Is this the right error?
+		return errFailedToParseAppConfig(path)
 	}
 
 	if err := json.Unmarshal(data, &a.AppMeta); err != nil {
@@ -279,8 +279,6 @@ func (a *App) LoadAppMeta() error {
 	default:
 		return fmt.Errorf("invalid config version: %s", a.AppMeta.ConfigVersion.String())
 	}
-
-	a.LoadConfig()
 
 	return nil
 }
@@ -314,6 +312,14 @@ func FindApp(path string) (App, bool, error) {
 			if err := app.LoadAppMeta(); err != nil {
 				return App{}, false, nil
 			}
+			_, err := os.Stat(filepath.Join(path, app.Config.String()))
+			if err != nil {
+				return App{}, false, err
+			}
+			if err := app.LoadConfig(); err != nil {
+				return App{}, false, err
+			}
+
 			return app, true, nil
 		}
 
@@ -327,7 +333,7 @@ func FindApp(path string) (App, bool, error) {
 	return App{}, false, nil
 }
 
-// Check for a config file at the path and determine whether or not to exit execution or not.
+// Check for a config file at the path and determine whether or not to exit execution.
 func checkForConfigFile(path string) (App, bool, error) {
 	for _, config := range allConfigFiles {
 		_, err := os.Stat(filepath.Join(path, config.String()))
@@ -342,7 +348,7 @@ func checkForConfigFile(path string) (App, bool, error) {
 			return App{}, false, err
 		}
 
-		if app.ConfigVersion() == 0 {
+		if app.ConfigVersion() == realm.AppConfigVersionZero {
 			continue
 		}
 

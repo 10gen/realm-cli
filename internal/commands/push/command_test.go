@@ -914,13 +914,13 @@ Deployed app is identical to proposed version, nothing to do
 `, out.String())
 	})
 
-	t.Run("with app meta should skip resolve to", func(t *testing.T) {
+	t.Run("with app meta should skip resolving app", func(t *testing.T) {
 		out, ui := mock.NewUI()
 
 		var realmClient mock.RealmClient
-		var calledFindApps bool
+		var findAppsCalled bool
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			calledFindApps = true
+			findAppsCalled = true
 			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
 		}
 		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
@@ -928,9 +928,9 @@ Deployed app is identical to proposed version, nothing to do
 		}
 
 		var atlasClient mock.AtlasClient
-		var calledGroups bool
+		var groupsCalled bool
 		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-			calledGroups = true
+			groupsCalled = true
 			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
 		}
 
@@ -938,8 +938,8 @@ Deployed app is identical to proposed version, nothing to do
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient})
 		assert.Nil(t, err)
-		assert.False(t, calledFindApps, "Expected app to skip resolve")
-		assert.False(t, calledGroups, "Expected group to skip resolve")
+		assert.False(t, findAppsCalled, "Expected to skip resolve app ID")
+		assert.False(t, groupsCalled, "Expected to skip resolve group ID")
 		assert.Equal(t, `Determining changes
 Deployed app is identical to proposed version, nothing to do
 `, out.String())

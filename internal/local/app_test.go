@@ -59,6 +59,7 @@ func TestNewApp(t *testing.T) {
 					CustomResolvers: []map[string]interface{}{},
 				},
 			}}},
+			AppMeta: MdbAppMeta{ConfigVersion: realm.AppConfigVersion20210101},
 		}
 
 		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
@@ -92,6 +93,30 @@ func TestLoadApp(t *testing.T) {
 		_, appErr := LoadApp(invalidAppPath)
 		assert.Equal(t, appErr, errors.New("failed to find app at "+invalidAppPath))
 	})
+}
+
+func TestLoadAppMeta(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	for _, tc := range []struct {
+		configVersion realm.AppConfigVersion
+		configFile    File
+		appMeta       MdbAppMeta
+	}{
+		{realm.AppConfigVersion20180301, FileStitch, appMeta20180301},
+		{realm.AppConfigVersion20200603, FileConfig, appMeta20200603},
+		{realm.AppConfigVersion20210101, FileRealmConfig, appMeta20210101},
+	} {
+		t.Run(fmt.Sprintf("should successfully load app meta config file with version %d", tc.configVersion), func(t *testing.T) {
+			projectRoot := filepath.Join(wd, "testdata", tc.configVersion.String(), "app-meta")
+			testApp := App{RootDir: projectRoot, Config: tc.configFile}
+
+			assert.Nil(t, testApp.LoadAppMeta())
+			assert.Equal(t, testApp.AppData, nil)
+			assert.Equal(t, testApp.AppMeta, tc.appMeta)
+		})
+	}
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -134,6 +159,7 @@ func TestFindApp(t *testing.T) {
 		appDataLocal  AppData
 		remoteAppData AppData
 		nestedAppData AppData
+		appMeta       MdbAppMeta
 	}{
 		{
 			version:       realm.AppConfigVersion20180301,
@@ -141,6 +167,7 @@ func TestFindApp(t *testing.T) {
 			appDataLocal:  &AppStitchJSON{appData20180301Local},
 			remoteAppData: &AppStitchJSON{appData20180301Remote},
 			nestedAppData: &AppStitchJSON{appData20180301Nested},
+			appMeta:       appMeta20180301,
 		},
 		{
 			version:       realm.AppConfigVersion20200603,
@@ -148,6 +175,7 @@ func TestFindApp(t *testing.T) {
 			appDataLocal:  &AppConfigJSON{appData20200603Local},
 			remoteAppData: &AppConfigJSON{appData20200603Remote},
 			nestedAppData: &AppConfigJSON{appData20200603Nested},
+			appMeta:       appMeta20200603,
 		},
 		{
 			version:       realm.AppConfigVersion20210101,
@@ -155,6 +183,7 @@ func TestFindApp(t *testing.T) {
 			appDataLocal:  &AppRealmConfigJSON{appData20210101Local},
 			remoteAppData: &AppRealmConfigJSON{appData20210101Remote},
 			nestedAppData: &AppRealmConfigJSON{appData20210101Nested},
+			appMeta:       appMeta20210101,
 		},
 	} {
 		t.Run(fmt.Sprintf("With a %d config version", config.version), func(t *testing.T) {
@@ -170,10 +199,12 @@ func TestFindApp(t *testing.T) {
 				description string
 				name        string
 				appData     AppData
+				appMeta     MdbAppMeta
 			}{
-				{"and a working directory at the root of a local project", "local", config.appDataLocal},
-				{"and a working directory at the root of a remote project", "remote", config.remoteAppData},
-				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData},
+				{"and a working directory at the root of a local project", "local", config.appDataLocal, MdbAppMeta{}},
+				{"and a working directory at the root of a remote project", "remote", config.remoteAppData, MdbAppMeta{}},
+				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData, MdbAppMeta{}},
+				{"and a working directory with an app meta config", "app-meta", config.appDataLocal, config.appMeta},
 			} {
 				t.Run(tcInner.description, func(t *testing.T) {
 					path := filepath.Join(testRoot, tcInner.name)
@@ -185,6 +216,7 @@ func TestFindApp(t *testing.T) {
 					app, err := LoadApp(path)
 					assert.Nil(t, err)
 					assert.Equal(t, tcInner.appData, app.AppData)
+					assert.Equal(t, tcInner.appMeta, app.AppMeta)
 				})
 			}
 
@@ -727,8 +759,8 @@ exports = function({ query }) {
 }}}
 
 var fullMeta = MdbAppMeta{
-	GroupID: "groupID",
-	AppID: "appID",
+	GroupID:       "groupID",
+	AppID:         "appID",
 	ConfigVersion: realm.AppConfigVersion20200603,
 }
 
@@ -792,6 +824,12 @@ var appData20180301Nested = AppDataV1{AppStructureV1{
 	GraphQL:              appGraphQLStructure,
 }}
 
+var appMeta20180301 = MdbAppMeta{
+	GroupID:       "groupID",
+	AppID:         "appID",
+	ConfigVersion: realm.AppConfigVersion20180301,
+}
+
 var appData20200603Local = AppDataV1{AppStructureV1{
 	ConfigVersion:        realm.AppConfigVersion20200603,
 	Name:                 "20200603-local",
@@ -827,6 +865,12 @@ var appData20200603Nested = AppDataV1{AppStructureV1{
 	GraphQL:              appGraphQLStructure,
 }}
 
+var appMeta20200603 = MdbAppMeta{
+	GroupID:       "groupID",
+	AppID:         "appID",
+	ConfigVersion: realm.AppConfigVersion20200603,
+}
+
 var appData20210101Local = AppDataV2{AppStructureV2{
 	ConfigVersion:         realm.AppConfigVersion20210101,
 	Name:                  "20210101-local",
@@ -852,3 +896,9 @@ var appData20210101Nested = AppDataV2{AppStructureV2{
 	AllowedRequestOrigins: allowedRequestOrigins,
 	GraphQL:               appGraphQLStructure,
 }}
+
+var appMeta20210101 = MdbAppMeta{
+	GroupID:       "groupID",
+	AppID:         "appID",
+	ConfigVersion: realm.AppConfigVersion20210101,
+}
