@@ -108,6 +108,25 @@ func TestAppDiffHandler(t *testing.T) {
 		assert.Equal(t, errors.New("failed to find app at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
 	})
 
+	t.Run("should skip resolve if app meta is present", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		var realmClient mock.RealmClient
+		var findAppsCalled bool
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			findAppsCalled = true
+			return apps, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		cmd := &CommandDiff{inputs: diffInputs{RemoteApp: "app1", LocalPath: "testdata/meta"}}
+		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
+		assert.False(t, findAppsCalled, "expected app to skip resolve")
+		assert.Equal(t, "Deployed app is identical to proposed version\n", out.String())
+	})
+
 	t.Run("diff function dependencies", func(t *testing.T) {
 
 		realmClient := mock.RealmClient{}
