@@ -78,6 +78,7 @@ func TestLoadApp(t *testing.T) {
 			RootDir: projectRoot,
 			Config:  FileConfig,
 			AppData: fullProject,
+			AppMeta: fullMeta,
 		}
 
 		app, appErr := LoadApp(projectRoot)
@@ -724,6 +725,12 @@ exports = function({ query }) {
 		},
 	},
 }}}
+
+var fullMeta = MdbAppMeta{
+	GroupID: "groupID",
+	AppID: "appID",
+	ConfigVersion: realm.AppConfigVersion20200603,
+}
 
 var allowedRequestOrigins = []string{"http://localhost:8080"}
 
