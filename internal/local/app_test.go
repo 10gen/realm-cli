@@ -59,7 +59,7 @@ func TestNewApp(t *testing.T) {
 					CustomResolvers: []map[string]interface{}{},
 				},
 			}}},
-			AppMeta: MdbAppMeta{ConfigVersion: realm.AppConfigVersion20210101},
+			AppMeta: AppMeta{ConfigVersion: realm.AppConfigVersion20210101},
 		}
 
 		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
@@ -102,7 +102,7 @@ func TestLoadAppMeta(t *testing.T) {
 	for _, tc := range []struct {
 		configVersion realm.AppConfigVersion
 		configFile    File
-		appMeta       MdbAppMeta
+		appMeta       AppMeta
 	}{
 		{realm.AppConfigVersion20180301, FileStitch, appMeta20180301},
 		{realm.AppConfigVersion20200603, FileConfig, appMeta20200603},
@@ -159,7 +159,7 @@ func TestFindApp(t *testing.T) {
 		appDataLocal  AppData
 		remoteAppData AppData
 		nestedAppData AppData
-		appMeta       MdbAppMeta
+		appMeta       AppMeta
 	}{
 		{
 			version:       realm.AppConfigVersion20180301,
@@ -199,11 +199,11 @@ func TestFindApp(t *testing.T) {
 				description string
 				name        string
 				appData     AppData
-				appMeta     MdbAppMeta
+				appMeta     AppMeta
 			}{
-				{"and a working directory at the root of a local project", "local", config.appDataLocal, MdbAppMeta{}},
-				{"and a working directory at the root of a remote project", "remote", config.remoteAppData, MdbAppMeta{}},
-				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData, MdbAppMeta{}},
+				{"and a working directory at the root of a local project", "local", config.appDataLocal, AppMeta{}},
+				{"and a working directory at the root of a remote project", "remote", config.remoteAppData, AppMeta{}},
+				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData, AppMeta{}},
 				{"and a working directory with an app meta config", "app-meta", config.appDataLocal, config.appMeta},
 			} {
 				t.Run(tcInner.description, func(t *testing.T) {
@@ -758,7 +758,7 @@ exports = function({ query }) {
 	},
 }}}
 
-var fullMeta = MdbAppMeta{
+var fullMeta = AppMeta{
 	GroupID:       "groupID",
 	AppID:         "appID",
 	ConfigVersion: realm.AppConfigVersion20200603,
@@ -824,7 +824,7 @@ var appData20180301Nested = AppDataV1{AppStructureV1{
 	GraphQL:              appGraphQLStructure,
 }}
 
-var appMeta20180301 = MdbAppMeta{
+var appMeta20180301 = AppMeta{
 	GroupID:       "groupID",
 	AppID:         "appID",
 	ConfigVersion: realm.AppConfigVersion20180301,
@@ -865,7 +865,7 @@ var appData20200603Nested = AppDataV1{AppStructureV1{
 	GraphQL:              appGraphQLStructure,
 }}
 
-var appMeta20200603 = MdbAppMeta{
+var appMeta20200603 = AppMeta{
 	GroupID:       "groupID",
 	AppID:         "appID",
 	ConfigVersion: realm.AppConfigVersion20200603,
@@ -897,7 +897,7 @@ var appData20210101Nested = AppDataV2{AppStructureV2{
 	GraphQL:               appGraphQLStructure,
 }}
 
-var appMeta20210101 = MdbAppMeta{
+var appMeta20210101 = AppMeta{
 	GroupID:       "groupID",
 	AppID:         "appID",
 	ConfigVersion: realm.AppConfigVersion20210101,
