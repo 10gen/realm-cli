@@ -41,7 +41,7 @@ const (
 	NameConfig      = "config"
 	NameStitch      = "stitch"
 	NameAppMeta     = "app_meta"
-	NameDotMDB = ".mdb"
+	NameDotMDB      = ".mdb"
 
 	// environments
 	NameEnvironments = "environments"
@@ -97,7 +97,7 @@ var (
 	FileRealmConfig = File{NameRealmConfig, extJSON}
 	FileConfig      = File{NameConfig, extJSON}
 	FileStitch      = File{NameStitch, extJSON}
-	FileAppMeta  = File{NameAppMeta, extJSON}
+	FileAppMeta     = File{NameAppMeta, extJSON}
 
 	// auth
 	FileCustomUserData = File{NameCustomUserData, extJSON}

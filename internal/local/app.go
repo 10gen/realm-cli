@@ -269,17 +269,6 @@ func (a *App) LoadAppMeta() error {
 		return errFailedToParseAppConfig(path)
 	}
 
-	switch a.AppMeta.ConfigVersion {
-	case realm.AppConfigVersion20180301:
-		a.Config = FileStitch
-	case realm.AppConfigVersion20200603:
-		a.Config = FileConfig
-	case realm.AppConfigVersion20210101:
-		a.Config = FileRealmConfig
-	default:
-		return fmt.Errorf("invalid config version: %s", a.AppMeta.ConfigVersion.String())
-	}
-
 	return nil
 }
 
@@ -297,30 +286,19 @@ func FindApp(path string) (App, bool, error) {
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		if _, err := os.Stat(filepath.Join(wd, NameDotMDB, FileAppMeta.String())); err != nil {
-			if os.IsNotExist(err) {
-				// .mdb/app_meta.json may not exist, so we check whether a regular config file exists.
-				if app, proceed, err := checkForConfigFile(wd); proceed || err != nil {
-					return app, proceed, err
-				}
-			} else {
-				return App{}, false, err
-			}
-		} else {
-			// wd is the app root, so return the app no matter what
-			app := App{RootDir: wd}
-			if err := app.LoadAppMeta(); err != nil {
-				return App{}, false, nil
-			}
-			_, err := os.Stat(filepath.Join(path, app.Config.String()))
-			if err != nil {
-				return App{}, false, err
-			}
+		app, found, err := resolveConfig(wd)
+
+		if err != nil {
+			return app, false, err
+		}
+		if found {
 			if err := app.LoadConfig(); err != nil {
-				return App{}, false, err
+				return app, false, err
 			}
 
-			return app, true, nil
+			if app.ConfigVersion() != realm.AppConfigVersionZero {
+				return app, true, nil
+			}
 		}
 
 		// No config file or cli file was found, so go up a directory
@@ -333,27 +311,35 @@ func FindApp(path string) (App, bool, error) {
 	return App{}, false, nil
 }
 
-// Check for a config file at the path and determine whether or not to exit execution.
-func checkForConfigFile(path string) (App, bool, error) {
-	for _, config := range allConfigFiles {
-		_, err := os.Stat(filepath.Join(path, config.String()))
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return App{}, false, err
-		}
-		app := App{RootDir: path, Config: config}
-		if err := app.LoadConfig(); err != nil {
+func resolveConfig(path string) (App, bool, error) {
+	app := App{RootDir: path}
+	if _, err := os.Stat(filepath.Join(path, NameDotMDB, FileAppMeta.String())); err == nil {
+		if err := app.LoadAppMeta(); err != nil {
 			return App{}, false, err
 		}
 
-		if app.ConfigVersion() == realm.AppConfigVersionZero {
-			continue
+		switch app.AppMeta.ConfigVersion {
+		case realm.AppConfigVersion20180301:
+			app.Config = FileStitch
+		case realm.AppConfigVersion20200603:
+			app.Config = FileConfig
+		case realm.AppConfigVersion20210101:
+			app.Config = FileRealmConfig
 		}
 
 		return app, true, nil
+	} else if !os.IsNotExist(err) {
+		return App{}, false, err
 	}
 
-	return App{}, false, nil // No valid config file
+	for _, config := range allConfigFiles {
+		if _, err := os.Stat(filepath.Join(path, config.String())); err == nil {
+			app.Config = config
+			return app, true, nil
+		} else if !os.IsNotExist(err) {
+			return App{}, false, err
+		}
+	}
+
+	return App{}, false, nil
 }

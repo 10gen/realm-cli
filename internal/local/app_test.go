@@ -204,6 +204,7 @@ func TestFindApp(t *testing.T) {
 				{"and a working directory at the root of a local project", "local", config.appDataLocal, AppMeta{}},
 				{"and a working directory at the root of a remote project", "remote", config.remoteAppData, AppMeta{}},
 				{"and a nested working directory containing another config", "nested/graphql", config.nestedAppData, AppMeta{}},
+				{"and a nested working directory containing no config", "nested/values", config.nestedAppData, AppMeta{}},
 				{"and a working directory with an app meta config", "app-meta", config.appDataLocal, config.appMeta},
 			} {
 				t.Run(tcInner.description, func(t *testing.T) {
