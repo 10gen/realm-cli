@@ -23,16 +23,8 @@ type AppData interface {
 	WriteData(rootDir string) error
 }
 
-// AppMeta represents the .mdb/app_meta.json config
-type AppMeta struct {
-	GroupID       string                 `json:"group_id,omitempty"`
-	AppID         string                 `json:"app_id,omitempty"`
-	ConfigVersion realm.AppConfigVersion `json:"config_version"`
-}
-
 // set of supported local names
 const (
-	// file extensions
 	extJS   = ".js"
 	extJSON = ".json"
 

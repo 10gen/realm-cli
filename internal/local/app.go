@@ -39,6 +39,13 @@ type App struct {
 	AppData
 }
 
+// AppMeta represents the .mdb/app_meta.json config
+type AppMeta struct {
+	GroupID       string                 `json:"group_id,omitempty"`
+	AppID         string                 `json:"app_id,omitempty"`
+	ConfigVersion realm.AppConfigVersion `json:"config_version"`
+}
+
 // Option returns the Realm app data displayed as a selectable option
 func (a App) Option() string {
 	if a.AppData == nil {
