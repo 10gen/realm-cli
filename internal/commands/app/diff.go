@@ -129,7 +129,7 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	appToDiff, err := cli.ResolveWithAppMeta(ui, clients.Realm, app.AppMeta, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
+	appToDiff, err := cli.ResolveWithAppMeta(ui, clients.Realm, app.Meta, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
 	if err != nil {
 		return err
 	}

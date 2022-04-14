@@ -35,7 +35,7 @@ func errFailedToFindApp(path string) error {
 type App struct {
 	RootDir string
 	Config  File
-	AppMeta AppMeta
+	Meta AppMeta
 	AppData
 }
 
@@ -195,7 +195,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 		RootDir: rootDir,
 		Config:  config,
 		AppData: appData,
-		AppMeta: AppMeta{
+		Meta: AppMeta{
 			ConfigVersion: configVersion,
 			AppID:         app.ID,
 			GroupID:       app.GroupID,
@@ -277,7 +277,7 @@ func (a *App) LoadAppMeta() error {
 		return errFailedToParseAppConfig(path)
 	}
 
-	if err := json.Unmarshal(data, &a.AppMeta); err != nil {
+	if err := json.Unmarshal(data, &a.Meta); err != nil {
 		return errFailedToParseAppConfig(path)
 	}
 
@@ -330,7 +330,7 @@ func resolveConfig(path string) (App, bool, error) {
 			return App{}, false, err
 		}
 
-		switch app.AppMeta.ConfigVersion {
+		switch app.Meta.ConfigVersion {
 		case realm.AppConfigVersion20180301:
 			app.Config = FileStitch
 		case realm.AppConfigVersion20200603:

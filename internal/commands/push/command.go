@@ -146,7 +146,7 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm, app.AppMeta)
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm, app.Meta)
 	if err != nil {
 		return err
 	}

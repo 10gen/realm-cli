@@ -59,7 +59,7 @@ func TestNewApp(t *testing.T) {
 					CustomResolvers: []map[string]interface{}{},
 				},
 			}}},
-			AppMeta: AppMeta{ConfigVersion: realm.AppConfigVersion20210101},
+			Meta: AppMeta{ConfigVersion: realm.AppConfigVersion20210101},
 		}
 
 		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
@@ -79,7 +79,7 @@ func TestLoadApp(t *testing.T) {
 			RootDir: projectRoot,
 			Config:  FileConfig,
 			AppData: fullProject,
-			AppMeta: fullMeta,
+			Meta: fullMeta,
 		}
 
 		app, appErr := LoadApp(projectRoot)
@@ -114,7 +114,7 @@ func TestLoadAppMeta(t *testing.T) {
 
 			assert.Nil(t, testApp.LoadAppMeta())
 			assert.Equal(t, testApp.AppData, nil)
-			assert.Equal(t, testApp.AppMeta, tc.appMeta)
+			assert.Equal(t, testApp.Meta, tc.appMeta)
 		})
 	}
 }
@@ -217,7 +217,7 @@ func TestFindApp(t *testing.T) {
 					app, err := LoadApp(path)
 					assert.Nil(t, err)
 					assert.Equal(t, tcInner.appData, app.AppData)
-					assert.Equal(t, tcInner.appMeta, app.AppMeta)
+					assert.Equal(t, tcInner.appMeta, app.Meta)
 				})
 			}
 
