@@ -35,7 +35,7 @@ func errFailedToFindApp(path string) error {
 type App struct {
 	RootDir string
 	Config  File
-	Meta AppMeta
+	Meta    AppMeta
 	AppData
 }
 

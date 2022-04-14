@@ -216,9 +216,9 @@ func TestResolveWithAppMeta(t *testing.T) {
 		},
 		{
 			description: "should resolve app when appMeta is incomplete",
-			appMeta: local.AppMeta{AppID: "appID"},
-			filter: realm.AppFilter{App: "new-app-abcde"},
-			remoteApp: realm.App{GroupID: "groupID", Name: "new-app"},
+			appMeta:     local.AppMeta{AppID: "appID"},
+			filter:      realm.AppFilter{App: "new-app-abcde"},
+			remoteApp:   realm.App{GroupID: "groupID", Name: "new-app"},
 			expectedApp: realm.App{GroupID: "groupID", Name: "new-app"},
 			resolvesApp: true,
 		},

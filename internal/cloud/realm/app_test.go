@@ -32,18 +32,18 @@ func TestAppResolveProducts(t *testing.T) {
 
 func TestFilterIsEmpty(t *testing.T) {
 	for _, tc := range []struct {
-		description string
-		filter      AppFilter
-		expectedEmpty     bool
+		description   string
+		filter        AppFilter
+		expectedEmpty bool
 	}{
 		{
-			description: "should return true if struct is empty",
-			expectedEmpty:     true,
+			description:   "should return true if struct is empty",
+			expectedEmpty: true,
 		},
 		{
-			description: "should return true if only products has values",
-			filter:      AppFilter{Products: []string{"a", "b", "c"}},
-			expectedEmpty:     true,
+			description:   "should return true if only products has values",
+			filter:        AppFilter{Products: []string{"a", "b", "c"}},
+			expectedEmpty: true,
 		},
 		{
 			description: "should return false if groupID has value",

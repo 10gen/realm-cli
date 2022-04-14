@@ -138,7 +138,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 			return []realm.App{}, cli.ErrAppNotFound{App: "app"}
 		}
-		
+
 		i := inputs{Project: "groupID", RemoteApp: "appID"}
 		tt, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
 		assert.Nil(t, err)
