@@ -46,6 +46,11 @@ type AppMeta struct {
 	ConfigVersion realm.AppConfigVersion `json:"config_version"`
 }
 
+// IsComplete returns true if the Appmeta contains a group ID and app ID.
+func (a AppMeta) IsComplete() bool {
+	return a.AppID != "" && a.GroupID != ""
+}
+
 // Option returns the Realm app data displayed as a selectable option
 func (a App) Option() string {
 	if a.AppData == nil {

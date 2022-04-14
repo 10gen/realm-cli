@@ -124,6 +124,11 @@ var (
 	defaultProducts = []string{productStandard, productAtlas}
 )
 
+// IsEmpty returns true if the AppFilter is not filtering against group ID or app.
+func (f AppFilter) IsEmpty() bool {
+	return f.GroupID == "" && f.App == ""
+}
+
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
 	var apps []App
 	if filter.GroupID == "" {

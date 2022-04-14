@@ -605,6 +605,32 @@ func TestAppWrite20210101(t *testing.T) {
 	})
 }
 
+func TestAppMetaIsComplete(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		appMeta AppMeta
+		expectedComplete bool
+	}{
+		{
+			description: "should return true if struct is filled",
+			appMeta: AppMeta{GroupID: "groupID", AppID: "appID", ConfigVersion: realm.AppConfigVersion20180301},
+			expectedComplete: true,
+		},
+		{
+			description: "should return false if groupID is empty",
+			appMeta: AppMeta{AppID: "appID", ConfigVersion: realm.AppConfigVersion20210101},
+		},
+		{
+			description: "should return false if appID is empty",
+			appMeta: AppMeta{GroupID: "groupID", ConfigVersion: realm.AppConfigVersion20200603},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedComplete, tc.appMeta.IsComplete())
+		})
+	}
+}
+
 var fullProject = &AppConfigJSON{AppDataV1{AppStructureV1{
 	ConfigVersion:   realm.AppConfigVersion20200603,
 	ID:              "full-abcde",

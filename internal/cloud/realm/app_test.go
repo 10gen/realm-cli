@@ -29,3 +29,37 @@ func TestAppResolveProducts(t *testing.T) {
 		}
 	})
 }
+
+func TestFilterIsEmpty(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		filter      AppFilter
+		expectedEmpty     bool
+	}{
+		{
+			description: "should return true if struct is empty",
+			expectedEmpty:     true,
+		},
+		{
+			description: "should return true if only products has values",
+			filter:      AppFilter{Products: []string{"a", "b", "c"}},
+			expectedEmpty:     true,
+		},
+		{
+			description: "should return false if groupID has value",
+			filter:      AppFilter{GroupID: "groupID"},
+		},
+		{
+			description: "should return false if app has value",
+			filter:      AppFilter{App: "new-app-abcde"},
+		},
+		{
+			description: "should return false if struct is filled",
+			filter:      AppFilter{GroupID: "groupID", App: "new-app-abcde", Products: []string{"a", "b", "c"}},
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			assert.Equal(t, tc.expectedEmpty, tc.filter.IsEmpty())
+		})
+	}
+}
