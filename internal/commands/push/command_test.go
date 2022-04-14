@@ -934,7 +934,7 @@ Deployed app is identical to proposed version, nothing to do
 			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
 		}
 
-		cmd := &Command{inputs{LocalPath: "testdata/project-meta", DryRun: true, RemoteApp: "appID"}}
+		cmd := &Command{inputs{LocalPath: "testdata/project-meta", DryRun: true}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient})
 		assert.Nil(t, err)

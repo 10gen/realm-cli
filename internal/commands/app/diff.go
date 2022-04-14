@@ -129,20 +129,12 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	groupID := app.AppMeta.GroupID
-	appID := app.AppMeta.AppID
-
-	if groupID == "" || appID == "" {
-		appToDiff, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
-		if err != nil {
-			return err
-		}
-
-		groupID = appToDiff.GroupID
-		appID = appToDiff.ID
+	appToDiff, err := cli.ResolveWithAppMeta(ui, clients.Realm, app.AppMeta, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
+	if err != nil {
+		return err
 	}
 
-	diffs, err := clients.Realm.Diff(groupID, appID, app.AppData)
+	diffs, err := clients.Realm.Diff(appToDiff.GroupID, appToDiff.ID, app.AppData)
 	if err != nil {
 		return err
 	}
@@ -159,7 +151,7 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		}
 		defer cleanup()
 
-		dependenciesDiff, err := clients.Realm.DiffDependencies(groupID, appID, uploadPath)
+		dependenciesDiff, err := clients.Realm.DiffDependencies(appToDiff.GroupID, appToDiff.ID, uploadPath)
 		if err != nil {
 			return err
 		}
@@ -172,12 +164,12 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 			return err
 		}
 
-		appAssets, err := clients.Realm.HostingAssets(groupID, appID)
+		appAssets, err := clients.Realm.HostingAssets(appToDiff.GroupID, appToDiff.ID)
 		if err != nil {
 			return err
 		}
 
-		hostingDiffs, err := hosting.Diffs(profile.HostingAssetCachePath(), appID, appAssets)
+		hostingDiffs, err := hosting.Diffs(profile.HostingAssetCachePath(), appToDiff.ID, appAssets)
 		if err != nil {
 			return err
 		}

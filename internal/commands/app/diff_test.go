@@ -35,9 +35,10 @@ func TestAppDiffHandler(t *testing.T) {
 		expectedDiffOutput string
 		expectedErr        error
 		appError           bool
+		expectedAppResolve bool
 	}{
 		{
-			description:        "no project nor app flag set should diff based on input",
+			description:        "no project nor app flag set should diff based on input and resolve with app meta",
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 		},
@@ -47,12 +48,14 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
+			expectedAppResolve: true,
 		},
 		{
 			description:        "no diffs between local and remote app",
 			inputs:             diffInputs{RemoteApp: "app1"},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiffOutput: "Deployed app is identical to proposed version\n",
+			expectedAppResolve: true,
 		},
 		{
 			description:        "a project flag set and no app flag set should diff based on input",
@@ -60,19 +63,22 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter:  realm.AppFilter{GroupID: groupID1},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
+			expectedAppResolve: true,
 		},
 		{
-			description:       "error on the diff",
-			inputs:            diffInputs{Project: groupID1, RemoteApp: "app1"},
-			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
-			expectedErr:       errors.New("something went wrong"),
+			description:        "error on the diff",
+			inputs:             diffInputs{Project: groupID1, RemoteApp: "app1"},
+			expectedAppFilter:  realm.AppFilter{GroupID: groupID1, App: "app1"},
+			expectedErr:        errors.New("something went wrong"),
+			expectedAppResolve: true,
 		},
 		{
-			description:       "error on finding apps",
-			inputs:            diffInputs{Project: groupID1, RemoteApp: "app1"},
-			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
-			expectedErr:       errors.New("something went wrong"),
-			appError:          true,
+			description:        "error on finding apps",
+			inputs:             diffInputs{Project: groupID1, RemoteApp: "app1"},
+			expectedAppFilter:  realm.AppFilter{GroupID: groupID1, App: "app1"},
+			expectedErr:        errors.New("something went wrong"),
+			appError:           true,
+			expectedAppResolve: true,
 		},
 	} {
 		t.Run("with a local path that exists and "+tc.description, func(t *testing.T) {
@@ -81,8 +87,10 @@ func TestAppDiffHandler(t *testing.T) {
 			realmClient := mock.RealmClient{}
 
 			var appFilter realm.AppFilter
+			var findAppsCalled bool
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				appFilter = filter
+				findAppsCalled = true
 				if tc.appError {
 					return nil, tc.expectedErr
 				}
@@ -98,6 +106,7 @@ func TestAppDiffHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
 			assert.Equal(t, tc.expectedDiffOutput, out.String())
+			assert.Equal(t, tc.expectedAppResolve, findAppsCalled)
 		})
 	}
 
@@ -106,25 +115,6 @@ func TestAppDiffHandler(t *testing.T) {
 
 		cmd := &CommandDiff{diffInputs{LocalPath: "./some/path"}}
 		assert.Equal(t, errors.New("failed to find app at ./some/path"), cmd.Handler(nil, ui, cli.Clients{}))
-	})
-
-	t.Run("should skip resolve if app meta is present", func(t *testing.T) {
-		out, ui := mock.NewUI()
-
-		var realmClient mock.RealmClient
-		var findAppsCalled bool
-		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
-			findAppsCalled = true
-			return apps, nil
-		}
-		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
-			return []string{}, nil
-		}
-
-		cmd := &CommandDiff{inputs: diffInputs{RemoteApp: "app1", LocalPath: "testdata/meta"}}
-		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.False(t, findAppsCalled, "expected app to skip resolve")
-		assert.Equal(t, "Deployed app is identical to proposed version\n", out.String())
 	})
 
 	t.Run("diff function dependencies", func(t *testing.T) {

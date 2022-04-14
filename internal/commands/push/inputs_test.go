@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
@@ -85,13 +86,6 @@ func TestPushInputsResolve(t *testing.T) {
 }
 
 func TestPushInputsResolveTo(t *testing.T) {
-	t.Run("Should do nothing if to is not set", func(t *testing.T) {
-		var i inputs
-		tt, err := i.resolveRemoteApp(nil, nil)
-		assert.Nil(t, err)
-		assert.Equal(t, appRemote{}, tt)
-	})
-
 	t.Run("Should return the app id and group id of specified app if to is set to app", func(t *testing.T) {
 		var appFilter realm.AppFilter
 		app := realm.App{
@@ -109,10 +103,57 @@ func TestPushInputsResolveTo(t *testing.T) {
 
 		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
 
-		f, err := i.resolveRemoteApp(nil, client)
+		f, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
 		assert.Nil(t, err)
 
 		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID, ClientAppID: app.ClientAppID}, f)
 		assert.Equal(t, realm.AppFilter{GroupID: app.GroupID, App: app.ClientAppID}, appFilter)
+	})
+
+	t.Run("Should return the app id and group id from app meta when possible", func(t *testing.T) {
+		app := realm.App{
+			ID:          primitive.NewObjectID().Hex(),
+			GroupID:     primitive.NewObjectID().Hex(),
+			ClientAppID: "test-app-abcde",
+			Name:        "test-app",
+		}
+
+		var client mock.RealmClient
+		var findAppsCalled bool
+		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			findAppsCalled = true
+			return []realm.App{app}, nil
+		}
+
+		var i inputs
+		f, err := i.resolveRemoteApp(nil, client, local.AppMeta{AppID: app.ID, GroupID: app.GroupID, ConfigVersion: realm.AppConfigVersion20210101})
+		assert.Nil(t, err)
+
+		assert.Equal(t, appRemote{AppID: app.ID, GroupID: app.GroupID}, f)
+		assert.False(t, findAppsCalled, "expected app to skip resolve")
+	})
+
+	t.Run("Should return minimal app remote if find apps cannot find app", func(t *testing.T) {
+		var client mock.RealmClient
+		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{}, cli.ErrAppNotFound{App: "app"}
+		}
+		
+		i := inputs{Project: "groupID", RemoteApp: "appID"}
+		tt, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
+		assert.Nil(t, err)
+		assert.Equal(t, appRemote{GroupID: "groupID"}, tt)
+	})
+
+	t.Run("Should do nothing if find apps cannot find group", func(t *testing.T) {
+		var client mock.RealmClient
+		client.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			return []realm.App{}, cli.ErrGroupNotFound
+		}
+
+		var i inputs
+		tt, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
+		assert.Equal(t, cli.ErrGroupNotFound, err)
+		assert.Equal(t, appRemote{}, tt)
 	})
 }

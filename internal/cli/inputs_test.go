@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -183,6 +184,59 @@ func TestResolveApp(t *testing.T) {
 		_, err := cli.ResolveApp(nil, realmClient, realm.AppFilter{})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
+}
+
+func TestResolveWithAppMeta(t *testing.T) {
+	for _, tc := range []struct {
+		description string
+		appMeta     local.AppMeta
+		filter      realm.AppFilter
+		remoteApp   realm.App
+		expectedApp realm.App
+		resolvesApp bool
+	}{
+		{
+			description: "should return partial app for empty filter and complete appMeta",
+			appMeta:     local.AppMeta{GroupID: "groupID", AppID: "appID"},
+			expectedApp: realm.App{ID: "appID", GroupID: "groupID"},
+		},
+		{
+			description: "should return partial app for empty filter with products and complete appMeta",
+			appMeta:     local.AppMeta{GroupID: "groupID", AppID: "appID"},
+			filter:      realm.AppFilter{Products: []string{"a", "b"}},
+			expectedApp: realm.App{ID: "appID", GroupID: "groupID"},
+		},
+		{
+			description: "should resolve app when filter is specified",
+			appMeta:     local.AppMeta{GroupID: "groupID", AppID: "appID"},
+			filter:      realm.AppFilter{GroupID: "groupID"},
+			remoteApp:   realm.App{GroupID: "groupID", Name: "new-app"},
+			expectedApp: realm.App{GroupID: "groupID", Name: "new-app"},
+			resolvesApp: true,
+		},
+		{
+			description: "should resolve app when appMeta is incomplete",
+			appMeta: local.AppMeta{AppID: "appID"},
+			filter: realm.AppFilter{App: "new-app-abcde"},
+			remoteApp: realm.App{GroupID: "groupID", Name: "new-app"},
+			expectedApp: realm.App{GroupID: "groupID", Name: "new-app"},
+			resolvesApp: true,
+		},
+	} {
+		t.Run(tc.description, func(t *testing.T) {
+			var realmClient mock.RealmClient
+			var findAppsCalled bool
+			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+				findAppsCalled = true
+				return []realm.App{tc.remoteApp}, nil
+			}
+
+			app, err := cli.ResolveWithAppMeta(nil, realmClient, tc.appMeta, tc.filter)
+			assert.Nil(t, err)
+			assert.Equal(t, tc.expectedApp, app)
+			assert.Equal(t, tc.resolvesApp, findAppsCalled)
+		})
+	}
 }
 
 func TestResolveGroupID(t *testing.T) {

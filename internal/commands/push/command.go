@@ -146,17 +146,9 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		return err
 	}
 
-	appRemote := appRemote{
-		GroupID:     app.AppMeta.GroupID,
-		AppID:       app.AppMeta.AppID,
-		ClientAppID: app.ID(),
-	}
-
-	if appRemote.AppID == "" || appRemote.GroupID == "" {
-		appRemote, err = cmd.inputs.resolveRemoteApp(ui, clients.Realm)
-		if err != nil {
-			return err
-		}
+	appRemote, err := cmd.inputs.resolveRemoteApp(ui, clients.Realm, app.AppMeta)
+	if err != nil {
+		return err
 	}
 
 	if appRemote.GroupID == "" {

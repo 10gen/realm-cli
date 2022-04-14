@@ -99,6 +99,14 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 	return appsByOption[selection], nil
 }
 
+// ResolveWithAppMeta will return a partial app from AppMeta if present and filter does not specify a remote. Otherwise, it resolves app as normal.
+func ResolveWithAppMeta(ui terminal.UI, client realm.Client, appMeta local.AppMeta, filter realm.AppFilter) (realm.App, error) {
+	if filter.IsEmpty() && appMeta.IsComplete() {
+		return realm.App{ID: appMeta.AppID, GroupID: appMeta.GroupID}, nil
+	}
+	return ResolveApp(ui, client, filter)
+}
+
 // ResolveGroupID will use the provided MongoDB Cloud Atlas client to resolve the user's group id
 func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
 	groups, groupsErr := client.Groups()

@@ -79,14 +79,9 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
+func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client, appMeta local.AppMeta) (appRemote, error) {
 	r := appRemote{GroupID: i.Project}
-
-	if i.RemoteApp == "" {
-		return r, nil
-	}
-
-	app, err := cli.ResolveApp(ui, client, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
+	app, err := cli.ResolveWithAppMeta(ui, client, appMeta, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); !ok {
 			return appRemote{}, err
