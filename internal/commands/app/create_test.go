@@ -610,13 +610,15 @@ Check out your app: cd ./remote-app && realm-cli app describe
 	})
 
 	for _, tc := range []struct {
-		description          string
-		clusters             []string
-		clusterServiceNames  []string
-		datalakes            []string
-		datalakeServiceNames []string
-		atlasClient          atlas.Client
-		dataSourceOutput     string
+		description                    string
+		clusters                       []string
+		clusterServiceNames            []string
+		serverlessInstances            []string
+		serverlessInstanceServiceNames []string
+		datalakes                      []string
+		datalakeServiceNames           []string
+		atlasClient                    atlas.Client
+		dataSourceOutput               string
 	}{
 		{
 			description:         "should create minimal project with a cluster data source when cluster is set",
@@ -652,6 +654,21 @@ Check out your app: cd ./remote-app && realm-cli app describe
   ]`,
 		},
 		{
+			description:                    "should create minimal project with a serverless instance data source when serverless instance is set",
+			serverlessInstances:            []string{"test-serverless-instance"},
+			serverlessInstanceServiceNames: []string{"mongodb-atlas"},
+			atlasClient: mock.AtlasClient{
+				ServerlessInstancesFn: func(groupID string) ([]atlas.ServerlessInstance, error) {
+					return []atlas.ServerlessInstance{{Name: "test-serverless-instance"}}, nil
+				},
+			},
+			dataSourceOutput: `"serverless_instances": [
+    {
+      "name": "mongodb-atlas"
+    }
+  ]`,
+		},
+		{
 			description:          "should create minimal project with a data lake data source when data lake is set",
 			datalakes:            []string{"test-datalake"},
 			datalakeServiceNames: []string{"mongodb-datalake"},
@@ -667,14 +684,19 @@ Check out your app: cd ./remote-app && realm-cli app describe
   ]`,
 		},
 		{
-			description:          "should create minimal project with a data lake and cluster data source when data lake and cluster is set",
-			clusters:             []string{"test-cluster"},
-			clusterServiceNames:  []string{"mongodb-atlas"},
-			datalakes:            []string{"test-datalake"},
-			datalakeServiceNames: []string{"mongodb-datalake"},
+			description:                    "should create minimal project with a data lake and serverless instance and cluster data source when data lake and serverless instance and cluster is set",
+			clusters:                       []string{"test-cluster"},
+			clusterServiceNames:            []string{"mongodb-atlas"},
+			serverlessInstances:            []string{"test-serverless-instance"},
+			serverlessInstanceServiceNames: []string{"mongodb-atlas-1"},
+			datalakes:                      []string{"test-datalake"},
+			datalakeServiceNames:           []string{"mongodb-datalake"},
 			atlasClient: mock.AtlasClient{
 				ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 					return []atlas.Cluster{{Name: "test-cluster"}}, nil
+				},
+				ServerlessInstancesFn: func(groupID string) ([]atlas.ServerlessInstance, error) {
+					return []atlas.ServerlessInstance{{Name: "test-serverless-instance"}}, nil
 				},
 				DatalakesFn: func(groupID string) ([]atlas.Datalake, error) {
 					return []atlas.Datalake{{Name: "test-datalake"}}, nil
@@ -683,6 +705,11 @@ Check out your app: cd ./remote-app && realm-cli app describe
 			dataSourceOutput: `"clusters": [
     {
       "name": "mongodb-atlas"
+    }
+  ],
+  "serverless_instances": [
+    {
+      "name": "mongodb-atlas-1"
     }
   ],
   "datalakes": [
@@ -730,10 +757,12 @@ Check out your app: cd ./remote-app && realm-cli app describe
 						DeploymentModel: realm.DeploymentModelGlobal,
 						ConfigVersion:   realm.DefaultAppConfigVersion,
 					},
-					Clusters:             tc.clusters,
-					ClusterServiceNames:  tc.clusterServiceNames,
-					Datalakes:            tc.datalakes,
-					DatalakeServiceNames: tc.datalakeServiceNames,
+					Clusters:                       tc.clusters,
+					ClusterServiceNames:            tc.clusterServiceNames,
+					ServerlessInstances:            tc.serverlessInstances,
+					ServerlessInstanceServiceNames: tc.serverlessInstanceServiceNames,
+					Datalakes:                      tc.datalakes,
+					DatalakeServiceNames:           tc.datalakeServiceNames,
 				},
 			}
 
@@ -774,16 +803,17 @@ Check out your app: cd ./test-app && realm-cli app describe
 	}
 
 	for _, tc := range []struct {
-		description          string
-		appRemote            string
-		clusters             []string
-		clusterServiceNames  []string
-		datalakes            []string
-		datalakeServiceNames []string
-		datalake             string
-		clients              cli.Clients
-		template             string
-		displayExpected      func(dir string, cmd *CommandCreate) string
+		description                    string
+		appRemote                      string
+		clusters                       []string
+		clusterServiceNames            []string
+		serverlessInstances            []string
+		serverlessInstanceServiceNames []string
+		datalakes                      []string
+		datalakeServiceNames           []string
+		clients                        cli.Clients
+		template                       string
+		displayExpected                func(dir string, cmd *CommandCreate) string
 	}{
 		{
 			description: "should create a minimal project dry run",
@@ -843,6 +873,31 @@ Check out your app: cd ./test-app && realm-cli app describe
 				return strings.Join([]string{
 					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
 					"The cluster 'test-cluster' would be linked as data source 'mongodb-atlas'",
+					"To create this app run: " + cmd.display(true),
+					"",
+				}, "\n")
+			},
+		},
+		{
+			description:                    "should create a minimal project dry run with serverless instance set",
+			serverlessInstances:            []string{"test-serverless-instance"},
+			serverlessInstanceServiceNames: []string{"mongodb-atlas"},
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					AllTemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
+				Atlas: mock.AtlasClient{
+					ServerlessInstancesFn: func(groupID string) ([]atlas.ServerlessInstance, error) {
+						return []atlas.ServerlessInstance{{Name: "test-serverless-instance"}}, nil
+					},
+				},
+			},
+			displayExpected: func(dir string, cmd *CommandCreate) string {
+				return strings.Join([]string{
+					fmt.Sprintf("A minimal Realm app would be created at %s", dir),
+					"The serverless instance 'test-serverless-instance' would be linked as data source 'mongodb-atlas'",
 					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
@@ -923,11 +978,13 @@ Check out your app: cd ./test-app && realm-cli app describe
 						Location:        realm.LocationVirginia,
 						DeploymentModel: realm.DeploymentModelGlobal,
 					},
-					Clusters:             tc.clusters,
-					ClusterServiceNames:  tc.clusterServiceNames,
-					Datalakes:            tc.datalakes,
-					DatalakeServiceNames: tc.datalakeServiceNames,
-					DryRun:               true,
+					Clusters:                       tc.clusters,
+					ClusterServiceNames:            tc.clusterServiceNames,
+					ServerlessInstances:            tc.serverlessInstances,
+					ServerlessInstanceServiceNames: tc.serverlessInstanceServiceNames,
+					Datalakes:                      tc.datalakes,
+					DatalakeServiceNames:           tc.datalakeServiceNames,
+					DryRun:                         true,
 				},
 			}
 
@@ -939,15 +996,16 @@ Check out your app: cd ./test-app && realm-cli app describe
 	}
 
 	for _, tc := range []struct {
-		description string
-		appRemote   string
-		groupID     string
-		clusters    []string
-		datalakes   []string
-		template    string
-		clients     cli.Clients
-		uiOptions   mock.UIOptions
-		expectedErr error
+		description         string
+		appRemote           string
+		groupID             string
+		clusters            []string
+		serverlessInstances []string
+		datalakes           []string
+		template            string
+		clients             cli.Clients
+		uiOptions           mock.UIOptions
+		expectedErr         error
 	}{
 		{
 			description: "should error when resolving groupID when project is not set",
@@ -972,6 +1030,24 @@ Check out your app: cd ./test-app && realm-cli app describe
 				},
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
+						return nil, errors.New("atlas client error")
+					},
+				},
+			},
+			expectedErr: errors.New("atlas client error"),
+		},
+		{
+			description:         "should error when resolving serverless instances when serverless instance is set",
+			groupID:             "123",
+			serverlessInstances: []string{"test-serverless-instance"},
+			clients: cli.Clients{
+				Realm: mock.RealmClient{
+					AllTemplatesFn: func() ([]realm.Template, error) {
+						return []realm.Template{}, nil
+					},
+				},
+				Atlas: mock.AtlasClient{
+					ServerlessInstancesFn: func(groupID string) ([]atlas.ServerlessInstance, error) {
 						return nil, errors.New("atlas client error")
 					},
 				},
@@ -1107,8 +1183,9 @@ Check out your app: cd ./test-app && realm-cli app describe
 					Location:        realm.LocationVirginia,
 					DeploymentModel: realm.DeploymentModelGlobal,
 				},
-				Clusters:  tc.clusters,
-				Datalakes: tc.datalakes,
+				Clusters:            tc.clusters,
+				ServerlessInstances: tc.serverlessInstances,
+				Datalakes:           tc.datalakes,
 			}}
 
 			out := new(bytes.Buffer)
@@ -1140,6 +1217,11 @@ Check out your app: cd ./test-app && realm-cli app describe
 				{ID: "789", Name: "test-cluster-1"},
 			}, nil
 		}
+		ac.ServerlessInstancesFn = func(groupID string) ([]atlas.ServerlessInstance, error) {
+			return []atlas.ServerlessInstance{
+				{ID: "1011", Name: "test-serverless-instance-1"},
+			}, nil
+		}
 		ac.DatalakesFn = func(groupID string) ([]atlas.Datalake, error) {
 			return []atlas.Datalake{
 				{Name: "test-datalake-1"},
@@ -1147,14 +1229,17 @@ Check out your app: cd ./test-app && realm-cli app describe
 		}
 
 		dummyDatalakes := []string{"test-dummy-lake-1", "test-dummy-lake-2"}
+		dummyServerlessInstances := []string{"test-serverless-instance-dummy-1", "test-serverless-instance-dummy-2"}
 		dummyClusters := []string{"test-cluster-dummy-1", "test-cluster-dummy-2"}
 
 		inputs := createInputs{
-			newAppInputs:         newAppInputs{Name: testApp.Name, Project: testApp.GroupID},
-			Clusters:             []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
-			ClusterServiceNames:  []string{"mongodb-atlas"},
-			Datalakes:            []string{"test-datalake-1", dummyDatalakes[0], dummyDatalakes[1]},
-			DatalakeServiceNames: []string{"mongodb-datalake"},
+			newAppInputs:                   newAppInputs{Name: testApp.Name, Project: testApp.GroupID},
+			Clusters:                       []string{"test-cluster-1", dummyClusters[0], dummyClusters[1]},
+			ClusterServiceNames:            []string{"mongodb-atlas"},
+			ServerlessInstances:            []string{"test-serverless-instance-1", dummyServerlessInstances[0], dummyServerlessInstances[1]},
+			ServerlessInstanceServiceNames: []string{"mongodb-atlas-1"},
+			Datalakes:                      []string{"test-datalake-1", dummyDatalakes[0], dummyDatalakes[1]},
+			DatalakeServiceNames:           []string{"mongodb-datalake"},
 		}
 
 		for _, tc := range []struct {
@@ -1183,7 +1268,7 @@ Check out your app: cd ./test-app && realm-cli app describe
 				doneCh := make(chan (struct{}))
 				go func() {
 					defer close(doneCh)
-					console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2', 'test-dummy-lake-1', 'test-dummy-lake-2'")
+					console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-cluster-dummy-1', 'test-cluster-dummy-2', 'test-serverless-instance-dummy-1', 'test-serverless-instance-dummy-2', 'test-dummy-lake-1', 'test-dummy-lake-2'")
 					console.ExpectString("Would you still like to create the app?")
 					console.SendLine(tc.response)
 					console.ExpectEOF()
@@ -1229,21 +1314,23 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
-				LocalPath:            "realm-app",
-				Clusters:             []string{"Cluster0"},
-				ClusterServiceNames:  []string{"mongodb-atlas"},
-				Datalakes:            []string{"Datalake0"},
-				DatalakeServiceNames: []string{"mongodb-datalake"},
-				DryRun:               true,
+				LocalPath:                      "realm-app",
+				Clusters:                       []string{"Cluster0"},
+				ClusterServiceNames:            []string{"mongodb-atlas"},
+				ServerlessInstances:            []string{"ServerlessInstance0"},
+				ServerlessInstanceServiceNames: []string{"mongodb-atlas-1"},
+				Datalakes:                      []string{"Datalake0"},
+				DatalakeServiceNames:           []string{"mongodb-datalake"},
+				DryRun:                         true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-1 --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
 			cmd.display(false),
 		)
 	})
 
-	t.Run("should create a command with multiple input clusters and data lakes", func(t *testing.T) {
+	t.Run("should create a command with multiple input clusters and serverless instrances and data lakes", func(t *testing.T) {
 		cmd := &CommandCreate{
 			inputs: createInputs{
 				newAppInputs: newAppInputs{
@@ -1254,16 +1341,18 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 					Location:        realm.LocationIreland,
 					DeploymentModel: realm.DeploymentModelLocal,
 				},
-				LocalPath:            "realm-app",
-				Clusters:             []string{"Cluster0", "Cluster1", "Cluster2"},
-				ClusterServiceNames:  []string{"mongodb-atlas-0", "mongodb-atlas-1", "mongodb-atlas-2"},
-				Datalakes:            []string{"Datalake0", "Datalake1", "Datalake2"},
-				DatalakeServiceNames: []string{"mongodb-datalake-0", "mongodb-datalake-1", "mongodb-datalake-2"},
-				DryRun:               true,
+				LocalPath:                      "realm-app",
+				Clusters:                       []string{"Cluster0", "Cluster1", "Cluster2"},
+				ClusterServiceNames:            []string{"mongodb-atlas-0", "mongodb-atlas-1", "mongodb-atlas-2"},
+				ServerlessInstances:            []string{"ServerlessInstance0", "ServerlessInstance1", "ServerlessInstance2"},
+				ServerlessInstanceServiceNames: []string{"mongodb-atlas-3", "mongodb-atlas-4", "mongodb-atlas-5"},
+				Datalakes:                      []string{"Datalake0", "Datalake1", "Datalake2"},
+				DatalakeServiceNames:           []string{"mongodb-datalake-0", "mongodb-datalake-1", "mongodb-datalake-2"},
+				DryRun:                         true,
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-3 --serverless-instance ServerlessInstance1 --serverless-instance-service-name mongodb-atlas-4 --serverless-instance ServerlessInstance2 --serverless-instance-service-name mongodb-atlas-5 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
 			cmd.display(false),
 		)
 	})

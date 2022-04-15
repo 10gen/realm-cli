@@ -19,12 +19,13 @@ func MustSkipf(t *testing.T, format string, args ...interface{}) {
 }
 
 const (
-	defaultGroupID            = "5fd45718cface356de9d104d"
-	defaultGroupName          = "Project 0"
-	defaultAtlasServerURL     = "https://cloud-dev.mongodb.com"
-	defaultRealmServerURL     = "http://localhost:8080"
-	defaultAtlasClusterCount  = 3
-	defaultAtlasDatalakeCount = 1
+	defaultGroupID                      = "5fd45718cface356de9d104d"
+	defaultGroupName                    = "Project 0"
+	defaultAtlasServerURL               = "https://cloud-dev.mongodb.com"
+	defaultRealmServerURL               = "http://localhost:8080"
+	defaultAtlasClusterCount            = 3
+	defaultAtlasServerlessInstanceCount = 1
+	defaultAtlasDatalakeCount           = 1
 )
 
 var realmServerRunning = false
@@ -81,6 +82,18 @@ func CloudAtlasClusterCount() int {
 		return c
 	}
 	return defaultAtlasClusterCount
+}
+
+// CloudAtlasServerlessInstanceCount returns the count of serverless instances to use for testing
+func CloudAtlasServerlessInstanceCount() int {
+	if count := os.Getenv("BAAS_MONGODB_CLOUD_ATLAS_SERVERLESS_INSTANCE_COUNT"); count != "" {
+		c, err := strconv.Atoi(count)
+		if err != nil {
+			panic("BAAS_MONGODB_CLOUD_ATLAS_SERVERLESS_INSTANCE_COUNT must be set with an integer")
+		}
+		return c
+	}
+	return defaultAtlasServerlessInstanceCount
 }
 
 // CloudAtlasDatalakeCount returns the count of clusters to use for testing
