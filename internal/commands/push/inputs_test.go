@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -82,6 +83,30 @@ func TestPushInputsResolve(t *testing.T) {
 
 		assert.Equal(t, profile.WorkingDirectory, i.LocalPath)
 		assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
+	})
+
+	t.Run("should not set remote app if app meta is present", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, local.FileRealmConfig.String()),
+			[]byte(fmt.Sprintf(`{"config_version": %d, "app_id": "eggcorn-abcde", "name":"eggcorn"}`, realm.DefaultAppConfigVersion)),
+			0666,
+		))
+
+		assert.Nil(t, os.Mkdir(filepath.Join(profile.WorkingDirectory, local.NameDotMDB), os.ModePerm))
+		assert.Nil(t, ioutil.WriteFile(
+			filepath.Join(profile.WorkingDirectory, local.NameDotMDB, local.FileAppMeta.String()),
+			[]byte(fmt.Sprintf(`{"group_id":"groupID","app_id":"appID","config_version":%d}`, realm.DefaultAppConfigVersion)),
+			0666,
+		))
+
+		var i inputs
+		assert.Nil(t, i.Resolve(profile, nil))
+
+		assert.Equal(t, profile.WorkingDirectory, i.LocalPath)
+		assert.Equal(t, "", i.RemoteApp)
 	})
 }
 

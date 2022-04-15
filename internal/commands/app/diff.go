@@ -129,7 +129,10 @@ func (cmd *CommandDiff) Handler(profile *user.Profile, ui terminal.UI, clients c
 		return err
 	}
 
-	appToDiff, err := cli.ResolveWithAppMeta(ui, clients.Realm, app.Meta, realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp})
+	appToDiff, err := cli.ResolveApp(ui, clients.Realm, cli.AppOptions{
+		AppMeta: app.Meta,
+		Filter:  realm.AppFilter{GroupID: cmd.inputs.Project, App: cmd.inputs.RemoteApp},
+	})
 	if err != nil {
 		return err
 	}
@@ -226,7 +229,7 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		i.LocalPath = app.RootDir
 	}
 
-	if i.RemoteApp == "" {
+	if i.RemoteApp == "" && !app.Meta.IsComplete() {
 		i.RemoteApp = app.Option()
 	}
 

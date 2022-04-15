@@ -308,7 +308,7 @@ func TestAppDiffInputs(t *testing.T) {
 			},
 			test: func(t *testing.T, i diffInputs, p *user.Profile) {
 				assert.Equal(t, filepath.Join(p.WorkingDirectory, "testdata/diff"), i.LocalPath)
-				assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
+				assert.Equal(t, "", i.RemoteApp)
 			},
 		},
 		{
@@ -319,6 +319,17 @@ func TestAppDiffInputs(t *testing.T) {
 			procedure: func(c *expect.Console) {},
 			test: func(t *testing.T, i diffInputs, p *user.Profile) {
 				assert.Equal(t, filepath.Join(p.WorkingDirectory, ".."), i.LocalPath)
+				assert.Equal(t, "", i.RemoteApp)
+			},
+		},
+		{
+			description: "should resolve remote app when inside an app directory with missing app meta",
+			prepareProfile: func(p *user.Profile) {
+				p.WorkingDirectory = filepath.Join(p.WorkingDirectory, "testdata/dependencies")
+			},
+			procedure: func(c *expect.Console) {},
+			test: func(t *testing.T, i diffInputs, p *user.Profile) {
+				assert.Equal(t, p.WorkingDirectory, i.LocalPath)
 				assert.Equal(t, "eggcorn-abcde", i.RemoteApp)
 			},
 		},

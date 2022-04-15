@@ -116,7 +116,7 @@ func (cmd *CommandList) Inputs() cli.InputResolver {
 func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
 	cmdStart := time.Now() // for use with tail later
 
-	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.AppOptions(false))
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,7 @@ type inputs struct {
 	IncludeHosting      bool
 	DryRun              bool
 	TemplateIDs         []string
+	AppMeta             local.AppMeta
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -74,7 +75,9 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 			return errConfigVersionMismatch
 		}
 
-		if i.RemoteApp == "" {
+		if app.Meta.IsComplete() {
+			i.AppMeta = app.Meta
+		} else if i.RemoteApp == "" {
 			i.RemoteApp = app.Option()
 		}
 	}
@@ -83,7 +86,7 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 }
 
 func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.App, error) {
-	if i.Project == "" {
+	if i.Project == "" && !i.AppMeta.IsComplete() {
 		groupID, err := cli.ResolveGroupID(ui, clients.Atlas)
 		if err != nil {
 			return realm.App{}, err
@@ -91,7 +94,11 @@ func (i *inputs) resolveRemoteApp(ui terminal.UI, clients cli.Clients) (realm.Ap
 		i.Project = groupID
 	}
 
-	app, err := cli.ResolveApp(ui, clients.Realm, realm.AppFilter{GroupID: i.Project, App: i.RemoteApp})
+	app, err := cli.ResolveApp(ui, clients.Realm, cli.AppOptions{
+		AppMeta:      i.AppMeta,
+		Filter:       realm.AppFilter{GroupID: i.Project, App: i.RemoteApp},
+		FetchDetails: true,
+	})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); ok {
 			return realm.App{}, errProjectNotFound

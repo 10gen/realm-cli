@@ -74,7 +74,7 @@ func (cmd *CommandRun) Inputs() cli.InputResolver {
 
 // Handler is the command handler
 func (cmd *CommandRun) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.Filter())
+	app, err := cli.ResolveApp(ui, clients.Realm, cmd.inputs.AppOptions(false))
 	if err != nil {
 		return err
 	}

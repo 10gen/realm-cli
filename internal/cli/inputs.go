@@ -17,11 +17,21 @@ type ProjectInputs struct {
 	Project  string
 	App      string
 	Products []string
+	AppMeta  local.AppMeta
 }
 
 // Filter returns a realm.AppFlter based on the inputs
 func (i ProjectInputs) Filter() realm.AppFilter {
 	return realm.AppFilter{i.Project, i.App, i.Products}
+}
+
+// AppOptions generates AppOptions parameters for ProjectInputs
+func (i ProjectInputs) AppOptions(fetchDetails bool) AppOptions {
+	return AppOptions{
+		AppMeta:      i.AppMeta,
+		Filter:       i.Filter(),
+		FetchDetails: fetchDetails,
+	}
 }
 
 // Resolve resolves the necessary inputs that remain unset after flags have been parsed
@@ -44,8 +54,8 @@ func (i *ProjectInputs) Resolve(ui terminal.UI, wd string, skipAppPrompt bool) e
 			}
 		}
 		i.App = appOption
+		i.AppMeta = app.Meta
 	}
-
 	return nil
 }
 
@@ -68,16 +78,31 @@ var (
 	ErrGroupNotFound = errors.New("failed to find group")
 )
 
-// ResolveApp will use the provided Realm client to resolve the app specified by the filter
-func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (realm.App, error) {
-	apps, err := client.FindApps(filter)
+// AppOptions are the parameters for resolving app
+type AppOptions struct {
+	AppMeta      local.AppMeta
+	Filter       realm.AppFilter
+	FetchDetails bool
+}
+
+// ResolveApp will use the provided Realm client to resolve the app specified by the options
+func ResolveApp(ui terminal.UI, client realm.Client, opts AppOptions) (realm.App, error) {
+	if opts.AppMeta.IsComplete() && opts.Filter.App == "" && opts.Filter.GroupID == "" {
+		if opts.FetchDetails {
+			return client.FindApp(opts.AppMeta.GroupID, opts.AppMeta.AppID)
+		}
+
+		return realm.App{ID: opts.AppMeta.AppID, GroupID: opts.AppMeta.GroupID}, nil
+	}
+
+	apps, err := client.FindApps(opts.Filter)
 	if err != nil {
 		return realm.App{}, err
 	}
 
 	switch len(apps) {
 	case 0:
-		return realm.App{}, ErrAppNotFound{filter.App}
+		return realm.App{}, ErrAppNotFound{opts.Filter.App}
 	case 1:
 		return apps[0], nil
 	}
@@ -97,14 +122,6 @@ func ResolveApp(ui terminal.UI, client realm.Client, filter realm.AppFilter) (re
 		return realm.App{}, fmt.Errorf("failed to select app: %s", err)
 	}
 	return appsByOption[selection], nil
-}
-
-// ResolveWithAppMeta will return a partial app from AppMeta if present and filter does not specify a remote. Otherwise, it resolves app as normal.
-func ResolveWithAppMeta(ui terminal.UI, client realm.Client, appMeta local.AppMeta, filter realm.AppFilter) (realm.App, error) {
-	if filter.IsEmpty() && appMeta.IsComplete() {
-		return realm.App{ID: appMeta.AppID, GroupID: appMeta.GroupID}, nil
-	}
-	return ResolveApp(ui, client, filter)
 }
 
 // ResolveGroupID will use the provided MongoDB Cloud Atlas client to resolve the user's group id
