@@ -405,6 +405,12 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 			args = append(args, flags.Arg{flagClusterServiceName, i.ClusterServiceNames[idx]})
 		}
 	}
+	for idx, serverlessInstanceName := range i.ServerlessInstances {
+		args = append(args, flags.Arg{flagServerlessInstance, serverlessInstanceName})
+		if len(i.ServerlessInstanceServiceNames) > idx {
+			args = append(args, flags.Arg{flagServerlessInstanceServiceName, i.ServerlessInstanceServiceNames[idx]})
+		}
+	}
 	for idx, datalakeName := range i.Datalakes {
 		args = append(args, flags.Arg{flagDatalake, datalakeName})
 		if len(i.DatalakeServiceNames) > idx {

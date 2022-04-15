@@ -211,11 +211,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	for _, missingCluster := range dsClustersMissing {
 		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingCluster))
 	}
-	for _, missingDatalake := range dsDatalakesMissing {
-		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
-	}
 	for _, missingServerlessInstance := range dsServerlessInstancesMissing {
 		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingServerlessInstance))
+	}
+	for _, missingDatalake := range dsDatalakesMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
 	}
 
 	if len(nonExistingDataSources) > 0 {
