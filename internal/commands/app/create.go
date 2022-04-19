@@ -232,7 +232,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	if cmd.inputs.Template == "" {
 		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes, dsServerlessInstances)
 	}
-	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes, dsServerlessInstances)
+	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 }
 
 func (cmd CommandCreate) handleCreateApp(
@@ -396,6 +396,7 @@ func (cmd CommandCreate) handleCreateApp(
 	return nil
 }
 
+// handleCreateTemplateApp does not take in serverless instances because they are not compatible with template apps
 func (cmd CommandCreate) handleCreateTemplateApp(
 	profile *user.Profile,
 	ui terminal.UI,
@@ -404,11 +405,10 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	rootDir string,
 	dsClusters []dataSourceCluster,
 	dsDatalakes []dataSourceDatalake,
-	dsServerlessInstances []dataSourceCluster,
 ) error {
 	if cmd.inputs.DryRun {
 		// +2 indicates that there are two logs in addition to the data lake and cluster ones
-		logs := make([]terminal.Log, 0, len(dsClusters)+len(dsDatalakes)+len(dsServerlessInstances)+2)
+		logs := make([]terminal.Log, 0, len(dsClusters)+len(dsDatalakes)+2)
 		logs = append(logs, terminal.NewTextLog(
 			"A Realm app would be created at %s using the '%s' template",
 			rootDir,
@@ -417,9 +417,6 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 
 		for _, cluster := range dsClusters {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cluster.Config.ClusterName, cluster.Name))
-		}
-		for _, serverlessInstance := range dsServerlessInstances {
-			logs = append(logs, terminal.NewTextLog("The serverless instance '%s' would be linked as data source '%s'", serverlessInstance.Config.ClusterName, serverlessInstance.Name))
 		}
 		for _, datalake := range dsDatalakes {
 			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", datalake.Config.DatalakeName, datalake.Name))

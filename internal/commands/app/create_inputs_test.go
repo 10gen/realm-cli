@@ -212,6 +212,10 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
 		assert.Equal(t, "new-app", inputs.LocalPath)
 	})
@@ -369,6 +373,10 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 
 		dir, err := inputs.resolveLocalPath(ui, profile.WorkingDirectory)
 		assert.Nil(t, err)
+
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
 		assert.Equal(t, path.Join(profile.WorkingDirectory, "new-app"), dir)
 	})
 }
@@ -501,6 +509,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
 		ds, _, err := inputs.resolveClusters(ui, ac, "123")
 		assert.Nil(t, err)
 
@@ -585,6 +596,10 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 
 				cmd := &CommandCreate{inputs}
 				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
 				assert.Equal(t, tc.appCreated, appCreated)
 			})
 		}
@@ -669,6 +684,9 @@ func TestAppCreateInputsResolveCluster(t *testing.T) {
 
 				ds, _, err := inputs.resolveClusters(ui, ac, "123")
 				assert.Nil(t, err)
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
 
 				assert.Equal(t, []dataSourceCluster{
 					{
@@ -955,7 +973,7 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 		assert.Equal(t, "123", expectedGroupID)
 	})
 
-	t.Run("should warn user if serverless instances are not found and auto confirm is set", func(t *testing.T) {
+	t.Run("if serverless instances are not found and auto confirm is set", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
 		defer teardown()
 
@@ -977,9 +995,6 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 		rc.ImportFn = func(groupID, appID string, appData interface{}) error {
 			return nil
 		}
-		rc.AllTemplatesFn = func() ([]realm.Template, error) {
-			return []realm.Template{}, nil
-		}
 
 		ac := mock.AtlasClient{}
 		ac.ServerlessInstancesFn = func(groupID string) ([]atlas.ServerlessInstance, error) {
@@ -995,31 +1010,38 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 			ServerlessInstanceServiceNames: []string{"mongodb-atlas"},
 		}
 
-		doneCh := make(chan (struct{}))
-		go func() {
-			defer close(doneCh)
-			console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-dummy-serverless-instance-1', 'test-dummy-serverless-instance-2'")
-			console.ExpectEOF()
-		}()
+		t.Run("should warn user that data sources were not linked because they could not be found", func(t *testing.T) {
+			doneCh := make(chan (struct{}))
+			go func() {
+				defer close(doneCh)
+				console.ExpectString("Note: The following data sources were not linked because they could not be found: 'test-dummy-serverless-instance-1', 'test-dummy-serverless-instance-2'")
+				console.ExpectEOF()
+			}()
 
-		cmd := &CommandCreate{inputs}
-		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+			cmd := &CommandCreate{inputs}
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
-		ds, _, err := inputs.resolveServerlessInstances(ui, ac, "123")
-		assert.Nil(t, err)
+			console.Tty().Close() // flush the writers
+			<-doneCh              // wait for procedure to complete
+		})
 
-		assert.Equal(t, []dataSourceCluster{
-			{
-				Name: "mongodb-atlas",
-				Type: realm.ServiceTypeCluster,
-				Config: configCluster{
-					ClusterName:         "test-serverless-instance-1",
-					ReadPreference:      "primary",
-					WireProtocolEnabled: false,
+		t.Run("should resolve to found serverless instances", func(t *testing.T) {
+			ds, _, err := inputs.resolveServerlessInstances(ui, ac, "123")
+			assert.Nil(t, err)
+
+			assert.Equal(t, []dataSourceCluster{
+				{
+					Name: "mongodb-atlas",
+					Type: realm.ServiceTypeCluster,
+					Config: configCluster{
+						ClusterName:         "test-serverless-instance-1",
+						ReadPreference:      "primary",
+						WireProtocolEnabled: false,
+					},
+					Version: 1,
 				},
-				Version: 1,
-			},
-		}, ds)
+			}, ds)
+		})
 	})
 
 	t.Run("should prompt user for confirmation if serverless instances are not found", func(t *testing.T) {
@@ -1092,6 +1114,10 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 
 				cmd := &CommandCreate{inputs}
 				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
 				assert.Equal(t, tc.appCreated, appCreated)
 			})
 		}
@@ -1178,6 +1204,9 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 				ds, _, err := inputs.resolveServerlessInstances(ui, ac, "123")
 				assert.Nil(t, err)
 
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
 				assert.Equal(t, []dataSourceCluster{
 					{
 						Name: tc.expectedServerlessInstanceServiceNames[0],
@@ -1204,7 +1233,7 @@ func TestAppCreateInputsResolveServerlessInstance(t *testing.T) {
 		}
 	})
 
-	t.Run("should error from client", func(t *testing.T) {
+	t.Run("should error from a client error", func(t *testing.T) {
 		_, ui := mock.NewUI()
 		var expectedGroupID string
 		ac := mock.AtlasClient{}
@@ -1356,6 +1385,9 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 		cmd := &CommandCreate{inputs}
 		assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
 
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
 		ds, _, err := inputs.resolveDatalakes(ui, ac, "123")
 		assert.Nil(t, err)
 
@@ -1440,6 +1472,10 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 
 				cmd := &CommandCreate{inputs}
 				assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: rc, Atlas: ac}))
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
+
 				assert.Equal(t, tc.appCreated, appCreated)
 			})
 		}
@@ -1525,6 +1561,9 @@ func TestAppCreateInputsResolveDatalake(t *testing.T) {
 
 				ds, _, err := inputs.resolveDatalakes(ui, ac, "123")
 				assert.Nil(t, err)
+
+				console.Tty().Close() // flush the writers
+				<-doneCh              // wait for procedure to complete
 
 				assert.Equal(t, []dataSourceDatalake{
 					{
