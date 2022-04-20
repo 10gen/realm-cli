@@ -396,7 +396,8 @@ func (cmd CommandCreate) handleCreateApp(
 	return nil
 }
 
-// handleCreateTemplateApp does not take in serverless instances because they are not compatible with template apps
+// handleCreateTemplateApp creates a template app and writes it to the user's disk.
+// This function does not take in serverless instances because they are not compatible with template apps.
 func (cmd CommandCreate) handleCreateTemplateApp(
 	profile *user.Profile,
 	ui terminal.UI,
