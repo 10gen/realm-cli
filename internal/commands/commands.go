@@ -8,6 +8,7 @@ import (
 	"github.com/10gen/realm-cli/internal/commands/login"
 	"github.com/10gen/realm-cli/internal/commands/logout"
 	"github.com/10gen/realm-cli/internal/commands/logs"
+	"github.com/10gen/realm-cli/internal/commands/profile"
 	"github.com/10gen/realm-cli/internal/commands/pull"
 	"github.com/10gen/realm-cli/internal/commands/push"
 	"github.com/10gen/realm-cli/internal/commands/schema"
@@ -201,6 +202,21 @@ var (
 			{
 				Command:     &accesslist.CommandDelete{},
 				CommandMeta: accesslist.CommandMetaDelete,
+			},
+		},
+	}
+
+	Profiles = cli.CommandDefinition{
+		CommandMeta: cli.CommandMeta{
+			Use:         "profiles",
+			Aliases:     []string{"profile"},
+			Description: "Manage the profiles of your local CLI environment",
+			Hidden:      true,
+		},
+		SubCommands: []cli.CommandDefinition{
+			{
+				Command:     &profile.CommandList{},
+				CommandMeta: profile.CommandMetaList,
 			},
 		},
 	}

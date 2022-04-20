@@ -47,6 +47,7 @@ func Run() {
 	cmd.AddCommand(factory.Build(commands.Function))
 	cmd.AddCommand(factory.Build(commands.Schema))
 	cmd.AddCommand(factory.Build(commands.AccessList))
+	cmd.AddCommand(factory.Build(commands.Profiles))
 
 	os.Exit(factory.Run(cmd))
 }

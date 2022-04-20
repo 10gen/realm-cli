@@ -75,9 +75,9 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 
 	var userSecret string
 	if u.PublicAPIKey == "" {
-		userSecret = u.RedactedPassword()
+		userSecret = user.Redact(u.Password)
 	} else {
-		userSecret = u.RedactedPrivateAPIKey()
+		userSecret = user.RedactKey(u.PrivateAPIKey)
 	}
 
 	ui.Print(terminal.NewTextLog("Currently logged in user: %s (%s)", userDisplay, userSecret))
