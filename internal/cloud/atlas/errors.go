@@ -12,7 +12,7 @@ var (
 
 	errCommonUnauthorized = "failed to authenticate with MongoDB Cloud API"
 
-	errCommonForbidden = "Please check your Atlas API Whitelist entries to " +
+	errCommonForbidden = "Please check your Atlas API access list entries to " +
 		"ensure that requests from this IP address are allowed"
 )
 

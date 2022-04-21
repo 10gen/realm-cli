@@ -241,7 +241,7 @@ console.log('got heem!');
 			{
 				"name":   "yell",
 				"type":   "SCHEDULED",
-				"config": map[string]interface{}{"schedule": "0 0 * * 1"},
+				"config": map[string]interface{}{"schedule": "0 0 * * 1", "skip_catchup_events": false},
 				"event_processors": map[string]interface{}{
 					"FUNCTION": map[string]interface{}{
 						"config": map[string]interface{}{"function_name": "test"},
@@ -393,6 +393,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"database":                    "db",
 					"collection":                  "coll",
 					"operation_types":             []interface{}{"INSERT"},
+					"skip_catchup_events":         false,
 					"unordered":                   false,
 					"full_document":               false,
 					"full_document_before_change": false,
@@ -409,7 +410,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			{
 				"name":   "yell",
 				"type":   "SCHEDULED",
-				"config": map[string]interface{}{"schedule": "0 0 * * 1"},
+				"config": map[string]interface{}{"schedule": "0 0 * * 1", "skip_catchup_events": false},
 				"event_processors": map[string]interface{}{
 					"FUNCTION": map[string]interface{}{
 						"config": map[string]interface{}{"function_name": "test"},
