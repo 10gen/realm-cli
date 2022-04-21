@@ -258,17 +258,22 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		ui.Print(terminal.NewDebugLog("Fetched hosting assets"))
 	}
 
-	successfulTemplateWrites := make([]string, 0, len(clientTemplates))
+	successfulTemplateWrites := make([]interface{}, 0, len(clientTemplates))
 	for _, ct := range clientTemplates {
 		if err := local.WriteZip(filepath.Join(pathFrontend, ct.id), ct.zipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", ct.id, err)
 		}
-		successfulTemplateWrites = append(successfulTemplateWrites, ct.id)
+		readmeFile, err := local.FindReadme(pathProject, pathRelative, ct.id)
+		if err != nil {
+			return err
+		}
+		successfulTemplateWrites = append(successfulTemplateWrites, fmt.Sprintf("%s: %s", ct.id, readmeFile))
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
 	if len(successfulTemplateWrites) != 0 {
-		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites))
+		ui.Print(terminal.NewListLog("Successfully saved template(s) to disk", successfulTemplateWrites...))
+		ui.Print(terminal.NewTextLog("Navigate to the saved directory to view directions on how to run the template app(s)"))
 	}
 
 	return nil

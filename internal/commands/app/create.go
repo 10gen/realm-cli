@@ -21,7 +21,7 @@ import (
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
 	Display:     "app create",
-	Description: "Create a new app from your current working directory and deploy it to the Realm server",
+	Description: "Create a new app (or a template app) from your current working directory and deploy it to the Realm server",
 	HelpText: `Creates a new Realm app by saving your configuration files in a local directory
 and deploying the new app to the Realm server. This command will create a new
 directory for your project.
@@ -478,9 +478,20 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 		output.Frontends = frontendDir
 	}
 
+	pathRelative, err := filepath.Rel(profile.WorkingDirectory, rootDir)
+	if err != nil {
+		return err
+	}
+	readmeFile, err := local.FindReadme(rootDir, pathRelative, cmd.inputs.Template)
+	if err != nil {
+		return err
+	}
+
 	// TODO(REALMC-9460): Add better template-app-specific directions for checking out the newly created template app
 	ui.Print(terminal.NewJSONLog("Successfully created app", output))
 	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
+	ui.Print(terminal.NewFollowupLog(fmt.Sprintf("View directions on how to run the template app: %s", readmeFile)))
+
 	return nil
 }
 

@@ -147,6 +147,26 @@ func TestLoadConfig(t *testing.T) {
 	})
 }
 
+func TestFindReadMe(t *testing.T) {
+	wd, wdErr := os.Getwd()
+	assert.Nil(t, wdErr)
+
+	relativePath := filepath.Join("testdata", "template_app")
+	testRoot := filepath.Join(wd, relativePath)
+	templateID := "xamarin.todo"
+
+	readmePath, err := FindReadme(testRoot, relativePath, templateID)
+	assert.Nil(t, err)
+
+	readmeData, err := ioutil.ReadFile(readmePath)
+	assert.Nil(t, err)
+
+	expectedData, err := ioutil.ReadFile(filepath.Join(testRoot, "frontend", templateID, "README.md"))
+	assert.Nil(t, err)
+
+	assert.Equal(t, string(expectedData), string(readmeData))
+}
+
 func TestFindApp(t *testing.T) {
 	wd, wdErr := os.Getwd()
 	assert.Nil(t, wdErr)

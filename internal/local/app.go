@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 )
@@ -21,6 +22,7 @@ const (
 	BackendPath = "backend"
 	// FrontendPath is the relative path to write frontend templates' contents to
 	FrontendPath = "frontend"
+	nameREADME   = "README"
 )
 
 func errFailedToParseAppConfig(path string) error {
@@ -362,4 +364,15 @@ func loadAppRoot(path string) (App, bool, error) {
 	}
 
 	return app, true, nil
+}
+
+// FindReadme finds the Realm app README file for the specified template
+func FindReadme(projectPath, relativePath, templateID string) (string, error) {
+	matches, err := filepath.Glob(filepath.Join(projectPath, FrontendPath, templateID, nameREADME+"*"))
+	if err != nil || len(matches) != 1 {
+		return "", err
+	}
+
+	ext := strings.ToLower(filepath.Ext(matches[0]))
+	return filepath.Join(relativePath, FrontendPath, templateID, nameREADME+ext), nil
 }

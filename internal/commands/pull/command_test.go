@@ -626,6 +626,41 @@ Successfully pulled app down: app
 			}
 		})
 
+		t.Run("should output README path for template", func(t *testing.T) {
+			xamarinZipPkg, err := zip.OpenReader("testdata/xamarin.todo.zip")
+			assert.Nil(t, err)
+			defer xamarinZipPkg.Close()
+
+			templateID := "xamarin.todo"
+			templateZip := &xamarinZipPkg.Reader
+			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
+				return []realm.Template{{ID: templateID, Name: "some template"}}, nil
+			}
+
+			realmClient.ClientTemplateFn = func(groupID, appID, templateID string) (*zip.Reader, bool, error) {
+				return templateZip, true, nil
+			}
+
+			profile, teardown := mock.NewProfileFromTmpDir(t, "profile_name")
+			defer teardown()
+
+			out, ui := mock.NewUI()
+
+			cmd := &Command{inputs{Project: "some_project", LocalPath: "app", TemplateIDs: []string{templateID}}}
+			assert.Nil(t, cmd.Handler(profile, ui, cli.Clients{Realm: realmClient}))
+
+			readme := filepath.Join(profile.WorkingDirectory, "app", local.FrontendPath, templateID, "README.md")
+			_, err = os.Stat(readme)
+			assert.Nil(t, err)
+
+			assert.Equal(t, `Saved app to disk
+Successfully pulled app down: app
+Successfully saved template(s) to disk
+  xamarin.todo: app/frontend/xamarin.todo/README.md
+Navigate to the saved directory to view directions on how to run the template app(s)
+`, out.String())
+		})
+
 		t.Run("should return an error if resolving the template returns an error", func(t *testing.T) {
 			realmClient.CompatibleTemplatesFn = func(groupID, appID string) ([]realm.Template, error) {
 				return nil, errors.New("some kind of error")
