@@ -684,7 +684,7 @@ Check out your app: cd ./remote-app && realm-cli app describe
   ]`,
 		},
 		{
-			description:                    "should create minimal project with a data lake and serverless instance and cluster data source when data lake and serverless instance and cluster is set",
+			description:                    "should create minimal project with a cluster and serverless instance and data lake data source when cluster and serverless instance and data lake is set",
 			clusters:                       []string{"test-cluster"},
 			clusterServiceNames:            []string{"mongodb-atlas"},
 			serverlessInstances:            []string{"test-serverless-instance"},

@@ -230,7 +230,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	if cmd.inputs.Template == "" {
-		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes, dsServerlessInstances)
+		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsServerlessInstances, dsDatalakes)
 	}
 	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 }
@@ -243,8 +243,8 @@ func (cmd CommandCreate) handleCreateApp(
 	rootDir string,
 	appRemote realm.App,
 	dsClusters []dataSourceCluster,
-	dsDatalakes []dataSourceDatalake,
 	dsServerlessInstances []dataSourceCluster,
+	dsDatalakes []dataSourceDatalake,
 ) error {
 	if cmd.inputs.DryRun {
 		logs := make([]terminal.Log, 0, 4)
@@ -322,7 +322,8 @@ func (cmd CommandCreate) handleCreateApp(
 		}
 	}
 
-	for _, dsCluster := range dsClusters {
+	dsClustersAndServerlessInstances := append(dsClusters, dsServerlessInstances...)
+	for _, dsCluster := range dsClustersAndServerlessInstances {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsCluster.Name,
 			"type": dsCluster.Type,
@@ -333,21 +334,6 @@ func (cmd CommandCreate) handleCreateApp(
 			},
 			"version": dsCluster.Version,
 		})
-
-	}
-
-	for _, dsServerlessInstance := range dsServerlessInstances {
-		local.AddDataSource(appLocal.AppData, map[string]interface{}{
-			"name": dsServerlessInstance.Name,
-			"type": dsServerlessInstance.Type,
-			"config": map[string]interface{}{
-				"clusterName":         dsServerlessInstance.Config.ClusterName,
-				"readPreference":      dsServerlessInstance.Config.ReadPreference,
-				"wireProtocolEnabled": dsServerlessInstance.Config.WireProtocolEnabled,
-			},
-			"version": dsServerlessInstance.Version,
-		})
-
 	}
 
 	for _, dsDatalake := range dsDatalakes {
