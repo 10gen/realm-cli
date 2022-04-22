@@ -322,8 +322,7 @@ func (cmd CommandCreate) handleCreateApp(
 		}
 	}
 
-	dsClustersAndServerlessInstances := append(dsClusters, dsServerlessInstances...)
-	for _, dsCluster := range dsClustersAndServerlessInstances {
+	for _, dsCluster := range dsClusters {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsCluster.Name,
 			"type": dsCluster.Type,
@@ -334,6 +333,21 @@ func (cmd CommandCreate) handleCreateApp(
 			},
 			"version": dsCluster.Version,
 		})
+
+	}
+
+	for _, dsServerlessInstance := range dsServerlessInstances {
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsServerlessInstance.Name,
+			"type": dsServerlessInstance.Type,
+			"config": map[string]interface{}{
+				"clusterName":         dsServerlessInstance.Config.ClusterName,
+				"readPreference":      dsServerlessInstance.Config.ReadPreference,
+				"wireProtocolEnabled": dsServerlessInstance.Config.WireProtocolEnabled,
+			},
+			"version": dsServerlessInstance.Version,
+		})
+
 	}
 
 	for _, dsDatalake := range dsDatalakes {
