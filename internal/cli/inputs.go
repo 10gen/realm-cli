@@ -78,7 +78,7 @@ type AppOptions struct {
 
 // ResolveApp will use the provided Realm client to resolve the app specified by the options
 func ResolveApp(ui terminal.UI, client realm.Client, opts AppOptions) (realm.App, error) {
-	// if no flags were set and the optional .mdb/app_meta.json file is present
+	// if no flags were set and the optional app meta file is present
 	if opts.Filter.GroupID == "" && opts.Filter.App == "" && opts.AppMeta.ConfigVersion != 0 {
 		if opts.FetchDetails {
 			return client.FindApp(opts.AppMeta.GroupID, opts.AppMeta.AppID)

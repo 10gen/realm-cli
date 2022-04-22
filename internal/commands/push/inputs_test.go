@@ -128,7 +128,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 
 		i := inputs{Project: app.GroupID, RemoteApp: app.ClientAppID}
 
-		f, err := i.resolveRemoteApp(nil, client)
+		f, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
 		assert.Nil(t, err)
 
 		assert.Equal(t, appRemote{GroupID: app.GroupID, AppID: app.ID, ClientAppID: app.ClientAppID}, f)
@@ -150,8 +150,8 @@ func TestPushInputsResolveTo(t *testing.T) {
 			return []realm.App{app}, nil
 		}
 
-		i := inputs{appLocal: local.App{Meta: local.AppMeta{AppID: app.ID, GroupID: app.GroupID, ConfigVersion: realm.AppConfigVersion20210101}}}
-		remoteApp, err := i.resolveRemoteApp(nil, client)
+		var i inputs
+		remoteApp, err := i.resolveRemoteApp(nil, client, local.AppMeta{AppID: app.ID, GroupID: app.GroupID, ConfigVersion: realm.AppConfigVersion20210101})
 		assert.Nil(t, err)
 
 		assert.Equal(t, appRemote{AppID: app.ID, GroupID: app.GroupID}, remoteApp)
@@ -165,7 +165,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 		}
 
 		i := inputs{Project: "groupID", RemoteApp: "appID"}
-		tt, err := i.resolveRemoteApp(nil, client)
+		tt, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
 		assert.Nil(t, err)
 		assert.Equal(t, appRemote{GroupID: "groupID"}, tt)
 	})
@@ -177,7 +177,7 @@ func TestPushInputsResolveTo(t *testing.T) {
 		}
 
 		var i inputs
-		_, err := i.resolveRemoteApp(nil, client)
+		_, err := i.resolveRemoteApp(nil, client, local.AppMeta{})
 		assert.Equal(t, cli.ErrGroupNotFound, err)
 	})
 }

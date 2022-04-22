@@ -33,9 +33,6 @@ type inputs struct {
 	IncludeHosting      bool
 	ResetCDNCache       bool
 	DryRun              bool
-
-	// derived inputs
-	appLocal local.App
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
@@ -62,14 +59,14 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		return errProjectInvalid(searchPath, false)
 	}
 
-	app, err := local.LoadApp(searchPath)
+	app, _, err := local.FindApp(searchPath)
 	if err != nil {
-		if app.RootDir == "" {
-			return errProjectInvalid(searchPath, true)
-		}
 		return err
 	}
-	i.appLocal = app
+
+	if app.RootDir == "" {
+		return errProjectInvalid(searchPath, true)
+	}
 
 	if i.LocalPath == "" {
 		i.LocalPath = app.RootDir
@@ -82,11 +79,11 @@ func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	return nil
 }
 
-func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client) (appRemote, error) {
+func (i inputs) resolveRemoteApp(ui terminal.UI, client realm.Client, appMeta local.AppMeta) (appRemote, error) {
 	r := appRemote{GroupID: i.Project}
 	app, err := cli.ResolveApp(ui, client, cli.AppOptions{
 		Filter:  realm.AppFilter{GroupID: i.Project, App: i.RemoteApp},
-		AppMeta: i.appLocal.Meta,
+		AppMeta: appMeta,
 	})
 	if err != nil {
 		if _, ok := err.(cli.ErrAppNotFound); !ok {

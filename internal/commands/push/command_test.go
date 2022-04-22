@@ -101,13 +101,7 @@ func TestPushHandler(t *testing.T) {
 			return realm.App{}, errors.New("something bad happened")
 		}
 
-		localPath, err := filepath.Abs("testdata/project")
-		assert.Nil(t, err)
-
-		appLocal, err := local.LoadApp(localPath)
-		assert.Nil(t, err)
-
-		cmd := &Command{inputs{RemoteApp: "appID", appLocal: appLocal}}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		assert.Equal(t, errors.New("something bad happened"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
@@ -135,10 +129,7 @@ func TestPushHandler(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		i := inputs{LocalPath: "testdata/project", RemoteApp: "appID"}
-		assert.Nil(t, i.Resolve(nil, nil))
-
-		cmd := &Command{i}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -212,10 +203,7 @@ func TestPushHandler(t *testing.T) {
 			return nil
 		}
 
-		i := inputs{LocalPath: "testdata/project", RemoteApp: "appID"}
-		assert.Nil(t, i.Resolve(nil, nil))
-
-		cmd := &Command{i}
+		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
 		assert.Equal(t, errors.New("something bad happened"), err)
@@ -483,10 +471,7 @@ Failed to discard the draft created for your deployment
 					return nil, nil
 				}
 
-				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
-				assert.Nil(t, i.Resolve(nil, nil))
-
-				cmd := &Command{i}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -515,10 +500,7 @@ Deployment complete`,
 					}, nil
 				}
 
-				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
-				assert.Nil(t, i.Resolve(nil, nil))
-
-				cmd := &Command{i}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -563,10 +545,7 @@ Deployment complete`,
 					}, nil
 				}
 
-				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
-				assert.Nil(t, i.Resolve(nil, nil))
-
-				cmd := &Command{i}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("1 error(s) occurred while importing hosting assets"), err)
@@ -609,10 +588,7 @@ An error occurred while uploading hosting assets: failed to remove /deleteme.htm
 					}, nil
 				}
 
-				i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
-				assert.Nil(t, i.Resolve(nil, nil))
-
-				cmd := &Command{i}
+				cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 				err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 				assert.Equal(t, errors.New("2 error(s) occurred while importing hosting assets"), err)
@@ -663,10 +639,7 @@ Deployment complete`,
 				}, nil
 			}
 
-			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}
-			assert.Nil(t, i.Resolve(nil, nil))
-
-			cmd := &Command{i}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -707,10 +680,7 @@ Successfully pushed app up: eggcorn-abcde
 				return errors.New("something bad happened")
 			}
 
-			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}
-			assert.Nil(t, i.Resolve(nil, nil))
-
-			cmd := &Command{i}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Equal(t, errors.New("something bad happened"), err)
@@ -739,10 +709,7 @@ Successfully pushed app up: eggcorn-abcde
 				return nil
 			}
 
-			i := inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}
-			assert.Nil(t, i.Resolve(nil, nil))
-
-			cmd := &Command{i}
+			cmd := &Command{inputs{LocalPath: "testdata/hosting", RemoteApp: "appID", IncludeHosting: true, ResetCDNCache: true}}
 
 			err := cmd.Handler(profile, ui, cli.Clients{Realm: realmClient})
 			assert.Nil(t, err)
@@ -966,10 +933,7 @@ Deployed app is identical to proposed version, nothing to do
 			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
 		}
 
-		i := inputs{LocalPath: "testdata/project-meta", DryRun: true}
-		assert.Nil(t, i.Resolve(nil, nil))
-
-		cmd := &Command{i}
+		cmd := &Command{inputs{LocalPath: "testdata/project-meta", DryRun: true}}
 
 		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient})
 		assert.Nil(t, err)
@@ -1216,10 +1180,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				assert.Nil(t, consoleErr)
 				defer console.Close()
 
-				i := inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}
-				assert.Nil(t, i.Resolve(nil, nil))
-
-				cmd := &Command{i}
+				cmd := &Command{inputs{LocalPath: filepath.Join(tmpDir, "nested"), RemoteApp: "appID"}}
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 				configData, readErr := ioutil.ReadFile(filepath.Join(tmpDir, tc.appConfig.String()))
@@ -1320,7 +1281,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					console.ExpectEOF()
 				}()
 
-				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID", appLocal: app}}
+				cmd := &Command{inputs{LocalPath: tmpDir, RemoteApp: "appID"}}
 				assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 				console.Tty().Close() // flush the writers
