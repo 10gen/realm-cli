@@ -136,13 +136,16 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		i := inputs{appMeta: local.AppMeta{GroupID: "some-group", AppID: "some-app", ConfigVersion: realm.DefaultAppConfigVersion}}
 		var realmClient mock.RealmClient
 
+		var findAppCalls int
 		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
-			return realm.App{GroupID: "group-id", ID: "app-id", Name: "some-name"}, nil
+			findAppCalls++
+			return realm.App{GroupID: groupID, ID: appID, Name: "some-name"}, nil
 		}
 
 		app, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
 		assert.Nil(t, err)
-		assert.Equal(t, realm.App{GroupID: "group-id", ID: "app-id", Name: "some-name"}, app)
+		assert.Equal(t, realm.App{GroupID: "some-group", ID: "some-app", Name: "some-name"}, app)
+		assert.Equal(t, 1, findAppCalls)
 	})
 
 	t.Run("should resolve group id if project is not provided", func(t *testing.T) {
