@@ -2,6 +2,8 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli"
@@ -209,6 +211,15 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		searchPath = profile.WorkingDirectory
 	}
 
+	searchPathAbs, err := filepath.Abs(searchPath)
+	if err != nil {
+		return err
+	}
+
+	if _, err = os.Stat(searchPathAbs); os.IsNotExist(err) {
+		return errProjectInvalid(searchPath, false)
+	}
+
 	app, _, err := local.FindApp(searchPath)
 	if err != nil {
 		return err
@@ -225,11 +236,12 @@ func (i *diffInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		}
 	}
 
-	if app.RootDir != "" {
-		i.LocalPath = app.RootDir
+	if app.RootDir == "" {
+		return errProjectInvalid(i.LocalPath, true)
 	}
+	i.LocalPath = app.RootDir
 
-	if i.RemoteApp == "" {
+	if i.RemoteApp == "" && app.Meta.AppID == "" {
 		i.RemoteApp = app.Option()
 	}
 
