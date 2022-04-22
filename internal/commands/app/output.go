@@ -15,13 +15,14 @@ const (
 )
 
 type newAppOutputs struct {
-	AppID     string              `json:"client_app_id"`
-	Filepath  string              `json:"filepath"`
-	URL       string              `json:"url,omitempty"`
-	Backend   string              `json:"backend,omitempty"`
-	Frontends string              `json:"frontends,omitempty"`
-	Clusters  []dataSourceOutputs `json:"clusters,omitempty"`
-	Datalakes []dataSourceOutputs `json:"datalakes,omitempty"`
+	AppID               string              `json:"client_app_id"`
+	Filepath            string              `json:"filepath"`
+	URL                 string              `json:"url,omitempty"`
+	Backend             string              `json:"backend,omitempty"`
+	Frontends           string              `json:"frontends,omitempty"`
+	Clusters            []dataSourceOutputs `json:"clusters,omitempty"`
+	ServerlessInstances []dataSourceOutputs `json:"serverless_instances,omitempty"`
+	Datalakes           []dataSourceOutputs `json:"datalakes,omitempty"`
 }
 
 type dataSourceOutputs struct {

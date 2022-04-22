@@ -75,6 +75,25 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 			},
 		},
 		flags.StringSliceFlag{
+			Value: &cmd.inputs.ServerlessInstances,
+			Meta: flags.Meta{
+				Name: flagServerlessInstance,
+				Usage: flags.Usage{
+					Description: "Link Atlas Serverless instance(s) to your Realm app",
+					Note:        "Serverless instances cannot be used to create template apps",
+				},
+			},
+		},
+		flags.StringSliceFlag{
+			Value: &cmd.inputs.ServerlessInstanceServiceNames,
+			Meta: flags.Meta{
+				Name: flagServerlessInstanceServiceName,
+				Usage: flags.Usage{
+					Description: "Specify the Realm app Service name to reference your Atlas Serverless instance",
+				},
+			},
+		},
+		flags.StringSliceFlag{
 			Value: &cmd.inputs.Datalakes,
 			Meta: flags.Meta{
 				Name: flagDatalake,
@@ -170,6 +189,15 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		return err
 	}
 
+	var dsServerlessInstances []dataSourceCluster
+	var dsServerlessInstancesMissing []string
+	if len(cmd.inputs.ServerlessInstances) > 0 {
+		dsServerlessInstances, dsServerlessInstancesMissing, err = cmd.inputs.resolveServerlessInstances(ui, clients.Atlas, groupID)
+		if err != nil {
+			return err
+		}
+	}
+
 	var dsDatalakes []dataSourceDatalake
 	var dsDatalakesMissing []string
 	if len(cmd.inputs.Datalakes) > 0 {
@@ -179,9 +207,12 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 		}
 	}
 
-	nonExistingDataSources := make([]string, 0, len(dsClustersMissing)+len(dsDatalakesMissing))
+	nonExistingDataSources := make([]string, 0, len(dsClustersMissing)+len(dsDatalakesMissing)+len(dsServerlessInstancesMissing))
 	for _, missingCluster := range dsClustersMissing {
 		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingCluster))
+	}
+	for _, missingServerlessInstance := range dsServerlessInstancesMissing {
+		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingServerlessInstance))
 	}
 	for _, missingDatalake := range dsDatalakesMissing {
 		nonExistingDataSources = append(nonExistingDataSources, fmt.Sprintf("'%s'", missingDatalake))
@@ -199,7 +230,7 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	}
 
 	if cmd.inputs.Template == "" {
-		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsDatalakes)
+		return cmd.handleCreateApp(profile, ui, clients, groupID, rootDir, appRemote, dsClusters, dsServerlessInstances, dsDatalakes)
 	}
 	return cmd.handleCreateTemplateApp(profile, ui, clients, groupID, rootDir, dsClusters, dsDatalakes)
 }
@@ -212,6 +243,7 @@ func (cmd CommandCreate) handleCreateApp(
 	rootDir string,
 	appRemote realm.App,
 	dsClusters []dataSourceCluster,
+	dsServerlessInstances []dataSourceCluster,
 	dsDatalakes []dataSourceDatalake,
 ) error {
 	if cmd.inputs.DryRun {
@@ -227,6 +259,9 @@ func (cmd CommandCreate) handleCreateApp(
 
 		for i, cluster := range dsClusters {
 			logs = append(logs, terminal.NewTextLog("The cluster '%s' would be linked as data source '%s'", cmd.inputs.Clusters[i], cluster.Name))
+		}
+		for i, serverlessInstance := range dsServerlessInstances {
+			logs = append(logs, terminal.NewTextLog("The serverless instance '%s' would be linked as data source '%s'", cmd.inputs.ServerlessInstances[i], serverlessInstance.Name))
 		}
 		for i, datalake := range dsDatalakes {
 			logs = append(logs, terminal.NewTextLog("The data lake '%s' would be linked as data source '%s'", cmd.inputs.Datalakes[i], datalake.Name))
@@ -301,6 +336,20 @@ func (cmd CommandCreate) handleCreateApp(
 
 	}
 
+	for _, dsServerlessInstance := range dsServerlessInstances {
+		local.AddDataSource(appLocal.AppData, map[string]interface{}{
+			"name": dsServerlessInstance.Name,
+			"type": dsServerlessInstance.Type,
+			"config": map[string]interface{}{
+				"clusterName":         dsServerlessInstance.Config.ClusterName,
+				"readPreference":      dsServerlessInstance.Config.ReadPreference,
+				"wireProtocolEnabled": dsServerlessInstance.Config.WireProtocolEnabled,
+			},
+			"version": dsServerlessInstance.Version,
+		})
+
+	}
+
 	for _, dsDatalake := range dsDatalakes {
 		local.AddDataSource(appLocal.AppData, map[string]interface{}{
 			"name": dsDatalake.Name,
@@ -334,6 +383,10 @@ func (cmd CommandCreate) handleCreateApp(
 		output.Clusters = append(output.Clusters, dataSourceOutputs{dsCluster.Name})
 	}
 
+	for _, dsServerlessInstance := range dsServerlessInstances {
+		output.ServerlessInstances = append(output.ServerlessInstances, dataSourceOutputs{dsServerlessInstance.Name})
+	}
+
 	for _, dsDatalake := range dsDatalakes {
 		output.Datalakes = append(output.Datalakes, dataSourceOutputs{dsDatalake.Name})
 	}
@@ -343,6 +396,8 @@ func (cmd CommandCreate) handleCreateApp(
 	return nil
 }
 
+// handleCreateTemplateApp creates a template app and writes it to the user's disk.
+// This function does not take in serverless instances because they are not compatible with template apps.
 func (cmd CommandCreate) handleCreateTemplateApp(
 	profile *user.Profile,
 	ui terminal.UI,

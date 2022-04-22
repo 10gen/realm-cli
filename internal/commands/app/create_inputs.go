@@ -20,23 +20,27 @@ import (
 )
 
 var (
-	flagLocalPathCreate     = "local"
-	flagCluster             = "cluster"
-	flagClusterServiceName  = "cluster-service-name"
-	flagDatalake            = "datalake"
-	flagDatalakeServiceName = "datalake-service-name"
-	flagTemplate            = "template"
-	flagDryRun              = "dry-run"
+	flagLocalPathCreate               = "local"
+	flagCluster                       = "cluster"
+	flagClusterServiceName            = "cluster-service-name"
+	flagServerlessInstance            = "serverless-instance"
+	flagServerlessInstanceServiceName = "serverless-instance-service-name"
+	flagDatalake                      = "datalake"
+	flagDatalakeServiceName           = "datalake-service-name"
+	flagTemplate                      = "template"
+	flagDryRun                        = "dry-run"
 )
 
 type createInputs struct {
 	newAppInputs
-	LocalPath            string
-	Clusters             []string
-	ClusterServiceNames  []string
-	Datalakes            []string
-	DatalakeServiceNames []string
-	DryRun               bool
+	LocalPath                      string
+	Clusters                       []string
+	ClusterServiceNames            []string
+	ServerlessInstances            []string
+	ServerlessInstanceServiceNames []string
+	Datalakes                      []string
+	DatalakeServiceNames           []string
+	DryRun                         bool
 }
 
 type dataSourceCluster struct {
@@ -268,6 +272,58 @@ func (i *createInputs) resolveClusters(ui terminal.UI, client atlas.Client, grou
 	return dsClusters, nonExistingClusters, nil
 }
 
+func (i *createInputs) resolveServerlessInstances(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceCluster, []string, error) {
+	if i.Template != "" && len(i.ServerlessInstances) > 0 {
+		return nil, nil, errors.New("cannot create a template app with Serverless instances")
+	}
+
+	serverlessInstances, err := client.ServerlessInstances(groupID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	existingServerlessInstances := map[string]struct{}{}
+	for _, d := range serverlessInstances {
+		existingServerlessInstances[d.Name] = struct{}{}
+	}
+	nonExistingServerlessInstances := make([]string, 0, len(i.ServerlessInstances))
+
+	dsServerlessInstances := make([]dataSourceCluster, 0, len(i.ServerlessInstances))
+	for idx, serverlessInstanceName := range i.ServerlessInstances {
+		if _, ok := existingServerlessInstances[serverlessInstanceName]; !ok {
+			nonExistingServerlessInstances = append(nonExistingServerlessInstances, serverlessInstanceName)
+			continue
+		}
+
+		serviceName := serverlessInstanceName
+		if len(i.ServerlessInstanceServiceNames) > idx {
+			serviceName = i.ServerlessInstanceServiceNames[idx]
+		} else {
+			if !ui.AutoConfirm() {
+				if err := ui.AskOne(&serviceName, &survey.Input{
+					Message: fmt.Sprintf("Enter a Service Name for Serverless instance '%s'", serverlessInstanceName),
+					Default: serviceName,
+				}); err != nil {
+					return nil, nil, err
+				}
+			}
+		}
+		dsServerlessInstances = append(dsServerlessInstances,
+			dataSourceCluster{
+				Name: serviceName,
+				Type: realm.ServiceTypeCluster,
+				Config: configCluster{
+					ClusterName:         serverlessInstanceName,
+					ReadPreference:      "primary",
+					WireProtocolEnabled: false,
+				},
+				Version: 1,
+			})
+	}
+
+	return dsServerlessInstances, nonExistingServerlessInstances, nil
+}
+
 func (i *createInputs) resolveDatalakes(ui terminal.UI, client atlas.Client, groupID string) ([]dataSourceDatalake, []string, error) {
 	if i.Template != "" && len(i.Datalakes) > 0 {
 		return nil, nil, errors.New("cannot create a template app with data lakes")
@@ -347,6 +403,12 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 		args = append(args, flags.Arg{flagCluster, clusterName})
 		if len(i.ClusterServiceNames) > idx {
 			args = append(args, flags.Arg{flagClusterServiceName, i.ClusterServiceNames[idx]})
+		}
+	}
+	for idx, serverlessInstanceName := range i.ServerlessInstances {
+		args = append(args, flags.Arg{flagServerlessInstance, serverlessInstanceName})
+		if len(i.ServerlessInstanceServiceNames) > idx {
+			args = append(args, flags.Arg{flagServerlessInstanceServiceName, i.ServerlessInstanceServiceNames[idx]})
 		}
 	}
 	for idx, datalakeName := range i.Datalakes {
