@@ -1,0 +1,25 @@
+{
+    "config_version": 20200603,
+    "name": "20200603-local",
+    "location": "US-VA",
+    "deployment_model": "GLOBAL",
+    "security": {
+        "allowed_request_origins": [
+            "http://localhost:8080"
+        ]
+    },
+    "hosting": {
+        "enabled": true,
+        "app_default_domain": "full-tkdcx.stitch-statichosting-dev.baas-dev.10gen.cc"
+    },
+    "custom_user_data_config": {
+        "enabled": true,
+        "mongo_service_name": "mongodb-atlas",
+        "database_name": "test",
+        "collection_name": "coll3",
+        "user_id_field": "xref"
+    },
+    "sync": {
+        "development_mode_enabled": false
+    }
+}

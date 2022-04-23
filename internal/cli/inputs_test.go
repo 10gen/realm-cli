@@ -9,6 +9,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
+	"github.com/10gen/realm-cli/internal/local"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -38,6 +39,7 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
+				assert.Equal(t, local.AppMeta{}, i.AppMeta)
 			},
 		},
 		{
@@ -49,28 +51,27 @@ func TestProjectAppInputsResolve(t *testing.T) {
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "some-app", i.App)
+				assert.Equal(t, local.AppMeta{}, i.AppMeta)
 			},
 		},
 		{
-			description: "when inside a project directory should prompt for app when not flagged and provide client app id as a default",
+			description: "when inside a project directory should not prompt for app when not flagged and use client app id as the option",
 			wd:          projectRoot,
 			procedure: func(c *expect.Console) {
-				c.ExpectString("App ID or Name")
-				c.SendLine("") // accept default
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "eggcorn-abcde", i.App)
+				assert.Equal(t, local.AppMeta{"metaGroupID", "metaAppID", realm.AppConfigVersion20200603}, i.AppMeta)
 			},
 		},
 		{
-			description: "when inside a project directory should prompt for app when not flagged and provide name as a default when client app id is not available",
+			description: "when inside a project directory should not prompt for app when not flagged and provide name as the option when client app id is not available",
 			wd:          localProjectRoot,
 			procedure: func(c *expect.Console) {
-				c.ExpectString("App ID or Name")
-				c.SendLine("") // accept default
 			},
 			test: func(t *testing.T, i cli.ProjectInputs) {
 				assert.Equal(t, "eggcorn", i.App)
+				assert.Equal(t, local.AppMeta{}, i.AppMeta)
 			},
 		},
 	} {
@@ -97,7 +98,6 @@ func TestProjectAppInputsResolve(t *testing.T) {
 }
 
 func TestResolveApp(t *testing.T) {
-	groupID := "groupID"
 	app := realm.App{
 		ID:          primitive.NewObjectID().Hex(),
 		GroupID:     primitive.NewObjectID().Hex(),
@@ -106,40 +106,75 @@ func TestResolveApp(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		description string
-		appID       string
-		apps        []realm.App
-		procedure   func(c *expect.Console)
-		expectedApp realm.App
-		expectedErr error
+		description       string
+		groupID           string
+		appID             string
+		apps              []realm.App
+		appMeta           local.AppMeta
+		fetchDetails      bool
+		procedure         func(c *expect.Console)
+		expectedApp       realm.App
+		expectedErr       error
+		expectedAppFilter realm.AppFilter
 	}{
 		{
-			description: "should return the single app found from the client call",
-			appID:       "app",
-			apps:        []realm.App{app},
-			procedure:   func(c *expect.Console) {},
-			expectedApp: app,
+			description:       "should return the single app found from the client call",
+			groupID:           "groupID",
+			appID:             "appID",
+			apps:              []realm.App{app},
+			procedure:         func(c *expect.Console) {},
+			expectedApp:       app,
+			expectedAppFilter: realm.AppFilter{GroupID: "groupID", App: "appID"},
 		},
 		{
-			description: "should return an error when no apps are returned from the client call with no app id specified",
-			procedure:   func(c *expect.Console) {},
-			expectedErr: cli.ErrAppNotFound{},
+			description:       "should return an error when no apps are returned from the client call with no app id specified",
+			groupID:           "groupID",
+			procedure:         func(c *expect.Console) {},
+			expectedErr:       cli.ErrAppNotFound{},
+			expectedAppFilter: realm.AppFilter{GroupID: "groupID"},
 		},
 		{
-			description: "should return an error when no apps are returned from the client call with an app id specified",
-			appID:       "app",
-			procedure:   func(c *expect.Console) {},
-			expectedErr: cli.ErrAppNotFound{"app"},
+			description:       "should return an error when no apps are returned from the client call with an app id specified",
+			groupID:           "groupID",
+			appID:             "appID",
+			procedure:         func(c *expect.Console) {},
+			expectedErr:       cli.ErrAppNotFound{"appID"},
+			expectedAppFilter: realm.AppFilter{GroupID: "groupID", App: "appID"},
 		},
 		{
 			description: "should prompt user to select an app when more than one is returned from the client call",
-			appID:       "app",
+			groupID:     "groupID",
+			appID:       "appID",
 			apps:        []realm.App{app, app},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Select App")
 				c.SendLine("egg")
 			},
-			expectedApp: app,
+			expectedApp:       app,
+			expectedAppFilter: realm.AppFilter{GroupID: "groupID", App: "appID"},
+		},
+		{
+			description: "should return a partial app when app meta is present with no input flags and no details requested",
+			appMeta:     local.AppMeta{GroupID: "metaGroup", AppID: "metaID", ConfigVersion: realm.DefaultAppConfigVersion},
+			procedure:   func(c *expect.Console) {},
+			expectedApp: realm.App{ID: "metaID", GroupID: "metaGroup"},
+		},
+		{
+			description:  "should call find app using app meta when present with no input flags and details requested",
+			appMeta:      local.AppMeta{GroupID: "metaGroup", AppID: "metaID", ConfigVersion: realm.DefaultAppConfigVersion},
+			fetchDetails: true,
+			procedure:    func(c *expect.Console) {},
+			expectedApp:  app,
+		},
+		{
+			description:       "should return the single app found from the client call with input flags overriding app meta",
+			groupID:           "groupID",
+			appID:             "appID",
+			appMeta:           local.AppMeta{GroupID: "metaGroup", AppID: "metaID", ConfigVersion: realm.DefaultAppConfigVersion},
+			apps:              []realm.App{app},
+			procedure:         func(c *expect.Console) {},
+			expectedApp:       app,
+			expectedAppFilter: realm.AppFilter{GroupID: "groupID", App: "appID"},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -149,6 +184,12 @@ func TestResolveApp(t *testing.T) {
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				appFilter = filter
 				return tc.apps, nil
+			}
+
+			var findAppCalled bool
+			realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+				findAppCalled = true
+				return app, nil
 			}
 
 			_, console, _, ui, consoleErr := mock.NewVT10XConsole()
@@ -161,16 +202,21 @@ func TestResolveApp(t *testing.T) {
 				tc.procedure(console)
 			}()
 
-			inputs := cli.ProjectInputs{Project: groupID, App: tc.appID}
+			inputs := cli.ProjectInputs{Project: tc.groupID, App: tc.appID, AppMeta: tc.appMeta}
 
-			app, err := cli.ResolveApp(ui, realmClient, inputs.Filter())
+			app, err := cli.ResolveApp(ui, realmClient, cli.AppOptions{
+				Filter:       inputs.Filter(),
+				AppMeta:      tc.appMeta,
+				FetchDetails: tc.fetchDetails,
+			})
 
 			console.Tty().Close() // flush the writers
 			<-doneCh              // wait for procedure to complete
 
 			assert.Equal(t, tc.expectedApp, app)
 			assert.Equal(t, tc.expectedErr, err)
-			assert.Equal(t, realm.AppFilter{GroupID: "groupID", App: tc.appID}, appFilter)
+			assert.Equal(t, tc.expectedAppFilter, appFilter)
+			assert.Equal(t, tc.fetchDetails, findAppCalled)
 		})
 	}
 
@@ -180,7 +226,7 @@ func TestResolveApp(t *testing.T) {
 			return nil, errors.New("something bad happened")
 		}
 
-		_, err := cli.ResolveApp(nil, realmClient, realm.AppFilter{})
+		_, err := cli.ResolveApp(nil, realmClient, cli.AppOptions{})
 		assert.Equal(t, errors.New("something bad happened"), err)
 	})
 }

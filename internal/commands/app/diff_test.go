@@ -35,11 +35,13 @@ func TestAppDiffHandler(t *testing.T) {
 		expectedDiffOutput string
 		expectedErr        error
 		appError           bool
+		skipFindApps       bool
 	}{
 		{
-			description:        "no project nor app flag set should diff based on input",
+			description:        "no project nor app flag set should diff based on input and resolve with app meta",
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
+			skipFindApps:       true,
 		},
 		{
 			description:        "no project flag set and an app flag set should show the diff for the app",
@@ -81,8 +83,10 @@ func TestAppDiffHandler(t *testing.T) {
 			realmClient := mock.RealmClient{}
 
 			var appFilter realm.AppFilter
+			var findAppsCalled bool
 			realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
 				appFilter = filter
+				findAppsCalled = true
 				if tc.appError {
 					return nil, tc.expectedErr
 				}
@@ -98,6 +102,7 @@ func TestAppDiffHandler(t *testing.T) {
 			assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 			assert.Equal(t, tc.expectedAppFilter, appFilter)
 			assert.Equal(t, tc.expectedDiffOutput, out.String())
+			assert.Equal(t, tc.skipFindApps, !findAppsCalled)
 		})
 	}
 

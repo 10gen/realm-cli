@@ -103,8 +103,7 @@ func TestPushHandler(t *testing.T) {
 
 		cmd := &Command{inputs{LocalPath: "testdata/project", RemoteApp: "appID"}}
 
-		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient})
-		assert.Equal(t, errors.New("something bad happened"), err)
+		assert.Equal(t, errors.New("something bad happened"), cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
 
 		t.Log("and should properly pass through the expected inputs")
 		assert.Equal(t, "groupID", capturedGroupID)
@@ -914,6 +913,37 @@ Deployed app is identical to proposed version, nothing to do
 `, out.String())
 	})
 
+	t.Run("with app meta should skip resolving app", func(t *testing.T) {
+		out, ui := mock.NewUI()
+
+		var realmClient mock.RealmClient
+		var findAppsCalled bool
+		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
+			findAppsCalled = true
+			return []realm.App{{ID: "appID", GroupID: "groupID"}}, nil
+		}
+		realmClient.DiffFn = func(groupID, appID string, appData interface{}) ([]string, error) {
+			return []string{}, nil
+		}
+
+		var atlasClient mock.AtlasClient
+		var groupsCalled bool
+		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			groupsCalled = true
+			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
+		}
+
+		cmd := &Command{inputs{LocalPath: "testdata/project-meta", DryRun: true}}
+
+		err := cmd.Handler(nil, ui, cli.Clients{Realm: realmClient, Atlas: atlasClient})
+		assert.Nil(t, err)
+		assert.False(t, findAppsCalled, "Expected to skip resolve app ID")
+		assert.False(t, groupsCalled, "Expected to skip resolve group ID")
+		assert.Equal(t, `Determining changes
+Deployed app is identical to proposed version, nothing to do
+`, out.String())
+	})
+
 	t.Run("with diffs generated from the app but is a dry run", func(t *testing.T) {
 		var realmClient mock.RealmClient
 		realmClient.FindAppsFn = func(filter realm.AppFilter) ([]realm.App, error) {
@@ -1109,7 +1139,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 			},
 			{
 				appConfig: local.FileStitch,
-				appData: &local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{
+				appData: &local.AppStitchJSON{local.AppDataV1{local.AppStructureV1{
 					ConfigVersion:   realm.AppConfigVersion20180301,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
@@ -1138,6 +1168,8 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 				tmpDir, teardown, tmpDirErr := u.NewTempDir("push_handler")
 				assert.Nil(t, tmpDirErr)
 				defer teardown()
+
+				assert.Nil(t, os.Mkdir(filepath.Join(tmpDir, "nested"), os.ModePerm))
 
 				app := local.App{RootDir: tmpDir, Config: tc.appConfig, AppData: tc.appData}
 

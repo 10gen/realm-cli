@@ -90,10 +90,10 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 
 func (i *createInputs) resolveName(ui terminal.UI, client realm.Client, groupID, appNameOrClientID string) error {
 	if i.Name == "" {
-		app, err := cli.ResolveApp(ui, client, realm.AppFilter{
+		app, err := cli.ResolveApp(ui, client, cli.AppOptions{Filter: realm.AppFilter{
 			GroupID: groupID,
 			App:     appNameOrClientID,
-		})
+		}})
 		if err != nil {
 			return err
 		}

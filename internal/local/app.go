@@ -27,6 +27,10 @@ func errFailedToParseAppConfig(path string) error {
 	return errors.New("failed to parse app config at " + path)
 }
 
+func errFailedToParseAppMeta(path string) error {
+	return errors.New("failed to parse app meta at " + path)
+}
+
 func errFailedToFindApp(path string) error {
 	return errors.New("failed to find app at " + path)
 }
@@ -35,7 +39,15 @@ func errFailedToFindApp(path string) error {
 type App struct {
 	RootDir string
 	Config  File
+	Meta    AppMeta
 	AppData
+}
+
+// AppMeta represents the app's metadata
+type AppMeta struct {
+	GroupID       string                 `json:"group_id"`
+	AppID         string                 `json:"app_id"`
+	ConfigVersion realm.AppConfigVersion `json:"config_version"`
 }
 
 // Option returns the Realm app data displayed as a selectable option
@@ -178,10 +190,21 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 		}}}
 		config = FileRealmConfig
 	}
+
+	var appMeta AppMeta
+	if app.GroupID != "" && app.ID != "" {
+		appMeta = AppMeta{
+			ConfigVersion: configVersion,
+			AppID:         app.ID,
+			GroupID:       app.GroupID,
+		}
+	}
+
 	return App{
 		RootDir: rootDir,
 		Config:  config,
 		AppData: appData,
+		Meta:    appMeta,
 	}
 }
 
@@ -225,8 +248,7 @@ func LoadApp(path string) (App, error) {
 	return app, nil
 }
 
-// LoadConfig will load the local app's config
-func (a *App) LoadConfig() error {
+func (a *App) loadConfig() error {
 	switch a.Config {
 	case FileRealmConfig:
 		a.AppData = &AppRealmConfigJSON{}
@@ -240,13 +262,34 @@ func (a *App) LoadConfig() error {
 
 	path := filepath.Join(a.RootDir, a.Config.String())
 
-	data, dataErr := ioutil.ReadFile(path)
-	if dataErr != nil {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
 		return errFailedToParseAppConfig(path)
 	}
 
 	if err := json.Unmarshal(data, a.AppData); err != nil {
 		return errFailedToParseAppConfig(path)
+	}
+	return nil
+}
+
+func (a *App) loadMeta() error {
+	path := filepath.Join(a.RootDir, NameDotMDB, FileAppMeta.String())
+
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return errFailedToParseAppMeta(path)
+	}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return errFailedToParseAppMeta(path)
+	}
+
+	if err := json.Unmarshal(data, &a.Meta); err != nil {
+		return errFailedToParseAppMeta(path)
 	}
 	return nil
 }
@@ -259,32 +302,18 @@ var (
 // returns the local app structure, a boolean indicating if the current
 // working directory is part of a Realm app project, and any error that occurs
 func FindApp(path string) (App, bool, error) {
-	wd, wdErr := filepath.Abs(path)
-	if wdErr != nil {
-		return App{}, false, wdErr
+	wd, err := filepath.Abs(path)
+	if err != nil {
+		return App{}, false, err
 	}
 
 	for i := 0; i < maxDirectoryContainSearchDepth; i++ {
-		for _, config := range allConfigFiles {
-			_, err := os.Stat(filepath.Join(wd, config.String()))
-			if err != nil {
-				if os.IsNotExist(err) {
-					continue
-				}
-				return App{}, false, err
-			}
-
-			app := App{RootDir: wd, Config: config}
-			if err := app.LoadConfig(); err != nil {
-				return App{}, false, err
-			}
-
-			// if no config version is found then continue searching for the app's root directory config
-			if app.ConfigVersion() == 0 {
-				continue
-			}
+		if app, ok, err := loadAppRoot(wd); err != nil {
+			return App{}, false, err
+		} else if ok {
 			return app, true, nil
 		}
+
 		if wd == "/" {
 			break
 		}
@@ -292,4 +321,45 @@ func FindApp(path string) (App, bool, error) {
 	}
 
 	return App{}, false, nil
+}
+
+func loadAppRoot(path string) (App, bool, error) {
+	app := App{RootDir: path}
+
+	if err := app.loadMeta(); err != nil {
+		return App{}, false, err
+	}
+
+	switch app.Meta.ConfigVersion {
+	case realm.AppConfigVersion20210101:
+		app.Config = FileRealmConfig
+	case realm.AppConfigVersion20200603:
+		app.Config = FileConfig
+	case realm.AppConfigVersion20180301:
+		app.Config = FileStitch
+	default:
+		for _, config := range allConfigFiles {
+			if _, err := os.Stat(filepath.Join(path, config.String())); err == nil {
+				app.Config = config
+			} else if !os.IsNotExist(err) {
+				return App{}, false, err
+			}
+		}
+	}
+
+	// for loop found no matching config file
+	if app.Config.Name == "" {
+		return App{}, false, nil
+	}
+
+	if err := app.loadConfig(); err != nil {
+		return App{}, false, err
+	}
+
+	// matching config file is not at project root (e.g. a nested config.json)
+	if app.ConfigVersion() == realm.AppConfigVersionZero {
+		return App{}, false, nil
+	}
+
+	return app, true, nil
 }

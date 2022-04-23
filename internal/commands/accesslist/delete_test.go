@@ -107,7 +107,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 			}
 
 			cmd := &CommandDelete{deleteInputs{
-				cli.ProjectInputs{projectID, appID, nil},
+				cli.ProjectInputs{Project: projectID, App: appID},
 				tc.testInput,
 			}}
 
@@ -174,7 +174,7 @@ func TestAllowedIPDeleteHandler(t *testing.T) {
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				cmd := &CommandDelete{deleteInputs{
-					cli.ProjectInputs{projectID, appID, nil},
+					cli.ProjectInputs{Project: projectID, App: appID},
 					tc.testInput,
 				}}
 				err := cmd.Handler(nil, nil, cli.Clients{Realm: tc.realmClient()})

@@ -73,7 +73,7 @@ func TestAllowedIPUpdateHandler(t *testing.T) {
 			}
 
 			cmd := &CommandUpdate{updateInputs{
-				cli.ProjectInputs{projectID, appID, nil},
+				cli.ProjectInputs{Project: projectID, App: appID},
 				tc.testAddress,
 				tc.testNewAddress,
 				tc.testNewComment,

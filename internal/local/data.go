@@ -28,6 +28,10 @@ const (
 	extJS   = ".js"
 	extJSON = ".json"
 
+	// cli utilities
+	NameDotMDB  = ".mdb"
+	NameAppMeta = "app_meta"
+
 	// app configs
 	NameRealmConfig = "realm_config"
 	NameConfig      = "config"
@@ -83,6 +87,9 @@ const (
 
 // set of supported local files
 var (
+	// cli utilities
+	FileAppMeta = File{NameAppMeta, extJSON}
+
 	// app configs
 	FileRealmConfig = File{NameRealmConfig, extJSON}
 	FileConfig      = File{NameConfig, extJSON}

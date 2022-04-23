@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"errors"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -60,6 +61,21 @@ func TestPullInputsResolve(t *testing.T) {
 				assert.Equal(t, errors.New(`cannot use both "include-dependencies" and "include-package-json" at the same time`), i.Resolve(profile, nil))
 			})
 		})
+
+		t.Run("with an app meta file should not set remote app", func(t *testing.T) {
+			assert.Nil(t, os.Mkdir(filepath.Join(profile.WorkingDirectory, local.NameDotMDB), os.ModePerm))
+
+			assert.Nil(t, ioutil.WriteFile(
+				filepath.Join(profile.WorkingDirectory, local.NameDotMDB, local.FileAppMeta.String()),
+				[]byte(`{"group_id":"metaGroupID","app_id":"metaAppID","config_version":20210101}`),
+				0666,
+			))
+
+			var i inputs
+			assert.Nil(t, i.Resolve(profile, nil))
+			assert.Equal(t, local.AppMeta{"metaGroupID", "metaAppID", realm.AppConfigVersion20210101}, i.appMeta)
+			assert.Equal(t, "", i.RemoteApp)
+		})
 	})
 
 	t.Run("resolving the to flag should work", func(t *testing.T) {
@@ -114,6 +130,22 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		assert.Equal(t, realm.App{GroupID: "group-id", ID: "app-id"}, app)
 
 		assert.Equal(t, realm.AppFilter{GroupID: "some-project", App: "some-app"}, appFilter)
+	})
+
+	t.Run("should not resolve group id if app meta exists", func(t *testing.T) {
+		i := inputs{appMeta: local.AppMeta{GroupID: "some-group", AppID: "some-app", ConfigVersion: realm.DefaultAppConfigVersion}}
+		var realmClient mock.RealmClient
+
+		var findAppCalls int
+		realmClient.FindAppFn = func(groupID, appID string) (realm.App, error) {
+			findAppCalls++
+			return realm.App{GroupID: groupID, ID: appID, Name: "some-name"}, nil
+		}
+
+		app, err := i.resolveRemoteApp(nil, cli.Clients{Realm: realmClient})
+		assert.Nil(t, err)
+		assert.Equal(t, realm.App{GroupID: "some-group", ID: "some-app", Name: "some-name"}, app)
+		assert.Equal(t, 1, findAppCalls)
 	})
 
 	t.Run("should resolve group id if project is not provided", func(t *testing.T) {
