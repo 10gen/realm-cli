@@ -30,23 +30,39 @@ type inputs struct {
 	PrivateAPIKey string
 	Username      string
 	Password      string
+	Browser       bool
 }
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	u := profile.Credentials()
 
-	if u == (user.Credentials{}) {
+	if i.Browser && (i.Username != "" || i.Password != "" || i.PublicAPIKey != "" || i.PrivateAPIKey != "") {
+		return errors.New("credentials will not be authenticated while using browser flag, please login with one or the other")
+	}
+
+	if u == (user.Credentials{}) || i.Browser {
 		if err := ui.OpenBrowser(apiKeysPage); err != nil {
-			ui.Print(terminal.NewErrorLog(errors.New("there was an issue opening your browser")))
+			ui.Print(terminal.NewWarningLog("there was an issue opening your browser"))
 		}
 	}
 
 	var questions []*survey.Question
 
-	switch i.AuthType {
-	case authTypeCloud:
+	switch {
+	case i.Browser:
+		questions = []*survey.Question{
+			{
+				Name:   inputFieldPublicAPIKey,
+				Prompt: &survey.Input{Message: "Public API Key"},
+			},
+			{
+				Name:   inputFieldPrivateAPIKey,
+				Prompt: &survey.Password{Message: "Private API Key"},
+			},
+		}
+	case i.AuthType == authTypeCloud:
 		questions = i.resolveCloudCredentials(u)
-	case authTypeLocal:
+	case i.AuthType == authTypeLocal:
 		questions = i.resolveLocalCredentials(u)
 	default:
 		return fmt.Errorf(

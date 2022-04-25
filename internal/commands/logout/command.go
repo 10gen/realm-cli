@@ -11,7 +11,7 @@ var CommandMeta = cli.CommandMeta{
 	Use:         "logout",
 	Description: "Log the CLI out of Realm",
 	HelpText: `Ends the authenticated session and deletes cached auth tokens. To
-re-authenticate, you must call Login with your Atlas programmatic API key.`,
+re-authenticate, you must call Login with your Atlas programmatic API Key.`,
 }
 
 // Command is the `logout` command

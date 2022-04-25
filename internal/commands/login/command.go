@@ -10,10 +10,10 @@ import (
 // CommandMeta is the command meta for the `login` command
 var CommandMeta = cli.CommandMeta{
 	Use:         "login",
-	Description: "Log the CLI into Realm using a MongoDB Cloud API key",
+	Description: "Log the CLI into Realm using a MongoDB Cloud API Key",
 	HelpText: `Begins an authenticated session with Realm. To get a MongoDB Cloud API Key, open
 your Realm app in the Realm UI. Navigate to "Deployment" in the left navigation
-menu, and select the "Export App" tab. From there, create a programmatic API key
+menu, and select the "Export App" tab. From there, create a programmatic API Key
 to authenticate your realm-cli session.`,
 }
 
@@ -73,6 +73,16 @@ func (cmd *Command) Flags() []flags.Flag {
 				Usage: flags.Usage{
 					Description: "Specify the password of your local Realm credentials",
 					Note:        "This is only useful with a locally running Realm server",
+				},
+			},
+		},
+		flags.BoolFlag{
+			Value: &cmd.inputs.Browser,
+			Meta: flags.Meta{
+				Name: "browser",
+				Usage: flags.Usage{
+					Description: "Direct browser to project access page to create a new API Key for logging into a project",
+					Note:        "Can not be used in combination with login credentials",
 				},
 			},
 		},

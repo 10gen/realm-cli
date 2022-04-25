@@ -89,7 +89,7 @@ func TestRealmUsers(t *testing.T) {
 				for _, user := range apiKeyUsers {
 					identity := user.Identities[0]
 					_, ok := apiKeyIDs[identity.UID]
-					assert.True(t, ok, "expected %s to match a previously created api key id", identity.UID)
+					assert.True(t, ok, "expected %s to match a previously created API Key id", identity.UID)
 					apiKeyIDs[identity.UID] = user.ID
 				}
 			})

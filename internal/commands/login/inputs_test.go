@@ -21,7 +21,7 @@ func TestLoginInputs(t *testing.T) {
 		expectedURL    string
 	}{
 		{
-			description: "Should prompt for public api key when not provided for cloud type",
+			description: "should prompt for public api key when not provided for cloud type",
 			inputs: inputs{
 				AuthType:      authTypeCloud,
 				PrivateAPIKey: "password",
@@ -37,7 +37,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should prompt for private api key when not provided for cloud type",
+			description: "should prompt for private api key when not provided for cloud type",
 			inputs: inputs{
 				AuthType:     authTypeCloud,
 				PublicAPIKey: "username",
@@ -54,7 +54,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description:    "Should prompt for both api keys when not provided for cloud type",
+			description:    "should prompt for both api keys when not provided for cloud type",
 			inputs:         inputs{AuthType: authTypeCloud},
 			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
@@ -71,7 +71,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should not prompt for inputs when flags provide the data for cloud type",
+			description: "should not prompt for inputs when flags provide the data for cloud type",
 			inputs: inputs{
 				AuthType:      authTypeCloud,
 				PublicAPIKey:  "username",
@@ -86,7 +86,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should not prompt for inputs when profile provides the data for cloud type",
+			description: "should not prompt for inputs when profile provides the data for cloud type",
 			inputs:      inputs{AuthType: authTypeCloud},
 			prepareProfile: func(p *user.Profile) {
 				p.SetCredentials(user.Credentials{PublicAPIKey: "username", PrivateAPIKey: "password"})
@@ -100,7 +100,7 @@ func TestLoginInputs(t *testing.T) {
 			},
 		},
 		{
-			description: "Should prompt for username when not provided for local type",
+			description: "should prompt for username when not provided for local type",
 			inputs: inputs{
 				AuthType: authTypeLocal,
 				Password: "password",
@@ -116,7 +116,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should prompt for password when not provided for local type",
+			description: "should prompt for password when not provided for local type",
 			inputs: inputs{
 				AuthType: authTypeLocal,
 				Username: "username",
@@ -133,7 +133,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description:    "Should prompt for both username and password when not provided for local type",
+			description:    "should prompt for both username and password when not provided for local type",
 			inputs:         inputs{AuthType: authTypeLocal},
 			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
@@ -150,7 +150,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should not prompt for inputs when flags provide the data for local type",
+			description: "should not prompt for inputs when flags provide the data for local type",
 			inputs: inputs{
 				AuthType: authTypeLocal,
 				Username: "username",
@@ -165,7 +165,7 @@ func TestLoginInputs(t *testing.T) {
 			expectedURL: apiKeysPage,
 		},
 		{
-			description: "Should not prompt for inputs when profile provides the data for local type",
+			description: "should not prompt for inputs when profile provides the data for local type",
 			inputs:      inputs{AuthType: authTypeLocal},
 			prepareProfile: func(p *user.Profile) {
 				p.SetCredentials(user.Credentials{Username: "username", Password: "password"})
@@ -177,6 +177,22 @@ func TestLoginInputs(t *testing.T) {
 				assert.Equal(t, "username", i.Username)
 				assert.Equal(t, "password", i.Password)
 			},
+		},
+		{
+			description: "should open browser when flag is set even if a profile exists",
+			inputs:      inputs{AuthType: authTypeCloud, Browser: true},
+			prepareProfile: func(p *user.Profile) {
+				p.SetCredentials(user.Credentials{PublicAPIKey: "username", PrivateAPIKey: "password"})
+			},
+			procedure: func(c *expect.Console) {
+				c.ExpectString("API Key")
+				c.SendLine("username")
+				c.ExpectString("Private API Key")
+				c.SendLine("password")
+				c.ExpectEOF()
+			},
+			test:        func(t *testing.T, i inputs) {},
+			expectedURL: apiKeysPage,
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -236,5 +252,19 @@ func TestLoginInputs(t *testing.T) {
 		assert.Equal(t, "there was an issue opening your browser\n", out.String())
 		assert.Equal(t, "username", i.Username)
 		assert.Equal(t, "password", i.Password)
+	})
+
+	t.Run("should error if browser flag is enabled and credentials are input", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		i := inputs{
+			AuthType: authTypeLocal,
+			Username: "username",
+			Password: "password",
+			Browser:  true,
+		}
+
+		err := i.Resolve(profile, nil)
+		assert.Equal(t, errors.New("credentials will not be authenticated while using browser flag, please login with one or the other"), err)
 	})
 }

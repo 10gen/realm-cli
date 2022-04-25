@@ -85,7 +85,7 @@ realm-cli --profile local whoami
 realm-cli --profile local apps list
 ```
 
-The base urls (among other details like api key credentials and telemetry mode) can be considered as "sticky" flags.  Whenever they are provided and set, that particular profile (or the default profile if none is specified) will remember the new values going forward (read: they only need to be provided/set once).
+The base urls (among other details like API Key credentials and telemetry mode) can be considered as "sticky" flags.  Whenever they are provided and set, that particular profile (or the default profile if none is specified) will remember the new values going forward (read: they only need to be provided/set once).
 
 ## Linting
 

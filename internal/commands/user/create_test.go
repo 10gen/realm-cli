@@ -67,7 +67,7 @@ func TestUserCreateHandler(t *testing.T) {
 		cmd := &CommandCreate{createInputs{UserType: userTypeAPIKey}}
 
 		assert.Nil(t, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
-		assert.Equal(t, fmt.Sprintf(`Successfully created api key
+		assert.Equal(t, fmt.Sprintf(`Successfully created API Key
 {
   "id": %q,
   "enabled": true,
@@ -123,7 +123,7 @@ func TestUserCreateHandler(t *testing.T) {
 					}
 					return realmClient
 				},
-				expectedErr: errors.New("failed to create api key: something bad happened"),
+				expectedErr: errors.New("failed to create API Key: something bad happened"),
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {

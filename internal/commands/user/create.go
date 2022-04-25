@@ -92,11 +92,11 @@ func (cmd *CommandCreate) Handler(profile *user.Profile, ui terminal.UI, clients
 	case userTypeAPIKey:
 		apiKey, err := clients.Realm.CreateAPIKey(app.GroupID, app.ID, cmd.inputs.APIKeyName)
 		if err != nil {
-			return fmt.Errorf("failed to create api key: %s", err)
+			return fmt.Errorf("failed to create API Key: %s", err)
 		}
 
 		ui.Print(terminal.NewJSONLog(
-			"Successfully created api key",
+			"Successfully created API Key",
 			newUserAPIKeyOutputs{
 				newUserOutputs: newUserOutputs{
 					ID:      apiKey.ID,
