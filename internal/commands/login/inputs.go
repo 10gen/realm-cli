@@ -2,12 +2,14 @@ package login
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/cloud/realm"
 	"github.com/10gen/realm-cli/internal/terminal"
 	"github.com/AlecAivazis/survey/v2"
+	"github.com/pkg/browser"
 )
 
 const (
@@ -31,6 +33,13 @@ type inputs struct {
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	u := profile.Credentials()
+
+	url := "https://cloud.mongodb.com/go?l=https%3A%2F%2Fcloud.mongodb.com%2Fv2%2F%3Cproject%3E%23access%2FapiKeys"
+	if u == (user.Credentials{}) {
+		if errBrowser := browser.OpenURL(url); errBrowser != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "There was an issue opening your browser\n")
+		}
+	}
 
 	var questions []*survey.Question
 
