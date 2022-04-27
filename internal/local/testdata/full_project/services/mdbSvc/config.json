@@ -1,0 +1,6 @@
+{
+    "name": "mdbSvc",
+    "type": "mongodb",
+    "config": {},
+    "version": 1
+}

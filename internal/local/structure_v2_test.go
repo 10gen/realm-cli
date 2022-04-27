@@ -44,14 +44,26 @@ func TestParseDataSources(t *testing.T) {
 
 	testRoot := filepath.Join(wd, "testdata/data_sources")
 
+	mdbAtlasStr := "mongodb-atlas"
 	t.Run("should return the parsed data sources directory with nested rules and schema", func(t *testing.T) {
 		dataSources, err := parseDataSources(testRoot)
 		assert.Nil(t, err)
 		assert.Equal(t, []DataSourceStructure{{
 			Config: map[string]interface{}{
-				"type":   "mongodb-atlas",
-				"name":   "mongodb-atlas",
+				"type":   mdbAtlasStr,
+				"name":   mdbAtlasStr,
 				"config": map[string]interface{}{},
+			},
+			DefaultRule: map[string]interface{}{
+				"roles": []interface{}{
+					map[string]interface{}{
+						"name": "owner",
+						"apply_when": map[string]interface{}{
+							"userId": "%%user.id",
+						},
+						"read": true,
+					},
+				},
 			},
 			Rules: []map[string]interface{}{
 				{
@@ -204,14 +216,27 @@ func TestWriteDataSources(t *testing.T) {
 	assert.Nil(t, err)
 	defer cleanupTmpDir()
 
+	mdbAtlasStr := "mongodb-atlas"
+
 	t.Run("should write services to disk", func(t *testing.T) {
 		data := []DataSourceStructure{{
 			Config: map[string]interface{}{
-				"name": "mongodb-atlas",
-				"type": "mongodb-atlas",
+				"name": mdbAtlasStr,
+				"type": mdbAtlasStr,
 				"config": map[string]interface{}{
 					"clusterName":         "Cluster0",
 					"wireProtocolEnabled": true,
+				},
+			},
+			DefaultRule: map[string]interface{}{
+				"roles": []interface{}{
+					map[string]interface{}{
+						"name": "owner",
+						"apply_when": map[string]interface{}{
+							"userId": "%%user.id",
+						},
+						"read": true,
+					},
 				},
 			},
 			Rules: []map[string]interface{}{
@@ -225,7 +250,7 @@ func TestWriteDataSources(t *testing.T) {
 		err := writeDataSources(tmpDir, data)
 		assert.Nil(t, err)
 
-		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", FileConfig.String()))
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, FileConfig.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "config": {
@@ -237,7 +262,22 @@ func TestWriteDataSources(t *testing.T) {
 }
 `, string(config))
 
-		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRules.String()))
+		defaultRule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, FileDefaultRule.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "roles": [
+        {
+            "apply_when": {
+                "userId": "%%user.id"
+            },
+            "name": "owner",
+            "read": true
+        }
+    ]
+}
+`, string(defaultRule))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileRules.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "collection": "bar",
@@ -246,11 +286,11 @@ func TestWriteDataSources(t *testing.T) {
 `, string(rule))
 
 		// the rule in this data source doesn't contain a schema or relationships, so assert that those files are not present
-		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileSchema.String()))
 		assert.NotNil(t, err)
 		assert.True(t, os.IsNotExist(err), "schema.json must not exist")
 
-		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileRelationships.String()))
 		assert.NotNil(t, err)
 		assert.True(t, os.IsNotExist(err), "relationships.json must not exist")
 	})
@@ -258,8 +298,8 @@ func TestWriteDataSources(t *testing.T) {
 	t.Run("should write schemas and relationships to disk if they are included in the rule object", func(t *testing.T) {
 		data := []DataSourceStructure{{
 			Config: map[string]interface{}{
-				"name": "mongodb-atlas",
-				"type": "mongodb-atlas",
+				"name": mdbAtlasStr,
+				"type": mdbAtlasStr,
 				"config": map[string]interface{}{
 					"clusterName":         "Cluster0",
 					"wireProtocolEnabled": true,
@@ -287,7 +327,7 @@ func TestWriteDataSources(t *testing.T) {
 		err := writeDataSources(tmpDir, data)
 		assert.Nil(t, err)
 
-		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", FileConfig.String()))
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, FileConfig.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "config": {
@@ -299,7 +339,7 @@ func TestWriteDataSources(t *testing.T) {
 }
 `, string(config))
 
-		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRules.String()))
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileRules.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "collection": "bar",
@@ -307,11 +347,11 @@ func TestWriteDataSources(t *testing.T) {
 }
 `, string(rule))
 
-		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileSchema.String()))
+		schema, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileSchema.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, "{\n    \"title\": \"foo.bar schema\"\n}\n", string(schema))
 
-		relationships, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, "mongodb-atlas", "foo", "bar", FileRelationships.String()))
+		relationships, err := ioutil.ReadFile(filepath.Join(tmpDir, NameDataSources, mdbAtlasStr, "foo", "bar", FileRelationships.String()))
 		assert.Nil(t, err)
 		assert.Equal(t, `{
     "user_id": {

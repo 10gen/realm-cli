@@ -44,8 +44,9 @@ type AuthStructure struct {
 
 // DataSourceStructure represents the v2 Realm app data source structure
 type DataSourceStructure struct {
-	Config map[string]interface{}   `json:"config,omitempty"`
-	Rules  []map[string]interface{} `json:"rules,omitempty"`
+	Config      map[string]interface{}   `json:"config,omitempty"`
+	DefaultRule map[string]interface{}   `json:"default_rule,omitempty"`
+	Rules       []map[string]interface{} `json:"rules,omitempty"`
 }
 
 // FunctionsStructure represents the v2 Realm app functions structure
@@ -285,6 +286,11 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 			return err
 		}
 
+		defaultRule, err := parseJSON(filepath.Join(path, FileDefaultRule.String()))
+		if err != nil {
+			return err
+		}
+
 		var rules []map[string]interface{}
 
 		dbs := directoryWalker{path: path, onlyDirs: true}
@@ -348,7 +354,7 @@ func parseDataSources(rootDir string) ([]DataSourceStructure, error) {
 			return err
 		}
 
-		out = append(out, DataSourceStructure{config, rules})
+		out = append(out, DataSourceStructure{config, defaultRule, rules})
 		return nil
 	}); err != nil {
 		return nil, err
@@ -564,6 +570,8 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		if !ok {
 			return errors.New("error writing datasources")
 		}
+
+		// Config
 		config, err := MarshalJSON(ds.Config)
 		if err != nil {
 			return err
@@ -575,6 +583,21 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		); err != nil {
 			return err
 		}
+
+		// Default Rule
+		defaultRule, err := MarshalJSON(ds.DefaultRule)
+		if err != nil {
+			return err
+		}
+		if err := WriteFile(
+			filepath.Join(dir, name, FileDefaultRule.String()),
+			0666,
+			bytes.NewReader(defaultRule),
+		); err != nil {
+			return err
+		}
+
+		// Rules
 		for _, rule := range ds.Rules {
 			ruleTemp := map[string]interface{}{}
 			for k, v := range rule {

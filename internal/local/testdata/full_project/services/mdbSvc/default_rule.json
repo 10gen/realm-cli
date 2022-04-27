@@ -1,0 +1,11 @@
+{
+  "roles": [
+    {
+      "name": "owner",
+      "apply_when": {
+        "userId": "%%user.id"
+      },
+      "read": true
+    }
+  ]
+}

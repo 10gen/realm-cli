@@ -698,6 +698,32 @@ exports = function({ query }) {
 				},
 			},
 		},
+		{
+			Config: map[string]interface{}{
+				"type":    "mongodb",
+				"name":    "mdbSvc",
+				"config":  map[string]interface{}{},
+				"version": float64(1),
+			},
+			DefaultRule: map[string]interface{}{
+				"roles": []interface{}{
+					map[string]interface{}{
+						"name": "owner",
+						"apply_when": map[string]interface{}{
+							"userId": "%%user.id",
+						},
+						"read": true,
+					},
+				},
+			},
+			Rules: []map[string]interface{}{
+				{
+					"database":   "foo",
+					"collection": "bar",
+					"name":       "foo.bar",
+				},
+			},
+		},
 	},
 	Triggers: []map[string]interface{}{
 		{

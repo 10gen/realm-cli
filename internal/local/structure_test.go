@@ -338,6 +338,73 @@ exports = function({ query }) {
 }
 `, string(rule))
 	})
+
+	t.Run("should write services with v2 Rules to disk", func(t *testing.T) {
+		mdbSvcName := "mdbSvc"
+		data := []ServiceStructure{{
+			Config: map[string]interface{}{
+				"name":    mdbSvcName,
+				"type":    "mongodb",
+				"config":  map[string]interface{}{},
+				"version": 1,
+			},
+			DefaultRule: map[string]interface{}{
+				"roles": []interface{}{
+					map[string]interface{}{
+						"name": "owner",
+						"apply_when": map[string]interface{}{
+							"userId": "%%user.id",
+						},
+						"read": true,
+					},
+				},
+			},
+			Rules: []map[string]interface{}{
+				{
+					"name":       "foo.bar",
+					"database":   "foo",
+					"collection": "bar",
+				},
+			},
+		}}
+
+		err := writeServices(tmpDir, data)
+		assert.Nil(t, err)
+
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileConfig.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "config": {},
+    "name": "mdbSvc",
+    "type": "mongodb",
+    "version": 1
+}
+`, string(config))
+
+		defaultRule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileDefaultRule.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "roles": [
+        {
+            "apply_when": {
+                "userId": "%%user.id"
+            },
+            "name": "owner",
+            "read": true
+        }
+    ]
+}
+`, string(defaultRule))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, NameRules, "foo.bar"+extJSON))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "collection": "bar",
+    "database": "foo",
+    "name": "foo.bar"
+}
+`, string(rule))
+	})
 }
 
 func TestWriteTriggers(t *testing.T) {

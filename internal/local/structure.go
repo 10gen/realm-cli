@@ -26,6 +26,7 @@ type SecretsStructure struct {
 // ServiceStructure represents the Realm app service structure
 type ServiceStructure struct {
 	Config           map[string]interface{}   `json:"config,omitempty"`
+	DefaultRule      map[string]interface{}   `json:"default_rule,omitempty"`
 	IncomingWebhooks []map[string]interface{} `json:"incoming_webhooks"`
 	Rules            []map[string]interface{} `json:"rules"`
 }
@@ -207,18 +208,28 @@ func parseServices(rootDir string) ([]ServiceStructure, error) {
 	if walkErr := dw.walk(func(file os.FileInfo, path string) error {
 		var svc ServiceStructure
 
+		// Config
 		config, err := parseJSON(filepath.Join(path, FileConfig.String()))
 		if err != nil {
 			return err
 		}
 		svc.Config = config
 
+		// Default Rule
+		defaultRule, err := parseJSON(filepath.Join(path, FileDefaultRule.String()))
+		if err != nil {
+			return err
+		}
+		svc.DefaultRule = defaultRule
+
+		// Webhooks
 		webhooks, err := parseFunctions(filepath.Join(path, NameIncomingWebhooks))
 		if err != nil {
 			return err
 		}
 		svc.IncomingWebhooks = webhooks
 
+		// Rules
 		rules, err := parseJSONFiles(filepath.Join(path, NameRules))
 		if err != nil {
 			return err
@@ -329,6 +340,8 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 			return errors.New("error writing services")
 		}
 		dirSvc := filepath.Join(dir, nameSvc)
+
+		// Config
 		data, err := MarshalJSON(svc.Config)
 		if err != nil {
 			return err
@@ -340,6 +353,21 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 		); err != nil {
 			return err
 		}
+
+		// Default Rule
+		defaultRule, err := MarshalJSON(svc.DefaultRule)
+		if err != nil {
+			return err
+		}
+		if err := WriteFile(
+			filepath.Join(dirSvc, FileDefaultRule.String()),
+			0666,
+			bytes.NewReader(defaultRule),
+		); err != nil {
+			return err
+		}
+
+		// Webhooks
 		for _, webhook := range svc.IncomingWebhooks {
 			src, ok := webhook[NameSource].(string)
 			if !ok {
@@ -373,6 +401,8 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 				return err
 			}
 		}
+
+		// Rules
 		for _, rule := range svc.Rules {
 			data, err := MarshalJSON(rule)
 			if err != nil {
