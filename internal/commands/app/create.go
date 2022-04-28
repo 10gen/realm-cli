@@ -481,6 +481,11 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	// TODO(REALMC-9460): Add better template-app-specific directions for checking out the newly created template app
 	ui.Print(terminal.NewJSONLog("Successfully created app", output))
 	ui.Print(terminal.NewFollowupLog("Check out your app", fmt.Sprintf("cd ./%s && %s app describe", cmd.inputs.LocalPath, cli.Name)))
+
+	if matches, err := filepath.Glob(filepath.Join(frontendDir, cmd.inputs.Template, "README.*")); err == nil && len(matches) == 1 {
+		ui.Print(terminal.NewFollowupLog(fmt.Sprintf("View directions on how to run the template app: %s", matches[0])))
+	}
+
 	return nil
 }
 

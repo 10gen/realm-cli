@@ -263,9 +263,11 @@ func (cmd *Command) Handler(profile *user.Profile, ui terminal.UI, clients cli.C
 		if err := local.WriteZip(filepath.Join(pathFrontend, ct.id), ct.zipPkg); err != nil {
 			return fmt.Errorf("unable to save template '%s' to disk: %s", ct.id, err)
 		}
-		successfulTemplateWrites = append(successfulTemplateWrites,
-			fmt.Sprintf("[%s] %s", ct.id, filepath.Join(pathRelative, local.FrontendPath, ct.id, "README.md")),
-		)
+		readmeFile := ""
+		if matches, err := filepath.Glob(filepath.Join(pathRelative, local.FrontendPath, ct.id, "README.*")); err == nil && len(matches) == 1 {
+			readmeFile = matches[0]
+		}
+		successfulTemplateWrites = append(successfulTemplateWrites, fmt.Sprintf("[%s] %s", ct.id, readmeFile))
 	}
 
 	ui.Print(terminal.NewTextLog("Successfully pulled app down: %s", pathRelative))
