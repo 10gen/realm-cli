@@ -21,7 +21,7 @@ import (
 var CommandMetaCreate = cli.CommandMeta{
 	Use:         "create",
 	Display:     "app create",
-	Description: "Create a new app from your current working directory and deploy it to the Realm server",
+	Description: "Create a new app or a template app from your current working directory and deploy it to the Realm server",
 	HelpText: `Creates a new Realm app by saving your configuration files in a local directory
 and deploying the new app to the Realm server. This command will create a new
 directory for your project.
