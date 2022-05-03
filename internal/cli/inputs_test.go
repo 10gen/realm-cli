@@ -239,14 +239,14 @@ func TestResolveGroupID(t *testing.T) {
 
 	for _, tc := range []struct {
 		description     string
-		groups          []atlas.Group
+		groups          atlas.Groups
 		procedure       func(c *expect.Console)
 		expectedGroupID string
 		expectedErr     error
 	}{
 		{
 			description:     "should return the single group found from the client call",
-			groups:          []atlas.Group{testGroup},
+			groups:          atlas.Groups{Results: []atlas.Group{testGroup}},
 			procedure:       func(c *expect.Console) {},
 			expectedGroupID: testGroup.ID,
 		},
@@ -257,7 +257,7 @@ func TestResolveGroupID(t *testing.T) {
 		},
 		{
 			description: "should prompt user to select a group when more than one is returned from the client call",
-			groups:      []atlas.Group{testGroup, testGroup},
+			groups:      atlas.Groups{Results: []atlas.Group{testGroup, testGroup}},
 			procedure: func(c *expect.Console) {
 				c.ExpectString("Atlas Project")
 				c.SendLine("egg")
@@ -267,7 +267,7 @@ func TestResolveGroupID(t *testing.T) {
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			atlasClient := mock.AtlasClient{}
-			atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+			atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
 				return tc.groups, nil
 			}
 
@@ -292,8 +292,8 @@ func TestResolveGroupID(t *testing.T) {
 
 	t.Run("should return the client error if one occurs", func(t *testing.T) {
 		atlasClient := mock.AtlasClient{}
-		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-			return nil, errors.New("something bad happened")
+		atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+			return atlas.Groups{}, errors.New("something bad happened")
 		}
 
 		_, err := cli.ResolveGroupID(nil, atlasClient)

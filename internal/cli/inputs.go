@@ -117,7 +117,7 @@ func ResolveApp(ui terminal.UI, client realm.Client, opts AppOptions) (realm.App
 
 // ResolveGroupID will use the provided MongoDB Cloud Atlas client to resolve the user's group id
 func ResolveGroupID(ui terminal.UI, client atlas.Client) (string, error) {
-	groups, groupsErr := client.Groups()
+	groups, groupsErr := atlas.AllGroups(client)
 	if groupsErr != nil {
 		return "", groupsErr
 	}

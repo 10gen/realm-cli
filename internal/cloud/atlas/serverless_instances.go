@@ -24,7 +24,7 @@ const (
 )
 
 func (c *client) ServerlessInstances(groupID string) ([]ServerlessInstance, error) {
-	res, err := c.do(
+	res, err := c.doWithBaseURL(
 		http.MethodGet,
 		fmt.Sprintf(serverlessInstancesPattern, groupID),
 		api.RequestOptions{},

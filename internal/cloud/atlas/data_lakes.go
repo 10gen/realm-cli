@@ -19,7 +19,7 @@ const (
 )
 
 func (c *client) Datalakes(groupID string) ([]Datalake, error) {
-	res, err := c.do(
+	res, err := c.doWithBaseURL(
 		http.MethodGet,
 		fmt.Sprintf(datalakesPattern, groupID),
 		api.RequestOptions{},

@@ -63,8 +63,8 @@ func TestPushHandler(t *testing.T) {
 
 	t.Run("should return an error if the command fails to resolve group id", func(t *testing.T) {
 		var atlasClient mock.AtlasClient
-		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-			return nil, errors.New("something bad happened")
+		atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+			return atlas.Groups{}, errors.New("something bad happened")
 		}
 
 		var realmClient mock.RealmClient
@@ -836,9 +836,9 @@ Successfully pushed app up: eggcorn-abcde
 			t.Run(tc.description, func(t *testing.T) {
 				var atlasClient mock.AtlasClient
 				var calledGroups bool
-				atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+				atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
 					calledGroups = true
-					return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
+					return atlas.Groups{Results: []atlas.Group{{ID: "groupID", Name: "groupName"}}}, nil
 				}
 
 				var realmClient mock.RealmClient
@@ -928,9 +928,9 @@ Deployed app is identical to proposed version, nothing to do
 
 		var atlasClient mock.AtlasClient
 		var groupsCalled bool
-		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
+		atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
 			groupsCalled = true
-			return []atlas.Group{{ID: "groupID", Name: "groupName"}}, nil
+			return atlas.Groups{Results: []atlas.Group{{ID: "groupID", Name: "groupName"}}}, nil
 		}
 
 		cmd := &Command{inputs{LocalPath: "testdata/project-meta", DryRun: true}}
