@@ -355,16 +355,18 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 		}
 
 		// Default Rule
-		defaultRule, err := MarshalJSON(svc.DefaultRule)
-		if err != nil {
-			return err
-		}
-		if err := WriteFile(
-			filepath.Join(dirSvc, FileDefaultRule.String()),
-			0666,
-			bytes.NewReader(defaultRule),
-		); err != nil {
-			return err
+		if svc.DefaultRule != nil {
+			defaultRule, err := MarshalJSON(svc.DefaultRule)
+			if err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(dirSvc, FileDefaultRule.String()),
+				0666,
+				bytes.NewReader(defaultRule),
+			); err != nil {
+				return err
+			}
 		}
 
 		// Webhooks
@@ -408,8 +410,20 @@ func writeServices(rootDir string, services []ServiceStructure) error {
 			if err != nil {
 				return err
 			}
+
+			// Mongo service rules (AKA NamespaceRules) do not have an exported "name" field and should construct the rule name
+			// using the database and collection values
+			ruleName := fmt.Sprintf("%s.%s", rule["database"], rule["collection"])
+
+			if _, isMongoSvcRule := rule["database"]; !isMongoSvcRule {
+				// Rules with a type of BuiltinRule have an exported "name" field. These are rules used for non-Mongo services
+				if name, ok := rule["name"].(string); ok {
+					ruleName = name
+				}
+			}
+
 			if err := WriteFile(
-				filepath.Join(dirSvc, NameRules, fmt.Sprintf("%s%s", rule["name"], extJSON)),
+				filepath.Join(dirSvc, NameRules, fmt.Sprintf("%s%s", ruleName, extJSON)),
 				0666,
 				bytes.NewReader(data),
 			); err != nil {

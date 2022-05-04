@@ -720,7 +720,6 @@ exports = function({ query }) {
 				{
 					"database":   "foo",
 					"collection": "bar",
-					"name":       "foo.bar",
 				},
 			},
 		},

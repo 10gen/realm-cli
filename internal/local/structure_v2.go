@@ -585,16 +585,18 @@ func writeDataSources(rootDir string, dataSources []DataSourceStructure) error {
 		}
 
 		// Default Rule
-		defaultRule, err := MarshalJSON(ds.DefaultRule)
-		if err != nil {
-			return err
-		}
-		if err := WriteFile(
-			filepath.Join(dir, name, FileDefaultRule.String()),
-			0666,
-			bytes.NewReader(defaultRule),
-		); err != nil {
-			return err
+		if ds.DefaultRule != nil {
+			defaultRule, err := MarshalJSON(ds.DefaultRule)
+			if err != nil {
+				return err
+			}
+			if err := WriteFile(
+				filepath.Join(dir, name, FileDefaultRule.String()),
+				0666,
+				bytes.NewReader(defaultRule),
+			); err != nil {
+				return err
+			}
 		}
 
 		// Rules

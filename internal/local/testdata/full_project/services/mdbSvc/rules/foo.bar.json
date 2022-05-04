@@ -1,5 +1,4 @@
 {
   "database": "foo",
-  "collection": "bar",
-  "name": "foo.bar"
+  "collection": "bar"
 }
