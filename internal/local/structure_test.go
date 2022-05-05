@@ -1,8 +1,10 @@
 package local
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	u "github.com/10gen/realm-cli/internal/utils/test"
@@ -335,6 +337,120 @@ exports = function({ query }) {
             ]
         }
     }
+}
+`, string(rule))
+
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameServices, "http", FileDefaultRule.String()))
+		assert.NotNil(t, err)
+		assert.True(t, strings.Contains(err.Error(), "no such file or directory"),
+			fmt.Sprintf("expected 'no such file or directory' in error message but got '%s'", err.Error()))
+	})
+
+	t.Run("should write services with v2 Rules to disk", func(t *testing.T) {
+		mdbSvcName := "mdbSvc"
+		data := []ServiceStructure{{
+			Config: map[string]interface{}{
+				"name":    mdbSvcName,
+				"type":    "mongodb",
+				"config":  map[string]interface{}{},
+				"version": 1,
+			},
+			Rules: []map[string]interface{}{
+				{
+					"database":   "foo",
+					"collection": "bar",
+				},
+			},
+		}}
+
+		err := writeServices(tmpDir, data)
+		assert.Nil(t, err)
+
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileConfig.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "config": {},
+    "name": "mdbSvc",
+    "type": "mongodb",
+    "version": 1
+}
+`, string(config))
+
+		_, err = ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileDefaultRule.String()))
+		assert.NotNil(t, err)
+		assert.True(t, strings.Contains(err.Error(), "no such file or directory"),
+			fmt.Sprintf("expected 'no such file or directory' in error message but got '%s'", err.Error()))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, NameRules, "foo.bar"+extJSON))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "collection": "bar",
+    "database": "foo"
+}
+`, string(rule))
+	})
+
+	t.Run("should write services with v2 Rules and a default rule to disk", func(t *testing.T) {
+		mdbSvcName := "mdbSvc"
+		data := []ServiceStructure{{
+			Config: map[string]interface{}{
+				"name":    mdbSvcName,
+				"type":    "mongodb",
+				"config":  map[string]interface{}{},
+				"version": 1,
+			},
+			DefaultRule: map[string]interface{}{
+				"roles": []interface{}{
+					map[string]interface{}{
+						"name": "owner",
+						"apply_when": map[string]interface{}{
+							"userId": "%%user.id",
+						},
+						"read": true,
+					},
+				},
+			},
+			Rules: []map[string]interface{}{
+				{
+					"database":   "foo",
+					"collection": "bar",
+				},
+			},
+		}}
+
+		err := writeServices(tmpDir, data)
+		assert.Nil(t, err)
+
+		config, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileConfig.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "config": {},
+    "name": "mdbSvc",
+    "type": "mongodb",
+    "version": 1
+}
+`, string(config))
+
+		defaultRule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, FileDefaultRule.String()))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "roles": [
+        {
+            "apply_when": {
+                "userId": "%%user.id"
+            },
+            "name": "owner",
+            "read": true
+        }
+    ]
+}
+`, string(defaultRule))
+
+		rule, err := ioutil.ReadFile(filepath.Join(tmpDir, NameServices, mdbSvcName, NameRules, "foo.bar"+extJSON))
+		assert.Nil(t, err)
+		assert.Equal(t, `{
+    "collection": "bar",
+    "database": "foo"
 }
 `, string(rule))
 	})

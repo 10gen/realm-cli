@@ -65,6 +65,7 @@ const (
 	NameDataSources      = "data_sources"
 	NameHTTPEndpoints    = "http_endpoints"
 	NameIncomingWebhooks = "incoming_webhooks"
+	NameDefaultRule      = "default_rule"
 	NameRules            = "rules"
 	NameSchema           = "schema"
 	NameSchemas          = "schemas"
@@ -100,6 +101,7 @@ var (
 	FileProviders      = File{NameProviders, extJSON}
 
 	// data sources
+	FileDefaultRule   = File{NameDefaultRule, extJSON}
 	FileRules         = File{NameRules, extJSON}
 	FileSchema        = File{NameSchema, extJSON}
 	FileRelationships = File{NameRelationships, extJSON}
