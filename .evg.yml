@@ -222,6 +222,7 @@ tasks:
             export GOROOT=$ROOT_DIR/go
             export PATH=$GOROOT/bin:$PATH
             export BAAS_NO_SKIP_TEST=1
+            export BAAS_MONGODB_CLOUD_GROUP_COUNT="${baas_mongodb_cloud_group_count}"
             export BAAS_MONGODB_CLOUD_GROUP_ID="${baas_mongodb_cloud_group_id}"
             export BAAS_MONGODB_CLOUD_USERNAME="${baas_mongodb_cloud_username}"
             export BAAS_MONGODB_CLOUD_API_KEY="${baas_mongodb_cloud_api_key}"
