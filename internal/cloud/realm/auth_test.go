@@ -66,7 +66,15 @@ func TestRealmAuthProfile(t *testing.T) {
 		profile, err := client.AuthProfile()
 		assert.Nil(t, err)
 		assert.NotEqualf(t, 0, len(profile.Roles), "expected profile to have role(s)")
-		assert.Equal(t, []string{u.CloudGroupID()}, profile.AllGroupIDs())
+
+		groupIDs := profile.AllGroupIDs()
+		assert.Equal(t, u.CloudGroupCount(), len(groupIDs))
+
+		groupIDSet := map[string]bool{}
+		for _, groupID := range groupIDs {
+			groupIDSet[groupID] = true
+		}
+		assert.True(t, groupIDSet[u.CloudGroupID()], "expected groupID, %s, to be returned in auth profile", u.CloudGroupID())
 	})
 }
 

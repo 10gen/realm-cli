@@ -39,7 +39,13 @@ func TestAtlasGroups(t *testing.T) {
 
 		groups, err := client.Groups()
 		assert.Nil(t, err)
-		assert.Equal(t, []atlas.Group{{u.CloudGroupID(), u.CloudGroupName()}}, groups)
+		assert.Equal(t, u.CloudGroupCount(), len(groups))
+
+		groupsM := map[string]string{}
+		for _, group := range groups {
+			groupsM[group.ID] = group.Name
+		}
+		assert.Equal(t, groupsM[u.CloudGroupID()], u.CloudGroupName())
 	})
 }
 

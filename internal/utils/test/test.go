@@ -19,6 +19,7 @@ func MustSkipf(t *testing.T, format string, args ...interface{}) {
 }
 
 const (
+	defaultGroupCount                   = 1
 	defaultGroupID                      = "5fd45718cface356de9d104d"
 	defaultGroupName                    = "Project 0"
 	defaultAtlasServerURL               = "https://cloud-dev.mongodb.com"
@@ -35,6 +36,18 @@ var skipUnlessExpiredAccessTokenCalled = false
 var atlasServerRunning = false
 var atlasServerNotRunning = false
 var skipUnlessAtlasServerCalled = false
+
+// CloudGroupCount returns the Cloud groups count to use for testing
+func CloudGroupCount() int {
+	if count := os.Getenv("BAAS_MONGODB_CLOUD_GROUP_COUNT"); count != "" {
+		c, err := strconv.Atoi(count)
+		if err != nil {
+			panic("BAAS_MONGODB_CLOUD_GROUP_COUNT must be set with an integer")
+		}
+		return c
+	}
+	return defaultGroupCount
+}
 
 // CloudGroupID returns the Cloud group id to use for testing
 func CloudGroupID() string {
