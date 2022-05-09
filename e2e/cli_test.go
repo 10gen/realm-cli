@@ -66,7 +66,7 @@ func TestCLI(t *testing.T) {
 		{
 			description: "the app create command",
 			args:        []string{"app", "create"},
-			firstLine:   "Create a new app from your current working directory and deploy it to the Realm server",
+			firstLine:   "Create a new app (or a template app) from your current working directory and deploy it to the Realm server",
 		},
 		{
 			description: "the app list command",
