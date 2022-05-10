@@ -36,12 +36,14 @@ func TestAppDiffHandler(t *testing.T) {
 		expectedErr        error
 		appError           bool
 		skipFindApps       bool
+		path               string
 	}{
 		{
 			description:        "no project nor app flag set should diff based on input and resolve with app meta",
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
 			skipFindApps:       true,
+			path:               "testdata/diff-meta",
 		},
 		{
 			description:        "no project flag set and an app flag set should show the diff for the app",
@@ -49,12 +51,14 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
+			path:               "testdata/diff",
 		},
 		{
 			description:        "no diffs between local and remote app",
 			inputs:             diffInputs{RemoteApp: "app1"},
 			expectedAppFilter:  realm.AppFilter{App: "app1"},
 			expectedDiffOutput: "Deployed app is identical to proposed version\n",
+			path:               "testdata/diff",
 		},
 		{
 			description:        "a project flag set and no app flag set should diff based on input",
@@ -62,12 +66,14 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter:  realm.AppFilter{GroupID: groupID1},
 			expectedDiff:       []string{"diff1"},
 			expectedDiffOutput: "The following reflects the proposed changes to your Realm app\ndiff1\n",
+			path:               "testdata/diff",
 		},
 		{
 			description:       "error on the diff",
 			inputs:            diffInputs{Project: groupID1, RemoteApp: "app1"},
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
+			path:              "testdata/diff",
 		},
 		{
 			description:       "error on finding apps",
@@ -75,6 +81,7 @@ func TestAppDiffHandler(t *testing.T) {
 			expectedAppFilter: realm.AppFilter{GroupID: groupID1, App: "app1"},
 			expectedErr:       errors.New("something went wrong"),
 			appError:          true,
+			path:              "testdata/diff",
 		},
 	} {
 		t.Run("with a local path that exists and "+tc.description, func(t *testing.T) {
@@ -96,7 +103,7 @@ func TestAppDiffHandler(t *testing.T) {
 				return tc.expectedDiff, tc.expectedErr
 			}
 
-			tc.inputs.LocalPath = "testdata/diff"
+			tc.inputs.LocalPath = tc.path
 			cmd := &CommandDiff{tc.inputs}
 
 			assert.Equal(t, tc.expectedErr, cmd.Handler(nil, ui, cli.Clients{Realm: realmClient}))
@@ -284,18 +291,6 @@ func TestAppDiffInputs(t *testing.T) {
 		test           func(t *testing.T, i diffInputs, p *user.Profile)
 	}{
 		{
-			description:    "should resolve empty inputs when outside an app directory by prompting for the local path which does not exist",
-			prepareProfile: func(p *user.Profile) {},
-			procedure: func(c *expect.Console) {
-				c.ExpectString("App filepath (local)")
-				c.SendLine("./some/path")
-			},
-			test: func(t *testing.T, i diffInputs, p *user.Profile) {
-				assert.Equal(t, "./some/path", i.LocalPath)
-				assert.Equal(t, "", i.RemoteApp)
-			},
-		},
-		{
 			description:    "should resolve empty inputs when outside an app directory by prompting for the local path which exists",
 			prepareProfile: func(p *user.Profile) {},
 			procedure: func(c *expect.Console) {
@@ -367,4 +362,24 @@ func TestAppDiffInputs(t *testing.T) {
 			tc.test(t, tc.inputs, profile)
 		})
 	}
+
+	t.Run("should return an error when specified local path does not exist", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		localPath := "fakePath"
+
+		i := diffInputs{LocalPath: localPath}
+		assert.Equal(t, errProjectInvalid(localPath, false), i.Resolve(profile, nil))
+	})
+
+	t.Run("should return an error when specified local path is not a supported Realm app project", func(t *testing.T) {
+		profile, teardown := mock.NewProfileFromTmpDir(t, "app_init_input_test")
+		defer teardown()
+
+		localPath := "./testdata"
+
+		i := diffInputs{LocalPath: localPath}
+		assert.Equal(t, errProjectInvalid(localPath, true), i.Resolve(profile, nil))
+	})
 }
