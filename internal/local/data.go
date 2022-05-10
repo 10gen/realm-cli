@@ -84,6 +84,9 @@ const (
 
 	// log forwarders
 	NameLogForwarders = "log_forwarders"
+
+	// Data API Config
+	NameDataAPIConfig = "data_api_config"
 )
 
 // set of supported local files
@@ -111,6 +114,9 @@ var (
 
 	// values
 	FileSecrets = File{NameSecrets, extJSON}
+
+	// Data API Config
+	FileDataAPIConfig = File{NameDataAPIConfig, extJSON}
 )
 
 // File is a local Realm app file

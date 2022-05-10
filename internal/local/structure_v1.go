@@ -31,6 +31,7 @@ type AppStructureV1 struct {
 	Services             []ServiceStructure                `json:"services,omitempty"`
 	Values               []map[string]interface{}          `json:"values,omitempty"`
 	LogForwarders        []map[string]interface{}          `json:"log_forwarders,omitempty"`
+	DataAPIConfig        map[string]interface{}            `json:"data_api_config,omitempty"`
 }
 
 // AppDataV1 is the v1 local Realm app data
@@ -125,6 +126,14 @@ func (a *AppDataV1) LoadData(rootDir string) error {
 	}
 	a.LogForwarders = logForwarders
 
+	dataAPIConfig, err := parseJSON(filepath.Join(rootDir, FileDataAPIConfig.String()))
+	if err != nil {
+		return err
+	}
+	if len(dataAPIConfig) > 0 {
+		a.DataAPIConfig = dataAPIConfig
+	}
+
 	return nil
 }
 
@@ -182,6 +191,9 @@ func (a *AppDataV1) WriteData(rootDir string) error {
 		return err
 	}
 	if err := writeLogForwarders(rootDir, a.LogForwarders); err != nil {
+		return err
+	}
+	if err := writeDataAPIConfigV1(rootDir, a.DataAPIConfig); err != nil {
 		return err
 	}
 	return nil
@@ -246,4 +258,21 @@ func writeAuthProviders(rootDir string, authProviders []map[string]interface{}) 
 		}
 	}
 	return nil
+}
+
+func writeDataAPIConfigV1(rootDir string, dataAPIConfig map[string]interface{}) error {
+	if dataAPIConfig == nil {
+		return nil
+	}
+
+	data, err := MarshalJSON(dataAPIConfig)
+	if err != nil {
+		return err
+	}
+
+	return WriteFile(
+		filepath.Join(rootDir, FileDataAPIConfig.String()),
+		0666,
+		bytes.NewReader(data),
+	)
 }
