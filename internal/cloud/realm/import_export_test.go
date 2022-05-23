@@ -275,6 +275,18 @@ console.log('got heem!');
 				"disabled": false,
 			},
 		},
+		DataAPIConfig: map[string]interface{}{
+			"versions":                     []interface{}{"v1"},
+			"run_as_system":                true,
+			"run_as_user_id":               "",
+			"run_as_user_id_script_source": "exports = function () { return 'goofygoof'; }",
+			"disabled":                     false,
+			"validation_method":            "NO_VALIDATION",
+			"return_type":                  "EJSON",
+			"fetch_custom_user_data":       true,
+			"create_user_on_auth":          true,
+			"secret_name":                  "",
+		},
 	}}
 }
 
@@ -472,6 +484,18 @@ func appDataV2(app realm.App) local.AppDataV2 {
 					"validation_method":      "NO_VALIDATION",
 				},
 			},
+		},
+		DataAPIConfig: map[string]interface{}{
+			"versions":                     []interface{}{"v1"},
+			"run_as_system":                true,
+			"run_as_user_id":               "",
+			"run_as_user_id_script_source": "exports = function () { return 'goofygoof'; }",
+			"disabled":                     false,
+			"validation_method":            "NO_VALIDATION",
+			"return_type":                  "EJSON",
+			"fetch_custom_user_data":       true,
+			"create_user_on_auth":          true,
+			"secret_name":                  "",
 		},
 	}}
 }

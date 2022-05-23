@@ -118,10 +118,11 @@ type AppFilter struct {
 const (
 	productStandard = "standard"
 	productAtlas    = "atlas"
+	productDataAPI  = "data-api"
 )
 
 var (
-	defaultProducts = []string{productStandard, productAtlas}
+	defaultProducts = []string{productStandard, productAtlas, productDataAPI}
 )
 
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
