@@ -94,6 +94,7 @@ To lint the project, run:
 ```cmd
 golangci-lint run
 ```
+> Note: `golangci-lint` panics on M1 machines with a `can't load fmt` error. This issue is documented [here](https://github.com/golangci/golangci-lint/issues/2374). While this is still being fixed, it seems that installing `golangci-lint` from source resolves the issue. 
 
 ## Testing
 
