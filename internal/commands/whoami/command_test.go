@@ -1,35 +1,34 @@
 package whoami
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
+	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
 	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
 func TestWhoamiFeedback(t *testing.T) {
-	t.Run("should print the auth details", func(t *testing.T) {
+	t.Run("should print the auth details and associated projects", func(t *testing.T) {
 		for _, tc := range []struct {
-			description string
-			setup       func(t *testing.T, profile *user.Profile)
-			test        func(t *testing.T, output string)
+			description    string
+			setup          func(t *testing.T, profile *user.Profile)
+			expectedOutput string
+			showProjects   bool
 		}{
 			{
-				description: "with no user logged in",
-				test: func(t *testing.T, output string) {
-					assert.Equal(t, "No user is currently logged in\n", output)
-				},
+				description:    "with no user logged in",
+				expectedOutput: "No user is currently logged in\n",
 			},
 			{
 				description: "with a user that has no active session with cloud credentials",
 				setup: func(t *testing.T, profile *user.Profile) {
 					profile.SetCredentials(user.Credentials{PublicAPIKey: "apiKey", PrivateAPIKey: "my-super-secret-key"})
 				},
-				test: func(t *testing.T, output string) {
-					assert.Equal(t, "The user, apiKey, is not currently logged in\n", output)
-				},
+				expectedOutput: "The user, apiKey, is not currently logged in\n",
 			},
 			{
 				description: "with a user fully logged in with cloud credentials",
@@ -37,18 +36,14 @@ func TestWhoamiFeedback(t *testing.T) {
 					profile.SetCredentials(user.Credentials{PublicAPIKey: "apiKey", PrivateAPIKey: "my-super-secret-key"})
 					profile.SetSession(user.Session{"accessToken", "refreshToken"})
 				},
-				test: func(t *testing.T, output string) {
-					assert.Equal(t, "Currently logged in user: apiKey (**-*****-******-key)\n", output)
-				},
+				expectedOutput: "Currently logged in user: apiKey (**-*****-******-key)\n",
 			},
 			{
 				description: "with a user that has no active session with local credentials",
 				setup: func(t *testing.T, profile *user.Profile) {
 					profile.SetCredentials(user.Credentials{Username: "username", Password: "my-super-secret-pwd"})
 				},
-				test: func(t *testing.T, output string) {
-					assert.Equal(t, "The user, username, is not currently logged in\n", output)
-				},
+				expectedOutput: "The user, username, is not currently logged in\n",
 			},
 			{
 				description: "with a user fully logged in with local credentials",
@@ -56,13 +51,34 @@ func TestWhoamiFeedback(t *testing.T) {
 					profile.SetCredentials(user.Credentials{Username: "username", Password: "my-super-secret-pwd"})
 					profile.SetSession(user.Session{"accessToken", "refreshToken"})
 				},
-				test: func(t *testing.T, output string) {
-					assert.Equal(t, "Currently logged in user: username (*******************)\n", output)
+				expectedOutput: "Currently logged in user: username (*******************)\n",
+			},
+			{
+				description: "with show-projects flag enabled should output list of projects",
+				setup: func(t *testing.T, profile *user.Profile) {
+					profile.SetCredentials(user.Credentials{PublicAPIKey: "apiKey", PrivateAPIKey: "my-super-secret-key"})
+					profile.SetSession(user.Session{"accessToken", "refreshToken"})
 				},
+				expectedOutput: strings.Join([]string{
+					"Currently logged in user: apiKey (**-*****-******-key)",
+					"Projects available (1)",
+					"  Project ID  Project Name",
+					"  ----------  ------------",
+					"  groupID     groupName   ",
+					"",
+				}, "\n"),
+				showProjects: true,
 			},
 		} {
 			t.Run(tc.description, func(t *testing.T) {
 				profile := mock.NewProfile(t)
+
+				var groupsCalled bool
+				var atlasClient mock.AtlasClient
+				atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+					groupsCalled = true
+					return atlas.Groups{Results: []atlas.Group{{ID: "groupID", Name: "groupName"}}}, nil
+				}
 
 				if tc.setup != nil {
 					tc.setup(t, profile)
@@ -70,11 +86,12 @@ func TestWhoamiFeedback(t *testing.T) {
 
 				out, ui := mock.NewUI()
 
-				cmd := &Command{}
-				err := cmd.Handler(profile, ui, cli.Clients{})
+				cmd := &Command{inputs{showProjects: tc.showProjects}}
+				err := cmd.Handler(profile, ui, cli.Clients{Atlas: atlasClient})
 				assert.Nil(t, err)
 
-				tc.test(t, out.String())
+				assert.Equal(t, tc.showProjects, groupsCalled)
+				assert.Equal(t, tc.expectedOutput, out.String())
 			})
 		}
 	})
