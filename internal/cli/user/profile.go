@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/10gen/realm-cli/internal/telemetry"
@@ -82,27 +81,6 @@ func NewProfile(name string) (*Profile, error) {
 		fs:               afero.NewOsFs(),
 		WorkingDirectory: wd,
 	}, nil
-}
-
-func ProfileNames() ([]interface{}, error) {
-	dir, dirErr := HomeDir()
-	if dirErr != nil {
-		return nil, fmt.Errorf("failed to get CLI profiles: %w", dirErr)
-	}
-
-	dirEntryList, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get CLI profiles: %w", dirErr)
-	}
-
-	profileNames := make([]interface{}, 0, len(dirEntryList))
-	for _, v := range dirEntryList {
-		if strings.Contains(v.Name(), profileType) {
-			profileNames = append(profileNames, v.Name())
-		}
-	}
-
-	return profileNames, nil
 }
 
 // Clear clears the specified CLI profile property

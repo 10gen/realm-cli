@@ -33,11 +33,16 @@ func (cmd *CommandList) Flags() []flags.Flag {
 
 // Handler is the command handler
 func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients cli.Clients) error {
-	profiles, err := user.ProfileNames()
+	profileMetas, err := user.Profiles()
 	if err != nil {
 		return err
 	}
 
-	ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d profiles", len(profiles)), profiles...))
+	names := make([]interface{}, 0)
+	for _, v := range profileMetas {
+		names = append(names, v.Name)
+	}
+
+	ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d profiles", len(names)), names...))
 	return nil
 }

@@ -211,6 +211,7 @@ var (
 			Use:         "profiles",
 			Aliases:     []string{"profile"},
 			Description: "Manage your profiles",
+			Hidden:      true,
 		},
 		SubCommands: []cli.CommandDefinition{
 			{
