@@ -2,6 +2,7 @@ package profile
 
 import (
 	"fmt"
+
 	"github.com/10gen/realm-cli/internal/cli"
 	"github.com/10gen/realm-cli/internal/cli/user"
 	"github.com/10gen/realm-cli/internal/terminal"
@@ -14,7 +15,6 @@ var CommandMetaList = cli.CommandMeta{
 	Aliases:     []string{"ls"},
 	Display:     "profiles list",
 	Description: "List your profiles",
-	HelpText:    `Lists and filters your profiles.`,
 }
 
 // CommandList is the `profile list` command
@@ -25,7 +25,6 @@ type CommandList struct {
 // Flags is the command flags
 func (cmd *CommandList) Flags() []flags.Flag {
 	return []flags.Flag{
-		cli.AppFlagWithDescription(&cmd.inputs.App, "Filter the list of profiles by name"),
 		cli.ProjectFlag(&cmd.inputs.Project),
 		cli.ProductFlag(&cmd.inputs.Products),
 	}

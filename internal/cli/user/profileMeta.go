@@ -7,11 +7,13 @@ import (
 	"strings"
 )
 
+// ProfileMeta contains the name and full filepath of a profile
 type ProfileMeta struct {
-	Name     string // no file extension
-	Filepath string // full filepath
+	Name     string
+	Filepath string
 }
 
+// Profiles returns a list of each profile meta containing name and filepath
 func Profiles() ([]ProfileMeta, error) {
 	dir, dirErr := HomeDir()
 	if dirErr != nil {
@@ -25,11 +27,13 @@ func Profiles() ([]ProfileMeta, error) {
 
 	profileMetas := make([]ProfileMeta, 0, len(dirEntryList))
 	for _, v := range dirEntryList {
-		if strings.Contains(v.Name(), profileType) {
-			name := strings.TrimSuffix(v.Name(), filepath.Ext(v.Name()))
-			filepath := filepath.Join(dir, v.Name())
-			profileMetas = append(profileMetas, ProfileMeta{Name: name, Filepath: filepath})
+		if !strings.Contains(v.Name(), profileType) {
+			continue
 		}
+		profileMetas = append(profileMetas, ProfileMeta{
+			Name:     strings.TrimSuffix(v.Name(), filepath.Ext(v.Name())),
+			Filepath: filepath.Join(dir, v.Name()),
+		})
 	}
 
 	return profileMetas, nil
