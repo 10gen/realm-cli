@@ -2,7 +2,7 @@ package user
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 )
@@ -20,7 +20,7 @@ func Profiles() ([]ProfileMeta, error) {
 		return nil, fmt.Errorf("failed to get CLI profiles: %w", dirErr)
 	}
 
-	dirEntryList, err := os.ReadDir(dir)
+	dirEntryList, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CLI profiles: %w", dirErr)
 	}

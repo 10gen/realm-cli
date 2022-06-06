@@ -42,6 +42,6 @@ func (cmd *CommandList) Handler(profile *user.Profile, ui terminal.UI, clients c
 		names = append(names, v.Name)
 	}
 
-	ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d profiles", len(names)), names...))
+	ui.Print(terminal.NewListLog(fmt.Sprintf("Found %d profile(s)", len(names)), names...))
 	return nil
 }
