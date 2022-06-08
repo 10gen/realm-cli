@@ -7,6 +7,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/fatih/color"
+	"github.com/pkg/browser"
 )
 
 // UI is a terminal UI
@@ -17,6 +18,7 @@ type UI interface {
 	Confirm(format string, args ...interface{}) (bool, error)
 	Print(logs ...Log)
 	Spinner(message string, opts SpinnerOptions) Spinner
+	OpenBrowser(url string) error
 }
 
 // NewUI creates a new terminal UI
@@ -103,6 +105,10 @@ func (ui *ui) Spinner(message string, opts SpinnerOptions) Spinner {
 		return noopSpinner{}
 	}
 	return newUISpinner(message, opts)
+}
+
+func (ui *ui) OpenBrowser(url string) error {
+	return browser.OpenURL(url)
 }
 
 // UIConfig holds the global config for the CLI ui

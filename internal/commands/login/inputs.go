@@ -1,6 +1,7 @@
 package login
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -19,6 +20,8 @@ const (
 
 	authTypeCloud = "cloud"
 	authTypeLocal = "local"
+
+	apiKeysPage = "https://cloud.mongodb.com/go?l=https%3A%2F%2Fcloud.mongodb.com%2Fv2%2F%3Cproject%3E%23access%2FapiKeys"
 )
 
 type inputs struct {
@@ -31,6 +34,12 @@ type inputs struct {
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	u := profile.Credentials()
+
+	if u == (user.Credentials{}) {
+		if err := ui.OpenBrowser(apiKeysPage); err != nil {
+			ui.Print(terminal.NewErrorLog(errors.New("there was an issue opening your browser")))
+		}
+	}
 
 	var questions []*survey.Question
 

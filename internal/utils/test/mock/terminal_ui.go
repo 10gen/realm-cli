@@ -17,9 +17,10 @@ import (
 
 // UIOptions are the options to configure the mock terminal UI
 type UIOptions struct {
-	AutoConfirm bool
-	UseColors   bool
-	UseJSON     bool
+	AutoConfirm   bool
+	UseColors     bool
+	UseJSON       bool
+	OpenBrowserFn func(url string) error
 }
 
 func newUIConfig(options UIOptions) terminal.UIConfig {
@@ -42,6 +43,14 @@ var (
 
 type ui struct {
 	terminal.UI
+	OpenBrowserFn func(url string) error
+}
+
+func (ui ui) OpenBrowser(url string) error {
+	if ui.OpenBrowserFn == nil {
+		return ui.UI.OpenBrowser(url)
+	}
+	return ui.OpenBrowserFn(url)
 }
 
 func (ui ui) Print(logs ...terminal.Log) {
@@ -64,7 +73,7 @@ func NewUIWithOptions(options UIOptions, writer io.Writer) terminal.UI {
 		nil,
 		writer,
 		writer,
-	)}
+	), options.OpenBrowserFn}
 }
 
 // NewConsole returns a new *bytes.Buffer and a *expect.Console
@@ -88,7 +97,7 @@ func NewConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expect.Con
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
-	)}
+	), options.OpenBrowserFn}
 
 	return console, ui, nil
 }
@@ -114,7 +123,7 @@ func NewVT10XConsoleWithOptions(options UIOptions, writers ...io.Writer) (*expec
 		console.Tty(),
 		console.Tty(),
 		console.Tty(),
-	)}
+	), options.OpenBrowserFn}
 
 	return console, state, ui, nil
 }
