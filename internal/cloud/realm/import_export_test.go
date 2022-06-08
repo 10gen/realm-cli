@@ -277,7 +277,6 @@ console.log('got heem!');
 		},
 		DataAPIConfig: map[string]interface{}{
 			"versions":                     []interface{}{"v1"},
-			"run_as_system":                true,
 			"run_as_user_id":               "",
 			"run_as_user_id_script_source": "exports = function () { return 'goofygoof'; }",
 			"disabled":                     false,
@@ -487,7 +486,6 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		},
 		DataAPIConfig: map[string]interface{}{
 			"versions":                     []interface{}{"v1"},
-			"run_as_system":                true,
 			"run_as_user_id":               "",
 			"run_as_user_id_script_source": "exports = function () { return 'goofygoof'; }",
 			"disabled":                     false,
