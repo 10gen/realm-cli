@@ -33,7 +33,7 @@ func TestRealmDependencies(t *testing.T) {
 			uploadPath := filepath.Join(wd, "testdata/dependencies_upload.zip")
 
 			_, err = client.DependenciesStatus(groupID, app.ID)
-			assert.Equal(t, realm.ServerError{Message: "dependency installation not found"}, err)
+			assert.Nil(t, err)
 
 			assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
 
@@ -118,7 +118,7 @@ func TestRealmDependencies(t *testing.T) {
 			uploadPath := filepath.Join(wd, "testdata/package.json")
 
 			_, err = client.DependenciesStatus(groupID, app.ID)
-			assert.Equal(t, realm.ServerError{Message: "dependency installation not found"}, err)
+			assert.Nil(t, err)
 
 			assert.Nil(t, client.ImportDependencies(groupID, app.ID, uploadPath))
 
