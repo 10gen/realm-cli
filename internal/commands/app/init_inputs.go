@@ -34,6 +34,10 @@ func (i *initInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		if i.Location == realm.LocationEmpty {
 			i.Location = flagLocationDefault
 		}
+		// TODOO
+		if i.ProviderRegion == realm.ProviderRegionEmpty {
+			i.ProviderRegion = ""
+		}
 		if i.ConfigVersion == realm.AppConfigVersionZero {
 			i.ConfigVersion = realm.DefaultAppConfigVersion
 		}

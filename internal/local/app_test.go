@@ -24,6 +24,7 @@ func TestNewApp(t *testing.T) {
 				ID:              "testID",
 				Name:            "testName",
 				Location:        realm.LocationOregon,
+				ProviderRegion:  realm.AWSProviderRegionUSWest2,
 				DeploymentModel: realm.DeploymentModelGlobal,
 				Environment:     realm.EnvironmentDevelopment,
 				Environments: map[string]map[string]interface{}{
@@ -61,7 +62,7 @@ func TestNewApp(t *testing.T) {
 			}}},
 		}
 
-		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
+		app := NewApp("/path/to/project", "testID", "testName", realm.LocationOregon, realm.AWSProviderRegionUSWest2, realm.DeploymentModelGlobal, realm.EnvironmentDevelopment, realm.DefaultAppConfigVersion)
 		assert.Equal(t, expectedApp, app)
 	})
 }
@@ -289,6 +290,7 @@ func TestAppWriteConfig(t *testing.T) {
     "config_version": 0,
     "name": "",
     "location": "",
+	"provider_region": "",
     "deployment_model": "",
     "security": null,
     "custom_user_data_config": null,
@@ -304,6 +306,7 @@ func TestAppWriteConfig(t *testing.T) {
     "config_version": 0,
     "name": "",
     "location": "",
+	"provider_region": "",
     "deployment_model": "",
     "security": null,
     "custom_user_data_config": null,
@@ -338,6 +341,7 @@ func TestAppWriteConfig(t *testing.T) {
     "app_id": "test-abcde",
     "name": "test",
     "location": "US-VA",
+	"provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "security": {
         "allowed_origins": [
@@ -360,6 +364,7 @@ func TestAppWriteConfig(t *testing.T) {
 					ID:                   "test-abcde",
 					Name:                 "test",
 					Location:             realm.LocationVirginia,
+					ProviderRegion:       realm.AWSProviderRegionUSEast1,
 					DeploymentModel:      realm.DeploymentModelGlobal,
 					Security:             map[string]interface{}{"allowed_origins": []string{"http://localhost:8080"}},
 					CustomUserDataConfig: map[string]interface{}{"enabled": true},
@@ -371,6 +376,7 @@ func TestAppWriteConfig(t *testing.T) {
     "app_id": "test-abcde",
     "name": "test",
     "location": "US-VA",
+	"provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "security": {
         "allowed_origins": [
@@ -393,6 +399,7 @@ func TestAppWriteConfig(t *testing.T) {
 					ID:                    "test-abcde",
 					Name:                  "test",
 					Location:              realm.LocationVirginia,
+					ProviderRegion:        realm.AWSProviderRegionUSEast1,
 					DeploymentModel:       realm.DeploymentModelGlobal,
 					AllowedRequestOrigins: []string{"http://localhost:8080"},
 				}}},
@@ -402,6 +409,7 @@ func TestAppWriteConfig(t *testing.T) {
     "app_id": "test-abcde",
     "name": "test",
     "location": "US-VA",
+	"provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "allowed_request_origins": [
         "http://localhost:8080"
@@ -436,7 +444,7 @@ func TestAppWrite20180301(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20180301)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.AWSProviderRegionEUWest1, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20180301)
 
 		assert.Nil(t, app.Write())
 
@@ -450,6 +458,7 @@ func TestAppWrite20180301(t *testing.T) {
 			ID:                   "test-app-abcde",
 			Name:                 "test-app",
 			Location:             realm.LocationIreland,
+			ProviderRegion:       realm.AWSProviderRegionEUWest1,
 			DeploymentModel:      realm.DeploymentModelLocal,
 			Environment:          realm.EnvironmentDevelopment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
@@ -498,7 +507,7 @@ func TestAppWrite20200603(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20200603)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.AWSProviderRegionEUWest1, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20200603)
 
 		assert.Nil(t, app.Write())
 
@@ -512,6 +521,7 @@ func TestAppWrite20200603(t *testing.T) {
 			ID:                   "test-app-abcde",
 			Name:                 "test-app",
 			Location:             realm.LocationIreland,
+			ProviderRegion:       realm.AWSProviderRegionEUWest1,
 			DeploymentModel:      realm.DeploymentModelLocal,
 			Environment:          realm.EnvironmentDevelopment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
@@ -560,7 +570,7 @@ func TestAppWrite20210101(t *testing.T) {
 		assert.Nil(t, err)
 		defer cleanupTmpDir()
 
-		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20210101)
+		app := NewApp(tmpDir, "test-app-abcde", "test-app", realm.LocationIreland, realm.AWSProviderRegionEUWest1, realm.DeploymentModelLocal, realm.EnvironmentDevelopment, realm.AppConfigVersion20210101)
 
 		assert.Nil(t, app.Write())
 
@@ -574,6 +584,7 @@ func TestAppWrite20210101(t *testing.T) {
 			ID:              "test-app-abcde",
 			Name:            "test-app",
 			Location:        realm.LocationIreland,
+			ProviderRegion:  realm.AWSProviderRegionEUWest1,
 			DeploymentModel: realm.DeploymentModelLocal,
 			Environment:     realm.EnvironmentDevelopment,
 		}}}, config)
@@ -640,6 +651,7 @@ var fullProject = &AppConfigJSON{AppDataV1{AppStructureV1{
 	ID:              "full-abcde",
 	Name:            "full",
 	Location:        "US-VA",
+	ProviderRegion:  "aws-us-east-1",
 	DeploymentModel: "GLOBAL",
 	Sync:            map[string]interface{}{"development_mode_enabled": false},
 	AuthProviders: []map[string]interface{}{
@@ -843,6 +855,7 @@ var appData20180301Local = AppDataV1{AppStructureV1{
 	ConfigVersion:        realm.AppConfigVersion20180301,
 	Name:                 "20180301-local",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -855,6 +868,7 @@ var appData20180301Remote = AppDataV1{AppStructureV1{
 	ID:                   "20180301-remote-abcde",
 	Name:                 "20180301-remote",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -866,6 +880,7 @@ var appData20180301Nested = AppDataV1{AppStructureV1{
 	ConfigVersion:        realm.AppConfigVersion20180301,
 	Name:                 "20180301-nested",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -884,6 +899,7 @@ var appData20200603Local = AppDataV1{AppStructureV1{
 	ConfigVersion:        realm.AppConfigVersion20200603,
 	Name:                 "20200603-local",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -896,6 +912,7 @@ var appData20200603Remote = AppDataV1{AppStructureV1{
 	ID:                   "20200603-remote-abcde",
 	Name:                 "20200603-remote",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -907,6 +924,7 @@ var appData20200603Nested = AppDataV1{AppStructureV1{
 	ConfigVersion:        realm.AppConfigVersion20200603,
 	Name:                 "20200603-nested",
 	Location:             realm.LocationVirginia,
+	ProviderRegion:       "us-east-1",
 	DeploymentModel:      realm.DeploymentModelGlobal,
 	Security:             appSecurity,
 	Hosting:              appHosting,
@@ -925,6 +943,7 @@ var appData20210101Local = AppDataV2{AppStructureV2{
 	ConfigVersion:         realm.AppConfigVersion20210101,
 	Name:                  "20210101-local",
 	Location:              realm.LocationVirginia,
+	ProviderRegion:        "us-east-1",
 	DeploymentModel:       realm.DeploymentModelGlobal,
 	AllowedRequestOrigins: allowedRequestOrigins,
 }}
@@ -934,6 +953,7 @@ var appData20210101Remote = AppDataV2{AppStructureV2{
 	ID:                    "20210101-remote-abcde",
 	Name:                  "20210101-remote",
 	Location:              realm.LocationVirginia,
+	ProviderRegion:        "us-east-1",
 	DeploymentModel:       realm.DeploymentModelGlobal,
 	AllowedRequestOrigins: allowedRequestOrigins,
 }}
@@ -942,6 +962,7 @@ var appData20210101Nested = AppDataV2{AppStructureV2{
 	ConfigVersion:         realm.AppConfigVersion20210101,
 	Name:                  "20210101-nested",
 	Location:              realm.LocationVirginia,
+	ProviderRegion:        "us-east-1",
 	DeploymentModel:       realm.DeploymentModelGlobal,
 	AllowedRequestOrigins: allowedRequestOrigins,
 	GraphQL:               appGraphQLStructure,

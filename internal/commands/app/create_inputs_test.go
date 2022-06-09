@@ -23,8 +23,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// TODOO
 func TestAppCreateInputsResolve(t *testing.T) {
-	t.Run("with no flags set should prompt for just name and set location deployment model and environment to defaults", func(t *testing.T) {
+	t.Run("with no flags set should prompt for just name and set deployment model location provider region and environment to defaults", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		_, console, _, ui, consoleErr := mock.NewVT10XConsole()
@@ -52,9 +53,10 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, flagDeploymentModelDefault, inputs.DeploymentModel)
 		assert.Equal(t, flagLocationDefault, inputs.Location)
+		assert.Equal(t, flagProviderRegionDefault, inputs.ProviderRegion)
 		assert.Equal(t, realm.EnvironmentNone, inputs.Environment)
 	})
-	t.Run("with a name flag set should prompt for nothing else and set location deployment model and environment to defaults", func(t *testing.T) {
+	t.Run("with a name flag set should prompt for nothing else and set deployment model location provider region and environment to defaults", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		inputs := createInputs{newAppInputs: newAppInputs{Name: "test-app"}}
@@ -63,9 +65,47 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, flagDeploymentModelDefault, inputs.DeploymentModel)
 		assert.Equal(t, flagLocationDefault, inputs.Location)
+		assert.Equal(t, flagProviderRegionDefault, inputs.ProviderRegion)
 		assert.Equal(t, realm.EnvironmentNone, inputs.Environment)
 	})
 	t.Run("with name location deployment model and environment flags set should prompt for nothing else", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		inputs := createInputs{newAppInputs: newAppInputs{
+			Name:            "test-app",
+			DeploymentModel: realm.DeploymentModelLocal,
+			Location:        realm.LocationOregon,
+			ProviderRegion:  realm.AWSProviderRegionUSWest2,
+			Environment:     realm.EnvironmentDevelopment,
+		}}
+		assert.Nil(t, inputs.Resolve(profile, nil))
+
+		assert.Equal(t, "test-app", inputs.Name)
+		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
+		assert.Equal(t, realm.LocationOregon, inputs.Location)
+		assert.Equal(t, realm.AWSProviderRegionUSWest2, inputs.ProviderRegion)
+		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
+	})
+
+	t.Run("with no location set should default to provider region backed location", func(t *testing.T) {
+		profile := mock.NewProfile(t)
+
+		inputs := createInputs{newAppInputs: newAppInputs{
+			Name:            "test-app",
+			DeploymentModel: realm.DeploymentModelLocal,
+			ProviderRegion:  realm.AWSProviderRegionUSWest2,
+			Environment:     realm.EnvironmentDevelopment,
+		}}
+		assert.Nil(t, inputs.Resolve(profile, nil))
+
+		assert.Equal(t, "test-app", inputs.Name)
+		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
+		assert.Equal(t, realm.LocationOregon, inputs.Location)
+		assert.Equal(t, realm.AWSProviderRegionUSWest2, inputs.ProviderRegion)
+		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
+	})
+
+	t.Run("with no provider region set should not set from location", func(t *testing.T) {
 		profile := mock.NewProfile(t)
 
 		inputs := createInputs{newAppInputs: newAppInputs{
@@ -79,6 +119,7 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, "test-app", inputs.Name)
 		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
 		assert.Equal(t, realm.LocationOregon, inputs.Location)
+		assert.Equal(t, realm.ProviderRegionEmpty, inputs.ProviderRegion)
 		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
 	})
 }
@@ -365,6 +406,7 @@ func TestAppCreateInputsResolveDirectory(t *testing.T) {
 			"test-app-abcde",
 			"test-app",
 			flagLocationDefault,
+			flagProviderRegionDefault,
 			flagDeploymentModelDefault,
 			realm.EnvironmentNone,
 			realm.DefaultAppConfigVersion,

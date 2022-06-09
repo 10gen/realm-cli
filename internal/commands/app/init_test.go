@@ -29,6 +29,7 @@ func TestAppInitHandler(t *testing.T) {
 			Project:         "test-project",
 			DeploymentModel: realm.DeploymentModelLocal,
 			Location:        realm.LocationSydney,
+			ProviderRegion:  realm.AWSProviderRegionAPSoutheast2,
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 		}}}
 
@@ -45,6 +46,7 @@ func TestAppInitHandler(t *testing.T) {
 			ConfigVersion:   realm.DefaultAppConfigVersion,
 			Name:            "test-app",
 			Location:        realm.LocationSydney,
+			ProviderRegion:  realm.AWSProviderRegionAPSoutheast2,
 			DeploymentModel: realm.DeploymentModelLocal,
 		}}}, config)
 
@@ -164,6 +166,7 @@ func TestAppInitHandler(t *testing.T) {
 				ConfigVersion:   realm.DefaultAppConfigVersion,
 				Name:            "remote-app",
 				Location:        realm.LocationIreland,
+				ProviderRegion:  realm.AWSProviderRegionEUWest1,
 				DeploymentModel: realm.DeploymentModelGlobal,
 			}}}, config)
 		})

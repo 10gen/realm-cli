@@ -16,6 +16,7 @@ type AppStructureV1 struct {
 	ID                   string                            `json:"app_id,omitempty"`
 	Name                 string                            `json:"name"`
 	Location             realm.Location                    `json:"location"`
+	ProviderRegion       realm.ProviderRegion              `json:"provider_region"`
 	DeploymentModel      realm.DeploymentModel             `json:"deployment_model"`
 	Environment          realm.Environment                 `json:"environment,omitempty"`
 	Environments         map[string]map[string]interface{} `json:"environments,omitempty"`
@@ -57,6 +58,11 @@ func (a AppDataV1) Name() string {
 // Location returns the local Realm app location
 func (a AppDataV1) Location() realm.Location {
 	return a.AppStructureV1.Location
+}
+
+// ProviderRegion returns the local Realm app provider region
+func (a AppDataV1) ProviderRegion() realm.ProviderRegion {
+	return a.AppStructureV1.ProviderRegion
 }
 
 // DeploymentModel returns the local Realm app deployment model
@@ -144,6 +150,7 @@ func (a AppDataV1) ConfigData() ([]byte, error) {
 		ID                   string                 `json:"app_id,omitempty"`
 		Name                 string                 `json:"name"`
 		Location             realm.Location         `json:"location"`
+		ProviderRegion       realm.ProviderRegion   `json:"provider_region"`
 		DeploymentModel      realm.DeploymentModel  `json:"deployment_model"`
 		Environment          realm.Environment      `json:"environment,omitempty"`
 		Security             map[string]interface{} `json:"security"`
@@ -155,6 +162,7 @@ func (a AppDataV1) ConfigData() ([]byte, error) {
 		ID:                   a.ID(),
 		Name:                 a.Name(),
 		Location:             a.Location(),
+		ProviderRegion:       a.ProviderRegion(),
 		DeploymentModel:      a.DeploymentModel(),
 		Environment:          a.Environment(),
 		Security:             a.Security,

@@ -64,12 +64,13 @@ func (a App) Option() string {
 }
 
 // NewApp returns a new local app
-func NewApp(rootDir, clientAppID, name string, location realm.Location, deploymentModel realm.DeploymentModel, environment realm.Environment, configVersion realm.AppConfigVersion) App {
+func NewApp(rootDir, clientAppID, name string, location realm.Location, providerRegion realm.ProviderRegion, deploymentModel realm.DeploymentModel, environment realm.Environment, configVersion realm.AppConfigVersion) App {
 	return AsApp(rootDir, realm.App{
 		ClientAppID: clientAppID,
 		Name:        name,
 		AppMeta: realm.AppMeta{
 			Location:        location,
+			ProviderRegion:  providerRegion,
 			DeploymentModel: deploymentModel,
 			Environment:     environment,
 		},
@@ -87,6 +88,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			ID:                   app.ClientAppID,
 			Name:                 app.Name,
 			Location:             app.Location,
+			ProviderRegion:       app.ProviderRegion,
 			DeploymentModel:      app.DeploymentModel,
 			Environment:          app.Environment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
@@ -121,6 +123,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			ID:                   app.ClientAppID,
 			Name:                 app.Name,
 			Location:             app.Location,
+			ProviderRegion:       app.ProviderRegion,
 			DeploymentModel:      app.DeploymentModel,
 			Environment:          app.Environment,
 			CustomUserDataConfig: map[string]interface{}{"enabled": false},
@@ -155,6 +158,7 @@ func AsApp(rootDir string, app realm.App, configVersion realm.AppConfigVersion) 
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,
+			ProviderRegion:  app.ProviderRegion,
 			DeploymentModel: app.DeploymentModel,
 			Environment:     app.Environment,
 			Environments: map[string]map[string]interface{}{

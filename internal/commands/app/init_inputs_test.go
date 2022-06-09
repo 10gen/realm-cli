@@ -36,7 +36,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 		test        func(t *testing.T, i initInputs)
 	}{
 		{
-			description: "with no flags set should prompt for just name and set location deployment model and environment to defaults",
+			description: "with no flags set should prompt for just name and set deployment model location provider region and environment to defaults",
 			procedure: func(c *expect.Console) {
 				c.ExpectString("App Name")
 				c.SendLine("test-app")
@@ -46,26 +46,28 @@ func TestAppInitInputsResolve(t *testing.T) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
+				assert.Equal(t, flagProviderRegionDefault, i.ProviderRegion)
 				assert.Equal(t, realm.EnvironmentNone, i.Environment)
 			},
 		},
 		{
-			description: "with a name flag set should prompt for nothing else and set location deployment model and environment to defaults",
+			description: "with a name flag set should prompt for nothing else and set deployment model location provider region and environment to defaults",
 			inputs:      initInputs{newAppInputs: newAppInputs{Name: "test-app"}},
 			procedure:   func(c *expect.Console) {},
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, flagDeploymentModelDefault, i.DeploymentModel)
 				assert.Equal(t, flagLocationDefault, i.Location)
+				assert.Equal(t, flagProviderRegionDefault, i.ProviderRegion)
 				assert.Equal(t, realm.EnvironmentNone, i.Environment)
 			},
 		},
 		{
-			description: "with name location deployment model and environment flags set should prompt for nothing else",
+			description: "with name provider region deployment model and environment flags set should set location and prompt for nothing else",
 			inputs: initInputs{newAppInputs: newAppInputs{
 				Name:            "test-app",
 				DeploymentModel: realm.DeploymentModelLocal,
-				Location:        realm.LocationOregon,
+				ProviderRegion:  realm.AWSProviderRegionUSWest2,
 				Environment:     realm.EnvironmentDevelopment,
 			}},
 			procedure: func(c *expect.Console) {},
@@ -73,6 +75,24 @@ func TestAppInitInputsResolve(t *testing.T) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, realm.DeploymentModelLocal, i.DeploymentModel)
 				assert.Equal(t, realm.LocationOregon, i.Location)
+				assert.Equal(t, realm.AWSProviderRegionUSWest2, i.ProviderRegion)
+				assert.Equal(t, realm.EnvironmentDevelopment, i.Environment)
+			},
+		},
+		{
+			description: "with location and no provider region set should not set provider region and prompt for nothing else",
+			inputs: initInputs{newAppInputs: newAppInputs{
+				Name:            "test-app",
+				DeploymentModel: realm.DeploymentModelLocal,
+				Location:        realm.LocationIreland,
+				Environment:     realm.EnvironmentDevelopment,
+			}},
+			procedure: func(c *expect.Console) {},
+			test: func(t *testing.T, i initInputs) {
+				assert.Equal(t, "test-app", i.Name)
+				assert.Equal(t, realm.DeploymentModelLocal, i.DeploymentModel)
+				assert.Equal(t, realm.LocationOregon, i.Location)
+				assert.Equal(t, realm.ProviderRegionEmpty, i.ProviderRegion)
 				assert.Equal(t, realm.EnvironmentDevelopment, i.Environment)
 			},
 		},

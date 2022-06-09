@@ -36,6 +36,7 @@ func (cmd *CommandInit) Flags() []flags.Flag {
 		remoteAppFlag(&cmd.inputs.RemoteApp),
 		nameFlag(&cmd.inputs.Name),
 		locationFlag(&cmd.inputs.Location),
+		providerRegionFlag(&cmd.inputs.ProviderRegion),
 		deploymentModelFlag(&cmd.inputs.DeploymentModel),
 		environmentFlag(&cmd.inputs.Environment),
 		cli.ProjectFlag(&cmd.inputs.Project),
@@ -74,6 +75,7 @@ func (cmd *CommandInit) writeAppFromScratch(wd string) error {
 		"", // no app id yet
 		cmd.inputs.Name,
 		cmd.inputs.Location,
+		cmd.inputs.ProviderRegion,
 		cmd.inputs.DeploymentModel,
 		cmd.inputs.Environment,
 		cmd.inputs.ConfigVersion,

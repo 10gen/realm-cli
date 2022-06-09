@@ -10,6 +10,7 @@ const (
 	flagName            = "name"
 	flagDeploymentModel = "deployment-model"
 	flagLocation        = "location"
+	flagProviderRegion  = "providerRegion"
 	flagEnvironment     = "environment"
 	flagProject         = "project"
 
@@ -58,6 +59,23 @@ func locationFlag(value *realm.Location) flags.CustomFlag {
 					string(realm.LocationSydney),
 					string(realm.LocationMumbai),
 					string(realm.LocationSingapore),
+				},
+			},
+		},
+	}
+}
+
+func providerRegionFlag(value *realm.ProviderRegion) flags.CustomFlag {
+	return flags.CustomFlag{
+		Value: value,
+		Meta: flags.Meta{
+			Name:      "provider region",
+			Shorthand: "p",
+			Usage: flags.Usage{
+				Description:  "Select the Realm app's provider region",
+				DefaultValue: "<none>",
+				AllowedValues: []string{
+					string(realm.LocationVirginia),
 				},
 			},
 		},

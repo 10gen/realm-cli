@@ -17,6 +17,7 @@ type AppStructureV2 struct {
 	ID                    string                            `json:"app_id,omitempty"`
 	Name                  string                            `json:"name,omitempty"`
 	Location              realm.Location                    `json:"location,omitempty"`
+	ProviderRegion        realm.ProviderRegion              `json:"provider_region,omitempty"`
 	DeploymentModel       realm.DeploymentModel             `json:"deployment_model,omitempty"`
 	Environment           realm.Environment                 `json:"environment,omitempty"`
 	Environments          map[string]map[string]interface{} `json:"environments,omitempty"`
@@ -96,6 +97,11 @@ func (a AppDataV2) Name() string {
 // Location returns the local Realm app location
 func (a AppDataV2) Location() realm.Location {
 	return a.AppStructureV2.Location
+}
+
+// ProviderRegion returns the local Realm app provider region
+func (a AppDataV2) ProviderRegion() realm.ProviderRegion {
+	return a.AppStructureV2.ProviderRegion
 }
 
 // DeploymentModel returns the local Realm app deployment model
@@ -432,6 +438,7 @@ func (a AppDataV2) ConfigData() ([]byte, error) {
 		ID                    string                 `json:"app_id,omitempty"`
 		Name                  string                 `json:"name,omitempty"`
 		Location              realm.Location         `json:"location,omitempty"`
+		ProviderRegion        realm.ProviderRegion   `json:"provider_region,omitempty"`
 		DeploymentModel       realm.DeploymentModel  `json:"deployment_model,omitempty"`
 		Environment           realm.Environment      `json:"environment,omitempty"`
 		AllowedRequestOrigins []string               `json:"allowed_request_origins,omitempty"`
@@ -440,6 +447,7 @@ func (a AppDataV2) ConfigData() ([]byte, error) {
 		ID:                    a.ID(),
 		Name:                  a.Name(),
 		Location:              a.Location(),
+		ProviderRegion:        a.ProviderRegion(),
 		DeploymentModel:       a.DeploymentModel(),
 		Environment:           a.Environment(),
 		AllowedRequestOrigins: a.AllowedRequestOrigins,

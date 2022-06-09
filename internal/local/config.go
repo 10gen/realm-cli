@@ -21,6 +21,7 @@ func NewAppConfigJSON(name string, meta realm.AppMeta) AppConfigJSON {
 	return AppConfigJSON{AppDataV1{AppStructureV1{
 		Name:            name,
 		Location:        meta.Location,
+		ProviderRegion:  meta.ProviderRegion,
 		DeploymentModel: meta.DeploymentModel,
 	}}}
 }
@@ -35,6 +36,7 @@ func NewAppStitchJSON(name string, meta realm.AppMeta) AppStitchJSON {
 	return AppStitchJSON{AppDataV1{AppStructureV1{
 		Name:            name,
 		Location:        meta.Location,
+		ProviderRegion:  meta.ProviderRegion,
 		DeploymentModel: meta.DeploymentModel,
 	}}}
 }
@@ -49,6 +51,7 @@ func NewAppRealmConfigJSON(name string, meta realm.AppMeta) AppRealmConfigJSON {
 	return AppRealmConfigJSON{AppDataV2{AppStructureV2{
 		Name:            name,
 		Location:        meta.Location,
+		ProviderRegion:  meta.ProviderRegion,
 		DeploymentModel: meta.DeploymentModel,
 	}}}
 }

@@ -35,6 +35,7 @@ func TestRealmUsers(t *testing.T) {
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,
+			ProviderRegion:  app.ProviderRegion,
 			DeploymentModel: app.DeploymentModel,
 			Auth: local.AuthStructure{
 				Providers: map[string]interface{}{

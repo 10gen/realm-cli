@@ -67,6 +67,7 @@ type configDatalake struct {
 	DatalakeName string `json:"dataLakeName"`
 }
 
+// TODOO
 func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.RemoteApp == "" {
 		if i.Name == "" {
@@ -79,6 +80,9 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		}
 		if i.Location == realm.LocationEmpty {
 			i.Location = flagLocationDefault
+		}
+		if i.ProviderRegion == realm.ProviderRegionEmpty {
+			i.ProviderRegion = flagProviderRegionDefault
 		}
 		if i.ConfigVersion == realm.AppConfigVersionZero {
 			i.ConfigVersion = realm.DefaultAppConfigVersion
@@ -392,6 +396,10 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	}
 	if i.Location != flagLocationDefault {
 		args = append(args, flags.Arg{flagLocation, i.Location.String()})
+	}
+	// TODOO: We need to figure out what to do when location is provided but provider reigon is not
+	if i.ProviderRegion != "" {
+		args = append(args, flags.Arg{flagProviderRegion, i.ProviderRegion.String()})
 	}
 	if i.DeploymentModel != flagDeploymentModelDefault {
 		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})

@@ -17,6 +17,7 @@ type AppData interface {
 	ID() string
 	Name() string
 	Location() realm.Location
+	ProviderRegion() realm.ProviderRegion
 	DeploymentModel() realm.DeploymentModel
 	Environment() realm.Environment
 	LoadData(rootDir string) error

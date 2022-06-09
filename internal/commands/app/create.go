@@ -52,6 +52,7 @@ func (cmd *CommandCreate) Flags() []flags.Flag {
 		},
 		nameFlag(&cmd.inputs.Name),
 		locationFlag(&cmd.inputs.Location),
+		providerRegionFlag(&cmd.inputs.ProviderRegion),
 		deploymentModelFlag(&cmd.inputs.DeploymentModel),
 		environmentFlag(&cmd.inputs.Environment),
 		flags.StringSliceFlag{
@@ -273,6 +274,7 @@ func (cmd CommandCreate) handleCreateApp(
 
 	createAppMetadata := realm.AppMeta{
 		Location:        cmd.inputs.Location,
+		ProviderRegion:  cmd.inputs.ProviderRegion,
 		DeploymentModel: cmd.inputs.DeploymentModel,
 		Environment:     cmd.inputs.Environment,
 	}
@@ -293,6 +295,7 @@ func (cmd CommandCreate) handleCreateApp(
 			appRealm.ClientAppID,
 			cmd.inputs.Name,
 			cmd.inputs.Location,
+			cmd.inputs.ProviderRegion,
 			cmd.inputs.DeploymentModel,
 			cmd.inputs.Environment,
 			cmd.inputs.ConfigVersion,
@@ -432,6 +435,7 @@ func (cmd CommandCreate) handleCreateTemplateApp(
 	}
 	createAppMetadata := realm.AppMeta{
 		Location:        cmd.inputs.Location,
+		ProviderRegion:  cmd.inputs.ProviderRegion,
 		DeploymentModel: cmd.inputs.DeploymentModel,
 		Environment:     cmd.inputs.Environment,
 		Template:        cmd.inputs.Template,

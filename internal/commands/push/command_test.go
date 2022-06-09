@@ -36,6 +36,7 @@ func TestPushHandler(t *testing.T) {
 			ID:                   "eggcorn-abcde",
 			Name:                 "eggcorn",
 			Location:             realm.LocationVirginia,
+			ProviderRegion:       realm.AWSProviderRegionUSEast1,
 			DeploymentModel:      realm.DeploymentModelGlobal,
 			Security:             map[string]interface{}{},
 			CustomUserDataConfig: map[string]interface{}{"enabled": true},
@@ -110,6 +111,7 @@ func TestPushHandler(t *testing.T) {
 		assert.Equal(t, "eggcorn", capturedName)
 		assert.Equal(t, realm.AppMeta{
 			Location:        realm.LocationVirginia,
+			ProviderRegion:  realm.AWSProviderRegionUSEast1,
 			DeploymentModel: realm.DeploymentModelGlobal,
 			Environment:     realm.EnvironmentNone,
 		}, capturedMeta)
@@ -1098,6 +1100,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					ConfigVersion:   realm.AppConfigVersion20210101,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
+					ProviderRegion:  realm.ProviderRegion("provider"),
 					DeploymentModel: realm.DeploymentModel("deployment_model"),
 					Environment:     realm.Environment("environment"),
 				}}},
@@ -1106,6 +1109,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
     "location": "location",
+	"provider_region": "provider",
     "deployment_model": "deployment_model",
     "environment": "environment"
 }
@@ -1117,6 +1121,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					ConfigVersion:   realm.AppConfigVersion20200603,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
+					ProviderRegion:  realm.ProviderRegion("provider"),
 					DeploymentModel: realm.DeploymentModel("deployment_model"),
 					Environment:     realm.Environment("environment"),
 				}}},
@@ -1125,6 +1130,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
     "location": "location",
+	"provider_region": "provider",
     "deployment_model": "deployment_model",
     "environment": "environment",
     "security": null,
@@ -1143,6 +1149,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					ConfigVersion:   realm.AppConfigVersion20180301,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
+					ProviderRegion:  realm.ProviderRegion("provider"),
 					DeploymentModel: realm.DeploymentModel("deployment_model"),
 					Environment:     realm.Environment("environment"),
 				}}},
@@ -1151,6 +1158,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
     "app_id": "eggcorn-abcde",
     "name": "eggcorn",
     "location": "location",
+	"provider_region": "provider",
     "deployment_model": "deployment_model",
     "environment": "environment",
     "security": null,
@@ -1240,6 +1248,7 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					ConfigVersion:   realm.AppConfigVersion20210101,
 					Name:            "eggcorn",
 					Location:        realm.Location("location"),
+					ProviderRegion:  realm.ProviderRegion("provider"),
 					DeploymentModel: realm.DeploymentModel("deployment_model"),
 					Environment:     realm.Environment("environment"),
 				}}}}
@@ -1259,11 +1268,15 @@ func TestPushHandlerCreateNewApp(t *testing.T) {
 					console.ExpectString("App Name")
 					console.SendLine("testApp")
 
-					console.ExpectString("App Location")
+					console.ExpectString("App Deployment Model")
 					console.Send(string(terminal.KeyArrowDown))
 					console.SendLine("")
 
-					console.ExpectString("App Deployment Model")
+					console.ExpectString("Cloud Provider")
+					console.Send(string(terminal.KeyArrowDown))
+					console.SendLine("")
+
+					console.ExpectString("App Region")
 					console.Send(string(terminal.KeyArrowDown))
 					console.SendLine("")
 
@@ -1302,6 +1315,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 		ConfigVersion:   realm.AppConfigVersion20200603,
 		Name:            "name",
 		Location:        realm.Location("location"),
+		ProviderRegion:  realm.ProviderRegion("provider"),
 		DeploymentModel: realm.DeploymentModel("deployment_model"),
 		Environment:     realm.Environment("environment"),
 	}}}
@@ -1347,11 +1361,15 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						c.ExpectString("App Name")
 						c.SendLine("testApp")
 
-						c.ExpectString("App Location")
+						c.ExpectString("App Deployment Model")
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
-						c.ExpectString("App Deployment Model")
+						c.ExpectString("Cloud Provider")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("App Region")
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
@@ -1371,6 +1389,7 @@ func TestPushCommandCreateNewApp(t *testing.T) {
     "config_version": 20210101,
     "name": "testApp",
     "location": "US-OR",
+	"provider-region": "aws-us-west-2",
     "deployment_model": "LOCAL",
     "environment": "testing"
 }
@@ -1382,6 +1401,58 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						Name:    "testApp",
 						AppMeta: realm.AppMeta{
 							Location:        realm.LocationOregon,
+							ProviderRegion:  realm.AWSProviderRegionUSWest2,
+							DeploymentModel: realm.DeploymentModelLocal,
+							Environment:     realm.EnvironmentTesting,
+						},
+					},
+					expectedProceed: true,
+				},
+				{
+					description: "should not prompt for cloud provider if deployment model is global",
+					procedure: func(c *expect.Console) {
+						c.ExpectString("Do you wish to create a new app?")
+						c.SendLine("y")
+
+						c.ExpectString("App Name")
+						c.SendLine("testApp")
+
+						c.ExpectString("App Deployment Model")
+						c.SendLine("")
+
+						c.ExpectString("App Region")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("App Environment")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("Please confirm the new app details shown above")
+						c.SendLine("y")
+
+						c.ExpectEOF()
+					},
+					test: func(t *testing.T, configPath string) {
+						configData, readErr := ioutil.ReadFile(configPath)
+						assert.Nil(t, readErr)
+						assert.Equal(t, `{
+    "config_version": 20210101,
+    "name": "testApp",
+    "location": "US-OR",
+	"provider-region": "aws-us-west-2",
+    "deployment_model": "GLOBAL",
+    "environment": "testing"
+}
+`, string(configData))
+					},
+					expectedApp: realm.App{
+						ID:      appID,
+						GroupID: groupID,
+						Name:    "testApp",
+						AppMeta: realm.AppMeta{
+							Location:        realm.LocationOregon,
+							ProviderRegion:  realm.AWSProviderRegionUSWest2,
 							DeploymentModel: realm.DeploymentModelLocal,
 							Environment:     realm.EnvironmentTesting,
 						},
@@ -1397,11 +1468,15 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 						c.ExpectString("App Name")
 						c.SendLine("testApp")
 
-						c.ExpectString("App Location")
+						c.ExpectString("App Deployment Model")
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
-						c.ExpectString("App Deployment Model")
+						c.ExpectString("Cloud Provider")
+						c.Send(string(terminal.KeyArrowDown))
+						c.SendLine("")
+
+						c.ExpectString("App Region")
 						c.Send(string(terminal.KeyArrowDown))
 						c.SendLine("")
 
@@ -1491,10 +1566,11 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 					expectedAppConfig: local.FileConfig,
 				},
 				{
-					description: "should use the package name location deployment model and environment when present",
+					description: "should use the package name deployment model location  provider region and environment when present",
 					appData:     fullPkg,
 					expectedAppMeta: realm.AppMeta{
 						Location:        realm.Location("location"),
+						ProviderRegion:  realm.ProviderRegion("provider"),
 						DeploymentModel: realm.DeploymentModel("deployment_model"),
 						Environment:     realm.Environment("environment"),
 					},
@@ -1532,15 +1608,16 @@ func TestPushCommandCreateNewApp(t *testing.T) {
 			}{
 				{
 					description: "should prompt for name if not present in the package",
-					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), DeploymentModel: realm.DeploymentModel("deployment_model"), Environment: realm.Environment("environment")}}},
+					appData:     local.AppConfigJSON{local.AppDataV1{local.AppStructureV1{Location: realm.Location("location"), ProviderRegion: "provider", DeploymentModel: realm.DeploymentModel("deployment_model"), Environment: realm.Environment("environment")}}},
 					expectedAppMeta: realm.AppMeta{
 						Location:        realm.Location("location"),
+						ProviderRegion:  "provider",
 						DeploymentModel: realm.DeploymentModel("deployment_model"),
 						Environment:     realm.Environment("environment"),
 					},
 				},
 				{
-					description: "should not prompt for location deployment model and environment even if not present in the package",
+					description: "should not prompt for deployment model location provider region and environment even if not present in the package",
 					appData:     map[string]interface{}{},
 				},
 			} {

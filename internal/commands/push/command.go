@@ -389,7 +389,7 @@ func (i *inputs) resolveAppDependencies(rootDir string) (local.Dependencies, err
 }
 
 type namer interface{ Name() string }
-type locationer interface{ Location() realm.Location }
+type providerRegioner interface{ ProviderRegion() realm.ProviderRegion }
 type deploymentModeler interface{ DeploymentModel() realm.DeploymentModel }
 type environmenter interface{ Environment() realm.Environment }
 type configVersioner interface{ ConfigVersion() realm.AppConfigVersion }
@@ -401,15 +401,15 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		return realm.App{}, false, nil
 	}
 
-	var name, location, deploymentModel, environment string
+	var name, providerRegion, deploymentModel, environment string
 	appConfigVersion := realm.DefaultAppConfigVersion
 	if appData != nil {
 		if n, ok := appData.(namer); ok {
 			name = n.Name()
 		}
 
-		if l, ok := appData.(locationer); ok {
-			location = l.Location().String()
+		if p, ok := appData.(providerRegioner); ok {
+			providerRegion = p.ProviderRegion().String()
 		}
 
 		if dm, ok := appData.(deploymentModeler); ok {
@@ -433,19 +433,6 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
-			&location,
-			&survey.Select{
-				Message: "App Location",
-				Options: realm.LocationValues,
-				Default: location,
-			},
-		); err != nil {
-			return realm.App{}, false, err
-		}
-	}
-
-	if !ui.AutoConfirm() {
-		if err := ui.AskOne(
 			&deploymentModel,
 			&survey.Select{
 				Message: "App Deployment Model",
@@ -455,6 +442,35 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 			return realm.App{}, false, err
 		}
 	}
+
+	cloudProvider := realm.CloudProviderAWS
+	if !ui.AutoConfirm() && deploymentModel != string(realm.DeploymentModelGlobal) {
+		if err := ui.AskOne(
+			&cloudProvider,
+			&survey.Select{
+				Message: "Cloud Provider",
+				Options: realm.CloudProviderValues,
+				Default: realm.CloudProviderAWS,
+			},
+		); err != nil {
+			return realm.App{}, false, err
+		}
+	}
+
+	var providerRegionLabel string
+	if !ui.AutoConfirm() {
+		if err := ui.AskOne(
+			&providerRegionLabel,
+			&survey.Select{
+				Message: "App Region",
+				Options: realm.ProviderRegionValuesByCloudProvider[cloudProvider],
+			},
+		); err != nil {
+			return realm.App{}, false, err
+		}
+	}
+
+	providerRegion = cloudProvider + "-" + providerRegionLabel
 
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(
@@ -478,7 +494,8 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		groupID,
 		name,
 		realm.AppMeta{
-			Location:        realm.Location(location),
+			Location:        realm.ProviderRegionToLocation[realm.ProviderRegion(providerRegion)],
+			ProviderRegion:  realm.ProviderRegion(providerRegion),
 			DeploymentModel: realm.DeploymentModel(deploymentModel),
 			Environment:     realm.Environment(environment),
 		},

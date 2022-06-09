@@ -92,6 +92,7 @@ func TestRealmImport20210101(t *testing.T) {
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,
+			ProviderRegion:  app.ProviderRegion,
 			DeploymentModel: app.DeploymentModel,
 			Services: []local.ServiceStructure{
 				{
@@ -157,6 +158,7 @@ func TestRealmImportLegacy(t *testing.T) {
 				ID:              app.ClientAppID,
 				Name:            app.Name,
 				Location:        app.Location,
+				ProviderRegion:  app.ProviderRegion,
 				DeploymentModel: app.DeploymentModel,
 				Services: []local.ServiceStructure{
 					{
@@ -212,6 +214,7 @@ func appDataV1(configVersion realm.AppConfigVersion, app realm.App) local.AppDat
 		ID:                   app.ClientAppID,
 		Name:                 app.Name,
 		Location:             app.Location,
+		ProviderRegion:       app.ProviderRegion,
 		DeploymentModel:      app.DeploymentModel,
 		Sync:                 map[string]interface{}{"development_mode_enabled": false},
 		CustomUserDataConfig: map[string]interface{}{"enabled": false},
@@ -295,6 +298,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 		ID:                    app.ClientAppID,
 		Name:                  app.Name,
 		Location:              app.Location,
+		ProviderRegion:        app.ProviderRegion,
 		DeploymentModel:       app.DeploymentModel,
 		AllowedRequestOrigins: []string{"http://localhost:8080"},
 		Environments: map[string]map[string]interface{}{

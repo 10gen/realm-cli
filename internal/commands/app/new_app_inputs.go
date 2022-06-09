@@ -11,6 +11,7 @@ import (
 const (
 	flagDeploymentModelDefault = realm.DeploymentModelGlobal
 	flagLocationDefault        = realm.LocationVirginia
+	flagProviderRegionDefault  = realm.AWSProviderRegionUSEast1
 )
 
 type newAppInputs struct {
@@ -19,6 +20,7 @@ type newAppInputs struct {
 	Name            string
 	DeploymentModel realm.DeploymentModel
 	Location        realm.Location
+	ProviderRegion  realm.ProviderRegion
 	Environment     realm.Environment
 	Template        string
 	ConfigVersion   realm.AppConfigVersion

@@ -59,7 +59,7 @@ func isValidConfigVersion(cv AppConfigVersion) bool {
 	return false
 }
 
-// set of known config version, location and deployment values
+// set of known config version, location, provider region and deployment values
 var (
 	ConfigVersionValues = []string{
 		AppConfigVersion20180301.String(),
@@ -79,6 +79,45 @@ var (
 		LocationMumbai.String(),
 		LocationSingapore.String(),
 	}
+	ProviderRegionValues = []string{
+		AWSProviderRegionUSEast1.String(),
+		AWSProviderRegionUSWest2.String(),
+		AWSProviderRegionEUCentral1.String(),
+		AWSProviderRegionEUWest1.String(),
+		AWSProviderRegionAPSoutheast1.String(),
+		AWSProviderRegionAPSoutheast2.String(),
+		AWSProviderRegionAPSouth1.String(),
+		AWSProviderRegionUSEast2.String(),
+		AWSProviderRegionEUWest2.String(),
+		AWSProviderRegionSAEast1.String(),
+		AzureProviderRegionEastUS2.String(),
+		AzureProviderRegionWestUS.String(),
+		AzureProviderRegionWestEurope.String(),
+		AzureProviderRegionEastAsia.String(),
+		AzureProviderRegionSouthEastAsia.String(),
+	}
+	ProviderRegionValuesByCloudProvider = map[string][]string{
+		CloudProviderAWS: {
+			AWSProviderRegionUSEast1.Label(),
+			AWSProviderRegionUSWest2.Label(),
+			AWSProviderRegionEUCentral1.Label(),
+			AWSProviderRegionEUWest1.Label(),
+			AWSProviderRegionAPSoutheast1.Label(),
+			AWSProviderRegionAPSoutheast2.Label(),
+			AWSProviderRegionAPSouth1.Label(),
+			AWSProviderRegionUSEast2.Label(),
+			AWSProviderRegionEUWest2.Label(),
+			AWSProviderRegionSAEast1.Label(),
+		},
+
+		CloudProviderAzure: {
+			AzureProviderRegionEastUS2.Label(),
+			AzureProviderRegionWestUS.Label(),
+			AzureProviderRegionWestEurope.Label(),
+			AzureProviderRegionEastAsia.Label(),
+			AzureProviderRegionSouthEastAsia.Label(),
+		},
+	}
 	EnvironmentValues = []string{
 		EnvironmentDevelopment.String(),
 		EnvironmentTesting.String(),
@@ -89,6 +128,7 @@ var (
 	errInvalidConfigVersion   = fmt.Errorf("unsupported config version, use one of [%s] instead", strings.Join(ConfigVersionValues, ", "))
 	errInvalidDeploymentModel = fmt.Errorf("unsupported deployment model, use one of [%s] instead", strings.Join(DeploymentModelValues, ", "))
 	errInvalidLocation        = fmt.Errorf("unsupported location, use one of [%s] instead", strings.Join(LocationValues, ", "))
+	errInvalidProviderRegion  = fmt.Errorf("unsupported provider region, use one of [%s] instead", strings.Join(ProviderRegionValues, ", "))
 	errInvalidEnvironment     = fmt.Errorf("unsupported environment, use one of [%s] instead", strings.Join(EnvironmentValues, ", "))
 )
 
@@ -191,6 +231,7 @@ const (
 	LocationOregon    Location = "US-OR"
 	LocationFrankfurt Location = "DE-FF"
 	LocationIreland   Location = "IE"
+	LocationSaoPaolo  Location = "BR-SP"
 	LocationSydney    Location = "AU"
 	LocationMumbai    Location = "IN-MB"
 	LocationSingapore Location = "SG"
@@ -204,9 +245,145 @@ func isValidLocation(l Location) bool {
 		LocationOregon,
 		LocationFrankfurt,
 		LocationIreland,
+		LocationSaoPaolo,
 		LocationSydney,
 		LocationMumbai,
 		LocationSingapore:
+		return true
+	}
+	return false
+}
+
+// Set of supported cloud providers
+const (
+	CloudProviderAWS = "aws"
+	// TODOO CloudProviderGCP   = "gcp"
+	CloudProviderAzure = "azure"
+)
+
+var CloudProviderValues = []string{CloudProviderAWS, CloudProviderAzure}
+
+// The provider regions that we currently support
+const (
+	ProviderRegionEmpty ProviderRegion = ""
+
+	// AWS provider region that we currently support
+	AWSProviderRegionUSEast1      ProviderRegion = "aws-us-east-1"
+	AWSProviderRegionUSWest2      ProviderRegion = "aws-us-west-2"
+	AWSProviderRegionEUCentral1   ProviderRegion = "aws-eu-central-1"
+	AWSProviderRegionEUWest1      ProviderRegion = "aws-eu-west-1"
+	AWSProviderRegionAPSoutheast1 ProviderRegion = "aws-ap-southeast-1"
+	AWSProviderRegionAPSoutheast2 ProviderRegion = "aws-ap-southeast-2"
+	AWSProviderRegionAPSouth1     ProviderRegion = "aws-ap-south-1"
+	AWSProviderRegionUSEast2      ProviderRegion = "aws-us-east-2"
+	AWSProviderRegionEUWest2      ProviderRegion = "aws-eu-west-2"
+	AWSProviderRegionSAEast1      ProviderRegion = "aws-sa-east-1"
+
+	// Azure provider regions that we currently support
+	AzureProviderRegionEastUS2       ProviderRegion = "azure-eastus2"
+	AzureProviderRegionWestUS        ProviderRegion = "azure-westus"
+	AzureProviderRegionWestEurope    ProviderRegion = "azure-westeurope"
+	AzureProviderRegionEastAsia      ProviderRegion = "azure-eastasia"
+	AzureProviderRegionSouthEastAsia ProviderRegion = "azure-southeastasia"
+
+	// GCP provider regions that we currently support
+	GCPProviderRegionUSCentral1  ProviderRegion = "gcp-us-central1"
+	GCPProviderRegionUSWest1     ProviderRegion = "gcp-us-west1"
+	GCPProviderRegionEuropeWest1 ProviderRegion = "gcp-europe-west1"
+	GCPProviderRegionAsiaSouth1  ProviderRegion = "gcp-asia-south1"
+)
+
+// ProviderRegionToLocation provides a quick lookup of a provider and region combination to
+// location values. This is necessary as the backing clusters no longer match our current
+// operating regions. In order to do backing cluster storage, we must leverage a lookup here.
+var ProviderRegionToLocation = map[ProviderRegion]Location{
+	AWSProviderRegionUSEast1:         LocationVirginia,
+	AWSProviderRegionUSWest2:         LocationOregon,
+	AWSProviderRegionEUCentral1:      LocationFrankfurt,
+	AWSProviderRegionEUWest1:         LocationIreland,
+	AWSProviderRegionAPSoutheast1:    LocationSingapore,
+	AWSProviderRegionAPSoutheast2:    LocationSydney,
+	AWSProviderRegionAPSouth1:        LocationMumbai,
+	AWSProviderRegionUSEast2:         LocationVirginia,
+	AWSProviderRegionEUWest2:         LocationIreland,
+	AWSProviderRegionSAEast1:         LocationSaoPaolo,
+	AzureProviderRegionEastUS2:       LocationVirginia,
+	AzureProviderRegionWestUS:        LocationOregon,
+	AzureProviderRegionWestEurope:    LocationFrankfurt,
+	AzureProviderRegionEastAsia:      LocationMumbai,
+	AzureProviderRegionSouthEastAsia: LocationSingapore,
+	GCPProviderRegionUSCentral1:      LocationVirginia,
+	GCPProviderRegionUSWest1:         LocationOregon,
+	GCPProviderRegionEuropeWest1:     LocationFrankfurt,
+	GCPProviderRegionAsiaSouth1:      LocationMumbai,
+}
+
+// ProviderRegion is the Realm app provider region
+type ProviderRegion string
+
+// String returns the ProviderRegion display
+func (p ProviderRegion) String() string { return string(p) }
+
+func (p ProviderRegion) Label() string {
+	return p.String()[strings.IndexByte(p.String(), '-')+1:]
+}
+
+// Type returns the ProviderRegion type
+func (p ProviderRegion) Type() string { return flags.TypeString }
+
+// Set validates and sets the ProviderRegion value
+func (p *ProviderRegion) Set(val string) error {
+	newProviderRegion := ProviderRegion(strings.ToLower(val))
+
+	if !isValidProviderRegion(newProviderRegion) {
+		return errInvalidProviderRegion
+	}
+
+	*p = newProviderRegion
+	return nil
+}
+
+// WriteAnswer validates and sets the ProviderRegion value
+func (p *ProviderRegion) WriteAnswer(name string, value interface{}) error {
+	var newProviderRegion ProviderRegion
+
+	switch v := value.(type) {
+	case core.OptionAnswer:
+		newProviderRegion = ProviderRegion(v.Value)
+	}
+
+	if !isValidProviderRegion(newProviderRegion) {
+		return errInvalidProviderRegion
+	}
+	*p = newProviderRegion
+	return nil
+}
+
+func isValidProviderRegion(p ProviderRegion) bool {
+	switch p {
+	case
+		ProviderRegionEmpty,
+		AWSProviderRegionUSEast1,
+		AWSProviderRegionUSWest2,
+		AWSProviderRegionEUCentral1,
+		AWSProviderRegionEUWest1,
+		AWSProviderRegionAPSoutheast1,
+		AWSProviderRegionAPSoutheast2,
+		AWSProviderRegionAPSouth1,
+		AWSProviderRegionUSEast2,
+		AWSProviderRegionEUWest2,
+		AWSProviderRegionSAEast1,
+
+		AzureProviderRegionEastUS2,
+		AzureProviderRegionWestUS,
+		AzureProviderRegionWestEurope,
+		AzureProviderRegionEastAsia,
+		AzureProviderRegionSouthEastAsia,
+
+		GCPProviderRegionUSCentral1,
+		GCPProviderRegionUSWest1,
+		GCPProviderRegionEuropeWest1,
+		GCPProviderRegionAsiaSouth1:
 		return true
 	}
 	return false
@@ -233,7 +410,7 @@ func (e *Environment) Set(val string) error {
 	return nil
 }
 
-// WriteAnswer validates and sets the Location value
+// WriteAnswer validates and sets the Environment value
 func (e *Environment) WriteAnswer(name string, value interface{}) error {
 	var newEnvironment Environment
 

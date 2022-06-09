@@ -41,6 +41,7 @@ func TestFunctions(t *testing.T) {
 				ID:              app.ClientAppID,
 				Name:            app.Name,
 				Location:        app.Location,
+				ProviderRegion:  app.ProviderRegion,
 				DeploymentModel: app.DeploymentModel,
 				Functions: local.FunctionsStructure{
 					Configs: []map[string]interface{}{
@@ -87,6 +88,7 @@ func TestAppDebugExecuteFunction(t *testing.T) {
 			ID:              app.ClientAppID,
 			Name:            app.Name,
 			Location:        app.Location,
+			ProviderRegion:  app.ProviderRegion,
 			DeploymentModel: app.DeploymentModel,
 			Functions: local.FunctionsStructure{
 				Configs: []map[string]interface{}{
