@@ -13,7 +13,7 @@ var (
 )
 
 func (c *client) Status() error {
-	res, err := c.do(http.MethodGet, publicAPI, api.RequestOptions{})
+	res, err := c.doWithBaseURL(http.MethodGet, publicAPI, api.RequestOptions{})
 	if err != nil {
 		return ErrServerUnavailable
 	}

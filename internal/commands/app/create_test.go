@@ -229,8 +229,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 			return nil
 		}
 		ac := mock.AtlasClient{}
-		ac.GroupsFn = func() ([]atlas.Group, error) {
-			return []atlas.Group{{ID: "123"}}, nil
+		ac.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+			return atlas.Groups{Results: []atlas.Group{{ID: "123"}}}, nil
 		}
 
 		cmd := &CommandCreate{createInputs{newAppInputs: newAppInputs{
@@ -1011,8 +1011,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 			description: "should error when resolving groupID when project is not set",
 			clients: cli.Clients{
 				Atlas: mock.AtlasClient{
-					GroupsFn: func() ([]atlas.Group, error) {
-						return nil, errors.New("atlas client error")
+					GroupsFn: func(url string, useBaseURL bool) (atlas.Groups, error) {
+						return atlas.Groups{}, errors.New("atlas client error")
 					},
 				},
 			},
@@ -1094,8 +1094,8 @@ Check out your app: cd ./test-app && realm-cli app describe
 					},
 				},
 				Atlas: mock.AtlasClient{
-					GroupsFn: func() ([]atlas.Group, error) {
-						return []atlas.Group{{ID: "123"}}, nil
+					GroupsFn: func(url string, useBaseURL bool) (atlas.Groups, error) {
+						return atlas.Groups{Results: []atlas.Group{{ID: "123"}}}, nil
 					},
 				},
 			},

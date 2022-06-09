@@ -7,6 +7,7 @@ import (
 	"github.com/10gen/realm-cli/internal/cloud/atlas"
 	u "github.com/10gen/realm-cli/internal/utils/test"
 	"github.com/10gen/realm-cli/internal/utils/test/assert"
+	"github.com/10gen/realm-cli/internal/utils/test/mock"
 )
 
 func TestAtlasGroups(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAtlasGroups(t *testing.T) {
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
-			_, err := tc.client.Groups()
+			_, err := atlas.AllGroups(tc.client)
 			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
@@ -37,7 +38,7 @@ func TestAtlasGroups(t *testing.T) {
 	t.Run("With an authenticated client should return the list of groups", func(t *testing.T) {
 		client := newAuthClient(t)
 
-		groups, err := client.Groups()
+		groups, err := atlas.AllGroups(client)
 		assert.Nil(t, err)
 		assert.Equal(t, u.CloudGroupCount(), len(groups))
 
@@ -46,6 +47,51 @@ func TestAtlasGroups(t *testing.T) {
 			groupsM[group.ID] = group.Name
 		}
 		assert.Equal(t, groupsM[u.CloudGroupID()], u.CloudGroupName())
+	})
+}
+
+func TestFetchGroups(t *testing.T) {
+	var groupsIdx int
+	groupsCalls := []atlas.Groups{
+		{
+			Results: []atlas.Group{
+				{Name: "one"},
+				{Name: "two"},
+			},
+			Links: []atlas.Link{{Rel: "next"}},
+		},
+		{
+			Results: []atlas.Group{
+				{Name: "three"},
+				{Name: "four"},
+			},
+			Links: []atlas.Link{{Rel: "next"}},
+		},
+		{
+			Results: []atlas.Group{
+				{Name: "five"},
+			},
+		},
+	}
+
+	client := mock.AtlasClient{
+		Client: atlas.NewClient(""),
+		GroupsFn: func(url string, useBaseURL bool) (atlas.Groups, error) {
+			defer func() { groupsIdx++ }()
+			return groupsCalls[groupsIdx], nil
+		},
+	}
+
+	t.Run("should fetch all groups", func(t *testing.T) {
+		groups, err := atlas.AllGroups(client)
+		assert.Nil(t, err)
+		assert.Equal(t, []atlas.Group{
+			{Name: "one"},
+			{Name: "two"},
+			{Name: "three"},
+			{Name: "four"},
+			{Name: "five"},
+		}, groups)
 	})
 }
 

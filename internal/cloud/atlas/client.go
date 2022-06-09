@@ -22,7 +22,7 @@ const (
 
 // Client is a MongoDB Cloud Atlas client
 type Client interface {
-	Groups() ([]Group, error)
+	Groups(url string, useBaseURL bool) (Groups, error)
 
 	Clusters(groupID string) ([]Cluster, error)
 	ServerlessInstances(groupID string) ([]ServerlessInstance, error)
@@ -49,8 +49,12 @@ type client struct {
 	transport *digest.Transport
 }
 
-func (c *client) do(method, path string, options api.RequestOptions) (*http.Response, error) {
-	req, reqErr := http.NewRequest(method, c.baseURL+path, options.Body)
+func (c *client) doWithBaseURL(method, path string, options api.RequestOptions) (*http.Response, error) {
+	return c.doWithURL(method, c.baseURL+path, options)
+}
+
+func (c *client) doWithURL(method, url string, options api.RequestOptions) (*http.Response, error) {
+	req, reqErr := http.NewRequest(method, url, options.Body)
 	if reqErr != nil {
 		return nil, reqErr
 	}

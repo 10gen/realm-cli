@@ -9,6 +9,8 @@ import (
 
 const (
 	groupsPath = publicAPI + "/groups"
+
+	linkRelNext = "next"
 )
 
 // Group is an Atlas group
@@ -17,27 +19,67 @@ type Group struct {
 	Name string `json:"name"`
 }
 
-type groupResponse struct {
-	Results []Group `json:"results"`
+// Link contains additional data related to the response
+type Link struct {
+	Href string `json:"href"`
+	Rel  string `json:"rel"`
 }
 
-func (c *client) Groups() ([]Group, error) {
-	res, resErr := c.do(
+// Groups represents the groups response from Atlas
+type Groups struct {
+	Results []Group `json:"results"`
+	Links   []Link  `json:"links"`
+}
+
+func (c *client) Groups(url string, useBaseURL bool) (Groups, error) {
+	if useBaseURL {
+		url = c.baseURL + url
+	}
+	res, err := c.doWithURL(
 		http.MethodGet,
-		groupsPath,
+		url,
 		api.RequestOptions{},
 	)
-	if resErr != nil {
-		return nil, resErr
+	if err != nil {
+		return Groups{}, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, api.ErrUnexpectedStatusCode{"get groups", res.StatusCode}
+		return Groups{}, api.ErrUnexpectedStatusCode{"get groups", res.StatusCode}
 	}
 	defer res.Body.Close()
 
-	var groupRes groupResponse
-	if err := json.NewDecoder(res.Body).Decode(&groupRes); err != nil {
+	var groups Groups
+	if err := json.NewDecoder(res.Body).Decode(&groups); err != nil {
+		return Groups{}, err
+	}
+	return groups, nil
+}
+
+// AllGroups fetches all atlas groups
+func AllGroups(c Client) ([]Group, error) {
+	groups, err := c.Groups(groupsPath, true)
+	if err != nil {
 		return nil, err
 	}
-	return groupRes.Results, nil
+	return fetchNextGroups(c, groups)
+}
+
+func fetchNextGroups(c Client, groups Groups) ([]Group, error) {
+	allGroups := groups.Results
+	for _, link := range groups.Links {
+		if link.Rel != linkRelNext {
+			continue
+		}
+		res, err := c.Groups(link.Href, false)
+		if err != nil {
+			return nil, err
+		}
+		nextGroups, err := fetchNextGroups(c, res)
+		if err != nil {
+			return nil, err
+		}
+		allGroups = append(allGroups, nextGroups...)
+		break
+	}
+	return allGroups, nil
 }

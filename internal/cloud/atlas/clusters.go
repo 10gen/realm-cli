@@ -24,7 +24,7 @@ const (
 )
 
 func (c *client) Clusters(groupID string) ([]Cluster, error) {
-	res, err := c.do(
+	res, err := c.doWithBaseURL(
 		http.MethodGet,
 		fmt.Sprintf(clustersPattern, groupID),
 		api.RequestOptions{},

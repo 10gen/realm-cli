@@ -152,8 +152,8 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		i := inputs{RemoteApp: "some-app"}
 
 		var atlasClient mock.AtlasClient
-		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-			return []atlas.Group{{ID: "group-id", Name: "group-name"}}, nil
+		atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+			return atlas.Groups{Results: []atlas.Group{{ID: "group-id", Name: "group-name"}}}, nil
 		}
 
 		var realmClient mock.RealmClient
@@ -193,8 +193,8 @@ func TestPullInputsResolveRemoteApp(t *testing.T) {
 		var i inputs
 
 		var atlasClient mock.AtlasClient
-		atlasClient.GroupsFn = func() ([]atlas.Group, error) {
-			return nil, errors.New("something bad happened")
+		atlasClient.GroupsFn = func(url string, useBaseURL bool) (atlas.Groups, error) {
+			return atlas.Groups{}, errors.New("something bad happened")
 		}
 
 		_, err := i.resolveRemoteApp(nil, cli.Clients{Atlas: atlasClient})
