@@ -67,7 +67,6 @@ type configDatalake struct {
 	DatalakeName string `json:"dataLakeName"`
 }
 
-// TODOO
 func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	if i.RemoteApp == "" {
 		if i.Name == "" {

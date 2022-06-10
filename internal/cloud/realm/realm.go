@@ -256,11 +256,12 @@ func isValidLocation(l Location) bool {
 
 // Set of supported cloud providers
 const (
-	CloudProviderAWS = "aws"
-	// TODOO CloudProviderGCP   = "gcp"
+	CloudProviderAWS   = "aws"
 	CloudProviderAzure = "azure"
+	CloudProviderGCP   = "gcp"
 )
 
+// TODO(BAAS-xxxx) add ticket number here if we want to do gcp separately
 var CloudProviderValues = []string{CloudProviderAWS, CloudProviderAzure}
 
 // The provider regions that we currently support
@@ -325,6 +326,7 @@ type ProviderRegion string
 // String returns the ProviderRegion display
 func (p ProviderRegion) String() string { return string(p) }
 
+// Label returns the ProviderRegion display without the cloud provider
 func (p ProviderRegion) Label() string {
 	return p.String()[strings.IndexByte(p.String(), '-')+1:]
 }

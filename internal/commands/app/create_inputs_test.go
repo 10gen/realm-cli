@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TODOO
 func TestAppCreateInputsResolve(t *testing.T) {
 	t.Run("with no flags set should prompt for just name and set deployment model location provider region and environment to defaults", func(t *testing.T) {
 		profile := mock.NewProfile(t)

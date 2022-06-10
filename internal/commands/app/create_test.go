@@ -22,7 +22,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// TODOO
 func TestAppCreateHandler(t *testing.T) {
 	t.Run("should create minimal project when no remote type is specified", func(t *testing.T) {
 		profile, teardown := mock.NewProfileFromTmpDir(t, "app_create_test")
