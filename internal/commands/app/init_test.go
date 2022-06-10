@@ -166,7 +166,6 @@ func TestAppInitHandler(t *testing.T) {
 				ConfigVersion:   realm.DefaultAppConfigVersion,
 				Name:            "remote-app",
 				Location:        realm.LocationIreland,
-				ProviderRegion:  realm.AWSProviderRegionEUWest1,
 				DeploymentModel: realm.DeploymentModelGlobal,
 			}}}, config)
 		})

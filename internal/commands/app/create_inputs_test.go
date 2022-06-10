@@ -104,24 +104,6 @@ func TestAppCreateInputsResolve(t *testing.T) {
 		assert.Equal(t, realm.AWSProviderRegionUSWest2, inputs.ProviderRegion)
 		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
 	})
-
-	t.Run("with no provider region set should not set from location", func(t *testing.T) {
-		profile := mock.NewProfile(t)
-
-		inputs := createInputs{newAppInputs: newAppInputs{
-			Name:            "test-app",
-			DeploymentModel: realm.DeploymentModelLocal,
-			Location:        realm.LocationOregon,
-			Environment:     realm.EnvironmentDevelopment,
-		}}
-		assert.Nil(t, inputs.Resolve(profile, nil))
-
-		assert.Equal(t, "test-app", inputs.Name)
-		assert.Equal(t, realm.DeploymentModelLocal, inputs.DeploymentModel)
-		assert.Equal(t, realm.LocationOregon, inputs.Location)
-		assert.Equal(t, realm.ProviderRegionEmpty, inputs.ProviderRegion)
-		assert.Equal(t, realm.EnvironmentDevelopment, inputs.Environment)
-	})
 }
 
 func TestAppCreateInputsResolveName(t *testing.T) {

@@ -2,6 +2,7 @@
     "config_version": 20210101,
     "name": "20210101-local",
     "location": "US-VA",
+    "provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "allowed_request_origins": [
         "http://localhost:8080"

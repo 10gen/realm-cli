@@ -470,7 +470,9 @@ func createNewApp(ui terminal.UI, realmClient realm.Client, appDirectory, groupI
 		}
 	}
 
-	providerRegion = cloudProvider + "-" + providerRegionLabel
+	if providerRegionLabel != "" {
+		providerRegion = cloudProvider + "-" + providerRegionLabel
+	}
 
 	if !ui.AutoConfirm() {
 		if err := ui.AskOne(

@@ -3,6 +3,7 @@
     "app_id": "20200603-remote-abcde",
     "name": "20200603-remote",
     "location": "US-VA",
+    "provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "security": {
         "allowed_request_origins": [

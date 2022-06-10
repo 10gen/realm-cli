@@ -481,7 +481,6 @@ Check out your app: cd ./test-app && realm-cli app describe
 					ConfigVersion:   realm.DefaultAppConfigVersion,
 					Name:            testApp.Name,
 					Location:        realm.LocationIreland,
-					ProviderRegion:  realm.AWSProviderRegionEUWest1,
 					DeploymentModel: realm.DeploymentModelGlobal,
 					Auth: local.AuthStructure{
 						CustomUserData: map[string]interface{}{"enabled": false},
@@ -957,16 +956,16 @@ Check out your app: cd ./test-app && realm-cli app describe
 				Atlas: mock.AtlasClient{
 					ClustersFn: func(groupID string) ([]atlas.Cluster, error) {
 						return []atlas.Cluster{
-							{Name: "cluster0"},
+							{Name: "Cluster0"},
 						}, nil
 					},
 				},
 			},
-			clusters: []string{"cluster0"},
+			clusters: []string{"Cluster0"},
 			displayExpected: func(dir string, cmd *CommandCreate) string {
 				return strings.Join([]string{
 					fmt.Sprintf("A Realm app would be created at %s using the 'palm-pilot.bitcoin-miner' template", dir),
-					"The cluster 'cluster0' would be linked as data source 'mongodb-atlas'",
+					"The cluster 'Cluster0' would be linked as data source 'mongodb-atlas'",
 					"To create this app run: " + cmd.display(true),
 					"",
 				}, "\n")
@@ -1341,7 +1340,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --provider-region aws-eu-west-1 --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-1 --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --provider-region aws-eu-west-1 --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-1 --datalake Datalake0 --datalake-service-name mongodb-datalake --dry-run",
 			cmd.display(false),
 		)
 	})
@@ -1422,7 +1421,7 @@ func TestAppCreateCommandDisplay(t *testing.T) {
 			},
 		}
 		assert.Equal(t,
-			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --location IE --provider-region aws-eu-west-1 --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-3 --serverless-instance ServerlessInstance1 --serverless-instance-service-name mongodb-atlas-4 --serverless-instance ServerlessInstance2 --serverless-instance-service-name mongodb-atlas-5 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
+			cli.Name+" app create --project 123 --name test-app --remote remote-app --local realm-app --template palm-pilot.bitcoin-miner --provider-region aws-eu-west-1 --deployment-model LOCAL --cluster Cluster0 --cluster-service-name mongodb-atlas-0 --cluster Cluster1 --cluster-service-name mongodb-atlas-1 --cluster Cluster2 --cluster-service-name mongodb-atlas-2 --serverless-instance ServerlessInstance0 --serverless-instance-service-name mongodb-atlas-3 --serverless-instance ServerlessInstance1 --serverless-instance-service-name mongodb-atlas-4 --serverless-instance ServerlessInstance2 --serverless-instance-service-name mongodb-atlas-5 --datalake Datalake0 --datalake-service-name mongodb-datalake-0 --datalake Datalake1 --datalake-service-name mongodb-datalake-1 --datalake Datalake2 --datalake-service-name mongodb-datalake-2 --dry-run",
 			cmd.display(false),
 		)
 	})

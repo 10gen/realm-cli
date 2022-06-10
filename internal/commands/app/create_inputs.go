@@ -78,12 +78,14 @@ func (i *createInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		if i.DeploymentModel == realm.DeploymentModelEmpty {
 			i.DeploymentModel = flagDeploymentModelDefault
 		}
-		if i.Location == realm.LocationEmpty {
-			i.Location = flagLocationDefault
-		}
+
 		if i.ProviderRegion == realm.ProviderRegionEmpty {
 			i.ProviderRegion = flagProviderRegionDefault
 		}
+		if i.Location == realm.LocationEmpty {
+			i.Location = realm.ProviderRegionToLocation[i.ProviderRegion]
+		}
+
 		if i.ConfigVersion == realm.AppConfigVersionZero {
 			i.ConfigVersion = realm.DefaultAppConfigVersion
 		}
@@ -394,13 +396,15 @@ func (i createInputs) args(omitDryRun bool) []flags.Arg {
 	if i.Template != "" {
 		args = append(args, flags.Arg{flagTemplate, i.Template})
 	}
-	if i.Location != flagLocationDefault {
-		args = append(args, flags.Arg{flagLocation, i.Location.String()})
-	}
-	// TODOO: We need to figure out what to do when location is provided but provider reigon is not
-	if i.ProviderRegion != "" {
+
+	if i.ProviderRegion != flagProviderRegionDefault && i.ProviderRegion != "" {
 		args = append(args, flags.Arg{flagProviderRegion, i.ProviderRegion.String()})
 	}
+
+	if i.Location != flagLocationDefault && i.ProviderRegion == "" {
+		args = append(args, flags.Arg{flagLocation, i.Location.String()})
+	}
+
 	if i.DeploymentModel != flagDeploymentModelDefault {
 		args = append(args, flags.Arg{flagDeploymentModel, i.DeploymentModel.String()})
 	}

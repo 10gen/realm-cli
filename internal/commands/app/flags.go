@@ -10,7 +10,7 @@ const (
 	flagName            = "name"
 	flagDeploymentModel = "deployment-model"
 	flagLocation        = "location"
-	flagProviderRegion  = "providerRegion"
+	flagProviderRegion  = "provider-region"
 	flagEnvironment     = "environment"
 	flagProject         = "project"
 

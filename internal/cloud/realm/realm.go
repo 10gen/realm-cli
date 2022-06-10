@@ -297,6 +297,7 @@ const (
 // location values. This is necessary as the backing clusters no longer match our current
 // operating regions. In order to do backing cluster storage, we must leverage a lookup here.
 var ProviderRegionToLocation = map[ProviderRegion]Location{
+	ProviderRegionEmpty:              LocationVirginia,
 	AWSProviderRegionUSEast1:         LocationVirginia,
 	AWSProviderRegionUSWest2:         LocationOregon,
 	AWSProviderRegionEUCentral1:      LocationFrankfurt,

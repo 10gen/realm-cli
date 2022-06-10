@@ -3,6 +3,7 @@
     "app_id": "full-abcde",
     "name": "full",
     "location": "US-VA",
+    "provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "security": {
         "allowed_request_origins": [

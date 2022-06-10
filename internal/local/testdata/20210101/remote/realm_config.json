@@ -3,6 +3,7 @@
     "app_id": "20210101-remote-abcde",
     "name": "20210101-remote",
     "location": "US-VA",
+    "provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "allowed_request_origins": [
         "http://localhost:8080"

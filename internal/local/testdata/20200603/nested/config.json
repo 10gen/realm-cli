@@ -2,6 +2,7 @@
     "config_version": 20200603,
     "name": "20200603-nested",
     "location": "US-VA",
+    "provider_region": "aws-us-east-1",
     "deployment_model": "GLOBAL",
     "security": {
         "allowed_request_origins": [

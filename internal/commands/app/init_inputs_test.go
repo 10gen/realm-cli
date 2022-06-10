@@ -91,7 +91,7 @@ func TestAppInitInputsResolve(t *testing.T) {
 			test: func(t *testing.T, i initInputs) {
 				assert.Equal(t, "test-app", i.Name)
 				assert.Equal(t, realm.DeploymentModelLocal, i.DeploymentModel)
-				assert.Equal(t, realm.LocationOregon, i.Location)
+				assert.Equal(t, realm.LocationIreland, i.Location)
 				assert.Equal(t, realm.ProviderRegionEmpty, i.ProviderRegion)
 				assert.Equal(t, realm.EnvironmentDevelopment, i.Environment)
 			},

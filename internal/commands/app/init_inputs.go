@@ -31,12 +31,11 @@ func (i *initInputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 		if i.DeploymentModel == realm.DeploymentModelEmpty {
 			i.DeploymentModel = flagDeploymentModelDefault
 		}
-		if i.Location == realm.LocationEmpty {
-			i.Location = flagLocationDefault
+		if i.ProviderRegion == realm.ProviderRegionEmpty && i.Location == realm.LocationEmpty {
+			i.ProviderRegion = flagProviderRegionDefault
 		}
-		// TODOO
-		if i.ProviderRegion == realm.ProviderRegionEmpty {
-			i.ProviderRegion = ""
+		if i.Location == realm.LocationEmpty {
+			i.Location = realm.ProviderRegionToLocation[i.ProviderRegion]
 		}
 		if i.ConfigVersion == realm.AppConfigVersionZero {
 			i.ConfigVersion = realm.DefaultAppConfigVersion
