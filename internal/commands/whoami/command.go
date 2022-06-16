@@ -41,7 +41,7 @@ func (cmd *Command) Flags() []flags.Flag {
 			Meta: flags.Meta{
 				Name: "show-projects",
 				Usage: flags.Usage{
-					Description: "Show projects associated with this profile's api key",
+					Description: "Show projects associated with this profile's API Key",
 				},
 			},
 		},

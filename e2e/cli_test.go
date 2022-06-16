@@ -41,7 +41,7 @@ func TestCLI(t *testing.T) {
 		{
 			description: "the login command",
 			args:        []string{"login"},
-			firstLine:   "Log the CLI into Realm using a MongoDB Cloud API key",
+			firstLine:   "Log the CLI into Realm using a MongoDB Cloud API Key",
 		},
 		{
 			description: "the logout command",
