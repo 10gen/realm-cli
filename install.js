@@ -2,7 +2,8 @@
 
 const fs = require('fs');
 const path = require('path');
-const request = require('request');
+//const request = require('request');
+const axios = require('axios');
 
 const packageMetadata = require('./package');
 
@@ -11,7 +12,7 @@ const manifestURL =
 
 function fetchManifest() {
   return new Promise(function(resolve, reject) {
-    request.get(manifestURL, function(err, _, body) {
+    axios.get(manifestURL, function(err, _, body) {
       if (err) {
         reject(err);
         return;
