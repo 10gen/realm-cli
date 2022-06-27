@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const path = require('path');
-//const request = require('request');
 const axios = require('axios');
 
 const packageMetadata = require('./package');
