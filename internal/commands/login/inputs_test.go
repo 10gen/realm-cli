@@ -3,6 +3,7 @@ package login
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -83,7 +84,6 @@ func TestLoginInputs(t *testing.T) {
 				assert.Equal(t, "username", i.PublicAPIKey)
 				assert.Equal(t, "password", i.PrivateAPIKey)
 			},
-			expectedURL: apiKeysPage,
 		},
 		{
 			description: "should not prompt for inputs when profile provides the data for cloud type",
@@ -162,7 +162,6 @@ func TestLoginInputs(t *testing.T) {
 				assert.Equal(t, "username", i.Username)
 				assert.Equal(t, "password", i.Password)
 			},
-			expectedURL: apiKeysPage,
 		},
 		{
 			description: "should not prompt for inputs when profile provides the data for local type",
@@ -193,6 +192,17 @@ func TestLoginInputs(t *testing.T) {
 			},
 			test:        func(t *testing.T, i inputs) {},
 			expectedURL: apiKeysPage,
+		},
+		{
+			description: "should not open browser when api keys are provided as inputs",
+			inputs: inputs{
+				AuthType:      authTypeCloud,
+				PublicAPIKey:  "public",
+				PrivateAPIKey: "private",
+			},
+			prepareProfile: func(p *user.Profile) {},
+			procedure:      func(c *expect.Console) {},
+			test:           func(t *testing.T, i inputs) {},
 		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
@@ -229,27 +239,39 @@ func TestLoginInputs(t *testing.T) {
 		})
 	}
 
-	t.Run("should output error message if browser cannot be opened", func(t *testing.T) {
+	t.Run("should output error message and prompt for credentials if browser cannot be opened", func(t *testing.T) {
 		openBrowserFunc := func(url string) error {
 			return errors.New("there was an issue opening your browser")
 		}
 
 		out := new(bytes.Buffer)
-		ui := mock.NewUIWithOptions(
+		console, _, ui, consoleErr := mock.NewVT10XConsoleWithOptions(
 			mock.UIOptions{OpenBrowserFn: openBrowserFunc},
 			out,
 		)
 
-		i := inputs{
-			AuthType: authTypeLocal,
-			Username: "username",
-			Password: "password",
-		}
+		assert.Nil(t, consoleErr)
+		defer console.Close()
+
+		doneCh := make(chan (struct{}))
+		go func() {
+			defer close(doneCh)
+			console.ExpectString("Username")
+			console.SendLine("username")
+			console.ExpectString("Password")
+			console.SendLine("password")
+			console.ExpectEOF()
+		}()
+
+		i := inputs{AuthType: authTypeLocal}
 
 		profile := mock.NewProfile(t)
 		assert.Nil(t, i.Resolve(profile, ui))
 
-		assert.Equal(t, "there was an issue opening your browser\n", out.String())
+		console.Tty().Close() // flush the writers
+		<-doneCh              // wait for procedure to complete
+
+		assert.True(t, strings.HasPrefix(out.String(), "there was an issue opening your browser"), "should show error")
 		assert.Equal(t, "username", i.Username)
 		assert.Equal(t, "password", i.Password)
 	})

@@ -35,12 +35,13 @@ type inputs struct {
 
 func (i *inputs) Resolve(profile *user.Profile, ui terminal.UI) error {
 	u := profile.Credentials()
+	credentialsProvided := (i.Username != "" && i.Password != "") || (i.PublicAPIKey != "" && i.PrivateAPIKey != "")
 
-	if i.Browser && (i.Username != "" || i.Password != "" || i.PublicAPIKey != "" || i.PrivateAPIKey != "") {
+	if i.Browser && credentialsProvided {
 		return errors.New("credentials will not be authenticated while using browser flag, please login with one or the other")
 	}
 
-	if u == (user.Credentials{}) || i.Browser {
+	if (u == (user.Credentials{}) && !credentialsProvided) || i.Browser {
 		if err := ui.OpenBrowser(apiKeysPage); err != nil {
 			ui.Print(terminal.NewWarningLog("there was an issue opening your browser"))
 		}
