@@ -3,7 +3,6 @@ package login
 import (
 	"bytes"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/10gen/realm-cli/internal/cli/user"
@@ -204,6 +203,17 @@ func TestLoginInputs(t *testing.T) {
 			procedure:      func(c *expect.Console) {},
 			test:           func(t *testing.T, i inputs) {},
 		},
+		{
+			description: "should not open browser when username and password are provided as inputs",
+			inputs: inputs{
+				AuthType: authTypeLocal,
+				Username: "username",
+				Password: "password",
+			},
+			prepareProfile: func(p *user.Profile) {},
+			procedure:      func(c *expect.Console) {},
+			test:           func(t *testing.T, i inputs) {},
+		},
 	} {
 		t.Run(tc.description, func(t *testing.T) {
 			var expectedURL string
@@ -256,6 +266,7 @@ func TestLoginInputs(t *testing.T) {
 		doneCh := make(chan (struct{}))
 		go func() {
 			defer close(doneCh)
+			console.ExpectString("there was an issue opening your browser")
 			console.ExpectString("Username")
 			console.SendLine("username")
 			console.ExpectString("Password")
@@ -271,7 +282,6 @@ func TestLoginInputs(t *testing.T) {
 		console.Tty().Close() // flush the writers
 		<-doneCh              // wait for procedure to complete
 
-		assert.True(t, strings.HasPrefix(out.String(), "there was an issue opening your browser"), "should show error")
 		assert.Equal(t, "username", i.Username)
 		assert.Equal(t, "password", i.Password)
 	})
