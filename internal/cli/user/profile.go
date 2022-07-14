@@ -19,8 +19,10 @@ const (
 	// HostingAssetCacheDir is the hosting asset cache dir
 	HostingAssetCacheDir = ".asset-cache"
 
-	envPrefix   = "realm"
-	profileType = "yaml"
+	// ProfileType is the file type for profiles
+	ProfileType = "yaml"
+
+	envPrefix = "realm"
 
 	extJSON = ".json"
 )
@@ -107,7 +109,7 @@ func (p Profile) Load() error {
 	viper.SetConfigName(p.Name)
 	viper.AddConfigPath(p.dir)
 	viper.SetConfigPermissions(0600)
-	viper.SetConfigType(profileType)
+	viper.SetConfigType(ProfileType)
 
 	viper.SetEnvPrefix(envPrefix)
 	viper.AutomaticEnv()
@@ -175,7 +177,7 @@ func (p Profile) Dir() string {
 
 // Path returns the CLI profile filepath
 func (p Profile) Path() string {
-	return fmt.Sprintf("%s/%s.%s", p.dir, p.Name, profileType)
+	return fmt.Sprintf("%s/%s.%s", p.dir, p.Name, ProfileType)
 }
 
 // set of supported CLI profile auth keys

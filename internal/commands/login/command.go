@@ -133,10 +133,10 @@ func (cmd *Command) checkExistingUser(profile *user.Profile, ui terminal.UI) (bo
 
 	if u.PublicAPIKey != "" && u.PublicAPIKey != cmd.inputs.PublicAPIKey {
 		existingCredentialsName = u.PublicAPIKey
-		existingCredentialsSecret = u.RedactedPrivateAPIKey()
+		existingCredentialsSecret = user.RedactKey(u.PrivateAPIKey)
 	} else if u.Username != "" && u.Username != cmd.inputs.Username {
 		existingCredentialsName = u.Username
-		existingCredentialsSecret = u.RedactedPassword()
+		existingCredentialsSecret = user.Redact(u.Password)
 	}
 
 	if existingCredentialsName == "" {
