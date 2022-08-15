@@ -285,6 +285,7 @@ console.log('got heem!');
 			"fetch_custom_user_data":       true,
 			"create_user_on_auth":          true,
 			"secret_name":                  "",
+			"log_function_arguments":       false,
 		},
 	}}
 }
@@ -494,6 +495,7 @@ func appDataV2(app realm.App) local.AppDataV2 {
 			"fetch_custom_user_data":       true,
 			"create_user_on_auth":          true,
 			"secret_name":                  "",
+			"log_function_arguments":       false,
 		},
 	}}
 }
