@@ -10,11 +10,8 @@ const manifestURL =
   'https://s3.amazonaws.com/realm-clis/versions/cloud-prod/CURRENT';
 
 function fetchManifest() {
-  return new Promise((resolve, reject) => {
-    axios(manifestURL)
-      .then(res => { resolve(res.data); })
-      .catch(reject);
-  });
+  return axios(manifestURL)
+    .then(function (res) { return res.data; });
 }
 
 function getDownloadURL(manifest) {
@@ -60,7 +57,7 @@ function requstBinary(downloadURL, baseName) {
 
   console.log(`downloading "${baseName}" from "${downloadURL}"`);
 
-  return new Promise((resolve, reject) => {
+  return new Promise(function (resolve, reject) {
     let count = 0;
     let notifiedCount = 0;
 
@@ -70,13 +67,13 @@ function requstBinary(downloadURL, baseName) {
     const outFile = fs.openSync(filePath, 'w');
 
     axios.get(downloadURL, { responseType: 'stream' })
-      .then(res => res.data)
-      .then(stream => {
-        stream.on('error', err => {
+      .then(function (res) { return res.data; })
+      .then(function (stream) {
+        stream.on('error', function (err) {
           reject(new Error(`Error with http(s) request: ${err}`));
         });
 
-        stream.on('data', data => {
+        stream.on('data', function (data) {
           fs.writeSync(outFile, data, 0, data.length, null);
           count += data.length;
           if (count - notifiedCount > 800000) {
@@ -85,7 +82,7 @@ function requstBinary(downloadURL, baseName) {
           }
         });
 
-        stream.on('end', () => {
+        stream.on('end', function () {
           console.log(`Received ${Math.floor(count / 1024)} K total.`);
           fs.closeSync(outFile);
           fixFilePermissions(filePath);
@@ -111,7 +108,7 @@ function fixFilePermissions(filePath) {
 fetchManifest()
   .then(getDownloadURL)
   .then(requstBinary)
-  .catch(err => {
+  .catch(function (err) {
     console.error('failed to download Realm CLI:', err);
     process.exit(1);
   });
