@@ -59,7 +59,7 @@ func TestRealmSecrets(t *testing.T) {
 
 				t.Run("and return an error if we can't find the secret", func(t *testing.T) {
 					err := client.UpdateSecret(groupID, testApp.ID, "notFound", "notUsed", "notUsed")
-					assert.Equal(t, realm.ServerError{Message: "secret not found: 'notFound'"}, err)
+					assert.Equal(t, realm.ServerError{Message: `secret not found: "notFound"`}, err)
 				})
 			})
 
@@ -74,7 +74,7 @@ func TestRealmSecrets(t *testing.T) {
 
 				t.Run("and return an error if we can't find the secret", func(t *testing.T) {
 					err := client.DeleteSecret(groupID, testApp.ID, secret.ID)
-					assert.Equal(t, realm.ServerError{Message: fmt.Sprintf("secret not found: '%s'", secret.ID)}, err)
+					assert.Equal(t, realm.ServerError{Message: fmt.Sprintf("secret not found: %q", secret.ID)}, err)
 				})
 			})
 		})
