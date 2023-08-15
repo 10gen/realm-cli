@@ -116,13 +116,14 @@ type AppFilter struct {
 }
 
 const (
-	productStandard = "standard"
-	productAtlas    = "atlas"
-	productDataAPI  = "data-api"
+	productStandard   = "standard"
+	productAtlas      = "atlas"
+	productDataAPI    = "data-api"
+	productDeviceSync = "device-sync"
 )
 
 var (
-	defaultProducts = []string{productStandard, productAtlas, productDataAPI}
+	defaultProducts = []string{productStandard, productAtlas, productDataAPI, productDeviceSync}
 )
 
 func (c *client) FindApps(filter AppFilter) ([]App, error) {
