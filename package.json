@@ -1,6 +1,6 @@
 {
   "name": "mongodb-realm-cli",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "description": "The MongoDB Realm Command Line Interface",
   "repository": {
     "type": "git",
