@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "twilio": "3.35.1",
+    "twilio": "3.41.0",
     "underscore": "1.9.2"
   }
 }
